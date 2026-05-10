@@ -1,0 +1,15 @@
+[Unit]
+Description=VendaFácil PDV Cloudflare Tunnel
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/cloudflared tunnel --config /home/server/.cloudflared/vendafacil-api.yml run vendafacil-api
+Restart=always
+RestartSec=10
+KillSignal=SIGINT
+TimeoutStopSec=30
+
+[Install]
+WantedBy=default.target
