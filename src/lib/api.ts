@@ -1,5 +1,7 @@
 const API_BASE = import.meta.env.VITE_API_URL || "https://vendafacil-api.cursar.space";
 
+// ── Token ──
+
 export function getToken(): string {
   return localStorage.getItem("vf_token") || "";
 }
@@ -24,12 +26,26 @@ async function request(path: string, options: RequestInit = {}) {
   const data = await res.json();
 
   if (!res.ok) {
-    throw new Error(data.detail || "Erro na requisição");
+    // Handle validation errors (array of messages)
+    const msg =
+      typeof data.detail === "string"
+        ? data.detail
+        : Array.isArray(data.detail?.erros)
+          ? data.detail.erros.join(" ")
+          : JSON.stringify(data.detail || "Erro na requisição");
+    throw new Error(msg);
   }
   return data;
 }
 
-// Auth
+// ── Auth ──
+
+export interface User {
+  id: number;
+  email: string;
+  nome: string;
+}
+
 export function login(email: string, senha: string) {
   return request("/api/auth/login", {
     method: "POST",
@@ -44,9 +60,138 @@ export function registro(email: string, nome: string, senha: string) {
   });
 }
 
-export function getMe() {
+export function getMe(): Promise<User | null> {
   if (!getToken()) return Promise.resolve(null);
   return request("/api/auth/me")
     .then((d) => d.user)
     .catch(() => null);
+}
+
+// ── Produtos ──
+
+export interface Produto {
+  id: number;
+  user_id: number;
+  nome: string;
+  preco_custo: number;
+  preco_venda: number;
+  estoque: number;
+  estoque_minimo: number;
+  codigo_barras: string;
+  unidade: string;
+  ativo: number;
+  criado_em: string;
+  atualizado_em: string;
+}
+
+export interface ProdutoInput {
+  nome: string;
+  preco_custo?: number;
+  preco_venda?: number;
+  estoque?: number;
+  estoque_minimo?: number;
+  codigo_barras?: string;
+  unidade?: string;
+}
+
+export interface ProdutoUpdate {
+  nome?: string;
+  preco_custo?: number;
+  preco_venda?: number;
+  estoque?: number;
+  estoque_minimo?: number;
+  codigo_barras?: string;
+  unidade?: string;
+  ativo?: number;
+}
+
+export function listarProdutos(ativos = true): Promise<{ produtos: Produto[] }> {
+  return request(`/api/produtos?ativos=${ativos}`);
+}
+
+export function obterProduto(id: number): Promise<{ produto: Produto }> {
+  return request(`/api/produtos/${id}`);
+}
+
+export function criarProduto(data: ProdutoInput): Promise<{ produto: Produto }> {
+  return request("/api/produtos", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function atualizarProduto(id: number, data: ProdutoUpdate): Promise<{ produto: Produto }> {
+  return request(`/api/produtos/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export function desativarProduto(id: number): Promise<{ ok: boolean }> {
+  return request(`/api/produtos/${id}`, { method: "DELETE" });
+}
+
+// ── Vendas ──
+
+export interface ItemVenda {
+  produto_id: number;
+  quantidade: number;
+}
+
+export interface ItemVendaProcessado {
+  produto_id: number;
+  nome_produto: string;
+  quantidade: number;
+  preco_unitario: number;
+  subtotal: number;
+}
+
+export interface Venda {
+  id: number;
+  user_id: number;
+  total: number;
+  desconto: number;
+  forma_pagamento: string;
+  status: string;
+  observacao: string;
+  criado_em: string;
+  itens?: ItemVendaProcessado[];
+}
+
+export interface CheckoutInput {
+  itens: ItemVenda[];
+  desconto?: number;
+  forma_pagamento?: string;
+  observacao?: string;
+}
+
+export function checkout(data: CheckoutInput): Promise<{ venda: Venda; itens: ItemVendaProcessado[] }> {
+  return request("/api/vendas/checkout", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function listarVendas(limit = 50, offset = 0): Promise<{ vendas: Venda[] }> {
+  return request(`/api/vendas?limit=${limit}&offset=${offset}`);
+}
+
+export function obterVenda(id: number): Promise<{ venda: Venda }> {
+  return request(`/api/vendas/${id}`);
+}
+
+// ── Dashboard ──
+
+export interface DashboardData {
+  total_produtos: number;
+  alertas_estoque: number;
+  vendas_hoje_qtd: number;
+  vendas_hoje_total: number;
+  vendas_total: number;
+  ultimas_vendas: Venda[];
+  produtos_baixo_estoque: { id: number; nome: string; estoque: number; estoque_minimo: number }[];
+}
+
+export function getDashboard(): Promise<DashboardData> {
+  return request("/api/dashboard");
 }

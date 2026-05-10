@@ -1,117 +1,156 @@
-import { useNavigate } from "react-router-dom";
-import { clearToken } from "../lib/api";
-import { useAuthStore } from "../store/authStore";
+import { useState, useEffect, useCallback } from "react";
+import { getDashboard } from "../lib/api";
+import type { DashboardData } from "../lib/api";
 
-const cards = [
-  {
-    titulo: "Produtos",
-    descricao: "Gerencie seu catálogo de produtos",
-    cor: "from-blue-600 to-blue-500",
-    icone: (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-      </svg>
-    ),
-  },
-  {
-    titulo: "Vendas",
-    descricao: "Registre vendas e emita NFC-e",
-    cor: "from-green-600 to-green-500",
-    icone: (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" />
-      </svg>
-    ),
-  },
-  {
-    titulo: "Estoque",
-    descricao: "Controle de inventário e alertas",
-    cor: "from-amber-600 to-amber-500",
-    icone: (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-      </svg>
-    ),
-  },
-  {
-    titulo: "Relatórios",
-    descricao: "Acompanhe vendas e desempenho",
-    cor: "from-purple-600 to-purple-500",
-    icone: (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-      </svg>
-    ),
-  },
-];
+export default function DashboardPage() {
+  const [dash, setDash] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
 
-export default function Dashboard() {
-  const navigate = useNavigate();
-  const user = useAuthStore((s) => s.user);
-  const clearUser = useAuthStore((s) => s.clearUser);
+  const carregar = useCallback(async () => {
+    try {
+      const d = await getDashboard();
+      setDash(d);
+    } catch {
+      // silent
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  function handleSair() {
-    clearToken();
-    clearUser();
-    navigate("/login", { replace: true });
+  useEffect(() => { carregar(); }, [carregar]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
   }
 
+  if (!dash) {
+    return <p className="text-slate-400 text-center py-12">Erro ao carregar dados.</p>;
+  }
+
+  const metricas = [
+    {
+      titulo: "Produtos Ativos",
+      valor: String(dash.total_produtos),
+      cor: "from-blue-600 to-blue-500",
+      icone: "📦",
+    },
+    {
+      titulo: "Vendas Hoje",
+      valor: String(dash.vendas_hoje_qtd),
+      subtitulo: `R$ ${(dash.vendas_hoje_total || 0).toFixed(2)}`,
+      cor: "from-green-600 to-green-500",
+      icone: "💰",
+    },
+    {
+      titulo: "Total em Vendas",
+      valor: `R$ ${(dash.vendas_total || 0).toFixed(2)}`,
+      cor: "from-purple-600 to-purple-500",
+      icone: "📊",
+    },
+    {
+      titulo: "Alertas Estoque",
+      valor: String(dash.alertas_estoque),
+      cor: dash.alertas_estoque > 0 ? "from-red-600 to-red-500" : "from-amber-600 to-amber-500",
+      icone: dash.alertas_estoque > 0 ? "⚠️" : "✅",
+      destaque: dash.alertas_estoque > 0,
+    },
+  ];
+
   return (
-    <div className="min-h-screen bg-slate-950">
-      {/* Topbar */}
-      <header className="h-16 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-4 md:px-6">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center">
-            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" />
-            </svg>
-          </div>
-          <span className="text-white font-bold text-sm md:text-base">VendaFácil PDV</span>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <span className="text-slate-400 text-sm hidden sm:inline">{user?.email}</span>
-          <button
-            onClick={handleSair}
-            className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-slate-800"
+    <div className="space-y-6">
+      {/* Métricas */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {metricas.map((m) => (
+          <div
+            key={m.titulo}
+            className={`bg-slate-900 border rounded-xl p-4 ${
+              m.destaque ? "border-red-500/30 animate-pulse" : "border-slate-800"
+            }`}
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
-            <span className="hidden sm:inline">Sair</span>
-          </button>
-        </div>
-      </header>
-
-      {/* Conteúdo */}
-      <main className="max-w-6xl mx-auto p-4 md:p-6">
-        <div className="mb-8">
-          <h2 className="text-xl md:text-2xl font-bold text-white">
-            Bem-vindo, {user?.nome || user?.email?.split("@")[0] || "Usuário"}!
-          </h2>
-          <p className="text-slate-400 mt-1 text-sm md:text-base">
-            Gerencie seu mercadinho com eficiência.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {cards.map((card) => (
-            <div
-              key={card.titulo}
-              className="bg-slate-900 border border-slate-800 rounded-xl p-5 hover:border-slate-700 transition-colors cursor-pointer group"
-            >
-              <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${card.cor} flex items-center justify-center text-white mb-3 group-hover:scale-110 transition-transform`}>
-                {card.icone}
+            <div className="flex items-center gap-2 mb-2">
+              <div
+                className={`w-8 h-8 rounded-lg bg-gradient-to-br ${m.cor} flex items-center justify-center text-sm`}
+              >
+                {m.icone}
               </div>
-              <h3 className="text-white font-semibold text-sm">{card.titulo}</h3>
-              <p className="text-slate-400 text-xs mt-1">{card.descricao}</p>
-              <span className="inline-block mt-3 text-xs text-slate-600 bg-slate-800 px-2 py-0.5 rounded">
-                Em breve
-              </span>
+              <span className="text-slate-400 text-xs">{m.titulo}</span>
             </div>
-          ))}
+            <p className="text-white text-2xl font-bold">{m.valor}</p>
+            {m.subtitulo && <p className="text-slate-400 text-xs mt-0.5">{m.subtitulo}</p>}
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Últimas Vendas */}
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
+          <h3 className="text-white font-bold mb-3">🕐 Últimas Vendas</h3>
+          {dash.ultimas_vendas.length === 0 ? (
+            <p className="text-slate-500 text-sm py-4 text-center">Nenhuma venda realizada ainda.</p>
+          ) : (
+            <div className="space-y-2">
+              {dash.ultimas_vendas.map((v) => (
+                <div
+                  key={v.id}
+                  className="flex items-center justify-between bg-slate-800 rounded-lg p-3"
+                >
+                  <div>
+                    <p className="text-white text-sm font-medium">Venda #{v.id}</p>
+                    <p className="text-slate-400 text-xs">
+                      {v.forma_pagamento === "pix"
+                        ? "📱 PIX"
+                        : v.forma_pagamento === "dinheiro"
+                          ? "💵 Dinheiro"
+                          : v.forma_pagamento === "debito"
+                            ? "💳 Débito"
+                            : "💳 Crédito"}
+                      {" · "}
+                      {new Date(v.criado_em).toLocaleTimeString("pt-BR", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                  </div>
+                  <p className="text-brand-400 font-bold">R$ {v.total.toFixed(2)}</p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-      </main>
+
+        {/* Estoque Baixo */}
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
+          <h3 className="text-white font-bold mb-3">⚠️ Estoque Baixo</h3>
+          {dash.produtos_baixo_estoque.length === 0 ? (
+            <p className="text-green-400 text-sm py-4 text-center">
+              ✅ Todos os produtos com estoque ok!
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {dash.produtos_baixo_estoque.map((p) => (
+                <div
+                  key={p.id}
+                  className="flex items-center justify-between bg-slate-800 rounded-lg p-3 border border-amber-500/20"
+                >
+                  <div>
+                    <p className="text-white text-sm font-medium">{p.nome}</p>
+                    <p className="text-amber-400 text-xs">
+                      Mínimo: {p.estoque_minimo} · Atual: {p.estoque}
+                    </p>
+                  </div>
+                  <span className="text-red-400 text-xs bg-red-500/10 px-2 py-1 rounded font-medium">
+                    {(p.estoque_minimo - p.estoque)} faltam
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
