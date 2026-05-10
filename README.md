@@ -1,73 +1,100 @@
-# React + TypeScript + Vite
+# VendaFácil PDV 🛒
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Sistema de PDV web para mercadinhos brasileiros — rápido, moderno e independente.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🚀 Tech Stack
 
-## React Compiler
+| Camada | Tecnologia |
+|--------|-----------|
+| Frontend | React 19 + TypeScript + Vite |
+| Estilo | Tailwind CSS v4 |
+| Backend | FastAPI (Python) |
+| Auth | pbkdf2_hmac + JWT |
+| Banco | SQLite |
+| Deploy | Vercel (frontend) + Cloudflare Tunnel (backend) |
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+## 🏗️ Estrutura
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+vendafacil-pdv/
+├── src/                    # Frontend React
+│   ├── components/         # PrivateRoute
+│   ├── pages/              # Login, Dashboard
+│   ├── store/              # Zustand (authStore)
+│   └── lib/                # API client
+├── backend/                # FastAPI
+│   ├── main.py             # App principal
+│   ├── auth.py             # Login/registro JWT
+│   ├── database.py         # SQLite
+│   └── requirements.txt
+├── deploy/                 # Serviços systemd
+├── vercel.json             # SPA rewrites
+└── vite.config.ts
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+---
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## ⚡ Rodar local
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+# Backend
+cd backend
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn main:app --port 3020
+
+# Frontend
+npm install
+cp .env.example .env
+# Edite .env: VITE_API_URL=http://localhost:3020
+npm run dev
 ```
+
+---
+
+## 🌐 Deploy Vercel
+
+1. Importe o repo no [Vercel](https://vercel.com)
+2. Configure a env var: `VITE_API_URL=https://vendafacil-api.cursar.space`
+3. Deploy automático a cada push
+
+Ou via CLI:
+```bash
+npx vercel --env VITE_API_URL=https://vendafacil-api.cursar.space
+```
+
+---
+
+## 🔐 Auth
+
+- Login com e-mail/senha
+- Senhas com hash pbkdf2_hmac (200k iterações, salt aleatório)
+- JWT com validade de 30 dias
+- Banco local: `Banco_de_dados/VendaFacil_PDV/vendafacil.db`
+
+---
+
+## 📡 Endpoints
+
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| POST | `/api/auth/login` | Login |
+| POST | `/api/auth/registro` | Criar conta |
+| GET | `/api/auth/me` | Dados do usuário logado |
+| GET | `/health` | Health check |
+
+---
+
+## 🔜 Próximas rodadas
+
+- Cadastro de produtos (foto, código de barras)
+- Tela PDV (busca de produto, carrinho)
+- NFC-e (Integração Focus NFe)
+- Controle de estoque com alertas
+- Relatórios de vendas
+- Sistema de planos/mensalidade (Stripe)
