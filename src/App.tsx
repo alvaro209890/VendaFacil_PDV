@@ -5,6 +5,9 @@ import Dashboard from "./pages/Dashboard";
 import PDV from "./pages/PDV";
 import Produtos from "./pages/Produtos";
 import Vendas from "./pages/Vendas";
+import Categorias from "./pages/Categorias";
+import Clientes from "./pages/Clientes";
+import ContasReceber from "./pages/ContasReceber";
 import { clearToken } from "./lib/api";
 import { useAuthStore } from "./store/authStore";
 
@@ -12,7 +15,10 @@ const navItems = [
   { to: "/dashboard", label: "Dashboard", icon: "📊" },
   { to: "/pdv", label: "PDV / Vender", icon: "🛒" },
   { to: "/produtos", label: "Produtos", icon: "📦" },
+  { to: "/categorias", label: "Categorias", icon: "🏷️" },
+  { to: "/clientes", label: "Clientes", icon: "👥" },
   { to: "/vendas", label: "Vendas", icon: "🧾" },
+  { to: "/contas-receber", label: "Contas a Receber", icon: "💰" },
 ];
 
 function Layout({ children }: { children: React.ReactNode }) {
@@ -138,7 +144,10 @@ export default function App() {
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/pdv" element={<PDV />} />
                   <Route path="/produtos" element={<Produtos />} />
+                  <Route path="/categorias" element={<Categorias />} />
+                  <Route path="/clientes" element={<Clientes />} />
                   <Route path="/vendas" element={<Vendas />} />
+                  <Route path="/contas-receber" element={<ContasReceber />} />
                   <Route path="*" element={<Navigate to="/pdv" replace />} />
                 </Routes>
               </Layout>

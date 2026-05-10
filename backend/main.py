@@ -4,6 +4,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from auth import router as auth_router, _verificar_jwt
 from produtos import router as produtos_router
 from vendas import router as vendas_router
+from categorias import router as categorias_router
+from clientes import router as clientes_router
+from contas_receber import router as contas_receber_router
 from database import db
 
 app = FastAPI(title="VendaFácil PDV", version="0.1.0")
@@ -16,8 +19,11 @@ app.add_middleware(
 )
 
 app.include_router(auth_router, prefix="/api/auth", tags=["auth"])
+app.include_router(categorias_router, prefix="/api/categorias", tags=["categorias"])
 app.include_router(produtos_router, prefix="/api/produtos", tags=["produtos"])
 app.include_router(vendas_router, prefix="/api/vendas", tags=["vendas"])
+app.include_router(clientes_router, prefix="/api/clientes", tags=["clientes"])
+app.include_router(contas_receber_router, prefix="/api/contas-receber", tags=["contas-receber"])
 
 
 def _get_user_id(request: Request) -> int:

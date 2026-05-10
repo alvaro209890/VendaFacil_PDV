@@ -30,9 +30,21 @@ class Database:
                 );
                 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 
+                CREATE TABLE IF NOT EXISTS categorias (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    nome TEXT NOT NULL,
+                    cor TEXT DEFAULT '#6366f1',
+                    ativo INTEGER NOT NULL DEFAULT 1,
+                    criado_em TEXT NOT NULL,
+                    FOREIGN KEY (user_id) REFERENCES users(id)
+                );
+                CREATE INDEX IF NOT EXISTS idx_categorias_user ON categorias(user_id);
+
                 CREATE TABLE IF NOT EXISTS produtos (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     user_id INTEGER NOT NULL,
+                    categoria_id INTEGER,
                     nome TEXT NOT NULL,
                     preco_custo REAL NOT NULL DEFAULT 0,
                     preco_venda REAL NOT NULL DEFAULT 0,
@@ -43,24 +55,45 @@ class Database:
                     ativo INTEGER NOT NULL DEFAULT 1,
                     criado_em TEXT NOT NULL,
                     atualizado_em TEXT NOT NULL,
-                    FOREIGN KEY (user_id) REFERENCES users(id)
+                    FOREIGN KEY (user_id) REFERENCES users(id),
+                    FOREIGN KEY (categoria_id) REFERENCES categorias(id)
                 );
                 CREATE INDEX IF NOT EXISTS idx_produtos_user ON produtos(user_id);
                 CREATE INDEX IF NOT EXISTS idx_produtos_nome ON produtos(nome);
+                CREATE INDEX IF NOT EXISTS idx_produtos_categoria ON produtos(categoria_id);
+
+                CREATE TABLE IF NOT EXISTS clientes (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    nome TEXT NOT NULL,
+                    telefone TEXT DEFAULT '',
+                    email TEXT DEFAULT '',
+                    endereco TEXT DEFAULT '',
+                    observacao TEXT DEFAULT '',
+                    ativo INTEGER NOT NULL DEFAULT 1,
+                    criado_em TEXT NOT NULL,
+                    atualizado_em TEXT NOT NULL,
+                    FOREIGN KEY (user_id) REFERENCES users(id)
+                );
+                CREATE INDEX IF NOT EXISTS idx_clientes_user ON clientes(user_id);
+                CREATE INDEX IF NOT EXISTS idx_clientes_nome ON clientes(nome);
 
                 CREATE TABLE IF NOT EXISTS vendas (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     user_id INTEGER NOT NULL,
+                    cliente_id INTEGER,
                     total REAL NOT NULL DEFAULT 0,
                     desconto REAL NOT NULL DEFAULT 0,
                     forma_pagamento TEXT NOT NULL DEFAULT 'dinheiro',
                     status TEXT NOT NULL DEFAULT 'concluida',
                     observacao TEXT DEFAULT '',
                     criado_em TEXT NOT NULL,
-                    FOREIGN KEY (user_id) REFERENCES users(id)
+                    FOREIGN KEY (user_id) REFERENCES users(id),
+                    FOREIGN KEY (cliente_id) REFERENCES clientes(id)
                 );
                 CREATE INDEX IF NOT EXISTS idx_vendas_user ON vendas(user_id);
                 CREATE INDEX IF NOT EXISTS idx_vendas_data ON vendas(criado_em);
+                CREATE INDEX IF NOT EXISTS idx_vendas_cliente ON vendas(cliente_id);
 
                 CREATE TABLE IF NOT EXISTS itens_venda (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -74,6 +107,25 @@ class Database:
                     FOREIGN KEY (produto_id) REFERENCES produtos(id)
                 );
                 CREATE INDEX IF NOT EXISTS idx_itens_venda ON itens_venda(venda_id);
+
+                CREATE TABLE IF NOT EXISTS contas_receber (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    venda_id INTEGER,
+                    cliente_id INTEGER,
+                    valor_total REAL NOT NULL DEFAULT 0,
+                    valor_pendente REAL NOT NULL DEFAULT 0,
+                    data_vencimento TEXT,
+                    status TEXT NOT NULL DEFAULT 'pendente',
+                    observacao TEXT DEFAULT '',
+                    criado_em TEXT NOT NULL,
+                    atualizado_em TEXT NOT NULL,
+                    FOREIGN KEY (user_id) REFERENCES users(id),
+                    FOREIGN KEY (venda_id) REFERENCES vendas(id),
+                    FOREIGN KEY (cliente_id) REFERENCES clientes(id)
+                );
+                CREATE INDEX IF NOT EXISTS idx_contas_receber_user ON contas_receber(user_id);
+                CREATE INDEX IF NOT EXISTS idx_contas_receber_status ON contas_receber(status);
             """)
 
     def create_user(self, email: str, nome: str, senha_hash: str, criado_em: str) -> dict[str, Any] | None:
@@ -133,19 +185,20 @@ class Database:
 
     def create_produto(self, user_id: int, nome: str, preco_custo: float,
                        preco_venda: float, estoque: int, estoque_minimo: int,
-                       codigo_barras: str, unidade: str, agora: str) -> dict[str, Any] | None:
+                       codigo_barras: str, unidade: str, agora: str,
+                       categoria_id: int | None = None) -> dict[str, Any] | None:
         with self._lock, self._conn:
             cursor = self._conn.execute(
-                """INSERT INTO produtos (user_id, nome, preco_custo, preco_venda, estoque,
+                """INSERT INTO produtos (user_id, categoria_id, nome, preco_custo, preco_venda, estoque,
                    estoque_minimo, codigo_barras, unidade, criado_em, atualizado_em)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                (user_id, nome.strip(), preco_custo, preco_venda, estoque,
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (user_id, categoria_id, nome.strip(), preco_custo, preco_venda, estoque,
                  estoque_minimo, codigo_barras.strip(), unidade.strip().upper(), agora, agora),
             )
             return self.get_produto(cursor.lastrowid)
 
     def update_produto(self, produto_id: int, user_id: int, **kwargs) -> dict[str, Any] | None:
-        allowed = {"nome", "preco_custo", "preco_venda", "estoque",
+        allowed = {"nome", "categoria_id", "preco_custo", "preco_venda", "estoque",
                    "estoque_minimo", "codigo_barras", "unidade", "ativo", "atualizado_em"}
         fields = {k: v for k, v in kwargs.items() if k in allowed}
         if not fields:
@@ -226,6 +279,176 @@ class Database:
 
     # ── Métricas / Dashboard ──
 
+    # ── Categorias ──
+
+    def list_categorias(self, user_id: int) -> list[dict[str, Any]]:
+        with self._lock:
+            rows = self._conn.execute(
+                "SELECT c.*, COUNT(p.id) as total_produtos FROM categorias c "
+                "LEFT JOIN produtos p ON p.categoria_id = c.id AND p.ativo = 1 "
+                "WHERE c.user_id = ? AND c.ativo = 1 "
+                "GROUP BY c.id ORDER BY c.nome",
+                (user_id,),
+            ).fetchall()
+        return [dict(r) for r in rows]
+
+    def create_categoria(self, user_id: int, nome: str, cor: str, agora: str) -> dict[str, Any] | None:
+        with self._lock, self._conn:
+            cursor = self._conn.execute(
+                "INSERT INTO categorias (user_id, nome, cor, criado_em) VALUES (?, ?, ?, ?)",
+                (user_id, nome.strip(), cor, agora),
+            )
+            return {"id": cursor.lastrowid, "nome": nome.strip(), "cor": cor, "total_produtos": 0}
+
+    def update_categoria(self, categoria_id: int, user_id: int, **kwargs) -> dict[str, Any] | None:
+        allowed = {"nome", "cor", "ativo"}
+        fields = {k: v for k, v in kwargs.items() if k in allowed}
+        if not fields:
+            return None
+        sets = ", ".join(f"{k} = ?" for k in fields)
+        vals = list(fields.values())
+        with self._lock, self._conn:
+            self._conn.execute(
+                f"UPDATE categorias SET {sets} WHERE id = ? AND user_id = ?",
+                vals + [categoria_id, user_id],
+            )
+            row = self._conn.execute(
+                "SELECT * FROM categorias WHERE id = ?", (categoria_id,)
+            ).fetchone()
+            return dict(row) if row else None
+
+    def delete_categoria(self, categoria_id: int, user_id: int) -> bool:
+        with self._lock, self._conn:
+            # Remove referência dos produtos
+            self._conn.execute(
+                "UPDATE produtos SET categoria_id = NULL WHERE categoria_id = ? AND user_id = ?",
+                (categoria_id, user_id),
+            )
+            cursor = self._conn.execute(
+                "UPDATE categorias SET ativo = 0 WHERE id = ? AND user_id = ?",
+                (categoria_id, user_id),
+            )
+            return cursor.rowcount > 0
+
+    # ── Clientes ──
+
+    def list_clientes(self, user_id: int) -> list[dict[str, Any]]:
+        with self._lock:
+            rows = self._conn.execute(
+                "SELECT * FROM clientes WHERE user_id = ? AND ativo = 1 ORDER BY nome",
+                (user_id,),
+            ).fetchall()
+        return [dict(r) for r in rows]
+
+    def get_cliente(self, cliente_id: int, user_id: int | None = None) -> dict[str, Any] | None:
+        with self._lock:
+            q = "SELECT * FROM clientes WHERE id = ?"
+            params: tuple = (cliente_id,)
+            if user_id is not None:
+                q += " AND user_id = ?"
+                params = (cliente_id, user_id)
+            row = self._conn.execute(q, params).fetchone()
+        return dict(row) if row else None
+
+    def create_cliente(self, user_id: int, nome: str, telefone: str, email: str,
+                       endereco: str, observacao: str, agora: str) -> dict[str, Any] | None:
+        with self._lock, self._conn:
+            cursor = self._conn.execute(
+                """INSERT INTO clientes (user_id, nome, telefone, email, endereco, observacao, criado_em, atualizado_em)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                (user_id, nome.strip(), telefone.strip(), email.strip(),
+                 endereco.strip(), observacao.strip(), agora, agora),
+            )
+            return self.get_cliente(cursor.lastrowid)
+
+    def update_cliente(self, cliente_id: int, user_id: int, **kwargs) -> dict[str, Any] | None:
+        allowed = {"nome", "telefone", "email", "endereco", "observacao", "ativo", "atualizado_em"}
+        fields = {k: v for k, v in kwargs.items() if k in allowed}
+        if not fields:
+            return self.get_cliente(cliente_id, user_id)
+        sets = ", ".join(f"{k} = ?" for k in fields)
+        vals = list(fields.values())
+        with self._lock, self._conn:
+            self._conn.execute(
+                f"UPDATE clientes SET {sets} WHERE id = ? AND user_id = ?",
+                vals + [cliente_id, user_id],
+            )
+            return self.get_cliente(cliente_id, user_id)
+
+    # ── Contas a Receber / Venda Fiada ──
+
+    def list_contas_receber(self, user_id: int, status: str | None = None) -> list[dict[str, Any]]:
+        with self._lock:
+            q = """SELECT cr.*, cl.nome as cliente_nome,
+                    COALESCE((SELECT COUNT(*) FROM vendas v WHERE v.id = cr.venda_id), 0) as tem_venda
+                    FROM contas_receber cr
+                    LEFT JOIN clientes cl ON cl.id = cr.cliente_id
+                    WHERE cr.user_id = ?"""
+            params: list = [user_id]
+            if status:
+                q += " AND cr.status = ?"
+                params.append(status)
+            q += " ORDER BY cr.data_vencimento IS NULL, cr.data_vencimento, cr.criado_em DESC"
+            rows = self._conn.execute(q, params).fetchall()
+        return [dict(r) for r in rows]
+
+    def get_conta_receber(self, conta_id: int, user_id: int | None = None) -> dict[str, Any] | None:
+        with self._lock:
+            q = """SELECT cr.*, cl.nome as cliente_nome
+                    FROM contas_receber cr
+                    LEFT JOIN clientes cl ON cl.id = cr.cliente_id
+                    WHERE cr.id = ?"""
+            params: tuple = (conta_id,)
+            if user_id is not None:
+                q += " AND cr.user_id = ?"
+                params = (conta_id, user_id)
+            row = self._conn.execute(q, params).fetchone()
+        return dict(row) if row else None
+
+    def create_conta_receber(self, user_id: int, cliente_id: int | None, venda_id: int | None,
+                              valor_total: float, data_vencimento: str | None,
+                              observacao: str, agora: str) -> dict[str, Any] | None:
+        with self._lock, self._conn:
+            cursor = self._conn.execute(
+                """INSERT INTO contas_receber (user_id, venda_id, cliente_id, valor_total,
+                   valor_pendente, data_vencimento, status, observacao, criado_em, atualizado_em)
+                   VALUES (?, ?, ?, ?, ?, ?, 'pendente', ?, ?, ?)""",
+                (user_id, venda_id, cliente_id, valor_total, valor_total,
+                 data_vencimento, observacao, agora, agora),
+            )
+            return self.get_conta_receber(cursor.lastrowid)
+
+    def pagar_conta_receber(self, conta_id: int, user_id: int, valor: float, agora: str) -> dict[str, Any] | None:
+        with self._lock, self._conn:
+            row = self._conn.execute(
+                "SELECT * FROM contas_receber WHERE id = ? AND user_id = ?",
+                (conta_id, user_id),
+            ).fetchone()
+            if not row:
+                return None
+            novo_pendente = round(row["valor_pendente"] - valor, 2)
+            if novo_pendente <= 0:
+                self._conn.execute(
+                    "UPDATE contas_receber SET valor_pendente = 0, status = 'pago', atualizado_em = ? WHERE id = ?",
+                    (agora, conta_id),
+                )
+            else:
+                self._conn.execute(
+                    "UPDATE contas_receber SET valor_pendente = ?, status = 'parcial', atualizado_em = ? WHERE id = ?",
+                    (novo_pendente, agora, conta_id),
+                )
+            return self.get_conta_receber(conta_id)
+
+    def cancelar_conta_receber(self, conta_id: int, user_id: int, agora: str) -> bool:
+        with self._lock, self._conn:
+            cursor = self._conn.execute(
+                "UPDATE contas_receber SET status = 'cancelado', atualizado_em = ? WHERE id = ? AND user_id = ?",
+                (agora, conta_id, user_id),
+            )
+            return cursor.rowcount > 0
+
+    # ── Dashboard (atualizado) ──
+
     def get_dashboard(self, user_id: int) -> dict[str, Any]:
         with self._lock:
             hoje = self._conn.execute(
@@ -262,12 +485,21 @@ class Database:
                 (user_id,),
             ).fetchall()
 
+            # Novos indicadores
+            contas_pendentes = self._conn.execute(
+                "SELECT COUNT(*), COALESCE(SUM(valor_pendente), 0) FROM contas_receber "
+                "WHERE user_id = ? AND status IN ('pendente', 'parcial')",
+                (user_id,),
+            ).fetchone()
+
         return {
             "total_produtos": total_produtos,
             "alertas_estoque": alertas_estoque,
             "vendas_hoje_qtd": vendas_hoje[0],
             "vendas_hoje_total": vendas_hoje[1],
             "vendas_total": total_vendas,
+            "contas_pendentes_qtd": contas_pendentes[0],
+            "contas_pendentes_total": contas_pendentes[1],
             "ultimas_vendas": [dict(r) for r in ultimas_vendas_rows],
             "produtos_baixo_estoque": [dict(r) for r in produtos_baixo],
         }

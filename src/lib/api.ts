@@ -131,6 +131,142 @@ export function desativarProduto(id: number): Promise<{ ok: boolean }> {
   return request(`/api/produtos/${id}`, { method: "DELETE" });
 }
 
+// ── Categorias ──
+
+export interface Categoria {
+  id: number;
+  user_id: number;
+  nome: string;
+  cor: string;
+  ativo: number;
+  criado_em: string;
+  total_produtos: number;
+}
+
+export interface CategoriaInput {
+  nome: string;
+  cor?: string;
+}
+
+export function listarCategorias(): Promise<{ categorias: Categoria[] }> {
+  return request("/api/categorias");
+}
+
+export function criarCategoria(data: CategoriaInput): Promise<{ categoria: Categoria }> {
+  return request("/api/categorias", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function atualizarCategoria(id: number, data: Partial<CategoriaInput>): Promise<{ categoria: Categoria }> {
+  return request(`/api/categorias/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export function removerCategoria(id: number): Promise<{ ok: boolean }> {
+  return request(`/api/categorias/${id}`, { method: "DELETE" });
+}
+
+// ── Clientes ──
+
+export interface Cliente {
+  id: number;
+  user_id: number;
+  nome: string;
+  telefone: string;
+  email: string;
+  endereco: string;
+  observacao: string;
+  ativo: number;
+  criado_em: string;
+}
+
+export interface ClienteInput {
+  nome: string;
+  telefone?: string;
+  email?: string;
+  endereco?: string;
+  observacao?: string;
+}
+
+export function listarClientes(): Promise<{ clientes: Cliente[] }> {
+  return request("/api/clientes");
+}
+
+export function obterCliente(id: number): Promise<{ cliente: Cliente }> {
+  return request(`/api/clientes/${id}`);
+}
+
+export function criarCliente(data: ClienteInput): Promise<{ cliente: Cliente }> {
+  return request("/api/clientes", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function atualizarCliente(id: number, data: Partial<ClienteInput>): Promise<{ cliente: Cliente }> {
+  return request(`/api/clientes/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export function removerCliente(id: number): Promise<{ ok: boolean }> {
+  return request(`/api/clientes/${id}`, { method: "DELETE" });
+}
+
+// ── Contas a Receber ──
+
+export interface ContaReceber {
+  id: number;
+  user_id: number;
+  venda_id: number | null;
+  cliente_id: number | null;
+  cliente_nome: string | null;
+  valor_total: number;
+  valor_pendente: number;
+  data_vencimento: string | null;
+  status: string;
+  observacao: string;
+  criado_em: string;
+}
+
+export interface ContaReceberInput {
+  cliente_id?: number | null;
+  venda_id?: number | null;
+  valor_total: number;
+  data_vencimento?: string | null;
+  observacao?: string;
+}
+
+export function listarContasReceber(status?: string): Promise<{ contas: ContaReceber[] }> {
+  const qs = status ? `?status=${status}` : "";
+  return request(`/api/contas-receber${qs}`);
+}
+
+export function criarContaReceber(data: ContaReceberInput): Promise<{ conta: ContaReceber }> {
+  return request("/api/contas-receber", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function pagarContaReceber(id: number, data: { valor: number }): Promise<{ conta: ContaReceber }> {
+  return request(`/api/contas-receber/${id}/pagar`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function cancelarContaReceber(id: number): Promise<{ ok: boolean }> {
+  return request(`/api/contas-receber/${id}/cancelar`, {
+    method: "POST",
+  });
+}
+
 // ── Vendas ──
 
 export interface ItemVenda {

@@ -23,6 +23,7 @@ def _get_user_id(request: Request) -> int:
 
 class ProdutoCreate(BaseModel):
     nome: str = Field(min_length=1, max_length=120)
+    categoria_id: int | None = Field(default=None)
     preco_custo: float = Field(default=0, ge=0)
     preco_venda: float = Field(default=0, ge=0)
     estoque: int = Field(default=0, ge=0)
@@ -33,6 +34,7 @@ class ProdutoCreate(BaseModel):
 
 class ProdutoUpdate(BaseModel):
     nome: str | None = Field(default=None, min_length=1, max_length=120)
+    categoria_id: int | None = Field(default=None)
     preco_custo: float | None = Field(default=None, ge=0)
     preco_venda: float | None = Field(default=None, ge=0)
     estoque: int | None = Field(default=None, ge=0)
@@ -66,6 +68,7 @@ async def criar(data: ProdutoCreate, request: Request):
     p = db.create_produto(
         user_id=user_id,
         nome=data.nome,
+        categoria_id=data.categoria_id,
         preco_custo=data.preco_custo,
         preco_venda=data.preco_venda,
         estoque=data.estoque,
