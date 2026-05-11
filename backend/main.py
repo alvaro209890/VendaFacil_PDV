@@ -7,6 +7,7 @@ from vendas import router as vendas_router
 from categorias import router as categorias_router
 from clientes import router as clientes_router
 from contas_receber import router as contas_receber_router
+from pix import router as pix_router
 from database import db
 
 app = FastAPI(title="VendaFácil PDV", version="0.1.0")
@@ -24,6 +25,7 @@ app.include_router(produtos_router, prefix="/api/produtos", tags=["produtos"])
 app.include_router(vendas_router, prefix="/api/vendas", tags=["vendas"])
 app.include_router(clientes_router, prefix="/api/clientes", tags=["clientes"])
 app.include_router(contas_receber_router, prefix="/api/contas-receber", tags=["contas-receber"])
+app.include_router(pix_router, prefix="/api/pix", tags=["pix"])
 
 
 def _get_user_id(request: Request) -> int:

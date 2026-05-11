@@ -331,3 +331,17 @@ export interface DashboardData {
 export function getDashboard(): Promise<DashboardData> {
   return request("/api/dashboard");
 }
+
+// ── PIX ──
+
+export interface PixQrCodeResponse {
+  payload: string;
+  qr_base64: string;
+}
+
+export async function gerarPixQrCode(valor: number): Promise<PixQrCodeResponse> {
+  return request("/api/pix/qrcode", {
+    method: "POST",
+    body: JSON.stringify({ valor }),
+  });
+}

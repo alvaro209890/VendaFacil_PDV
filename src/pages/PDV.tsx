@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { listarProdutos, checkout, getDashboard } from "../lib/api";
-import type { Produto, DashboardData } from "../lib/api";
+import { listarProdutos, checkout, getDashboard, gerarPixQrCode } from "../lib/api";
+import type { Produto, DashboardData, PixQrCodeResponse } from "../lib/api";
 
 type CartItem = Produto & { qtd: number };
 
@@ -20,6 +20,10 @@ export default function PDV() {
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<{ tipo: "ok" | "erro"; texto: string } | null>(null);
   const [dash, setDash] = useState<DashboardData | null>(null);
+
+  // PIX QR Code state
+  const [pixModal, setPixModal] = useState<PixQrCodeResponse | null>(null);
+  const [pixLoading, setPixLoading] = useState(false);
 
   const carregar = useCallback(async () => {
     try {
@@ -71,8 +75,33 @@ export default function PDV() {
   const subtotal = carrinho.reduce((s, i) => s + i.qtd * (i.preco_venda || i.preco_custo), 0);
   const total = Math.max(0, subtotal - desconto);
 
+  async function gerarPix() {
+    if (carrinho.length === 0 || total <= 0) return;
+    setPixLoading(true);
+    setMsg(null);
+    try {
+      const pix = await gerarPixQrCode(total);
+      setPixModal(pix);
+    } catch (err: unknown) {
+      setMsg({ tipo: "erro", texto: (err as Error).message });
+    } finally {
+      setPixLoading(false);
+    }
+  }
+
   async function finalizarVenda() {
     if (carrinho.length === 0) return;
+
+    // Se for PIX, primeiro mostra QR Code
+    if (pagamento === "pix") {
+      await gerarPix();
+      return;
+    }
+
+    await confirmarVenda();
+  }
+
+  async function confirmarVenda() {
     setLoading(true);
     setMsg(null);
     try {
@@ -85,12 +114,17 @@ export default function PDV() {
       setCarrinho([]);
       setDesconto(0);
       setPagamento("dinheiro");
+      setPixModal(null);
       carregar();
     } catch (err: unknown) {
       setMsg({ tipo: "erro", texto: (err as Error).message });
     } finally {
       setLoading(false);
     }
+  }
+
+  function cancelarPix() {
+    setPixModal(null);
   }
 
   const itensCarrinho = carrinho.length;
@@ -241,10 +275,14 @@ export default function PDV() {
             {/* Botão finalizar */}
             <button
               onClick={finalizarVenda}
-              disabled={loading || carrinho.length === 0}
+              disabled={loading || pixLoading || carrinho.length === 0}
               className="mt-4 w-full py-3 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-bold rounded-xl transition-colors text-lg"
             >
-              {loading ? "Processando..." : `Finalizar Venda • R$ ${total.toFixed(2)}`}
+              {loading
+                ? "Processando..."
+                : pixLoading
+                  ? "Gerando QR Code..."
+                  : `Finalizar Venda • R$ ${total.toFixed(2)}`}
             </button>
           </>
         )}
@@ -271,6 +309,91 @@ export default function PDV() {
           </div>
         )}
       </div>
+
+      {/* ── Modal PIX QR Code ── */}
+      {pixModal && (
+        <div
+          className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+          onClick={cancelarPix}
+        >
+          <div
+            className="bg-slate-900 rounded-2xl p-6 w-full max-w-sm border border-slate-800 shadow-2xl text-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-white font-bold text-xl mb-2">📱 PIX</h2>
+            <p className="text-slate-400 text-sm mb-4">
+              Escaneie o QR Code abaixo para pagar
+            </p>
+
+            {/* QR Code */}
+            <div className="bg-white rounded-xl p-4 mb-4 inline-block mx-auto">
+              <img
+                src={`data:image/png;base64,${pixModal.qr_base64}`}
+                alt="QR Code PIX"
+                className="w-56 h-56 mx-auto"
+              />
+            </div>
+
+            {/* Valor */}
+            <p className="text-brand-400 font-bold text-2xl mb-4">
+              R$ {total.toFixed(2)}
+            </p>
+
+            {/* Payload copiável */}
+            <div className="bg-slate-800 rounded-lg p-3 mb-4">
+              <p className="text-slate-400 text-xs mb-1">Ou copie o código PIX:</p>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  readOnly
+                  value={pixModal.payload}
+                  className="flex-1 bg-slate-700 text-white text-xs rounded px-2 py-1.5 border border-slate-600 truncate"
+                  onClick={(e) => (e.target as HTMLInputElement).select()}
+                />
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(pixModal.payload);
+                    setMsg({ tipo: "ok", texto: "Código PIX copiado!" });
+                  }}
+                  className="px-3 py-1.5 bg-brand-600 hover:bg-brand-500 text-white text-xs rounded-lg transition-colors shrink-0"
+                >
+                  Copiar
+                </button>
+              </div>
+            </div>
+
+            {/* Botões */}
+            <div className="flex gap-3">
+              <button
+                onClick={cancelarPix}
+                className="flex-1 px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-sm font-medium transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmarVenda}
+                disabled={loading}
+                className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white rounded-xl text-sm font-bold transition-colors"
+              >
+                {loading ? "Finalizando..." : "Pago ✅"}
+              </button>
+            </div>
+
+            {/* Mensagem no modal */}
+            {msg && (
+              <div
+                className={`mt-3 p-2 rounded-lg text-xs ${
+                  msg.tipo === "ok"
+                    ? "bg-green-500/10 text-green-400"
+                    : "bg-red-500/10 text-red-400"
+                }`}
+              >
+                {msg.texto}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
