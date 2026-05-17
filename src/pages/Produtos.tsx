@@ -4,11 +4,13 @@ import {
   criarProduto,
   atualizarProduto,
   desativarProduto,
+  listarCategorias,
 } from "../lib/api";
-import type { Produto, ProdutoInput } from "../lib/api";
+import type { Produto, ProdutoInput, Categoria } from "../lib/api";
 
 export default function ProdutosPage() {
   const [produtos, setProdutos] = useState<Produto[]>([]);
+  const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [loading, setLoading] = useState(true);
   const [editando, setEditando] = useState<Produto | null>(null);
   const [novo, setNovo] = useState(false);
@@ -16,6 +18,7 @@ export default function ProdutosPage() {
 
   // Form state
   const [nome, setNome] = useState("");
+  const [categoriaId, setCategoriaId] = useState<number | "">("");
   const [precoCusto, setPrecoCusto] = useState("");
   const [precoVenda, setPrecoVenda] = useState("");
   const [estoque, setEstoque] = useState("0");
@@ -25,10 +28,14 @@ export default function ProdutosPage() {
 
   const carregar = useCallback(async () => {
     try {
-      const res = await listarProdutos(false);
+      const [res, catRes] = await Promise.all([
+        listarProdutos(false),
+        listarCategorias(),
+      ]);
       setProdutos(res.produtos);
+      setCategorias(catRes.categorias);
     } catch {
-      setMsg({ tipo: "erro", texto: "Erro ao carregar produtos." });
+      setMsg({ tipo: "erro", texto: "Erro ao carregar dados." });
     } finally {
       setLoading(false);
     }
@@ -38,6 +45,7 @@ export default function ProdutosPage() {
 
   function resetForm() {
     setNome("");
+    setCategoriaId("");
     setPrecoCusto("");
     setPrecoVenda("");
     setEstoque("0");
@@ -52,6 +60,7 @@ export default function ProdutosPage() {
     setEditando(p);
     setNovo(false);
     setNome(p.nome);
+    setCategoriaId(p.categoria_id || "");
     setPrecoCusto(String(p.preco_custo || ""));
     setPrecoVenda(String(p.preco_venda || ""));
     setEstoque(String(p.estoque));
@@ -77,6 +86,7 @@ export default function ProdutosPage() {
 
     const data: ProdutoInput = {
       nome: nome.trim(),
+      categoria_id: categoriaId || undefined,
       preco_custo: Number(precoCusto) || 0,
       preco_venda: Number(precoVenda) || 0,
       estoque: Number(estoque) || 0,
@@ -242,6 +252,20 @@ export default function ProdutosPage() {
                 placeholder="Ex: Arroz 5kg"
                 autoFocus
               />
+            </div>
+
+            <div>
+              <label className="text-slate-400 text-xs block mb-0.5">Categoria</label>
+              <select
+                value={categoriaId}
+                onChange={(e) => setCategoriaId(e.target.value ? Number(e.target.value) : "")}
+                className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500"
+              >
+                <option value="">Sem categoria</option>
+                {categorias.map((cat) => (
+                  <option key={cat.id} value={cat.id}>{cat.nome}</option>
+                ))}
+              </select>
             </div>
 
             <div className="grid grid-cols-2 gap-2">

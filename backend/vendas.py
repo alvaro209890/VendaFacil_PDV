@@ -21,6 +21,7 @@ class CheckoutRequest(BaseModel):
     desconto: float = Field(default=0, ge=0)
     forma_pagamento: str = Field(default="dinheiro", max_length=30)
     observacao: str = Field(default="", max_length=200)
+    cliente_id: int | None = None
 
 
 # ── Rotas ──
@@ -32,6 +33,12 @@ async def checkout(data: CheckoutRequest, request: Request):
 
     if not data.itens:
         raise HTTPException(status_code=400, detail="Adicione pelo menos um item à venda.")
+
+    if data.forma_pagamento == "fiado":
+        if not data.cliente_id:
+            raise HTTPException(status_code=400, detail="Selecione um cliente para venda fiada.")
+        if not db.get_cliente(data.cliente_id, user_id):
+            raise HTTPException(status_code=404, detail="Cliente não encontrado.")
 
     # Validar e calcular
     itens_processados = []
@@ -85,6 +92,7 @@ async def checkout(data: CheckoutRequest, request: Request):
 
     venda = db.create_venda(
         user_id=user_id,
+        cliente_id=data.cliente_id,
         total=total,
         desconto=data.desconto,
         forma_pagamento=data.forma_pagamento,
@@ -92,6 +100,18 @@ async def checkout(data: CheckoutRequest, request: Request):
         itens=itens_processados,
         agora=agora,
     )
+
+    # Se for venda fiada, cria conta a receber automaticamente
+    if data.forma_pagamento == "fiado" and venda:
+        db.create_conta_receber(
+            user_id=user_id,
+            cliente_id=data.cliente_id,
+            venda_id=venda["id"],
+            valor_total=total,
+            data_vencimento=None,
+            observacao=f"Venda #{venda['id']} — {len(itens_processados)} item(ns)",
+            agora=agora,
+        )
 
     return {"venda": venda, "itens": itens_processados}
 

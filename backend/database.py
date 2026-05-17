@@ -243,14 +243,15 @@ class Database:
             row = self._conn.execute(q, params).fetchone()
         return dict(row) if row else None
 
-    def create_venda(self, user_id: int, total: float, desconto: float,
+    def create_venda(self, user_id: int, cliente_id: int | None,
+                     total: float, desconto: float,
                      forma_pagamento: str, observacao: str, itens: list[dict],
                      agora: str) -> dict[str, Any] | None:
         with self._lock, self._conn:
             cursor = self._conn.execute(
-                """INSERT INTO vendas (user_id, total, desconto, forma_pagamento, status, observacao, criado_em)
-                   VALUES (?, ?, ?, ?, 'concluida', ?, ?)""",
-                (user_id, total, desconto, forma_pagamento, observacao, agora),
+                """INSERT INTO vendas (user_id, cliente_id, total, desconto, forma_pagamento, status, observacao, criado_em)
+                   VALUES (?, ?, ?, ?, ?, 'concluida', ?, ?)""",
+                (user_id, cliente_id, total, desconto, forma_pagamento, observacao, agora),
             )
             venda_id = cursor.lastrowid
             for item in itens:

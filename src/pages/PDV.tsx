@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { listarProdutos, checkout, getDashboard, gerarPixQrCode } from "../lib/api";
-import type { Produto, DashboardData, PixQrCodeResponse } from "../lib/api";
+import { listarProdutos, checkout, getDashboard, gerarPixQrCode, listarClientes } from "../lib/api";
+import type { Produto, DashboardData, PixQrCodeResponse, Cliente } from "../lib/api";
 
 type CartItem = Produto & { qtd: number };
 
@@ -9,6 +9,7 @@ const PAGAMENTOS = [
   { value: "pix", label: "PIX", icon: "📱" },
   { value: "debito", label: "Débito", icon: "💳" },
   { value: "credito", label: "Crédito", icon: "💳" },
+  { value: "fiado", label: "Fiado", icon: "📝" },
 ];
 
 export default function PDV() {
@@ -20,6 +21,8 @@ export default function PDV() {
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<{ tipo: "ok" | "erro"; texto: string } | null>(null);
   const [dash, setDash] = useState<DashboardData | null>(null);
+  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [clienteFiado, setClienteFiado] = useState<number | "">("");
 
   // PIX QR Code state
   const [pixModal, setPixModal] = useState<PixQrCodeResponse | null>(null);
@@ -27,9 +30,10 @@ export default function PDV() {
 
   const carregar = useCallback(async () => {
     try {
-      const [p, d] = await Promise.all([listarProdutos(true), getDashboard()]);
+      const [p, d, c] = await Promise.all([listarProdutos(true), getDashboard(), listarClientes()]);
       setProdutos(p.produtos.filter((x) => x.estoque > 0));
       setDash(d);
+      setClientes(c.clientes);
     } catch {
       // silent
     }
@@ -104,16 +108,24 @@ export default function PDV() {
   async function confirmarVenda() {
     setLoading(true);
     setMsg(null);
+    // Se for fiado, cliente é obrigatório
+    if (pagamento === "fiado" && !clienteFiado) {
+      setMsg({ tipo: "erro", texto: "Selecione um cliente para venda fiada." });
+      setLoading(false);
+      return;
+    }
     try {
       await checkout({
         itens: carrinho.map((i) => ({ produto_id: i.id, quantidade: i.qtd })),
         desconto,
         forma_pagamento: pagamento,
+        cliente_id: pagamento === "fiado" ? Number(clienteFiado) : undefined,
       });
       setMsg({ tipo: "ok", texto: `Venda finalizada! Total: R$ ${total.toFixed(2)}` });
       setCarrinho([]);
       setDesconto(0);
       setPagamento("dinheiro");
+      setClienteFiado("");
       setPixModal(null);
       carregar();
     } catch (err: unknown) {
@@ -254,11 +266,11 @@ export default function PDV() {
             {/* Pagamento */}
             <div className="mt-3">
               <label className="text-slate-400 text-xs mb-1 block">Pagamento</label>
-              <div className="grid grid-cols-4 gap-1">
+              <div className="grid grid-cols-5 gap-1">
                 {PAGAMENTOS.map((fp) => (
                   <button
                     key={fp.value}
-                    onClick={() => setPagamento(fp.value)}
+                    onClick={() => { setPagamento(fp.value); if (fp.value !== "fiado") setClienteFiado(""); }}
                     className={`py-2 rounded-lg text-xs font-medium transition-colors ${
                       pagamento === fp.value
                         ? "bg-brand-600 text-white"
@@ -271,6 +283,26 @@ export default function PDV() {
                 ))}
               </div>
             </div>
+
+            {/* Select de cliente para venda fiada */}
+            {pagamento === "fiado" && (
+              <div className="mt-2">
+                <label className="text-slate-400 text-xs mb-1 block">Cliente *</label>
+                <select
+                  value={clienteFiado}
+                  onChange={(e) => setClienteFiado(e.target.value ? Number(e.target.value) : "")}
+                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500"
+                >
+                  <option value="">Selecione um cliente...</option>
+                  {clientes.map((cl) => (
+                    <option key={cl.id} value={cl.id}>{cl.nome}</option>
+                  ))}
+                </select>
+                {clientes.length === 0 && (
+                  <p className="text-amber-400 text-xs mt-1">Cadastre clientes em 👥 Clientes primeiro.</p>
+                )}
+              </div>
+            )}
 
             {/* Botão finalizar */}
             <button

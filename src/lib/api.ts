@@ -72,6 +72,7 @@ export function getMe(): Promise<User | null> {
 export interface Produto {
   id: number;
   user_id: number;
+  categoria_id: number | null;
   nome: string;
   preco_custo: number;
   preco_venda: number;
@@ -86,6 +87,7 @@ export interface Produto {
 
 export interface ProdutoInput {
   nome: string;
+  categoria_id?: number | null;
   preco_custo?: number;
   preco_venda?: number;
   estoque?: number;
@@ -96,6 +98,7 @@ export interface ProdutoInput {
 
 export interface ProdutoUpdate {
   nome?: string;
+  categoria_id?: number | null;
   preco_custo?: number;
   preco_venda?: number;
   estoque?: number;
@@ -299,6 +302,7 @@ export interface CheckoutInput {
   desconto?: number;
   forma_pagamento?: string;
   observacao?: string;
+  cliente_id?: number | null;
 }
 
 export function checkout(data: CheckoutInput): Promise<{ venda: Venda; itens: ItemVendaProcessado[] }> {
