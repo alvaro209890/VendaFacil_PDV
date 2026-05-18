@@ -19,6 +19,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+@app.middleware("http")
+async def normalize_leading_slashes(request: Request, call_next):
+    path = request.scope.get("path", "")
+    if isinstance(path, str) and path.startswith("//"):
+        request.scope["path"] = "/" + path.lstrip("/")
+    return await call_next(request)
+
 app.include_router(auth_router, prefix="/api/auth", tags=["auth"])
 app.include_router(categorias_router, prefix="/api/categorias", tags=["categorias"])
 app.include_router(produtos_router, prefix="/api/produtos", tags=["produtos"])

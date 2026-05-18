@@ -46,51 +46,51 @@ export default function VendasPage() {
   }
 
   return (
-    <div className="flex flex-col lg:flex-row gap-4 h-full">
+    <div className="flex flex-col lg:flex-row gap-3 lg:gap-4 h-full">
       {/* Lista */}
       <div className="flex-1 min-h-0 flex flex-col">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-white font-bold text-lg">🧾 Histórico de Vendas</h2>
-          <span className="text-slate-400 text-sm">Hoje: R$ {totalHoje.toFixed(2)}</span>
+          <h2 className="text-white font-bold text-base sm:text-lg">🧾 Histórico de Vendas</h2>
+          <span className="text-slate-400 text-xs sm:text-sm">Hoje: R$ {totalHoje.toFixed(2)}</span>
         </div>
 
         <div className="flex-1 overflow-y-auto rounded-xl bg-slate-900 border border-slate-800">
           {vendas.length === 0 ? (
-            <p className="text-slate-500 text-center py-12">Nenhuma venda realizada.</p>
+            <p className="text-slate-500 text-center py-8 sm:py-12 text-sm">Nenhuma venda realizada.</p>
           ) : (
-            <table className="w-full text-sm">
+            <table className="w-full text-xs sm:text-sm">
               <thead className="bg-slate-800 sticky top-0">
                 <tr className="text-slate-400 text-left">
-                  <th className="p-3 font-medium">#</th>
-                  <th className="p-3 font-medium">Data/Hora</th>
-                  <th className="p-3 font-medium hidden sm:table-cell">Pagamento</th>
-                  <th className="p-3 font-medium">Total</th>
-                  <th className="p-3 font-medium"></th>
+                  <th className="p-2 sm:p-3 font-medium">#</th>
+                  <th className="p-2 sm:p-3 font-medium">Data</th>
+                  <th className="p-2 sm:p-3 font-medium hidden sm:table-cell">Pagamento</th>
+                  <th className="p-2 sm:p-3 font-medium">Total</th>
+                  <th className="p-2 sm:p-3 font-medium"></th>
                 </tr>
               </thead>
               <tbody>
                 {vendas.map((v) => (
                   <tr key={v.id} className="border-t border-slate-800 hover:bg-slate-800/50">
-                    <td className="p-3 text-white font-medium">{v.id}</td>
-                    <td className="p-3 text-slate-300">
+                    <td className="p-2 sm:p-3 text-white font-medium">{v.id}</td>
+                    <td className="p-2 sm:p-3 text-slate-300 whitespace-nowrap">
                       {new Date(v.criado_em).toLocaleDateString("pt-BR")}
-                      <span className="text-slate-500 text-xs block">
+                      <span className="text-slate-500 text-2xs block">
                         {new Date(v.criado_em).toLocaleTimeString("pt-BR", {
                           hour: "2-digit",
                           minute: "2-digit",
                         })}
                       </span>
                     </td>
-                    <td className="p-3 hidden sm:table-cell">
-                      <span className="text-slate-300 text-xs bg-slate-800 px-2 py-0.5 rounded capitalize">
+                    <td className="p-2 sm:p-3 hidden sm:table-cell">
+                      <span className="text-slate-300 text-2xs sm:text-xs bg-slate-800 px-2 py-0.5 rounded capitalize">
                         {v.forma_pagamento}
                       </span>
                     </td>
-                    <td className="p-3 text-brand-400 font-bold">R$ {v.total.toFixed(2)}</td>
-                    <td className="p-3">
+                    <td className="p-2 sm:p-3 text-brand-400 font-bold whitespace-nowrap">R$ {v.total.toFixed(2)}</td>
+                    <td className="p-2 sm:p-3">
                       <button
                         onClick={() => verDetalhe(v.id)}
-                        className="text-slate-400 hover:text-white text-xs px-2 py-1 rounded hover:bg-slate-700"
+                        className="text-slate-400 hover:text-white text-2xs sm:text-xs px-1.5 sm:px-2 py-1 rounded hover:bg-slate-700 active:scale-95"
                       >
                         Detalhes
                       </button>
@@ -105,18 +105,18 @@ export default function VendasPage() {
 
       {/* Detalhe da venda */}
       {detalhe && (
-        <div className="w-full lg:w-96 bg-slate-900 border border-slate-800 rounded-xl p-4">
+        <div className="w-full lg:w-96 bg-slate-900 border border-slate-800 rounded-xl p-3 sm:p-4">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-white font-bold">Venda #{detalhe.id}</h3>
-            <button onClick={() => setDetalhe(null)} className="text-slate-400 hover:text-white text-lg">
+            <h3 className="text-white font-bold text-sm sm:text-base">Venda #{detalhe.id}</h3>
+            <button onClick={() => setDetalhe(null)} className="text-slate-400 hover:text-white text-lg active:scale-95">
               ×
             </button>
           </div>
 
-          <div className="space-y-2 text-sm mb-4">
+          <div className="space-y-2 text-xs sm:text-sm mb-4">
             <div className="flex justify-between">
               <span className="text-slate-400">Data</span>
-              <span className="text-white">
+              <span className="text-white text-right">
                 {new Date(detalhe.criado_em).toLocaleString("pt-BR")}
               </span>
             </div>
@@ -127,32 +127,32 @@ export default function VendasPage() {
             {detalhe.observacao && (
               <div className="flex justify-between">
                 <span className="text-slate-400">Obs</span>
-                <span className="text-white">{detalhe.observacao}</span>
+                <span className="text-white text-right">{detalhe.observacao}</span>
               </div>
             )}
           </div>
 
-          <h4 className="text-slate-400 text-xs font-medium mb-2 uppercase">Itens</h4>
+          <h4 className="text-slate-400 text-2xs sm:text-xs font-medium mb-2 uppercase">Itens</h4>
           <div className="space-y-1 mb-4">
             {(detalhe.itens || []).map((item, idx) => (
-              <div key={idx} className="flex justify-between bg-slate-800 rounded p-2 text-sm">
-                <div>
-                  <span className="text-white">{item.nome_produto}</span>
-                  <span className="text-slate-500 ml-2">×{item.quantidade}</span>
+              <div key={idx} className="flex justify-between bg-slate-800 rounded p-2 text-xs sm:text-sm">
+                <div className="min-w-0">
+                  <span className="text-white truncate block">{item.nome_produto}</span>
+                  <span className="text-slate-500 ml-1">×{item.quantidade}</span>
                 </div>
-                <span className="text-brand-400">R$ {item.subtotal.toFixed(2)}</span>
+                <span className="text-brand-400 shrink-0 ml-2">R$ {item.subtotal.toFixed(2)}</span>
               </div>
             ))}
           </div>
 
-          <div className="border-t border-slate-700 pt-3 space-y-1 text-sm">
+          <div className="border-t border-slate-700 pt-3 space-y-1 text-xs sm:text-sm">
             {detalhe.desconto > 0 && (
               <div className="flex justify-between text-green-400">
                 <span>Desconto</span>
                 <span>− R$ {detalhe.desconto.toFixed(2)}</span>
               </div>
             )}
-            <div className="flex justify-between font-bold text-lg">
+            <div className="flex justify-between font-bold text-base sm:text-lg">
               <span className="text-white">Total</span>
               <span className="text-brand-400">R$ {detalhe.total.toFixed(2)}</span>
             </div>

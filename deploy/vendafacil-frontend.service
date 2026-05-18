@@ -1,0 +1,17 @@
+[Unit]
+Description=VendaFacil PDV Frontend
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/media/server/HD Backup/Servidores_NAO_MEXA/VendaFacil_PDV/vendafacil-pdv
+Environment=PATH=/home/server/.local/bin:/home/server/.npm-global/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=/usr/bin/npm exec -- vite preview --host 127.0.0.1 --port 3021
+Restart=always
+RestartSec=5
+KillSignal=SIGINT
+TimeoutStopSec=30
+
+[Install]
+WantedBy=default.target

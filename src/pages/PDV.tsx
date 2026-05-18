@@ -142,7 +142,7 @@ export default function PDV() {
   const itensCarrinho = carrinho.length;
 
   return (
-    <div className="flex flex-col lg:flex-row gap-4 h-full">
+    <div className="flex flex-col lg:flex-row gap-3 lg:gap-4 h-full">
       {/* Coluna esquerda: Produtos */}
       <div className="flex-1 flex flex-col min-h-0">
         {/* Busca */}
@@ -151,16 +151,16 @@ export default function PDV() {
             type="text"
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
-            placeholder="Buscar produto por nome ou código de barras..."
-            className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 text-sm"
+            placeholder="Buscar produto..."
+            className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 text-sm"
             autoFocus
           />
         </div>
 
         {/* Grade de produtos */}
-        <div className="flex-1 overflow-y-auto rounded-xl bg-slate-900 border border-slate-800 p-3">
+        <div className="flex-1 overflow-y-auto rounded-xl bg-slate-900 border border-slate-800 p-2 sm:p-3">
           {filtrados.length === 0 ? (
-            <div className="text-center text-slate-500 py-12">
+            <div className="text-center text-slate-500 py-12 px-4 text-sm">
               {busca ? "Nenhum produto encontrado." : "Nenhum produto cadastrado. Adicione produtos primeiro."}
             </div>
           ) : (
@@ -172,10 +172,10 @@ export default function PDV() {
                   <button
                     key={p.id}
                     onClick={() => addAoCarrinho(p)}
-                    className="text-left bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-brand-600 rounded-lg p-3 transition-all active:scale-95"
+                    className="text-left bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-brand-600 rounded-lg p-2 sm:p-3 transition-all active:scale-95"
                   >
-                    <p className="text-white text-sm font-medium truncate">{p.nome}</p>
-                    <p className="text-brand-400 font-bold text-lg mt-0.5">R$ {preco.toFixed(2)}</p>
+                    <p className="text-white text-xs sm:text-sm font-medium truncate">{p.nome}</p>
+                    <p className="text-brand-400 font-bold text-base sm:text-lg mt-0.5">R$ {preco.toFixed(2)}</p>
                     <p className={`text-xs mt-1 ${baixo ? "text-amber-400" : "text-slate-500"}`}>
                       {baixo ? `⚠️ Só ${p.estoque} ${p.unidade}` : `${p.estoque} ${p.unidade}`}
                     </p>
@@ -188,8 +188,8 @@ export default function PDV() {
       </div>
 
       {/* Coluna direita: Carrinho + Checkout */}
-      <div className="w-full lg:w-96 flex flex-col bg-slate-900 border border-slate-800 rounded-xl p-4">
-        <h2 className="text-white font-bold text-lg mb-3">
+      <div className="w-full lg:w-96 flex flex-col bg-slate-900 border border-slate-800 rounded-xl p-3 sm:p-4">
+        <h2 className="text-white font-bold text-base sm:text-lg mb-3">
           🛒 Carrinho {itensCarrinho > 0 && <span className="text-brand-400">({itensCarrinho})</span>}
         </h2>
 
@@ -200,35 +200,35 @@ export default function PDV() {
         ) : (
           <>
             {/* Itens */}
-            <div className="flex-1 overflow-y-auto space-y-2 mb-3">
+            <div className="flex-1 overflow-y-auto space-y-2 mb-3 max-h-64 sm:max-h-96">
               {carrinho.map((i) => {
                 const preco = i.preco_venda || i.preco_custo;
                 const sub = i.qtd * preco;
                 return (
                   <div key={i.id} className="flex items-center gap-2 bg-slate-800 rounded-lg p-2">
                     <div className="flex-1 min-w-0">
-                      <p className="text-white text-sm truncate">{i.nome}</p>
+                      <p className="text-white text-xs sm:text-sm truncate">{i.nome}</p>
                       <p className="text-slate-400 text-xs">R$ {preco.toFixed(2)} × {i.qtd}</p>
                     </div>
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => alterarQtd(i.id, -1)}
-                        className="w-7 h-7 rounded bg-slate-700 text-white text-sm hover:bg-slate-600"
+                        className="w-6 h-6 sm:w-7 sm:h-7 rounded bg-slate-700 text-white text-sm hover:bg-slate-600 active:scale-95"
                       >
                         −
                       </button>
-                      <span className="text-white text-sm w-6 text-center">{i.qtd}</span>
+                      <span className="text-white text-xs sm:text-sm w-5 sm:w-6 text-center">{i.qtd}</span>
                       <button
                         onClick={() => alterarQtd(i.id, 1)}
-                        className="w-7 h-7 rounded bg-slate-700 text-white text-sm hover:bg-slate-600"
+                        className="w-6 h-6 sm:w-7 sm:h-7 rounded bg-slate-700 text-white text-sm hover:bg-slate-600 active:scale-95"
                       >
                         +
                       </button>
                     </div>
-                    <p className="text-brand-400 font-bold text-sm w-20 text-right">R$ {sub.toFixed(2)}</p>
+                    <p className="text-brand-400 font-bold text-xs sm:text-sm w-16 sm:w-20 text-right">R$ {sub.toFixed(2)}</p>
                     <button
                       onClick={() => removerDoCarrinho(i.id)}
-                      className="text-red-400 hover:text-red-300 text-lg px-1"
+                      className="text-red-400 hover:text-red-300 text-lg px-1 active:scale-95"
                       title="Remover"
                     >
                       ×
@@ -266,12 +266,12 @@ export default function PDV() {
             {/* Pagamento */}
             <div className="mt-3">
               <label className="text-slate-400 text-xs mb-1 block">Pagamento</label>
-              <div className="grid grid-cols-5 gap-1">
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5 sm:gap-1">
                 {PAGAMENTOS.map((fp) => (
                   <button
                     key={fp.value}
                     onClick={() => { setPagamento(fp.value); if (fp.value !== "fiado") setClienteFiado(""); }}
-                    className={`py-2 rounded-lg text-xs font-medium transition-colors ${
+                    className={`py-2 rounded-lg text-xs font-medium transition-colors active:scale-95 ${
                       pagamento === fp.value
                         ? "bg-brand-600 text-white"
                         : "bg-slate-800 text-slate-400 hover:text-white"
@@ -308,13 +308,13 @@ export default function PDV() {
             <button
               onClick={finalizarVenda}
               disabled={loading || pixLoading || carrinho.length === 0}
-              className="mt-4 w-full py-3 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-bold rounded-xl transition-colors text-lg"
+              className="mt-4 w-full py-2.5 sm:py-3 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-bold rounded-xl transition-colors text-base sm:text-lg active:scale-95"
             >
               {loading
                 ? "Processando..."
                 : pixLoading
                   ? "Gerando QR Code..."
-                  : `Finalizar Venda • R$ ${total.toFixed(2)}`}
+                  : `Finalizar • R$ ${total.toFixed(2)}`}
             </button>
           </>
         )}
@@ -349,30 +349,30 @@ export default function PDV() {
           onClick={cancelarPix}
         >
           <div
-            className="bg-slate-900 rounded-2xl p-6 w-full max-w-sm border border-slate-800 shadow-2xl text-center"
+            className="bg-slate-900 rounded-2xl p-4 sm:p-6 w-full max-w-sm border border-slate-800 shadow-2xl text-center"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="text-white font-bold text-xl mb-2">📱 PIX</h2>
-            <p className="text-slate-400 text-sm mb-4">
+            <h2 className="text-white font-bold text-lg sm:text-xl mb-2">📱 PIX</h2>
+            <p className="text-slate-400 text-xs sm:text-sm mb-4">
               Escaneie o QR Code abaixo para pagar
             </p>
 
             {/* QR Code */}
-            <div className="bg-white rounded-xl p-4 mb-4 inline-block mx-auto">
+            <div className="bg-white rounded-xl p-3 sm:p-4 mb-4 inline-block mx-auto">
               <img
                 src={`data:image/png;base64,${pixModal.qr_base64}`}
                 alt="QR Code PIX"
-                className="w-56 h-56 mx-auto"
+                className="w-48 h-48 sm:w-56 sm:h-56 mx-auto"
               />
             </div>
 
             {/* Valor */}
-            <p className="text-brand-400 font-bold text-2xl mb-4">
+            <p className="text-brand-400 font-bold text-xl sm:text-2xl mb-4">
               R$ {total.toFixed(2)}
             </p>
 
             {/* Payload copiável */}
-            <div className="bg-slate-800 rounded-lg p-3 mb-4">
+            <div className="bg-slate-800 rounded-lg p-2 sm:p-3 mb-4">
               <p className="text-slate-400 text-xs mb-1">Ou copie o código PIX:</p>
               <div className="flex gap-2">
                 <input
@@ -387,7 +387,7 @@ export default function PDV() {
                     navigator.clipboard.writeText(pixModal.payload);
                     setMsg({ tipo: "ok", texto: "Código PIX copiado!" });
                   }}
-                  className="px-3 py-1.5 bg-brand-600 hover:bg-brand-500 text-white text-xs rounded-lg transition-colors shrink-0"
+                  className="px-2 sm:px-3 py-1.5 bg-brand-600 hover:bg-brand-500 text-white text-xs rounded-lg transition-colors shrink-0 active:scale-95"
                 >
                   Copiar
                 </button>
@@ -395,17 +395,17 @@ export default function PDV() {
             </div>
 
             {/* Botões */}
-            <div className="flex gap-3">
+            <div className="flex gap-2 sm:gap-3">
               <button
                 onClick={cancelarPix}
-                className="flex-1 px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-sm font-medium transition-colors"
+                className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs sm:text-sm font-medium transition-colors active:scale-95"
               >
                 Cancelar
               </button>
               <button
                 onClick={confirmarVenda}
                 disabled={loading}
-                className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white rounded-xl text-sm font-bold transition-colors"
+                className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white rounded-xl text-xs sm:text-sm font-bold transition-colors active:scale-95"
               >
                 {loading ? "Finalizando..." : "Pago ✅"}
               </button>

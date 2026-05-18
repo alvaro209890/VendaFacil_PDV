@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_URL || "https://vendafacil-api.cursar.space";
+const API_BASE = (import.meta.env.VITE_API_URL || "https://vendafacil-api.cursar.space").replace(/\/+$/, "");
 
 // ── Token ──
 

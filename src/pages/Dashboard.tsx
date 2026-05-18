@@ -63,23 +63,23 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* Métricas */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {metricas.map((m) => (
           <div
             key={m.titulo}
-            className={`bg-slate-900 border rounded-xl p-4 ${
+            className={`bg-slate-900 border rounded-xl p-3 sm:p-4 ${
               m.destaque ? "border-red-500/30 animate-pulse" : "border-slate-800"
             }`}
           >
             <div className="flex items-center gap-2 mb-2">
               <div
-                className={`w-8 h-8 rounded-lg bg-gradient-to-br ${m.cor} flex items-center justify-center text-sm`}
+                className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br ${m.cor} flex items-center justify-center text-base sm:text-lg`}
               >
                 {m.icone}
               </div>
-              <span className="text-slate-400 text-xs">{m.titulo}</span>
+              <span className="text-slate-400 text-xs sm:text-sm">{m.titulo}</span>
             </div>
-            <p className="text-white text-2xl font-bold">{m.valor}</p>
+            <p className="text-white text-xl sm:text-2xl font-bold">{m.valor}</p>
             {m.subtitulo && <p className="text-slate-400 text-xs mt-0.5">{m.subtitulo}</p>}
           </div>
         ))}

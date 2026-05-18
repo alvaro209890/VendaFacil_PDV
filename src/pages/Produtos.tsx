@@ -129,32 +129,32 @@ export default function ProdutosPage() {
   }
 
   return (
-    <div className="flex flex-col lg:flex-row gap-4 h-full">
+    <div className="flex flex-col lg:flex-row gap-3 lg:gap-4 h-full">
       {/* Lista */}
       <div className="flex-1 min-h-0 flex flex-col">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-white font-bold text-lg">📦 Produtos ({produtos.length})</h2>
+          <h2 className="text-white font-bold text-base sm:text-lg">📦 Produtos ({produtos.length})</h2>
           <button
             onClick={abrirNovo}
-            className="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-lg transition-colors"
+            className="px-3 sm:px-4 py-1.5 sm:py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors active:scale-95"
           >
-            + Novo Produto
+            + Novo
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto rounded-xl bg-slate-900 border border-slate-800">
           {produtos.length === 0 ? (
-            <p className="text-slate-500 text-center py-12">Nenhum produto cadastrado ainda.</p>
+            <p className="text-slate-500 text-center py-12 text-sm">Nenhum produto cadastrado ainda.</p>
           ) : (
-            <table className="w-full text-sm">
+            <table className="w-full text-xs sm:text-sm">
               <thead className="bg-slate-800 sticky top-0">
                 <tr className="text-slate-400 text-left">
-                  <th className="p-3 font-medium">Nome</th>
-                  <th className="p-3 font-medium hidden sm:table-cell">Custo</th>
-                  <th className="p-3 font-medium">Venda</th>
-                  <th className="p-3 font-medium hidden md:table-cell">Estoque</th>
-                  <th className="p-3 font-medium hidden md:table-cell">Status</th>
-                  <th className="p-3 font-medium"></th>
+                  <th className="p-2 sm:p-3 font-medium">Nome</th>
+                  <th className="p-2 sm:p-3 font-medium hidden sm:table-cell">Custo</th>
+                  <th className="p-2 sm:p-3 font-medium">Venda</th>
+                  <th className="p-2 sm:p-3 font-medium hidden md:table-cell">Estoque</th>
+                  <th className="p-2 sm:p-3 font-medium hidden md:table-cell">Status</th>
+                  <th className="p-2 sm:p-3 font-medium"></th>
                 </tr>
               </thead>
               <tbody>
@@ -167,41 +167,41 @@ export default function ProdutosPage() {
                         !p.ativo ? "opacity-40" : ""
                       }`}
                     >
-                      <td className="p-3 text-white">
-                        <div className="font-medium truncate max-w-40">{p.nome}</div>
+                      <td className="p-2 sm:p-3 text-white">
+                        <div className="font-medium truncate max-w-32 sm:max-w-40">{p.nome}</div>
                         <div className="text-slate-500 text-xs">{p.unidade}</div>
                       </td>
-                      <td className="p-3 text-slate-300 hidden sm:table-cell">
+                      <td className="p-2 sm:p-3 text-slate-300 hidden sm:table-cell">
                         R$ {(p.preco_custo || 0).toFixed(2)}
                       </td>
-                      <td className="p-3 text-brand-400 font-semibold">
+                      <td className="p-2 sm:p-3 text-brand-400 font-semibold">
                         R$ {(p.preco_venda || 0).toFixed(2)}
                       </td>
-                      <td className="p-3 hidden md:table-cell">
+                      <td className="p-2 sm:p-3 hidden md:table-cell">
                         <span className={baixo ? "text-amber-400 font-medium" : "text-slate-300"}>
                           {p.estoque}
                           {baixo && ` ⚠️`}
                         </span>
                       </td>
-                      <td className="p-3 hidden md:table-cell">
+                      <td className="p-2 sm:p-3 hidden md:table-cell">
                         {p.ativo ? (
                           <span className="text-green-400 text-xs bg-green-500/10 px-2 py-0.5 rounded">Ativo</span>
                         ) : (
                           <span className="text-slate-500 text-xs bg-slate-800 px-2 py-0.5 rounded">Inativo</span>
                         )}
                       </td>
-                      <td className="p-3">
+                      <td className="p-2 sm:p-3">
                         <div className="flex gap-1">
                           <button
                             onClick={() => abrirEdicao(p)}
-                            className="text-slate-400 hover:text-white text-xs px-2 py-1 rounded hover:bg-slate-700"
+                            className="text-slate-400 hover:text-white text-xs px-2 py-1 rounded hover:bg-slate-700 active:scale-95"
                           >
                             Editar
                           </button>
                           {p.ativo ? (
                             <button
                               onClick={() => handleDesativar(p.id)}
-                              className="text-red-400 hover:text-red-300 text-xs px-2 py-1 rounded hover:bg-slate-700"
+                              className="text-red-400 hover:text-red-300 text-xs px-2 py-1 rounded hover:bg-slate-700 active:scale-95"
                             >
                               Desativar
                             </button>
