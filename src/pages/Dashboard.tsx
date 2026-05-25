@@ -17,7 +17,10 @@ export default function DashboardPage() {
     }
   }, []);
 
-  useEffect(() => { carregar(); }, [carregar]);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void carregar();
+  }, [carregar]);
 
   if (loading) {
     return (

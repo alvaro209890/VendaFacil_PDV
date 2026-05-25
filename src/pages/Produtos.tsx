@@ -41,7 +41,10 @@ export default function ProdutosPage() {
     }
   }, []);
 
-  useEffect(() => { carregar(); }, [carregar]);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void carregar();
+  }, [carregar]);
 
   function resetForm() {
     setNome("");
@@ -146,73 +149,105 @@ export default function ProdutosPage() {
           {produtos.length === 0 ? (
             <p className="text-slate-500 text-center py-12 text-sm">Nenhum produto cadastrado ainda.</p>
           ) : (
-            <table className="w-full text-xs sm:text-sm">
-              <thead className="bg-slate-800 sticky top-0">
-                <tr className="text-slate-400 text-left">
-                  <th className="p-2 sm:p-3 font-medium">Nome</th>
-                  <th className="p-2 sm:p-3 font-medium hidden sm:table-cell">Custo</th>
-                  <th className="p-2 sm:p-3 font-medium">Venda</th>
-                  <th className="p-2 sm:p-3 font-medium hidden md:table-cell">Estoque</th>
-                  <th className="p-2 sm:p-3 font-medium hidden md:table-cell">Status</th>
-                  <th className="p-2 sm:p-3 font-medium"></th>
-                </tr>
-              </thead>
-              <tbody>
+            <>
+              {/* Cards mobile: evita tabela espremida em telas pequenas */}
+              <div className="sm:hidden grid gap-2 p-2">
                 {produtos.map((p) => {
                   const baixo = p.estoque <= p.estoque_minimo;
                   return (
-                    <tr
+                    <article
                       key={p.id}
-                      className={`border-t border-slate-800 hover:bg-slate-800/50 ${
-                        !p.ativo ? "opacity-40" : ""
-                      }`}
+                      className={`rounded-xl border border-slate-800 bg-slate-950/50 p-3 ${!p.ativo ? "opacity-50" : ""}`}
                     >
-                      <td className="p-2 sm:p-3 text-white">
-                        <div className="font-medium truncate max-w-32 sm:max-w-40">{p.nome}</div>
-                        <div className="text-slate-500 text-xs">{p.unidade}</div>
-                      </td>
-                      <td className="p-2 sm:p-3 text-slate-300 hidden sm:table-cell">
-                        R$ {(p.preco_custo || 0).toFixed(2)}
-                      </td>
-                      <td className="p-2 sm:p-3 text-brand-400 font-semibold">
-                        R$ {(p.preco_venda || 0).toFixed(2)}
-                      </td>
-                      <td className="p-2 sm:p-3 hidden md:table-cell">
-                        <span className={baixo ? "text-amber-400 font-medium" : "text-slate-300"}>
-                          {p.estoque}
-                          {baixo && ` ⚠️`}
-                        </span>
-                      </td>
-                      <td className="p-2 sm:p-3 hidden md:table-cell">
-                        {p.ativo ? (
-                          <span className="text-green-400 text-xs bg-green-500/10 px-2 py-0.5 rounded">Ativo</span>
-                        ) : (
-                          <span className="text-slate-500 text-xs bg-slate-800 px-2 py-0.5 rounded">Inativo</span>
-                        )}
-                      </td>
-                      <td className="p-2 sm:p-3">
-                        <div className="flex gap-1">
-                          <button
-                            onClick={() => abrirEdicao(p)}
-                            className="text-slate-400 hover:text-white text-xs px-2 py-1 rounded hover:bg-slate-700 active:scale-95"
-                          >
-                            Editar
-                          </button>
-                          {p.ativo ? (
-                            <button
-                              onClick={() => handleDesativar(p.id)}
-                              className="text-red-400 hover:text-red-300 text-xs px-2 py-1 rounded hover:bg-slate-700 active:scale-95"
-                            >
-                              Desativar
-                            </button>
-                          ) : null}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <h3 className="text-white font-medium truncate">{p.nome}</h3>
+                          <p className="text-slate-500 text-xs mt-0.5">
+                            {p.unidade} • estoque <span className={baixo ? "text-amber-400" : "text-slate-300"}>{p.estoque}{baixo ? " ⚠️" : ""}</span>
+                          </p>
                         </div>
-                      </td>
-                    </tr>
+                        {p.ativo ? (
+                          <span className="text-green-400 text-2xs bg-green-500/10 px-2 py-1 rounded-full shrink-0">Ativo</span>
+                        ) : (
+                          <span className="text-slate-500 text-2xs bg-slate-800 px-2 py-1 rounded-full shrink-0">Inativo</span>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 my-3 text-sm">
+                        <div className="rounded-lg bg-slate-800 p-2">
+                          <p className="text-slate-500 text-2xs uppercase">Custo</p>
+                          <p className="text-slate-300">R$ {(p.preco_custo || 0).toFixed(2)}</p>
+                        </div>
+                        <div className="rounded-lg bg-slate-800 p-2">
+                          <p className="text-slate-500 text-2xs uppercase">Venda</p>
+                          <p className="text-brand-400 font-semibold">R$ {(p.preco_venda || 0).toFixed(2)}</p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          onClick={() => abrirEdicao(p)}
+                          className="touch-target rounded-lg bg-slate-800 text-slate-200 text-sm active:scale-95"
+                        >
+                          Editar
+                        </button>
+                        {p.ativo ? (
+                          <button
+                            onClick={() => handleDesativar(p.id)}
+                            className="touch-target rounded-lg bg-red-900/30 text-red-400 text-sm active:scale-95"
+                          >
+                            Desativar
+                          </button>
+                        ) : <span />}
+                      </div>
+                    </article>
                   );
                 })}
-              </tbody>
-            </table>
+              </div>
+
+              {/* Tabela tablet/desktop */}
+              <table className="hidden sm:table w-full text-sm">
+                <thead className="bg-slate-800 sticky top-0">
+                  <tr className="text-slate-400 text-left">
+                    <th className="p-3 font-medium">Nome</th>
+                    <th className="p-3 font-medium">Custo</th>
+                    <th className="p-3 font-medium">Venda</th>
+                    <th className="p-3 font-medium hidden md:table-cell">Estoque</th>
+                    <th className="p-3 font-medium hidden md:table-cell">Status</th>
+                    <th className="p-3 font-medium"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {produtos.map((p) => {
+                    const baixo = p.estoque <= p.estoque_minimo;
+                    return (
+                      <tr key={p.id} className={`border-t border-slate-800 hover:bg-slate-800/50 ${!p.ativo ? "opacity-40" : ""}`}>
+                        <td className="p-3 text-white">
+                          <div className="font-medium truncate max-w-40">{p.nome}</div>
+                          <div className="text-slate-500 text-xs">{p.unidade}</div>
+                        </td>
+                        <td className="p-3 text-slate-300">R$ {(p.preco_custo || 0).toFixed(2)}</td>
+                        <td className="p-3 text-brand-400 font-semibold">R$ {(p.preco_venda || 0).toFixed(2)}</td>
+                        <td className="p-3 hidden md:table-cell">
+                          <span className={baixo ? "text-amber-400 font-medium" : "text-slate-300"}>{p.estoque}{baixo && ` ⚠️`}</span>
+                        </td>
+                        <td className="p-3 hidden md:table-cell">
+                          {p.ativo ? (
+                            <span className="text-green-400 text-xs bg-green-500/10 px-2 py-0.5 rounded">Ativo</span>
+                          ) : (
+                            <span className="text-slate-500 text-xs bg-slate-800 px-2 py-0.5 rounded">Inativo</span>
+                          )}
+                        </td>
+                        <td className="p-3">
+                          <div className="flex gap-1 justify-end">
+                            <button onClick={() => abrirEdicao(p)} className="text-slate-400 hover:text-white text-xs px-2 py-1 rounded hover:bg-slate-700 active:scale-95">Editar</button>
+                            {p.ativo ? <button onClick={() => handleDesativar(p.id)} className="text-red-400 hover:text-red-300 text-xs px-2 py-1 rounded hover:bg-slate-700 active:scale-95">Desativar</button> : null}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </>
           )}
         </div>
       </div>

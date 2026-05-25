@@ -27,7 +27,10 @@ export default function CategoriasPage() {
     }
   }, []);
 
-  useEffect(() => { carregar(); }, [carregar]);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void carregar();
+  }, [carregar]);
 
   function resetForm() {
     setNome("");
@@ -108,7 +111,7 @@ export default function CategoriasPage() {
       ) : (
         <div className="grid gap-2">
           {categorias.map((c) => (
-            <div key={c.id} className="bg-slate-900 rounded-xl p-3 sm:p-4 border border-slate-800 flex items-center justify-between gap-2">
+            <div key={c.id} className="bg-slate-900 rounded-xl p-3 sm:p-4 border border-slate-800 flex flex-col min-[420px]:flex-row min-[420px]:items-center justify-between gap-3">
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full shrink-0" style={{ backgroundColor: c.cor }} />
                 <div className="min-w-0">
@@ -116,7 +119,7 @@ export default function CategoriasPage() {
                   <span className="text-slate-500 text-xs sm:text-sm ml-1 sm:ml-2">({c.total_produtos})</span>
                 </div>
               </div>
-              <div className="flex gap-1 sm:gap-2 shrink-0">
+              <div className="grid grid-cols-2 gap-2 w-full min-[420px]:w-auto shrink-0">
                 <button onClick={() => abrirEdicao(c)} className="px-2 sm:px-3 py-1 sm:py-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-colors active:scale-95">
                   Editar
                 </button>
@@ -131,7 +134,7 @@ export default function CategoriasPage() {
 
       {showModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setShowModal(false)}>
-          <div className="bg-slate-900 rounded-2xl p-4 sm:p-6 w-full max-w-sm border border-slate-800 shadow-2xl mx-2 sm:mx-0" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-panel bg-slate-900 rounded-2xl p-4 sm:p-6 w-full max-w-sm border border-slate-800 shadow-2xl mx-2 sm:mx-0" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-base sm:text-lg font-bold text-white mb-4">{editando ? "Editar Categoria" : "Nova Categoria"}</h2>
             <div className="space-y-3">
               <input

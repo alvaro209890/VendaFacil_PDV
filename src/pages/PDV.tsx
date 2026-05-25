@@ -39,7 +39,10 @@ export default function PDV() {
     }
   }, []);
 
-  useEffect(() => { carregar(); }, [carregar]);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void carregar();
+  }, [carregar]);
 
   const filtrados = busca
     ? produtos.filter(
@@ -142,7 +145,7 @@ export default function PDV() {
   const itensCarrinho = carrinho.length;
 
   return (
-    <div className="flex flex-col lg:flex-row gap-3 lg:gap-4 h-full">
+    <div className="flex flex-col lg:flex-row gap-3 lg:gap-4 min-h-full">
       {/* Coluna esquerda: Produtos */}
       <div className="flex-1 flex flex-col min-h-0">
         {/* Busca */}
@@ -152,7 +155,7 @@ export default function PDV() {
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
             placeholder="Buscar produto..."
-            className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 text-sm"
+            className="w-full px-3 sm:px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 text-sm"
             autoFocus
           />
         </div>
@@ -172,7 +175,7 @@ export default function PDV() {
                   <button
                     key={p.id}
                     onClick={() => addAoCarrinho(p)}
-                    className="text-left bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-brand-600 rounded-lg p-2 sm:p-3 transition-all active:scale-95"
+                    className="text-left bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-brand-600 rounded-lg p-2.5 sm:p-3 transition-all active:scale-95 min-h-24"
                   >
                     <p className="text-white text-xs sm:text-sm font-medium truncate">{p.nome}</p>
                     <p className="text-brand-400 font-bold text-base sm:text-lg mt-0.5">R$ {preco.toFixed(2)}</p>
@@ -188,7 +191,7 @@ export default function PDV() {
       </div>
 
       {/* Coluna direita: Carrinho + Checkout */}
-      <div className="w-full lg:w-96 flex flex-col bg-slate-900 border border-slate-800 rounded-xl p-3 sm:p-4">
+      <div className="w-full lg:w-96 flex flex-col bg-slate-900 border border-slate-800 rounded-xl p-3 sm:p-4 shrink-0">
         <h2 className="text-white font-bold text-base sm:text-lg mb-3">
           🛒 Carrinho {itensCarrinho > 0 && <span className="text-brand-400">({itensCarrinho})</span>}
         </h2>
@@ -200,7 +203,7 @@ export default function PDV() {
         ) : (
           <>
             {/* Itens */}
-            <div className="flex-1 overflow-y-auto space-y-2 mb-3 max-h-64 sm:max-h-96">
+            <div className="flex-1 overflow-y-auto space-y-2 mb-3 max-h-[45dvh] sm:max-h-96">
               {carrinho.map((i) => {
                 const preco = i.preco_venda || i.preco_custo;
                 const sub = i.qtd * preco;
@@ -266,12 +269,12 @@ export default function PDV() {
             {/* Pagamento */}
             <div className="mt-3">
               <label className="text-slate-400 text-xs mb-1 block">Pagamento</label>
-              <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5 sm:gap-1">
+              <div className="grid grid-cols-2 min-[380px]:grid-cols-3 sm:grid-cols-5 gap-1.5 sm:gap-1">
                 {PAGAMENTOS.map((fp) => (
                   <button
                     key={fp.value}
                     onClick={() => { setPagamento(fp.value); if (fp.value !== "fiado") setClienteFiado(""); }}
-                    className={`py-2 rounded-lg text-xs font-medium transition-colors active:scale-95 ${
+                    className={`py-2.5 rounded-lg text-xs font-medium transition-colors active:scale-95 ${
                       pagamento === fp.value
                         ? "bg-brand-600 text-white"
                         : "bg-slate-800 text-slate-400 hover:text-white"
@@ -349,7 +352,7 @@ export default function PDV() {
           onClick={cancelarPix}
         >
           <div
-            className="bg-slate-900 rounded-2xl p-4 sm:p-6 w-full max-w-sm border border-slate-800 shadow-2xl text-center"
+            className="modal-panel bg-slate-900 rounded-2xl p-4 sm:p-6 w-full max-w-sm border border-slate-800 shadow-2xl text-center"
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="text-white font-bold text-lg sm:text-xl mb-2">📱 PIX</h2>

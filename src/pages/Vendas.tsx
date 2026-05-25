@@ -18,7 +18,10 @@ export default function VendasPage() {
     }
   }, []);
 
-  useEffect(() => { carregar(); }, [carregar]);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void carregar();
+  }, [carregar]);
 
   async function verDetalhe(id: number) {
     try {
@@ -58,47 +61,64 @@ export default function VendasPage() {
           {vendas.length === 0 ? (
             <p className="text-slate-500 text-center py-8 sm:py-12 text-sm">Nenhuma venda realizada.</p>
           ) : (
-            <table className="w-full text-xs sm:text-sm">
-              <thead className="bg-slate-800 sticky top-0">
-                <tr className="text-slate-400 text-left">
-                  <th className="p-2 sm:p-3 font-medium">#</th>
-                  <th className="p-2 sm:p-3 font-medium">Data</th>
-                  <th className="p-2 sm:p-3 font-medium hidden sm:table-cell">Pagamento</th>
-                  <th className="p-2 sm:p-3 font-medium">Total</th>
-                  <th className="p-2 sm:p-3 font-medium"></th>
-                </tr>
-              </thead>
-              <tbody>
+            <>
+              <div className="sm:hidden grid gap-2 p-2">
                 {vendas.map((v) => (
-                  <tr key={v.id} className="border-t border-slate-800 hover:bg-slate-800/50">
-                    <td className="p-2 sm:p-3 text-white font-medium">{v.id}</td>
-                    <td className="p-2 sm:p-3 text-slate-300 whitespace-nowrap">
-                      {new Date(v.criado_em).toLocaleDateString("pt-BR")}
-                      <span className="text-slate-500 text-2xs block">
-                        {new Date(v.criado_em).toLocaleTimeString("pt-BR", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </span>
-                    </td>
-                    <td className="p-2 sm:p-3 hidden sm:table-cell">
-                      <span className="text-slate-300 text-2xs sm:text-xs bg-slate-800 px-2 py-0.5 rounded capitalize">
-                        {v.forma_pagamento}
-                      </span>
-                    </td>
-                    <td className="p-2 sm:p-3 text-brand-400 font-bold whitespace-nowrap">R$ {v.total.toFixed(2)}</td>
-                    <td className="p-2 sm:p-3">
-                      <button
-                        onClick={() => verDetalhe(v.id)}
-                        className="text-slate-400 hover:text-white text-2xs sm:text-xs px-1.5 sm:px-2 py-1 rounded hover:bg-slate-700 active:scale-95"
-                      >
-                        Detalhes
-                      </button>
-                    </td>
-                  </tr>
+                  <article key={v.id} className="rounded-xl border border-slate-800 bg-slate-950/50 p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <h3 className="text-white font-semibold">Venda #{v.id}</h3>
+                        <p className="text-slate-400 text-xs mt-0.5">
+                          {new Date(v.criado_em).toLocaleDateString("pt-BR")} às {new Date(v.criado_em).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                        </p>
+                        <span className="inline-flex mt-2 text-slate-300 text-2xs bg-slate-800 px-2 py-1 rounded-full capitalize">
+                          {v.forma_pagamento}
+                        </span>
+                      </div>
+                      <p className="text-brand-400 font-bold whitespace-nowrap">R$ {v.total.toFixed(2)}</p>
+                    </div>
+                    <button
+                      onClick={() => verDetalhe(v.id)}
+                      className="touch-target mt-3 w-full rounded-lg bg-slate-800 text-slate-200 text-sm active:scale-95"
+                    >
+                      Ver detalhes
+                    </button>
+                  </article>
                 ))}
-              </tbody>
-            </table>
+              </div>
+
+              <table className="hidden sm:table w-full text-sm">
+                <thead className="bg-slate-800 sticky top-0">
+                  <tr className="text-slate-400 text-left">
+                    <th className="p-3 font-medium">#</th>
+                    <th className="p-3 font-medium">Data</th>
+                    <th className="p-3 font-medium">Pagamento</th>
+                    <th className="p-3 font-medium">Total</th>
+                    <th className="p-3 font-medium"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {vendas.map((v) => (
+                    <tr key={v.id} className="border-t border-slate-800 hover:bg-slate-800/50">
+                      <td className="p-3 text-white font-medium">{v.id}</td>
+                      <td className="p-3 text-slate-300 whitespace-nowrap">
+                        {new Date(v.criado_em).toLocaleDateString("pt-BR")}
+                        <span className="text-slate-500 text-2xs block">
+                          {new Date(v.criado_em).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                        </span>
+                      </td>
+                      <td className="p-3">
+                        <span className="text-slate-300 text-xs bg-slate-800 px-2 py-0.5 rounded capitalize">{v.forma_pagamento}</span>
+                      </td>
+                      <td className="p-3 text-brand-400 font-bold whitespace-nowrap">R$ {v.total.toFixed(2)}</td>
+                      <td className="p-3 text-right">
+                        <button onClick={() => verDetalhe(v.id)} className="text-slate-400 hover:text-white text-xs px-2 py-1 rounded hover:bg-slate-700 active:scale-95">Detalhes</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
           )}
         </div>
       </div>

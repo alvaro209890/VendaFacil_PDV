@@ -50,7 +50,10 @@ export default function ContasReceber() {
     }
   }, [filtro]);
 
-  useEffect(() => { carregar(); }, [carregar]);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void carregar();
+  }, [carregar]);
 
   function resetForm() {
     setFormClienteId("");
@@ -167,7 +170,7 @@ export default function ContasReceber() {
         <div className="grid gap-3">
           {contas.map((c) => (
             <div key={c.id} className="bg-slate-900 rounded-xl p-3 sm:p-4 border border-slate-800">
-              <div className="flex items-start justify-between gap-2">
+              <div className="flex flex-col min-[460px]:flex-row min-[460px]:items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="text-white font-medium text-sm sm:text-base truncate">{c.cliente_nome || "Sem cliente"}</h3>
@@ -189,7 +192,7 @@ export default function ContasReceber() {
                   </div>
                 </div>
                 {(c.status === "pendente" || c.status === "parcial") && (
-                  <div className="flex gap-1 sm:gap-2 shrink-0">
+                  <div className="grid grid-cols-2 gap-2 w-full min-[460px]:w-auto shrink-0">
                     <button
                       onClick={() => handlePagar(c)}
                       className="px-2 sm:px-3 py-1 sm:py-1.5 text-2xs sm:text-xs bg-green-900/30 hover:bg-green-900/50 text-green-400 rounded-lg transition-colors active:scale-95"
@@ -213,7 +216,7 @@ export default function ContasReceber() {
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setShowModal(false)}>
-          <div className="bg-slate-900 rounded-2xl p-4 sm:p-6 w-full max-w-md border border-slate-800 shadow-2xl mx-2 sm:mx-0" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-panel bg-slate-900 rounded-2xl p-4 sm:p-6 w-full max-w-md border border-slate-800 shadow-2xl mx-2 sm:mx-0" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-base sm:text-lg font-bold text-white mb-4">Nova Conta a Receber</h2>
             <div className="space-y-3">
               <select

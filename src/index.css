@@ -15,9 +15,19 @@
   --font-size-2xs--line-height: 0.875rem;
 }
 
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background-color: #0f172a;
+  overflow-x: hidden;
+}
+
 body {
   margin: 0;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  min-width: 320px;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: #0f172a;
@@ -27,26 +37,77 @@ body {
 }
 
 #root {
-  min-height: 100vh;
+  min-height: 100dvh;
   width: 100%;
   max-width: 100vw;
   overflow-x: hidden;
 }
 
-/* Mobile-first responsive utilities */
-@media (max-width: 768px) {
-  * {
-    -webkit-tap-highlight-color: transparent;
-  }
-  
-  input, textarea, select, button {
-    font-size: 16px !important; /* Prevent zoom on iOS */
-  }
+button,
+a,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
 }
 
-/* Safe area insets for notched devices */
-@supports (padding-top: env(safe-area-inset-top)) {
-  .h-screen {
-    padding-top: env(safe-area-inset-top);
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+/* App shell usa dvh para não quebrar com barra do navegador no celular */
+.app-shell {
+  min-height: 100vh;
+  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.touch-target {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mobile-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.mobile-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.mobile-topbar {
+  padding-top: max(0.625rem, env(safe-area-inset-top, 0px));
+}
+
+/* Mobile-first responsive utilities */
+@media (max-width: 768px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px !important; /* Evita zoom automático no iOS */
+  }
+
+  button,
+  [role="button"] {
+    min-height: 2.5rem;
+  }
+
+  .modal-panel {
+    max-height: calc(100dvh - 2rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    overflow-y: auto;
   }
 }
