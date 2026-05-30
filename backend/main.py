@@ -1,7 +1,12 @@
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
+from paths import resource_path
 from auth import router as auth_router, _verificar_jwt
+import conta as conta_mod
+from pydantic import BaseModel
 from produtos import router as produtos_router
 from vendas import router as vendas_router
 from categorias import router as categorias_router
@@ -46,12 +51,62 @@ def _get_user_id(request: Request) -> int:
     return int(payload["sub"])
 
 
+@app.on_event("startup")
+async def _iniciar_sync() -> None:
+    import sync_client
+    sync_client.iniciar_em_background()
+
+
 @app.get("/health")
 async def health() -> dict:
     return {"status": "ok", "app": "vendafacil-pdv", "version": app.version}
+
+
+# ── Ativação / licença (controle central pelo Painel SaaS) ──
+class AtivacaoInput(BaseModel):
+    login: str
+    senha: str
+
+
+@app.get("/api/ativacao/status")
+async def ativacao_status() -> dict:
+    return conta_mod.status()
+
+
+@app.post("/api/ativacao")
+async def ativar(data: AtivacaoInput) -> dict:
+    try:
+        return conta_mod.ativar(data.login, data.senha)
+    except ConnectionError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=401, detail=str(e))
 
 
 @app.get("/api/dashboard")
 async def dashboard(request: Request) -> dict:
     user_id = _get_user_id(request)
     return db.get_dashboard(user_id)
+
+
+# ── Frontend embutido (serve o build do React na mesma origem) ──
+# Habilitado automaticamente quando a pasta 'dist' existe ao lado do app
+# (caso do .exe). Assim o sistema roda 100% local: abrir o navegador na
+# porta do backend já mostra o PDV.
+_DIST = resource_path("dist")
+if _DIST.is_dir():
+    app.mount("/assets", StaticFiles(directory=str(_DIST / "assets")), name="assets")
+
+    @app.get("/", include_in_schema=False)
+    async def _spa_root() -> FileResponse:
+        return FileResponse(str(_DIST / "index.html"))
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def _spa_fallback(full_path: str):
+        # Rotas de API não resolvidas não devem cair no HTML do SPA.
+        if full_path.startswith("api/") or full_path == "health":
+            raise HTTPException(status_code=404, detail="Not Found")
+        arquivo = _DIST / full_path
+        if arquivo.is_file():
+            return FileResponse(str(arquivo))
+        return FileResponse(str(_DIST / "index.html"))

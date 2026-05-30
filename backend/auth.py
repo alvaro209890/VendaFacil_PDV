@@ -8,10 +8,34 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from database import db
+from paths import DATA_DIR
 
 router = APIRouter()
 
-JWT_SECRET = os.environ.get("VENDAFACIL_JWT_SECRET", secrets.token_hex(32)).encode()
+
+def _resolver_jwt_secret() -> bytes:
+    """Segredo do JWT estável entre reinícios.
+
+    1. VENDAFACIL_JWT_SECRET (env) — preferível no Render/servidor.
+    2. Arquivo persistido em DATA_DIR — gerado uma vez no primeiro boot.
+    Sem isso, um segredo novo a cada reinício deslogaria todos os usuários.
+    """
+    env = os.environ.get("VENDAFACIL_JWT_SECRET")
+    if env:
+        return env.encode()
+    key_file = DATA_DIR / "jwt_secret.key"
+    if key_file.exists():
+        return key_file.read_text().strip().encode()
+    novo = secrets.token_hex(32)
+    key_file.write_text(novo)
+    try:
+        os.chmod(key_file, 0o600)
+    except OSError:
+        pass
+    return novo.encode()
+
+
+JWT_SECRET = _resolver_jwt_secret()
 TOKEN_EXPIRE_HOURS = 720  # 30 dias
 
 # ── Models ──
@@ -71,6 +95,11 @@ def _agora() -> str:
 
 @router.post("/login")
 async def login(data: LoginRequest) -> dict:
+    import conta as conta_mod
+    lic = conta_mod.status()
+    if lic.get("bloqueado"):
+        raise HTTPException(status_code=403, detail=lic.get("motivo", "Sistema não ativado."))
+
     user = db.get_user_by_email(data.email)
     if not user or not _verificar_senha(data.senha, user["senha_hash"]):
         raise HTTPException(status_code=401, detail="E-mail ou senha incorretos.")
@@ -88,6 +117,11 @@ async def login(data: LoginRequest) -> dict:
 
 @router.post("/registro")
 async def registro(data: RegistroRequest) -> dict:
+    import conta as conta_mod
+    lic = conta_mod.status()
+    if lic.get("bloqueado"):
+        raise HTTPException(status_code=403, detail=lic.get("motivo", "Sistema não ativado."))
+
     if data.senha.lower() in ("senha", "1234", "12345", "123456", "password", data.email.split("@")[0].lower()):
         raise HTTPException(status_code=400, detail="Senha muito fraca.")
 

@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VendaFácil — Painel</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+  <div id="app" class="max-w-5xl mx-auto p-4 md:p-8"></div>
+
+  <script>
+    const API = "";
+    const tokenKey = "painel_admin_token";
+    const $ = (sel) => document.querySelector(sel);
+    const getToken = () => localStorage.getItem(tokenKey) || "";
+    const setToken = (t) => localStorage.setItem(tokenKey, t);
+    const clearToken = () => localStorage.removeItem(tokenKey);
+
+    async function api(path, opts = {}) {
+      const headers = { "Content-Type": "application/json", ...(opts.headers || {}) };
+      const t = getToken();
+      if (t) headers["Authorization"] = "Bearer " + t;
+      const res = await fetch(API + path, { ...opts, headers });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || "Erro " + res.status);
+      return data;
+    }
+
+    function fmtData(iso) {
+      if (!iso) return "—";
+      try { return new Date(iso).toLocaleDateString("pt-br"); } catch { return iso; }
+    }
+    function moeda(v) { return "R$ " + Number(v || 0).toFixed(2); }
+
+    // ── Telas ──
+    async function rota() {
+      const app = $("#app");
+      app.innerHTML = `<p class="text-slate-500">Carregando…</p>`;
+      if (!getToken()) {
+        const { precisa_setup } = await api("/api/admin/precisa-setup");
+        return precisa_setup ? telaSetup() : telaLogin();
+      }
+      try {
+        await telaPainel();
+      } catch (e) {
+        clearToken();
+        telaLogin();
+      }
+    }
+
+    function cardWrap(inner) {
+      return `<div class="min-h-[80vh] flex items-center justify-center">
+        <div class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-xl">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="w-10 h-10 rounded-xl bg-emerald-600/20 grid place-items-center text-2xl">🛒</div>
+            <h1 class="text-xl font-black">VendaFácil <span class="text-emerald-400">Painel</span></h1>
+          </div>${inner}
+        </div></div>`;
+    }
+
+    function telaSetup() {
+      $("#app").innerHTML = cardWrap(`
+        <p class="text-slate-400 text-sm mb-4">Primeiro acesso — crie o administrador master.</p>
+        <form id="f" class="space-y-3">
+          <input name="nome" placeholder="Seu nome" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2" />
+          <input name="email" type="email" placeholder="E-mail" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2" />
+          <input name="senha" type="password" placeholder="Senha (mín. 6)" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2" />
+          <button class="w-full bg-emerald-600 hover:bg-emerald-500 rounded-lg py-2 font-bold">Criar admin</button>
+          <p id="erro" class="text-red-400 text-sm"></p>
+        </form>`);
+      $("#f").onsubmit = async (e) => {
+        e.preventDefault();
+        const d = Object.fromEntries(new FormData(e.target));
+        try {
+          const r = await api("/api/admin/setup", { method: "POST", body: JSON.stringify(d) });
+          setToken(r.token); rota();
+        } catch (err) { $("#erro").textContent = err.message; }
+      };
+    }
+
+    function telaLogin() {
+      $("#app").innerHTML = cardWrap(`
+        <p class="text-slate-400 text-sm mb-4">Acesso do administrador.</p>
+        <form id="f" class="space-y-3">
+          <input name="email" type="email" placeholder="E-mail" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2" />
+          <input name="senha" type="password" placeholder="Senha" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2" />
+          <button class="w-full bg-emerald-600 hover:bg-emerald-500 rounded-lg py-2 font-bold">Entrar</button>
+          <p id="erro" class="text-red-400 text-sm"></p>
+        </form>`);
+      $("#f").onsubmit = async (e) => {
+        e.preventDefault();
+        const d = Object.fromEntries(new FormData(e.target));
+        try {
+          const r = await api("/api/admin/login", { method: "POST", body: JSON.stringify(d) });
+          setToken(r.token); rota();
+        } catch (err) { $("#erro").textContent = err.message; }
+      };
+    }
+
+    async function telaPainel() {
+      const { contas } = await api("/api/admin/contas");
+      const linhas = contas.map((c) => {
+        const status = !c.ativo
+          ? `<span class="text-red-400">Bloqueada</span>`
+          : (c.licenca_ok ? `<span class="text-emerald-400">Ativa</span>` : `<span class="text-amber-400">Licença vencida</span>`);
+        return `<tr class="border-t border-slate-800">
+          <td class="py-2 pr-3">
+            <div class="font-bold">${c.nome_loja}</div>
+            <div class="text-xs text-slate-500">${c.login} · ${c.plano}</div>
+          </td>
+          <td class="px-3">${status}</td>
+          <td class="px-3 text-slate-400">${fmtData(c.licenca_expira_em)}</td>
+          <td class="px-3 text-slate-400">${c.resumo.qtd_vendas} vendas<br><span class="text-xs">${moeda(c.resumo.total_vendido)}</span></td>
+          <td class="px-3 text-right space-x-2 whitespace-nowrap">
+            <button data-edit="${c.id}" class="text-xs px-2 py-1 rounded bg-slate-800 hover:bg-slate-700">Editar</button>
+            <button data-toggle="${c.id}" data-ativo="${c.ativo}" class="text-xs px-2 py-1 rounded ${c.ativo ? 'bg-red-900/60 hover:bg-red-800' : 'bg-emerald-900/60 hover:bg-emerald-800'}">${c.ativo ? 'Bloquear' : 'Ativar'}</button>
+          </td></tr>`;
+      }).join("") || `<tr><td colspan="5" class="py-6 text-center text-slate-500">Nenhuma loja cadastrada ainda.</td></tr>`;
+
+      $("#app").innerHTML = `
+        <div class="flex items-center justify-between mb-6">
+          <h1 class="text-2xl font-black">🛒 VendaFácil <span class="text-emerald-400">Painel</span></h1>
+          <button id="sair" class="text-sm text-slate-400 hover:text-white">Sair</button>
+        </div>
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="font-bold text-slate-300">Lojas (${contas.length})</h2>
+          <button id="nova" class="bg-emerald-600 hover:bg-emerald-500 rounded-lg px-4 py-2 text-sm font-bold">+ Nova loja</button>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-x-auto">
+          <table class="w-full text-sm"><thead><tr class="text-left text-slate-500 text-xs uppercase">
+            <th class="py-3 px-3">Loja</th><th class="px-3">Status</th><th class="px-3">Licença até</th><th class="px-3">Vendas</th><th></th>
+          </tr></thead><tbody>${linhas}</tbody></table>
+        </div>
+        <div id="modal"></div>`;
+
+      $("#sair").onclick = () => { clearToken(); rota(); };
+      $("#nova").onclick = () => modalConta(null);
+      document.querySelectorAll("[data-edit]").forEach(b =>
+        b.onclick = () => modalConta(contas.find(c => c.id == b.dataset.edit)));
+      document.querySelectorAll("[data-toggle]").forEach(b =>
+        b.onclick = async () => {
+          await api("/api/admin/contas/" + b.dataset.toggle, {
+            method: "PUT", body: JSON.stringify({ ativo: b.dataset.ativo == "1" ? false : true }),
+          });
+          telaPainel();
+        });
+    }
+
+    function modalConta(conta) {
+      const ed = !!conta;
+      $("#modal").innerHTML = `
+        <div class="fixed inset-0 bg-black/70 grid place-items-center p-4 z-50">
+          <div class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-6">
+            <h3 class="font-black text-lg mb-4">${ed ? "Editar loja" : "Nova loja"}</h3>
+            <form id="fc" class="space-y-3">
+              <input name="nome_loja" value="${ed ? conta.nome_loja : ''}" placeholder="Nome da loja" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2" />
+              <input name="login" value="${ed ? conta.login : ''}" placeholder="Login da loja" ${ed ? 'disabled' : 'required'} class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 ${ed ? 'opacity-50' : ''}" />
+              <input name="senha" type="text" placeholder="${ed ? 'Nova senha (deixe vazio p/ manter)' : 'Senha'}" ${ed ? '' : 'required'} class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2" />
+              <label class="block text-xs text-slate-500">Licença válida até</label>
+              <input name="licenca" type="date" value="${ed && conta.licenca_expira_em ? conta.licenca_expira_em.slice(0,10) : ''}" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2" />
+              <input name="plano" value="${ed ? conta.plano : 'mensal'}" placeholder="Plano" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2" />
+              <div class="flex gap-2 pt-2">
+                <button type="button" id="cancel" class="flex-1 bg-slate-800 rounded-lg py-2">Cancelar</button>
+                <button class="flex-1 bg-emerald-600 hover:bg-emerald-500 rounded-lg py-2 font-bold">Salvar</button>
+              </div>
+              <p id="erro" class="text-red-400 text-sm"></p>
+            </form>
+          </div>
+        </div>`;
+      $("#cancel").onclick = () => $("#modal").innerHTML = "";
+      $("#fc").onsubmit = async (e) => {
+        e.preventDefault();
+        const f = new FormData(e.target);
+        const licenca = f.get("licenca") ? f.get("licenca") + "T23:59:59+00:00" : null;
+        try {
+          if (ed) {
+            const body = { nome_loja: f.get("nome_loja"), plano: f.get("plano"), licenca_expira_em: licenca };
+            if (f.get("senha")) body.nova_senha = f.get("senha");
+            await api("/api/admin/contas/" + conta.id, { method: "PUT", body: JSON.stringify(body) });
+          } else {
+            await api("/api/admin/contas", { method: "POST", body: JSON.stringify({
+              nome_loja: f.get("nome_loja"), login: f.get("login"), senha: f.get("senha"),
+              plano: f.get("plano"), licenca_expira_em: licenca,
+            })});
+          }
+          $("#modal").innerHTML = ""; telaPainel();
+        } catch (err) { $("#erro").textContent = err.message; }
+      };
+    }
+
+    rota();
+  </script>
+</body>
+</html>

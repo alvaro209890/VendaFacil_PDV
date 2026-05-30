@@ -1,9 +1,10 @@
 import sqlite3
 import threading
-from pathlib import Path
 from typing import Any
 
-DB_DIR = Path("/media/server/HD Backup/Servidores_NAO_MEXA/Banco_de_dados/VendaFacil_PDV")
+from paths import DATA_DIR
+
+DB_DIR = DATA_DIR
 DB_PATH = DB_DIR / "vendafacil.db"
 
 
@@ -127,6 +128,39 @@ class Database:
                 CREATE INDEX IF NOT EXISTS idx_contas_receber_user ON contas_receber(user_id);
                 CREATE INDEX IF NOT EXISTS idx_contas_receber_status ON contas_receber(status);
             """)
+            self._migrar()
+
+    def _migrar(self) -> None:
+        """Migrações leves e idempotentes (adicionar colunas novas)."""
+        cols = {r["name"] for r in self._conn.execute("PRAGMA table_info(vendas)")}
+        if "sincronizado" not in cols:
+            self._conn.execute(
+                "ALTER TABLE vendas ADD COLUMN sincronizado INTEGER NOT NULL DEFAULT 0"
+            )
+        if "uuid" not in cols:
+            self._conn.execute("ALTER TABLE vendas ADD COLUMN uuid TEXT")
+
+    # ── Sincronização ──
+    def vendas_pendentes_sync(self, limite: int = 100) -> list[dict[str, Any]]:
+        with self._lock:
+            rows = self._conn.execute(
+                "SELECT id, uuid, total, desconto, forma_pagamento, criado_em "
+                "FROM vendas WHERE sincronizado = 0 ORDER BY id LIMIT ?", (limite,)
+            ).fetchall()
+            return [dict(r) for r in rows]
+
+    def set_venda_uuid(self, venda_id: int, valor: str) -> None:
+        with self._lock, self._conn:
+            self._conn.execute("UPDATE vendas SET uuid = ? WHERE id = ?", (valor, venda_id))
+
+    def marcar_vendas_sincronizadas(self, ids: list[int]) -> None:
+        if not ids:
+            return
+        marcas = ",".join("?" * len(ids))
+        with self._lock, self._conn:
+            self._conn.execute(
+                f"UPDATE vendas SET sincronizado = 1 WHERE id IN ({marcas})", ids
+            )
 
     def create_user(self, email: str, nome: str, senha_hash: str, criado_em: str) -> dict[str, Any] | None:
         with self._lock, self._conn:

@@ -7,3 +7,7 @@ __pycache__/
 .venv/
 venv/
 .pytest_cache/
+dados/
+dist_exe/
+build/
+jwt_secret.key

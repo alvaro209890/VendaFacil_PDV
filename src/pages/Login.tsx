@@ -1,5 +1,15 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import { 
+  Mail, 
+  Lock, 
+  User, 
+  ShoppingCart,
+  ChevronRight,
+  AlertCircle,
+  Loader2
+} from "lucide-react";
 import { login, registro, setToken } from "../lib/api";
 import { useAuthStore } from "../store/authStore";
 
@@ -57,120 +67,159 @@ export default function Login() {
     }
   }
 
-  const IconCarrinho = (
-    <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" />
-    </svg>
-  );
-
-  const IconEmail = (
-    <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-    </svg>
-  );
-
-  const IconLock = (
-    <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-    </svg>
-  );
-
-  const IconUser = (
-    <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-    </svg>
-  );
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-950 p-4">
-      <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-brand-600 mb-4">
-            {IconCarrinho}
-          </div>
-          <h1 className="text-2xl font-bold text-white">VendaFácil PDV</h1>
-          <p className="text-slate-400 text-sm mt-1">Sistema de PDV para mercadinhos</p>
+    <div className="min-h-screen flex items-center justify-center bg-[#020617] p-4 relative overflow-hidden">
+      {/* Background elements */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-brand-600/10 blur-[120px] rounded-full" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-emerald-600/10 blur-[120px] rounded-full" />
+      </div>
+
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-[440px] relative z-10"
+      >
+        {/* Logo Section */}
+        <div className="text-center mb-10">
+          <motion.div 
+            whileHover={{ scale: 1.05, rotate: 5 }}
+            className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br from-brand-500 to-brand-700 mb-6 shadow-2xl shadow-brand-500/20"
+          >
+            <ShoppingCart className="text-white" size={32} />
+          </motion.div>
+          <h1 className="text-4xl font-black text-white tracking-tighter mb-2">VENDAFÁCIL</h1>
+          <p className="text-slate-500 font-bold text-xs uppercase tracking-[0.4em]">Gestão Inteligente de PDV</p>
         </div>
 
         {/* Card */}
-        <div className="bg-slate-900 rounded-2xl shadow-2xl border border-slate-800 p-6">
+        <div className="bg-slate-900/50 backdrop-blur-2xl rounded-[32px] shadow-2xl border border-slate-800/50 p-8 sm:p-10 relative overflow-hidden">
+          {/* Subtle reflection */}
+          <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-slate-700/50 to-transparent" />
+          
           {/* Abas */}
-          <div className="flex gap-1 bg-slate-800 rounded-lg p-1 mb-6">
+          <div className="flex gap-1 bg-slate-950/50 border border-slate-800/50 rounded-2xl p-1.5 mb-8">
             <button
               onClick={() => { setModo("login"); setErro(""); }}
-              className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-colors ${modo === "login" ? "bg-slate-700 text-white" : "text-slate-400 hover:text-white"}`}
+              className={`flex-1 py-2.5 text-xs font-black uppercase tracking-widest rounded-xl transition-all duration-300 ${
+                modo === "login" 
+                  ? "bg-brand-600 text-white shadow-lg shadow-brand-600/20" 
+                  : "text-slate-500 hover:text-slate-300"
+              }`}
             >
-              Entrar
+              Login
             </button>
             <button
               onClick={() => { setModo("registro"); setErro(""); }}
-              className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-colors ${modo === "registro" ? "bg-slate-700 text-white" : "text-slate-400 hover:text-white"}`}
+              className={`flex-1 py-2.5 text-xs font-black uppercase tracking-widest rounded-xl transition-all duration-300 ${
+                modo === "registro" 
+                  ? "bg-brand-600 text-white shadow-lg shadow-brand-600/20" 
+                  : "text-slate-500 hover:text-slate-300"
+              }`}
             >
-              Criar conta
+              Registro
             </button>
           </div>
 
-          {erro && (
-            <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-lg p-3 mb-4">
-              {erro}
-            </div>
-          )}
+          <AnimatePresence mode="wait">
+            {erro && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[10px] font-bold uppercase tracking-wider rounded-xl p-4 mb-6 flex items-center gap-3"
+              >
+                <AlertCircle size={14} className="shrink-0" />
+                {erro}
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-          {modo === "login" && (
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div>
-                <label className="block text-sm text-slate-400 mb-1">E-mail</label>
-                <div className="relative">
-                  {IconEmail}
-                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" className="w-full pl-10 pr-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 text-sm" />
+          <AnimatePresence mode="wait">
+            <motion.form
+              key={modo}
+              initial={{ opacity: 0, x: modo === "login" ? -10 : 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: modo === "login" ? 10 : -10 }}
+              transition={{ duration: 0.2 }}
+              onSubmit={modo === "login" ? handleLogin : handleRegistro} 
+              className="space-y-5"
+            >
+              {modo === "registro" && (
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Nome Completo</label>
+                  <div className="relative group">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-brand-500 transition-colors">
+                      <User size={18} />
+                    </div>
+                    <input 
+                      type="text" 
+                      value={nome} 
+                      onChange={(e) => setNome(e.target.value)} 
+                      placeholder="Ex: João Silva" 
+                      className="w-full pl-12 pr-4 py-4 bg-slate-950/50 border border-slate-800 rounded-2xl text-white placeholder-slate-600 focus:outline-none focus:border-brand-500/50 focus:ring-4 focus:ring-brand-500/5 transition-all text-sm font-medium shadow-inner" 
+                    />
+                  </div>
                 </div>
-              </div>
-              <div>
-                <label className="block text-sm text-slate-400 mb-1">Senha</label>
-                <div className="relative">
-                  {IconLock}
-                  <input type="password" value={senha} onChange={(e) => setSenha(e.target.value)} placeholder="••••••••" className="w-full pl-10 pr-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 text-sm" />
-                </div>
-              </div>
-              <button type="submit" disabled={carregando} className="w-full py-2.5 bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2">
-                {carregando && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
-                {carregando ? "Entrando..." : "Entrar"}
-              </button>
-            </form>
-          )}
+              )}
 
-          {modo === "registro" && (
-            <form onSubmit={handleRegistro} className="space-y-4">
-              <div>
-                <label className="block text-sm text-slate-400 mb-1">Nome</label>
-                <div className="relative">
-                  {IconUser}
-                  <input type="text" value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Seu nome" className="w-full pl-10 pr-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 text-sm" />
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">E-mail</label>
+                <div className="relative group">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-brand-500 transition-colors">
+                    <Mail size={18} />
+                  </div>
+                  <input 
+                    type="email" 
+                    value={email} 
+                    onChange={(e) => setEmail(e.target.value)} 
+                    placeholder="seu@email.com" 
+                    className="w-full pl-12 pr-4 py-4 bg-slate-950/50 border border-slate-800 rounded-2xl text-white placeholder-slate-600 focus:outline-none focus:border-brand-500/50 focus:ring-4 focus:ring-brand-500/5 transition-all text-sm font-medium shadow-inner" 
+                  />
                 </div>
               </div>
-              <div>
-                <label className="block text-sm text-slate-400 mb-1">E-mail</label>
-                <div className="relative">
-                  {IconEmail}
-                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" className="w-full pl-10 pr-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 text-sm" />
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Senha de Acesso</label>
+                <div className="relative group">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-brand-500 transition-colors">
+                    <Lock size={18} />
+                  </div>
+                  <input 
+                    type="password" 
+                    value={senha} 
+                    onChange={(e) => setSenha(e.target.value)} 
+                    placeholder="••••••••" 
+                    className="w-full pl-12 pr-4 py-4 bg-slate-950/50 border border-slate-800 rounded-2xl text-white placeholder-slate-600 focus:outline-none focus:border-brand-500/50 focus:ring-4 focus:ring-brand-500/5 transition-all text-sm font-medium shadow-inner" 
+                  />
                 </div>
               </div>
-              <div>
-                <label className="block text-sm text-slate-400 mb-1">Senha</label>
-                <div className="relative">
-                  {IconLock}
-                  <input type="password" value={senha} onChange={(e) => setSenha(e.target.value)} placeholder="Mínimo 4 caracteres" className="w-full pl-10 pr-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 text-sm" />
-                </div>
-              </div>
-              <button type="submit" disabled={carregando} className="w-full py-2.5 bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2">
-                {carregando && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
-                {carregando ? "Criando conta..." : "Criar conta"}
-              </button>
-            </form>
-          )}
+
+              <motion.button 
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                type="submit" 
+                disabled={carregando} 
+                className="w-full py-4 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 disabled:opacity-50 text-white font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-brand-900/20 transition-all flex items-center justify-center gap-3 mt-4"
+              >
+                {carregando ? (
+                  <Loader2 className="animate-spin" size={20} />
+                ) : (
+                  <>
+                    <span>{modo === "login" ? "Entrar no Sistema" : "Criar Minha Conta"}</span>
+                    <ChevronRight size={18} />
+                  </>
+                )}
+              </motion.button>
+            </motion.form>
+          </AnimatePresence>
+
+          <p className="text-center text-slate-600 text-[10px] font-bold uppercase tracking-widest mt-8">
+            Ambiente Seguro & Criptografado
+          </p>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }
+

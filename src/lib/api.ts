@@ -1,4 +1,7 @@
-const API_BASE = (import.meta.env.VITE_API_URL || "https://vendafacil-api.cursar.space").replace(/\/+$/, "");
+// Sem VITE_API_URL, usa a mesma origem que serviu a página (caso do .exe local,
+// onde o backend FastAPI serve o próprio frontend). Em nuvem/Render, defina
+// VITE_API_URL no build apontando para o domínio da API.
+const API_BASE = (import.meta.env.VITE_API_URL || "").replace(/\/+$/, "");
 
 // ── Token ──
 
@@ -38,6 +41,30 @@ async function request(path: string, options: RequestInit = {}) {
   return data;
 }
 
+// ── Ativação / Licença ──
+
+export interface AtivacaoStatus {
+  obrigatoria: boolean;
+  ativado: boolean;
+  bloqueado: boolean;
+  motivo: string;
+  nome_loja?: string;
+  licenca_expira_em?: string | null;
+  dias_desde_validacao?: number;
+  carencia_dias?: number;
+}
+
+export function getAtivacaoStatus(): Promise<AtivacaoStatus> {
+  return request("/api/ativacao/status");
+}
+
+export function ativar(login: string, senha: string): Promise<AtivacaoStatus> {
+  return request("/api/ativacao", {
+    method: "POST",
+    body: JSON.stringify({ login, senha }),
+  });
+}
+
 // ── Auth ──
 
 export interface User {
@@ -73,6 +100,7 @@ export interface Produto {
   id: number;
   user_id: number;
   categoria_id: number | null;
+  categoria_nome?: string | null;
   nome: string;
   preco_custo: number;
   preco_venda: number;

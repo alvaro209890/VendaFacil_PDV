@@ -1,8 +1,35 @@
 # 🛒 VendaFácil PDV
 
-Sistema de **Ponto de Venda (PDV)** para mercadinhos e pequenos comércios.
+Sistema de **Ponto de Venda (PDV)** para mercadinhos e pequenos comércios,
+distribuído como **executável único (.exe)** com controle central de licenças.
 
-**100% independente** — autenticação local (SQLite), sem dependência de Firebase ou serviços externos. Roda até em Raspberry Pi.
+## 🧩 Como o sistema é montado
+
+São **dois componentes**:
+
+1. **PDV (.exe)** — roda na máquina do caixa, **offline-first**. Tem o backend
+   (FastAPI) e o frontend (React) embutidos e o banco local (SQLite). Vende mesmo
+   sem internet. Veja [`docs/EMPACOTAMENTO_EXE.md`](docs/EMPACOTAMENTO_EXE.md).
+2. **Painel SaaS** — roda na sua **VPS Linux** com domínio próprio. É onde **você**
+   cria/bloqueia as contas (login+senha) de cada loja, define validade da licença
+   e acompanha as vendas sincronizadas. Veja [`deploy/painel-vps/README.md`](deploy/painel-vps/README.md).
+
+```
+┌───────────────────────┐        valida licença / envia vendas
+│   PDV .exe (loja A)    │ ───────────────────────────────────┐
+│  FastAPI + SQLite +    │                                     │
+│  React  (offline-first)│ <─── ativa/bloqueia, validade ──┐   ▼
+└───────────────────────┘                                 │  ┌──────────────────────┐
+┌───────────────────────┐                                 └──│   Painel SaaS (VPS)   │
+│   PDV .exe (loja B)    │ ───────────────────────────────────│  você gerencia tudo   │
+└───────────────────────┘                                    └──────────────────────┘
+```
+
+**Licença offline-first:** o PDV valida a conta no painel quando há internet e
+guarda o resultado; sem conexão, continua vendendo por um período de carência
+(padrão 30 dias). Se você bloquear a conta no painel, na próxima revalidação
+online o PDV trava. Sem `VENDAFACIL_PAINEL_URL` configurado, o PDV roda em
+**modo local** (sem controle central).
 
 ---
 

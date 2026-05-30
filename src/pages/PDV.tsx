@@ -1,15 +1,31 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { 
+  Search, 
+  ShoppingCart, 
+  Trash2, 
+  Plus, 
+  Minus, 
+  Smartphone, 
+  CreditCard, 
+  Banknote, 
+  FileText, 
+  CheckCircle2,
+  X,
+  AlertCircle
+} from "lucide-react";
 import { listarProdutos, checkout, getDashboard, gerarPixQrCode, listarClientes } from "../lib/api";
 import type { Produto, DashboardData, PixQrCodeResponse, Cliente } from "../lib/api";
+import Mascote from "../components/Mascote";
 
 type CartItem = Produto & { qtd: number };
 
 const PAGAMENTOS = [
-  { value: "dinheiro", label: "Dinheiro", icon: "💵" },
-  { value: "pix", label: "PIX", icon: "📱" },
-  { value: "debito", label: "Débito", icon: "💳" },
-  { value: "credito", label: "Crédito", icon: "💳" },
-  { value: "fiado", label: "Fiado", icon: "📝" },
+  { value: "dinheiro", label: "Dinheiro", icon: <Banknote size={18} /> },
+  { value: "pix", label: "PIX", icon: <Smartphone size={18} /> },
+  { value: "debito", label: "Débito", icon: <CreditCard size={18} /> },
+  { value: "credito", label: "Crédito", icon: <CreditCard size={18} /> },
+  { value: "fiado", label: "Fiado", icon: <FileText size={18} /> },
 ];
 
 export default function PDV() {
@@ -40,7 +56,6 @@ export default function PDV() {
   }, []);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     void carregar();
   }, [carregar]);
 
@@ -51,6 +66,8 @@ export default function PDV() {
           p.codigo_barras.includes(busca)
       )
     : produtos;
+
+  const buscaRef = useRef<HTMLInputElement>(null);
 
   function addAoCarrinho(p: Produto) {
     setCarrinho((prev) => {
@@ -63,6 +80,43 @@ export default function PDV() {
     });
     setMsg(null);
   }
+
+  // Leitor de código de barras / Enter: bipa → adiciona → limpa → mantém o foco.
+  function onBuscaKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Escape") {
+      setBusca("");
+      return;
+    }
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    const termo = busca.trim();
+    if (!termo) return;
+    const exato = produtos.find((p) => p.codigo_barras && p.codigo_barras === termo);
+    const alvo = exato || (filtrados.length >= 1 ? filtrados[0] : null);
+    if (alvo) {
+      addAoCarrinho(alvo);
+      setBusca("");
+    } else {
+      setMsg({ tipo: "erro", texto: `Nada encontrado para "${termo}".` });
+    }
+    buscaRef.current?.focus();
+  }
+
+  // Atalhos globais: F2 finaliza a venda, F4 foca a busca.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "F2") {
+        e.preventDefault();
+        if (carrinho.length > 0 && !loading) void finalizarVenda();
+      } else if (e.key === "F4") {
+        e.preventDefault();
+        buscaRef.current?.focus();
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [carrinho, loading, pagamento, clienteFiado, desconto]);
 
   function removerDoCarrinho(id: number) {
     setCarrinho((prev) => prev.filter((i) => i.id !== id));
@@ -96,22 +150,22 @@ export default function PDV() {
     }
   }
 
+  function cancelarPix() {
+    setPixModal(null);
+  }
+
   async function finalizarVenda() {
     if (carrinho.length === 0) return;
-
-    // Se for PIX, primeiro mostra QR Code
     if (pagamento === "pix") {
       await gerarPix();
       return;
     }
-
     await confirmarVenda();
   }
 
   async function confirmarVenda() {
     setLoading(true);
     setMsg(null);
-    // Se for fiado, cliente é obrigatório
     if (pagamento === "fiado" && !clienteFiado) {
       setMsg({ tipo: "erro", texto: "Selecione um cliente para venda fiada." });
       setLoading(false);
@@ -138,163 +192,216 @@ export default function PDV() {
     }
   }
 
-  function cancelarPix() {
-    setPixModal(null);
-  }
-
   const itensCarrinho = carrinho.length;
 
   return (
-    <div className="flex flex-col lg:flex-row gap-3 lg:gap-4 min-h-full">
+    <div className="flex flex-col lg:flex-row gap-6 min-h-full">
       {/* Coluna esquerda: Produtos */}
       <div className="flex-1 flex flex-col min-h-0">
         {/* Busca */}
-        <div className="mb-3">
+        <div className="relative mb-6">
+          <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-500">
+            <Search size={18} />
+          </div>
           <input
+            ref={buscaRef}
             type="text"
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
-            placeholder="Buscar produto..."
-            className="w-full px-3 sm:px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 text-sm"
+            onKeyDown={onBuscaKeyDown}
+            placeholder="Bipe o código de barras ou busque por nome  ·  Enter adiciona"
+            className="w-full pl-12 pr-4 py-4 bg-slate-900/50 backdrop-blur-md border border-slate-800 rounded-2xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm shadow-xl"
             autoFocus
           />
+          <span className="absolute inset-y-0 right-4 hidden md:flex items-center pointer-events-none text-[10px] font-bold text-slate-600 uppercase tracking-wider">F2 finaliza</span>
         </div>
 
         {/* Grade de produtos */}
-        <div className="flex-1 overflow-y-auto rounded-xl bg-slate-900 border border-slate-800 p-2 sm:p-3">
+        <div className="flex-1 overflow-y-auto rounded-2xl bg-slate-900/30 backdrop-blur-sm border border-slate-800/50 p-4">
           {filtrados.length === 0 ? (
-            <div className="text-center text-slate-500 py-12 px-4 text-sm">
-              {busca ? "Nenhum produto encontrado." : "Nenhum produto cadastrado. Adicione produtos primeiro."}
+            <div className="h-full flex flex-col items-center justify-center text-center p-8">
+              <Mascote estado="pensando" frase={busca ? "Não encontrei nada..." : "Cadastre alguns produtos!"} />
+              <p className="text-slate-500 text-sm mt-4">
+                {busca ? "Nenhum produto corresponde à sua busca." : "Sua vitrine está vazia."}
+              </p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-2">
-              {filtrados.map((p) => {
-                const preco = p.preco_venda || p.preco_custo;
-                const baixo = p.estoque <= p.estoque_minimo;
-                return (
-                  <button
-                    key={p.id}
-                    onClick={() => addAoCarrinho(p)}
-                    className="text-left bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-brand-600 rounded-lg p-2.5 sm:p-3 transition-all active:scale-95 min-h-24"
-                  >
-                    <p className="text-white text-xs sm:text-sm font-medium truncate">{p.nome}</p>
-                    <p className="text-brand-400 font-bold text-base sm:text-lg mt-0.5">R$ {preco.toFixed(2)}</p>
-                    <p className={`text-xs mt-1 ${baixo ? "text-amber-400" : "text-slate-500"}`}>
-                      {baixo ? `⚠️ Só ${p.estoque} ${p.unidade}` : `${p.estoque} ${p.unidade}`}
-                    </p>
-                  </button>
-                );
-              })}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
+              <AnimatePresence mode="popLayout">
+                {filtrados.map((p) => {
+                  const preco = p.preco_venda || p.preco_custo;
+                  const baixo = p.estoque <= p.estoque_minimo;
+                  return (
+                    <motion.button
+                      layout
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      whileHover={{ y: -4, scale: 1.02 }}
+                      whileTap={{ scale: 0.95 }}
+                      key={p.id}
+                      onClick={() => addAoCarrinho(p)}
+                      className="group text-left bg-slate-800/40 hover:bg-slate-800/80 border border-slate-700/50 hover:border-brand-500/50 rounded-2xl p-4 transition-all shadow-lg hover:shadow-brand-500/5 flex flex-col h-full"
+                    >
+                      <div className="flex-1">
+                        <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-1">{p.categoria_nome || "Geral"}</p>
+                        <p className="text-white text-sm font-bold leading-snug line-clamp-2">{p.nome}</p>
+                      </div>
+                      <div className="mt-4">
+                        <p className="text-brand-400 font-black text-lg">R$ {preco.toFixed(2)}</p>
+                        <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold mt-2 ${baixo ? "bg-amber-500/10 text-amber-500" : "bg-slate-700/30 text-slate-500"}`}>
+                          {baixo && <AlertCircle size={10} />}
+                          {p.estoque} {p.unidade}
+                        </div>
+                      </div>
+                    </motion.button>
+                  );
+                })}
+              </AnimatePresence>
             </div>
           )}
         </div>
       </div>
 
       {/* Coluna direita: Carrinho + Checkout */}
-      <div className="w-full lg:w-96 flex flex-col bg-slate-900 border border-slate-800 rounded-xl p-3 sm:p-4 shrink-0">
-        <h2 className="text-white font-bold text-base sm:text-lg mb-3">
-          🛒 Carrinho {itensCarrinho > 0 && <span className="text-brand-400">({itensCarrinho})</span>}
-        </h2>
+      <div className="w-full lg:w-[400px] flex flex-col bg-slate-900/50 backdrop-blur-xl border border-slate-800/50 rounded-2xl p-5 shadow-2xl shrink-0 relative overflow-hidden">
+        {/* Decorative glow */}
+        <div className="absolute -bottom-20 -right-20 w-40 h-40 bg-brand-600/10 blur-[80px] rounded-full pointer-events-none" />
+
+        <div className="flex items-center justify-between mb-6 relative z-10">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-brand-600/20 flex items-center justify-center text-brand-400">
+              <ShoppingCart size={20} />
+            </div>
+            <h2 className="text-white font-black text-lg tracking-tight">CARRINHO</h2>
+          </div>
+          {itensCarrinho > 0 && (
+            <span className="px-3 py-1 rounded-full bg-brand-600 text-white text-[10px] font-black uppercase shadow-lg shadow-brand-600/20">
+              {itensCarrinho} {itensCarrinho === 1 ? "Item" : "Itens"}
+            </span>
+          )}
+        </div>
 
         {carrinho.length === 0 ? (
-          <p className="text-slate-500 text-sm text-center py-8 flex-1 flex items-center justify-center">
-            Toque nos produtos para adicionar
-          </p>
+          <div className="flex-1 flex flex-col items-center justify-center py-12 relative z-10">
+            <Mascote estado="normal" frase="Estou esperando!" />
+            <p className="text-slate-500 text-sm mt-4 text-center">
+              Adicione produtos para<br />começar a vender.
+            </p>
+          </div>
         ) : (
-          <>
+          <div className="flex-1 flex flex-col relative z-10">
             {/* Itens */}
-            <div className="flex-1 overflow-y-auto space-y-2 mb-3 max-h-[45dvh] sm:max-h-96">
-              {carrinho.map((i) => {
-                const preco = i.preco_venda || i.preco_custo;
-                const sub = i.qtd * preco;
-                return (
-                  <div key={i.id} className="flex items-center gap-2 bg-slate-800 rounded-lg p-2">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-white text-xs sm:text-sm truncate">{i.nome}</p>
-                      <p className="text-slate-400 text-xs">R$ {preco.toFixed(2)} × {i.qtd}</p>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => alterarQtd(i.id, -1)}
-                        className="w-6 h-6 sm:w-7 sm:h-7 rounded bg-slate-700 text-white text-sm hover:bg-slate-600 active:scale-95"
-                      >
-                        −
-                      </button>
-                      <span className="text-white text-xs sm:text-sm w-5 sm:w-6 text-center">{i.qtd}</span>
-                      <button
-                        onClick={() => alterarQtd(i.id, 1)}
-                        className="w-6 h-6 sm:w-7 sm:h-7 rounded bg-slate-700 text-white text-sm hover:bg-slate-600 active:scale-95"
-                      >
-                        +
-                      </button>
-                    </div>
-                    <p className="text-brand-400 font-bold text-xs sm:text-sm w-16 sm:w-20 text-right">R$ {sub.toFixed(2)}</p>
-                    <button
-                      onClick={() => removerDoCarrinho(i.id)}
-                      className="text-red-400 hover:text-red-300 text-lg px-1 active:scale-95"
-                      title="Remover"
+            <div className="flex-1 overflow-y-auto space-y-3 mb-6 pr-1 custom-scrollbar max-h-[40dvh] lg:max-h-none">
+              <AnimatePresence initial={false}>
+                {carrinho.map((i) => {
+                  const preco = i.preco_venda || i.preco_custo;
+                  const sub = i.qtd * preco;
+                  return (
+                    <motion.div
+                      layout
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      key={i.id}
+                      className="flex items-center gap-3 bg-slate-800/50 border border-slate-700/30 rounded-2xl p-3 group"
                     >
-                      ×
-                    </button>
-                  </div>
-                );
-              })}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white text-sm font-bold truncate">{i.nome}</p>
+                        <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mt-0.5">R$ {preco.toFixed(2)} / un</p>
+                      </div>
+                      <div className="flex items-center gap-2 bg-slate-900/50 rounded-xl p-1 border border-slate-700/50">
+                        <button
+                          onClick={() => alterarQtd(i.id, -1)}
+                          className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+                        >
+                          <Minus size={14} />
+                        </button>
+                        <span className="text-white text-xs font-bold w-6 text-center">{i.qtd}</span>
+                        <button
+                          onClick={() => alterarQtd(i.id, 1)}
+                          className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+                        >
+                          <Plus size={14} />
+                        </button>
+                      </div>
+                      <div className="text-right w-20">
+                        <p className="text-brand-400 font-black text-sm">R$ {sub.toFixed(2)}</p>
+                        <button
+                          onClick={() => removerDoCarrinho(i.id)}
+                          className="text-slate-600 hover:text-red-400 transition-colors mt-1"
+                        >
+                          <Trash2 size={14} className="ml-auto" />
+                        </button>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
             </div>
 
             {/* Totais */}
-            <div className="border-t border-slate-700 pt-3 space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-400">Subtotal</span>
-                <span className="text-white">R$ {subtotal.toFixed(2)}</span>
+            <div className="bg-slate-800/30 rounded-2xl p-4 border border-slate-700/30 space-y-3 mb-6">
+              <div className="flex justify-between text-xs font-bold uppercase tracking-wider">
+                <span className="text-slate-500">Subtotal</span>
+                <span className="text-white text-sm">R$ {subtotal.toFixed(2)}</span>
               </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-400">Desconto</span>
-                <input
-                  type="number"
-                  value={desconto || ""}
-                  onChange={(e) => setDesconto(Number(e.target.value) || 0)}
-                  placeholder="0.00"
-                  min={0}
-                  max={subtotal}
-                  step={0.01}
-                  className="w-24 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-white text-right text-sm focus:outline-none focus:border-brand-500"
-                />
+              <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider">
+                <span className="text-slate-500">Desconto</span>
+                <div className="relative">
+                  <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-500">R$</span>
+                  <input
+                    type="number"
+                    value={desconto || ""}
+                    onChange={(e) => setDesconto(Number(e.target.value) || 0)}
+                    placeholder="0.00"
+                    className="w-24 bg-slate-900/50 border border-slate-700/50 rounded-lg pl-7 pr-2 py-1.5 text-brand-400 text-right text-xs font-bold focus:outline-none focus:border-brand-500 transition-all"
+                  />
+                </div>
               </div>
-              <div className="flex justify-between font-bold text-lg">
-                <span className="text-white">Total</span>
-                <span className="text-brand-400">R$ {total.toFixed(2)}</span>
+              <div className="pt-3 border-t border-slate-700/50 flex justify-between items-end">
+                <span className="text-slate-400 text-xs font-black uppercase tracking-widest">Total a Pagar</span>
+                <span className="text-white font-black text-2xl tracking-tighter">
+                  <span className="text-brand-400 text-sm mr-1">R$</span>
+                  {total.toFixed(2)}
+                </span>
               </div>
             </div>
 
             {/* Pagamento */}
-            <div className="mt-3">
-              <label className="text-slate-400 text-xs mb-1 block">Pagamento</label>
-              <div className="grid grid-cols-2 min-[380px]:grid-cols-3 sm:grid-cols-5 gap-1.5 sm:gap-1">
+            <div className="mb-6">
+              <label className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-3 block">Forma de Pagamento</label>
+              <div className="grid grid-cols-5 gap-2">
                 {PAGAMENTOS.map((fp) => (
-                  <button
+                  <motion.button
+                    whileHover={{ y: -2 }}
+                    whileTap={{ scale: 0.95 }}
                     key={fp.value}
                     onClick={() => { setPagamento(fp.value); if (fp.value !== "fiado") setClienteFiado(""); }}
-                    className={`py-2.5 rounded-lg text-xs font-medium transition-colors active:scale-95 ${
+                    className={`flex flex-col items-center justify-center py-3 rounded-xl transition-all border ${
                       pagamento === fp.value
-                        ? "bg-brand-600 text-white"
-                        : "bg-slate-800 text-slate-400 hover:text-white"
+                        ? "bg-brand-600 border-brand-500 text-white shadow-lg shadow-brand-600/20"
+                        : "bg-slate-800/40 border-slate-700/50 text-slate-500 hover:text-slate-300 hover:bg-slate-800"
                     }`}
                   >
-                    <span className="block text-base">{fp.icon}</span>
-                    {fp.label}
-                  </button>
+                    <span className="mb-1">{fp.icon}</span>
+                    <span className="text-[9px] font-black uppercase tracking-tighter leading-none">{fp.label}</span>
+                  </motion.button>
                 ))}
               </div>
             </div>
 
             {/* Select de cliente para venda fiada */}
             {pagamento === "fiado" && (
-              <div className="mt-2">
-                <label className="text-slate-400 text-xs mb-1 block">Cliente *</label>
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-6"
+              >
+                <label className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-2 block">Selecionar Cliente</label>
                 <select
                   value={clienteFiado}
                   onChange={(e) => setClienteFiado(e.target.value ? Number(e.target.value) : "")}
-                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500"
+                  className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl text-white text-sm font-bold focus:outline-none focus:border-brand-500 appearance-none shadow-inner"
                 >
                   <option value="">Selecione um cliente...</option>
                   {clientes.map((cl) => (
@@ -302,133 +409,167 @@ export default function PDV() {
                   ))}
                 </select>
                 {clientes.length === 0 && (
-                  <p className="text-amber-400 text-xs mt-1">Cadastre clientes em 👥 Clientes primeiro.</p>
+                  <p className="text-amber-500 text-[10px] font-bold mt-2 flex items-center gap-1">
+                    <AlertCircle size={10} /> Cadastre clientes na aba lateral primeiro.
+                  </p>
                 )}
-              </div>
+              </motion.div>
             )}
 
             {/* Botão finalizar */}
-            <button
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               onClick={finalizarVenda}
               disabled={loading || pixLoading || carrinho.length === 0}
-              className="mt-4 w-full py-2.5 sm:py-3 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-bold rounded-xl transition-colors text-base sm:text-lg active:scale-95"
+              className={`w-full py-4 rounded-2xl text-white font-black text-lg tracking-tight shadow-xl transition-all flex items-center justify-center gap-3 ${
+                loading || pixLoading || carrinho.length === 0
+                  ? "bg-slate-800 text-slate-500 cursor-not-allowed"
+                  : "bg-gradient-to-r from-emerald-600 to-teal-600 shadow-emerald-900/20"
+              }`}
             >
-              {loading
-                ? "Processando..."
-                : pixLoading
-                  ? "Gerando QR Code..."
-                  : `Finalizar • R$ ${total.toFixed(2)}`}
-            </button>
-          </>
-        )}
-
-        {/* Mensagem de feedback */}
-        {msg && (
-          <div
-            className={`mt-3 p-3 rounded-lg text-sm ${
-              msg.tipo === "ok"
-                ? "bg-green-500/10 border border-green-500/30 text-green-400"
-                : "bg-red-500/10 border border-red-500/30 text-red-400"
-            }`}
-          >
-            {msg.texto}
+              {loading ? (
+                <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <>
+                  <CheckCircle2 size={22} />
+                  <span>FINALIZAR VENDA</span>
+                </>
+              )}
+            </motion.button>
           </div>
         )}
 
+        {/* Mensagem de feedback */}
+        <AnimatePresence>
+          {msg && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className={`mt-6 p-4 rounded-2xl flex items-start gap-3 relative z-10 ${
+                msg.tipo === "ok"
+                  ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-400"
+                  : "bg-red-500/10 border border-red-500/30 text-red-400"
+              }`}
+            >
+              {msg.tipo === "ok" ? <CheckCircle2 size={18} className="shrink-0" /> : <AlertCircle size={18} className="shrink-0" />}
+              <div className="flex-1">
+                <p className="text-xs font-bold leading-tight">{msg.texto}</p>
+              </div>
+              <button onClick={() => setMsg(null)} className="text-slate-500 hover:text-white transition-colors">
+                <X size={14} />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Mini resumo */}
         {dash && (
-          <div className="mt-auto pt-3 border-t border-slate-800 flex gap-3 text-xs text-slate-500">
-            <span>{dash.total_produtos} produtos</span>
-            <span>{dash.vendas_hoje_qtd} vendas hoje</span>
-            <span>R$ {(dash.vendas_hoje_total || 0).toFixed(2)}</span>
+          <div className="mt-auto pt-6 border-t border-slate-800/50 flex justify-between items-center relative z-10">
+            <div className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+              Vendas Hoje
+            </div>
+            <div className="text-right">
+              <p className="text-white font-bold text-sm">R$ {(dash.vendas_hoje_total || 0).toFixed(2)}</p>
+              <p className="text-brand-400 text-[10px] font-bold uppercase tracking-tighter">{dash.vendas_hoje_qtd} vendas</p>
+            </div>
           </div>
         )}
       </div>
 
       {/* ── Modal PIX QR Code ── */}
-      {pixModal && (
-        <div
-          className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
-          onClick={cancelarPix}
-        >
-          <div
-            className="modal-panel bg-slate-900 rounded-2xl p-4 sm:p-6 w-full max-w-sm border border-slate-800 shadow-2xl text-center"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 className="text-white font-bold text-lg sm:text-xl mb-2">📱 PIX</h2>
-            <p className="text-slate-400 text-xs sm:text-sm mb-4">
-              Escaneie o QR Code abaixo para pagar
-            </p>
-
-            {/* QR Code */}
-            <div className="bg-white rounded-xl p-3 sm:p-4 mb-4 inline-block mx-auto">
-              <img
-                src={`data:image/png;base64,${pixModal.qr_base64}`}
-                alt="QR Code PIX"
-                className="w-48 h-48 sm:w-56 sm:h-56 mx-auto"
-              />
-            </div>
-
-            {/* Valor */}
-            <p className="text-brand-400 font-bold text-xl sm:text-2xl mb-4">
-              R$ {total.toFixed(2)}
-            </p>
-
-            {/* Payload copiável */}
-            <div className="bg-slate-800 rounded-lg p-2 sm:p-3 mb-4">
-              <p className="text-slate-400 text-xs mb-1">Ou copie o código PIX:</p>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  readOnly
-                  value={pixModal.payload}
-                  className="flex-1 bg-slate-700 text-white text-xs rounded px-2 py-1.5 border border-slate-600 truncate"
-                  onClick={(e) => (e.target as HTMLInputElement).select()}
-                />
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(pixModal.payload);
-                    setMsg({ tipo: "ok", texto: "Código PIX copiado!" });
-                  }}
-                  className="px-2 sm:px-3 py-1.5 bg-brand-600 hover:bg-brand-500 text-white text-xs rounded-lg transition-colors shrink-0 active:scale-95"
-                >
-                  Copiar
+      <AnimatePresence>
+        {pixModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-[#020617]/90 backdrop-blur-sm"
+              onClick={cancelarPix}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-sm bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl text-center overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brand-500 to-emerald-500" />
+              
+              <div className="flex items-center justify-between mb-6">
+                <div className="w-10 h-10 rounded-xl bg-brand-600/10 flex items-center justify-center text-brand-400">
+                  <Smartphone size={20} />
+                </div>
+                <h2 className="text-white font-black text-xl tracking-tight">PAGAMENTO PIX</h2>
+                <button onClick={cancelarPix} className="w-10 h-10 rounded-xl hover:bg-slate-800 flex items-center justify-center text-slate-500 transition-colors">
+                  <X size={20} />
                 </button>
               </div>
-            </div>
 
-            {/* Botões */}
-            <div className="flex gap-2 sm:gap-3">
-              <button
-                onClick={cancelarPix}
-                className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs sm:text-sm font-medium transition-colors active:scale-95"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={confirmarVenda}
-                disabled={loading}
-                className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white rounded-xl text-xs sm:text-sm font-bold transition-colors active:scale-95"
-              >
-                {loading ? "Finalizando..." : "Pago ✅"}
-              </button>
-            </div>
+              <p className="text-slate-400 text-sm mb-6">
+                Escaneie o QR Code abaixo para pagar
+              </p>
 
-            {/* Mensagem no modal */}
-            {msg && (
-              <div
-                className={`mt-3 p-2 rounded-lg text-xs ${
-                  msg.tipo === "ok"
-                    ? "bg-green-500/10 text-green-400"
-                    : "bg-red-500/10 text-red-400"
-                }`}
-              >
-                {msg.texto}
+              <div className="bg-white rounded-2xl p-4 mb-6 inline-block shadow-inner mx-auto">
+                <img
+                  src={`data:image/png;base64,${pixModal.qr_base64}`}
+                  alt="QR Code PIX"
+                  className="w-48 h-48 mx-auto"
+                />
               </div>
-            )}
+
+              <div className="mb-6">
+                <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">Total a Pagar</p>
+                <p className="text-brand-400 font-black text-3xl tracking-tighter">
+                  <span className="text-lg mr-1">R$</span>
+                  {total.toFixed(2)}
+                </p>
+              </div>
+
+              <div className="bg-slate-800/50 rounded-2xl p-4 mb-8 border border-slate-700/50">
+                <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-3 text-left">Código Pix Copia e Cola</p>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={pixModal.payload}
+                    className="flex-1 bg-slate-950/50 text-white text-xs font-mono rounded-lg px-3 py-2 border border-slate-800 truncate"
+                    onClick={(e) => (e.target as HTMLInputElement).select()}
+                  />
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(pixModal.payload);
+                      setMsg({ tipo: "ok", texto: "Código PIX copiado!" });
+                    }}
+                    className="px-4 bg-brand-600 hover:bg-brand-500 text-white text-xs font-black uppercase rounded-lg transition-all active:scale-95"
+                  >
+                    COPIAR
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={cancelarPix}
+                  className="flex-1 px-4 py-4 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-2xl text-sm font-black uppercase tracking-widest transition-all"
+                >
+                  VOLTAR
+                </button>
+                <button
+                  onClick={confirmarVenda}
+                  disabled={loading}
+                  className="flex-1 px-4 py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl text-sm font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-900/20"
+                >
+                  {loading ? "..." : "CONFIRMAR ✅"}
+                </button>
+              </div>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
     </div>
   );
 }
+
