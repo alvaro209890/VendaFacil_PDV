@@ -209,6 +209,18 @@ class Database:
             );
             CREATE INDEX IF NOT EXISTS idx_nf_venda ON notas_fiscais(venda_id);
             CREATE INDEX IF NOT EXISTS idx_nf_status ON notas_fiscais(status);
+
+            CREATE TABLE IF NOT EXISTS config_maquininha (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                habilitado INTEGER NOT NULL DEFAULT 0,
+                provedor TEXT DEFAULT 'mercadopago',
+                access_token TEXT DEFAULT '',
+                device_id TEXT DEFAULT '',
+                store_id TEXT DEFAULT '',
+                pos_id TEXT DEFAULT '',
+                imprimir_comprovante INTEGER NOT NULL DEFAULT 1,
+                atualizado_em TEXT
+            );
             """
         )
 
@@ -262,6 +274,37 @@ class Database:
                     list(dados.values()) + [agora],
                 )
         return self.get_config_fiscal()
+
+    # ── Maquininha (Mercado Pago Point) ──
+    def get_config_maquininha(self) -> dict[str, Any]:
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT * FROM config_maquininha WHERE id = 1"
+            ).fetchone()
+            if not row:
+                return {"habilitado": 0, "provedor": "mercadopago",
+                        "imprimir_comprovante": 1}
+            return dict(row)
+
+    def salvar_config_maquininha(self, campos: dict, agora: str) -> dict[str, Any]:
+        permitidos = {
+            "habilitado", "provedor", "access_token", "device_id",
+            "store_id", "pos_id", "imprimir_comprovante",
+        }
+        dados = {k: v for k, v in campos.items() if k in permitidos and v is not None}
+        with self._lock, self._conn:
+            existe = self._conn.execute(
+                "SELECT 1 FROM config_maquininha WHERE id = 1"
+            ).fetchone()
+            if not existe:
+                self._conn.execute("INSERT INTO config_maquininha (id) VALUES (1)")
+            if dados:
+                sets = ", ".join(f"{k} = ?" for k in dados)
+                self._conn.execute(
+                    f"UPDATE config_maquininha SET {sets}, atualizado_em = ? WHERE id = 1",
+                    list(dados.values()) + [agora],
+                )
+        return self.get_config_maquininha()
 
     def consumir_numero_nfce(self) -> tuple[int, int]:
         """Reserva o próximo número/série de NFC-e de forma atômica."""

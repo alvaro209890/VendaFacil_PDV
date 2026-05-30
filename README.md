@@ -46,6 +46,8 @@ online o PDV trava. Sem `VENDAFACIL_PAINEL_URL` configurado, o PDV roda em
 - Carrinho de compras com ajuste de quantidade
 - Cálculo automático de subtotal, desconto e total
 - 4 formas de pagamento: Dinheiro, PIX, Débito, Crédito
+- 💳 Cobrança no cartão pela **maquininha Mercado Pago (Point)** — veja
+  [`docs/MAQUININHA_MERCADOPAGO.md`](docs/MAQUININHA_MERCADOPAGO.md)
 - Baixa automática de estoque ao finalizar venda
 - Validação de estoque insuficiente
 

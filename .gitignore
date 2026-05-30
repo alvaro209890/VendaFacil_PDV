@@ -11,3 +11,4 @@ dados/
 dist_exe/
 build/
 jwt_secret.key
+.claude/

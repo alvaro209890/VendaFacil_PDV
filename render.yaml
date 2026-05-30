@@ -1,0 +1,33 @@
+# Deploy do Painel SaaS VendaFácil no Render (Blueprint).
+#
+# O Painel é o backend central: você gerencia as contas das lojas, ativa/bloqueia
+# licenças e recebe as vendas sincronizadas pelos PDVs (.exe). Os PDVs apontam
+# para a URL deste serviço via VENDAFACIL_PAINEL_URL.
+#
+# Banco de dados: Supabase (Postgres). Como os dados ficam no Supabase e não no
+# disco do Render, o serviço pode rodar no plano free (filesystem efêmero, sem
+# disco persistente). Defina DATABASE_URL com a connection string do Supabase
+# no painel do Render (não fica versionada — sync: false).
+#
+# Como usar: no Render → New → Blueprint → selecione este repositório.
+services:
+  - type: web
+    name: vendafacil-painel
+    runtime: python
+    rootDir: painel
+    plan: free
+    region: oregon
+    buildCommand: pip install -r requirements.txt
+    startCommand: python run.py
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.6"
+      # Segredo do JWT gerado uma vez pelo Render e mantido fixo entre deploys.
+      - key: PAINEL_JWT_SECRET
+        generateValue: true
+      # Connection string do Supabase (Settings → Database → Connection string).
+      # Definida manualmente no dashboard do Render; nunca versionada.
+      - key: DATABASE_URL
+        sync: false
