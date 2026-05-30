@@ -14,7 +14,11 @@ import {
   X,
   AlertCircle
 } from "lucide-react";
-import { listarProdutos, checkout, getDashboard, gerarPixQrCode, listarClientes } from "../lib/api";
+import {
+  listarProdutos, checkout, getDashboard, gerarPixQrCode, listarClientes,
+  getConfigMaquininha, criarCobrancaMaquininha, consultarCobrancaMaquininha,
+  cancelarCobrancaMaquininha,
+} from "../lib/api";
 import type { Produto, DashboardData, PixQrCodeResponse, Cliente } from "../lib/api";
 import Mascote from "../components/Mascote";
 
@@ -27,6 +31,14 @@ const PAGAMENTOS = [
   { value: "credito", label: "Crédito", icon: <CreditCard size={18} /> },
   { value: "fiado", label: "Fiado", icon: <FileText size={18} /> },
 ];
+
+// Estados da cobrança Point → texto amigável exibido no modal.
+const ESTADO_MAQ: Record<string, string> = {
+  OPEN: "Enviando para a maquininha...",
+  ON_TERMINAL: "Aguardando o cartão na maquininha...",
+  PROCESSING: "Processando o pagamento...",
+  FINISHED: "Pagamento aprovado!",
+};
 
 export default function PDV() {
   const [produtos, setProdutos] = useState<Produto[]>([]);
@@ -46,6 +58,17 @@ export default function PDV() {
   const [pixModal, setPixModal] = useState<PixQrCodeResponse | null>(null);
   const [pixLoading, setPixLoading] = useState(false);
 
+  // Maquininha (Mercado Pago Point) — cobrança integrada, só quando online.
+  const [maqHabilitada, setMaqHabilitada] = useState(false);
+  const [maqDeviceOk, setMaqDeviceOk] = useState(false);
+  const [maqModal, setMaqModal] = useState<{
+    fase: "criando" | "aguardando" | "erro";
+    intentId?: string;
+    estado?: string;
+    erro?: string;
+  } | null>(null);
+  const maqPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   const carregar = useCallback(async () => {
     try {
       const [p, d, c] = await Promise.all([listarProdutos(true), getDashboard(), listarClientes()]);
@@ -54,6 +77,14 @@ export default function PDV() {
       setClientes(c.clientes);
     } catch {
       // silent
+    }
+    // Config da maquininha (separado: não pode derrubar o carregamento do PDV).
+    try {
+      const { config } = await getConfigMaquininha();
+      setMaqHabilitada(!!config.habilitado);
+      setMaqDeviceOk(!!config.device_id);
+    } catch {
+      setMaqHabilitada(false);
     }
   }, []);
 
@@ -109,7 +140,7 @@ export default function PDV() {
     function onKey(e: KeyboardEvent) {
       if (e.key === "F2") {
         e.preventDefault();
-        if (carrinho.length > 0 && !loading) void finalizarVenda();
+        if (carrinho.length > 0 && !loading && !maqModal && !pixModal) void finalizarVenda();
       } else if (e.key === "F4") {
         e.preventDefault();
         buscaRef.current?.focus();
@@ -118,7 +149,7 @@ export default function PDV() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [carrinho, loading, pagamento, clienteFiado, desconto]);
+  }, [carrinho, loading, pagamento, clienteFiado, desconto, maqModal, pixModal]);
 
   function removerDoCarrinho(id: number) {
     setCarrinho((prev) => prev.filter((i) => i.id !== id));
@@ -156,16 +187,91 @@ export default function PDV() {
     setPixModal(null);
   }
 
+  // Para o polling da maquininha (se estiver rodando).
+  const pararPollMaquininha = useCallback(() => {
+    if (maqPollRef.current) {
+      clearInterval(maqPollRef.current);
+      maqPollRef.current = null;
+    }
+  }, []);
+
+  // Limpa o polling se a tela for desmontada.
+  useEffect(() => pararPollMaquininha, [pararPollMaquininha]);
+
+  // Cobrança no cartão pela maquininha só vale quando: habilitada, com
+  // dispositivo configurado E com internet. Sem isso, cai no cartão manual.
+  const podeCobrarMaquininha =
+    (pagamento === "debito" || pagamento === "credito") &&
+    maqHabilitada && maqDeviceOk && navigator.onLine;
+
   async function finalizarVenda() {
     if (carrinho.length === 0) return;
     if (pagamento === "pix") {
       await gerarPix();
       return;
     }
+    if (podeCobrarMaquininha) {
+      await iniciarCobrancaMaquininha();
+      return;
+    }
     await confirmarVenda();
   }
 
-  async function confirmarVenda() {
+  async function iniciarCobrancaMaquininha() {
+    setMsg(null);
+    setMaqModal({ fase: "criando" });
+    const uuid = crypto.randomUUID();
+    let intentId: string;
+    try {
+      const r = await criarCobrancaMaquininha(total, uuid);
+      intentId = r.payment_intent_id;
+    } catch (err) {
+      // Falhou ao acionar a máquina (ex.: caiu a internet) → oferece manual.
+      setMaqModal({ fase: "erro", erro: (err as Error).message });
+      return;
+    }
+    setMaqModal({ fase: "aguardando", intentId, estado: "OPEN" });
+
+    // Poll do status até concluir/cancelar/dar erro.
+    pararPollMaquininha();
+    maqPollRef.current = setInterval(async () => {
+      try {
+        const st = await consultarCobrancaMaquininha(intentId);
+        setMaqModal((m) => (m ? { ...m, estado: st.state } : m));
+        if (st.pago && st.payment_status === "approved") {
+          pararPollMaquininha();
+          const obs = st.payment_id ? `MP Point: ${st.payment_id}` : undefined;
+          setMaqModal(null);
+          await confirmarVenda(obs);
+        } else if (["CANCELED", "ERROR", "ABANDONED"].includes(st.state || "")) {
+          pararPollMaquininha();
+          setMaqModal({ fase: "erro", intentId, erro: `Cobrança ${st.state?.toLowerCase()} na maquininha.` });
+        }
+      } catch {
+        // Erro de rede no poll: para e oferece manual (não trava a venda).
+        pararPollMaquininha();
+        setMaqModal({ fase: "erro", intentId, erro: "Sem conexão com a maquininha. Use o cartão manual." });
+      }
+    }, 2500);
+  }
+
+  async function cancelarCobrancaMaq() {
+    pararPollMaquininha();
+    const id = maqModal?.intentId;
+    setMaqModal(null);
+    if (id) {
+      try { await cancelarCobrancaMaquininha(id); } catch { /* já pode ter encerrado */ }
+    }
+  }
+
+  // Fallback: registra a venda como cartão manual (caixa passou no aparelho).
+  async function registrarCartaoManual() {
+    pararPollMaquininha();
+    setMaqModal(null);
+    await confirmarVenda("Cartão manual (sem cobrança integrada)");
+  }
+
+  async function confirmarVenda(obsExtra?: string) {
     setLoading(true);
     setMsg(null);
     if (pagamento === "fiado" && !clienteFiado) {
@@ -178,6 +284,7 @@ export default function PDV() {
         itens: carrinho.map((i) => ({ produto_id: i.id, quantidade: i.qtd })),
         desconto,
         forma_pagamento: pagamento,
+        observacao: obsExtra,
         cliente_id: pagamento === "fiado" ? Number(clienteFiado) : undefined,
         emitir_nota: emitirNota,
         cpf_consumidor: emitirNota ? cpfConsumidor : undefined,
@@ -450,9 +557,9 @@ export default function PDV() {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={finalizarVenda}
-                disabled={loading || pixLoading || carrinho.length === 0}
+                disabled={loading || pixLoading || !!maqModal || carrinho.length === 0}
                 className={`w-full py-4 rounded-2xl text-white font-black text-lg tracking-tight shadow-xl transition-all flex items-center justify-center gap-3 ${
-                  loading || pixLoading || carrinho.length === 0
+                  loading || pixLoading || !!maqModal || carrinho.length === 0
                     ? "bg-slate-800 text-slate-500 cursor-not-allowed"
                     : "bg-gradient-to-r from-emerald-600 to-teal-600 shadow-emerald-900/20"
                 }`}
@@ -588,13 +695,92 @@ export default function PDV() {
                   VOLTAR
                 </button>
                 <button
-                  onClick={confirmarVenda}
+                  onClick={() => confirmarVenda()}
                   disabled={loading}
                   className="flex-1 px-4 py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl text-sm font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-900/20"
                 >
                   {loading ? "..." : "CONFIRMAR ✅"}
                 </button>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Modal Maquininha (Mercado Pago Point) ── */}
+      <AnimatePresence>
+        {maqModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-[#020617]/90 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-sm bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl text-center overflow-hidden"
+            >
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brand-500 to-emerald-500" />
+
+              <div className="flex items-center justify-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-xl bg-brand-600/10 flex items-center justify-center text-brand-400">
+                  <CreditCard size={20} />
+                </div>
+                <h2 className="text-white font-black text-xl tracking-tight">MAQUININHA</h2>
+              </div>
+
+              <div className="mb-6">
+                <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">Total a Cobrar</p>
+                <p className="text-brand-400 font-black text-3xl tracking-tighter">
+                  <span className="text-lg mr-1">R$</span>{total.toFixed(2)}
+                </p>
+              </div>
+
+              {maqModal.fase !== "erro" ? (
+                <>
+                  <div className="w-10 h-10 border-2 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                  <p className="text-white text-sm font-bold mb-1">
+                    {maqModal.fase === "criando" ? "Acionando a maquininha..." : "Peça o cartão ao cliente"}
+                  </p>
+                  <p className="text-slate-500 text-xs mb-8">
+                    {ESTADO_MAQ[maqModal.estado || ""] || "Aguardando a maquininha..."}
+                  </p>
+                  <button
+                    onClick={cancelarCobrancaMaq}
+                    className="w-full px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-2xl text-sm font-black uppercase tracking-widest transition-all"
+                  >
+                    CANCELAR
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className="w-12 h-12 rounded-full bg-red-500/10 text-red-400 grid place-items-center mx-auto mb-4">
+                    <AlertCircle size={24} />
+                  </div>
+                  <p className="text-red-400 text-sm font-bold mb-6">{maqModal.erro}</p>
+                  <div className="flex flex-col gap-3">
+                    <button
+                      onClick={registrarCartaoManual}
+                      disabled={loading}
+                      className="w-full px-4 py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl text-sm font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-900/20"
+                    >
+                      {loading ? "..." : "REGISTRAR CARTÃO MANUAL"}
+                    </button>
+                    <button
+                      onClick={cancelarCobrancaMaq}
+                      className="w-full px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-2xl text-sm font-black uppercase tracking-widest transition-all"
+                    >
+                      FECHAR
+                    </button>
+                  </div>
+                  <p className="text-slate-500 text-[11px] mt-4 leading-snug">
+                    "Cartão manual" = você passou o cartão direto no aparelho; o sistema só registra a venda.
+                  </p>
+                </>
+              )}
             </motion.div>
           </div>
         )}

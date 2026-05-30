@@ -73,6 +73,26 @@ O `valor` é enviado em reais (ex.: `49.90`); internamente convertemos para
 - A cobrança roda na conta Mercado Pago da própria loja — o VendaFácil não
   intermedeia o dinheiro nem vê dados de cartão.
 
+## Comportamento à prova de offline (no PDV)
+
+A cobrança integrada é tratada como **conveniência só-online** — nunca como
+dependência da venda. No checkout (`PDV.tsx`):
+
+- O fluxo integrado só dispara quando **Débito/Crédito + maquininha habilitada +
+  `device_id` configurado + `navigator.onLine`**. Caso contrário, a venda segue
+  como **cartão manual** (o caixa passa no aparelho e o sistema só registra).
+- Se a cobrança falhar ou cair a conexão durante o *poll*, o modal oferece
+  **"Registrar cartão manual"** — a venda **nunca trava**.
+- A venda é gravada **localmente primeiro** (SQLite) e sincroniza depois. Quando
+  o pagamento é aprovado pela Point, o `payment_id` do Mercado Pago é anexado à
+  observação da venda (`MP Point: <id>`) para conciliação.
+
+> Importante: o PDV fala com a maquininha **pela nuvem do Mercado Pago**
+> (`PDV → internet → MP → aparelho`), não por uma conexão direta de wifi local.
+> Os dois precisam de internet. Pagamento em cartão é autorizado online por
+> natureza — não existe cartão 100% offline; sem internet, venda no cartão é
+> sempre **manual** (ou use dinheiro/PIX/fiado).
+
 ## Observações sobre o Painel SaaS / Supabase
 
 A maquininha é **100% do lado do PDV**. As vendas no cartão chegam ao Painel SaaS

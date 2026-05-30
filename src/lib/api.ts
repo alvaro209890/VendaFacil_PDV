@@ -506,3 +506,33 @@ export function salvarConfigMaquininha(data: ConfigMaquininha): Promise<{ config
 export function listarDispositivosMaquininha(): Promise<{ dispositivos: DispositivoPoint[] }> {
   return request("/api/maquininha/dispositivos");
 }
+
+export interface CobrancaMaquininha {
+  payment_intent_id: string;
+  state: string;
+  device_id?: string;
+}
+
+export interface CobrancaStatus {
+  payment_intent_id: string;
+  state: string;          // OPEN, ON_TERMINAL, PROCESSING, FINISHED, CANCELED, ERROR...
+  pago: boolean;
+  payment_id?: string;
+  payment_status?: string;
+  payment_type?: string;  // credit_card | debit_card
+}
+
+export function criarCobrancaMaquininha(valor: number, venda_uuid?: string): Promise<CobrancaMaquininha> {
+  return request("/api/maquininha/cobranca", {
+    method: "POST",
+    body: JSON.stringify({ valor, venda_uuid }),
+  });
+}
+
+export function consultarCobrancaMaquininha(id: string): Promise<CobrancaStatus> {
+  return request(`/api/maquininha/cobranca/${id}`);
+}
+
+export function cancelarCobrancaMaquininha(id: string): Promise<{ cancelado: boolean }> {
+  return request(`/api/maquininha/cobranca/${id}`, { method: "DELETE" });
+}
