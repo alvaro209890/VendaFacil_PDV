@@ -174,15 +174,12 @@ class Database:
         if not self._fetchone("SELECT 1 FROM fin_config WHERE id = 1"):
             self._exec("INSERT INTO fin_config (id, preco_por_loja) VALUES (1, 180)")
         if not self._fetchone("SELECT 1 FROM fin_custos LIMIT 1"):
-            # Valores de REFERÊNCIA (R$/mês) — edite no painel conforme sua
-            # realidade. Em planos free, ponha 0.
+            # Custos atuais (R$/mês). Hoje tudo em plano gratuito = 0. Edite/some
+            # itens no painel conforme for pagando (ver docs/CUSTOS.md p/ referências).
             padrao = [
-                ("Render — hospedagem da API", 38.0, "fixo"),
-                ("Supabase — banco de dados", 0.0, "fixo"),
-                ("Vercel — painel admin", 0.0, "fixo"),
-                ("Domínio próprio (rateio mensal)", 4.0, "fixo"),
-                ("Certificado Code Signing (rateio mensal)", 60.0, "fixo"),
-                ("Focus NFe — NFC-e (por loja)", 30.0, "por_loja"),
+                ("Render — hospedagem da API (free)", 0.0, "fixo"),
+                ("Supabase — banco de dados (free)", 0.0, "fixo"),
+                ("Vercel — painel admin (free)", 0.0, "fixo"),
             ]
             for nome, valor, tipo in padrao:
                 self._exec(

@@ -8,6 +8,19 @@ verdade e calcula receita/lucro automaticamente.
 > ⚠️ Preços de terceiros mudam e variam com o dólar. Trate como estimativa e
 > confirme no provedor. Em planos gratuitos, o custo é **R$ 0**.
 
+## 📌 Situação atual (custo hoje ≈ R$ 0)
+
+- **Render**: plano **gratuito** → R$ 0.
+- **Supabase**: plano **gratuito** → R$ 0.
+- **Vercel**: plano **gratuito** → R$ 0.
+- **Domínio**: **não comprado por enquanto** (usando `.onrender.com`/`.vercel.app`).
+- **NFC-e (Focus NFe)**: **adiado** — ainda precisa ser pago e vinculado; não
+  está no custo. (No PDV a NFC-e já é opcional; ninguém é obrigado a usar.)
+- **Code signing**: ainda não comprado.
+
+Por isso os custos vêm **zerados** no painel. Conforme você for assinando algo
+(plano pago, domínio, NFC-e), adicione/edite na tela **💰 Financeiro**.
+
 ## O que você paga (custos do SaaS)
 
 | Serviço | Para quê | Plano free | Plano produção (estimado) |

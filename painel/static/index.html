@@ -68,8 +68,16 @@
       } catch (e) {
         // Falha de rede/CORS → provável URL da API errada (caso Vercel).
         if (e instanceof TypeError) return telaErroConexao(e.message);
+        // Token inválido (ex.: banco trocado/zerado) → limpa e re-roteia para a
+        // tela certa (setup se o banco estiver vazio, senão login).
         clearToken();
-        telaLogin();
+        try {
+          const { precisa_setup } = await api("/api/admin/precisa-setup");
+          return precisa_setup ? telaSetup() : telaLogin();
+        } catch (e2) {
+          if (e2 instanceof TypeError) return telaErroConexao(e2.message);
+          return telaLogin();
+        }
       }
     }
 
