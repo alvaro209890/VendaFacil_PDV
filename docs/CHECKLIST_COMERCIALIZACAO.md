@@ -6,22 +6,21 @@ falta é **negócio, distribuição e robustez de produção**, não funcionalid
 
 ## 🔴 Bloqueadores (sem isso não dá pra vender de verdade)
 
-- [ ] **Cobrança recorrente das lojas (mensalidade).** Hoje a licença é
-      **manual**: você define a validade no painel e bloqueia na mão. Para
-      comercializar de verdade, precisa de pagamento recorrente (PIX
-      recorrente / cartão via Mercado Pago/Stripe/Asaas) que **ative e bloqueie
-      a licença automaticamente** ao pagar/vencer.
-- [ ] **Gerar e testar o .exe no Windows** (Node 20+ → `npm run build` →
-      PyInstaller). Ainda não foi empacotado/testado numa máquina Windows real.
-- [ ] **Instalador amigável** para o lojista (Inno Setup / MSI), não só o .exe
-      solto. Com atalho, ícone, e idealmente atualização.
-- [ ] **Assinatura de código (code signing)** do executável. Sem isso, o
-      Windows/SmartScreen mostra "app não confiável" e assusta o cliente.
-      (Certificado pago, ~US$ 100–300/ano.)
-- [ ] **Termos de Uso + Política de Privacidade + LGPD.** Você guarda dados de
-      lojas e de vendas (e CPF em notas). Precisa de base legal, política
-      publicada e tratamento adequado dos dados.
-- [ ] **Empresa/CNPJ** para faturar o serviço e emitir nota da mensalidade.
+- [x] **Cobrança/bloqueio das lojas** — **decidido: MANUAL.** Você cobra por fora
+      (PIX/boleto) e, no Painel, define a validade e bloqueia/exclui quem não
+      pagar. Fluxo documentado em [`COBRANCA_MANUAL.md`](COBRANCA_MANUAL.md).
+      (Cobrança automática fica como evolução futura — ver 🟡.)
+- [ ] **Gerar e testar o .exe no Windows** — você faz isto na sua máquina
+      Windows. Pipeline pronto e documentado em [`BUILD_WINDOWS.md`](BUILD_WINDOWS.md).
+      *(Não dá para gerar no Linux: PyInstaller não faz cross-compile.)*
+- [x] **Instalador amigável** — **pronto**: script Inno Setup em
+      `installer/vendafacil.iss` + `installer/build_installer.bat`. Só compilar
+      no Windows (ver [`BUILD_WINDOWS.md`](BUILD_WINDOWS.md)).
+- [~] **Assinatura de código** — **script e guia prontos** (`installer/sign.bat`).
+      Falta você **comprar um certificado** de Code Signing (OV/EV) e assinar.
+- [~] **Termos de Uso + Política de Privacidade + LGPD** — **modelos prontos** em
+      [`legal/`](legal/). Falta **revisar com advogado** e preencher os campos.
+- [ ] **Empresa/CNPJ** para faturar o serviço (só você pode providenciar).
 
 ## 🟠 Importante (antes de escalar / primeiros clientes pagos)
 
