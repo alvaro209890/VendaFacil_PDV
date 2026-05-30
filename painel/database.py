@@ -258,6 +258,11 @@ class Database:
             "UPDATE contas SET ultimo_acesso = ? WHERE id = ?", (agora(), conta_id)
         )
 
+    def excluir_conta(self, conta_id: int) -> bool:
+        # Remove também as vendas sincronizadas da loja (não há FK em cascata).
+        self._exec("DELETE FROM vendas_sync WHERE conta_id = ?", (conta_id,))
+        return self._exec("DELETE FROM contas WHERE id = ?", (conta_id,)) > 0
+
     # ── Vendas sincronizadas ──
     def registrar_venda_sync(self, conta_id: int, v: dict) -> bool:
         import json

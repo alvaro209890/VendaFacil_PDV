@@ -120,6 +120,13 @@ async def health() -> dict:
     return {"status": "ok", "app": "vendafacil-painel", "version": app.version}
 
 
+@app.on_event("startup")
+async def _iniciar_servicos() -> None:
+    # Mantém o serviço acordado no Render free (auto-ping ao /health).
+    import keepalive
+    keepalive.iniciar_em_background()
+
+
 # ── Admin ──
 @app.get("/api/admin/precisa-setup")
 async def precisa_setup() -> dict:
@@ -188,6 +195,15 @@ async def atualizar_conta(conta_id: int, data: ContaUpdate, request: Request) ->
     if data.nova_senha:
         campos["senha_hash"] = security.hash_senha(data.nova_senha)
     db.atualizar_conta(conta_id, campos)
+    return {"ok": True}
+
+
+@app.delete("/api/admin/contas/{conta_id}")
+async def excluir_conta(conta_id: int, request: Request) -> dict:
+    _admin_atual(request)
+    if not db.get_conta(conta_id):
+        raise HTTPException(status_code=404, detail="Conta não encontrada.")
+    db.excluir_conta(conta_id)
     return {"ok": True}
 
 

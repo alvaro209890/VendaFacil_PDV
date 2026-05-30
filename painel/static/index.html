@@ -139,6 +139,7 @@
           <td class="px-3 text-right space-x-2 whitespace-nowrap">
             <button data-edit="${c.id}" class="text-xs px-2 py-1 rounded bg-slate-800 hover:bg-slate-700">Editar</button>
             <button data-toggle="${c.id}" data-ativo="${c.ativo}" class="text-xs px-2 py-1 rounded ${c.ativo ? 'bg-red-900/60 hover:bg-red-800' : 'bg-emerald-900/60 hover:bg-emerald-800'}">${c.ativo ? 'Bloquear' : 'Ativar'}</button>
+            <button data-del="${c.id}" data-nome="${c.nome_loja}" class="text-xs px-2 py-1 rounded bg-red-700 hover:bg-red-600">Excluir</button>
           </td></tr>`;
       }).join("") || `<tr><td colspan="5" class="py-6 text-center text-slate-500">Nenhuma loja cadastrada ainda.</td></tr>`;
 
@@ -168,6 +169,14 @@
             method: "PUT", body: JSON.stringify({ ativo: b.dataset.ativo == "1" ? false : true }),
           });
           telaPainel();
+        });
+      document.querySelectorAll("[data-del]").forEach(b =>
+        b.onclick = async () => {
+          if (!confirm(`Excluir a loja "${b.dataset.nome}"? Isso apaga a conta e as vendas sincronizadas dela. Esta ação não pode ser desfeita.`)) return;
+          try {
+            await api("/api/admin/contas/" + b.dataset.del, { method: "DELETE" });
+            telaPainel();
+          } catch (err) { alert("Erro ao excluir: " + err.message); }
         });
     }
 
