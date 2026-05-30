@@ -6,4 +6,7 @@
 //
 // Também dá para configurar em runtime pelo botão "Configurar URL da API"
 // (fica salvo no localStorage do navegador).
-window.PAINEL_API_URL = "";
+//
+// Já apontando para o serviço esperado no Render. Se o Render gerar uma URL
+// diferente, troque aqui (e faça commit) ou use o botão na tela.
+window.PAINEL_API_URL = "https://vendafacil-painel.onrender.com";
