@@ -3,6 +3,9 @@
 Sistema de **Ponto de Venda (PDV)** para mercadinhos e pequenos comércios,
 distribuído como **executável único (.exe)** com controle central de licenças.
 
+> 📦 **Deploy e produção:** [`docs/DEPLOY_E_PRODUCAO.md`](docs/DEPLOY_E_PRODUCAO.md)
+> · **O que falta para comercializar:** [`docs/CHECKLIST_COMERCIALIZACAO.md`](docs/CHECKLIST_COMERCIALIZACAO.md)
+
 ## 🧩 Como o sistema é montado
 
 São **dois componentes**:

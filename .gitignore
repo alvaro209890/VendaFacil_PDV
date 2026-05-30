@@ -12,3 +12,5 @@ dist_exe/
 build/
 jwt_secret.key
 .claude/
+.agents/
+skills-lock.json
