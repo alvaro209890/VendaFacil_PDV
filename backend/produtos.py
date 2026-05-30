@@ -21,7 +21,22 @@ def _get_user_id(request: Request) -> int:
 
 # ── Models ──
 
-class ProdutoCreate(BaseModel):
+class FiscalMixin(BaseModel):
+    """Campos fiscais para NFC-e (todos opcionais; usados na emissão)."""
+    ncm: str | None = Field(default=None, max_length=8)
+    cest: str | None = Field(default=None, max_length=9)
+    cfop: str | None = Field(default=None, max_length=4)
+    origem: str | None = Field(default=None, max_length=1)
+    unidade_tributavel: str | None = Field(default=None, max_length=6)
+    cst_csosn: str | None = Field(default=None, max_length=4)
+    aliquota_icms: float | None = Field(default=None, ge=0, le=100)
+    cst_pis: str | None = Field(default=None, max_length=2)
+    aliquota_pis: float | None = Field(default=None, ge=0, le=100)
+    cst_cofins: str | None = Field(default=None, max_length=2)
+    aliquota_cofins: float | None = Field(default=None, ge=0, le=100)
+
+
+class ProdutoCreate(FiscalMixin):
     nome: str = Field(min_length=1, max_length=120)
     categoria_id: int | None = Field(default=None)
     preco_custo: float = Field(default=0, ge=0)
@@ -32,7 +47,7 @@ class ProdutoCreate(BaseModel):
     unidade: str = Field(default="UN", max_length=10)
 
 
-class ProdutoUpdate(BaseModel):
+class ProdutoUpdate(FiscalMixin):
     nome: str | None = Field(default=None, min_length=1, max_length=120)
     categoria_id: int | None = Field(default=None)
     preco_custo: float | None = Field(default=None, ge=0)
@@ -77,6 +92,11 @@ async def criar(data: ProdutoCreate, request: Request):
         unidade=data.unidade,
         agora=agora,
     )
+    # Persiste os campos fiscais informados (create_produto só grava os básicos).
+    fiscais = data.model_dump(include=set(FiscalMixin.model_fields))
+    fiscais = {k: v for k, v in fiscais.items() if v is not None}
+    if fiscais and p:
+        p = db.update_produto(p["id"], user_id, atualizado_em=agora, **fiscais)
     return {"produto": p}
 
 

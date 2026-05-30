@@ -140,6 +140,78 @@ class Database:
         if "uuid" not in cols:
             self._conn.execute("ALTER TABLE vendas ADD COLUMN uuid TEXT")
 
+        # Campos fiscais nos produtos (NFC-e)
+        pcols = {r["name"] for r in self._conn.execute("PRAGMA table_info(produtos)")}
+        fiscais = {
+            "ncm": "TEXT DEFAULT ''",
+            "cest": "TEXT DEFAULT ''",
+            "cfop": "TEXT DEFAULT '5102'",
+            "origem": "TEXT DEFAULT '0'",
+            "unidade_tributavel": "TEXT DEFAULT ''",
+            "cst_csosn": "TEXT DEFAULT '102'",
+            "aliquota_icms": "REAL DEFAULT 0",
+            "cst_pis": "TEXT DEFAULT '07'",
+            "aliquota_pis": "REAL DEFAULT 0",
+            "cst_cofins": "TEXT DEFAULT '07'",
+            "aliquota_cofins": "REAL DEFAULT 0",
+        }
+        for col, ddl in fiscais.items():
+            if col not in pcols:
+                self._conn.execute(f"ALTER TABLE produtos ADD COLUMN {col} {ddl}")
+
+        # Configuração fiscal do emitente (1 linha) + notas emitidas
+        self._conn.executescript(
+            """
+            CREATE TABLE IF NOT EXISTS config_fiscal (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                habilitado INTEGER NOT NULL DEFAULT 0,
+                razao_social TEXT DEFAULT '',
+                nome_fantasia TEXT DEFAULT '',
+                cnpj TEXT DEFAULT '',
+                inscricao_estadual TEXT DEFAULT '',
+                regime_tributario TEXT DEFAULT '1',
+                logradouro TEXT DEFAULT '',
+                numero TEXT DEFAULT '',
+                bairro TEXT DEFAULT '',
+                municipio TEXT DEFAULT '',
+                codigo_municipio TEXT DEFAULT '',
+                uf TEXT DEFAULT '',
+                cep TEXT DEFAULT '',
+                csc TEXT DEFAULT '',
+                csc_id TEXT DEFAULT '',
+                ambiente TEXT DEFAULT 'homologacao',
+                gateway TEXT DEFAULT 'focusnfe',
+                gateway_token TEXT DEFAULT '',
+                serie INTEGER NOT NULL DEFAULT 1,
+                proximo_numero INTEGER NOT NULL DEFAULT 1,
+                atualizado_em TEXT
+            );
+
+            CREATE TABLE IF NOT EXISTS notas_fiscais (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                venda_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL,
+                ref TEXT NOT NULL UNIQUE,
+                modelo TEXT NOT NULL DEFAULT '65',
+                numero INTEGER,
+                serie INTEGER,
+                ambiente TEXT,
+                status TEXT NOT NULL DEFAULT 'pendente',
+                chave TEXT,
+                protocolo TEXT,
+                mensagem TEXT,
+                xml_url TEXT,
+                danfe_url TEXT,
+                qrcode_url TEXT,
+                payload TEXT,
+                criado_em TEXT NOT NULL,
+                atualizado_em TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_nf_venda ON notas_fiscais(venda_id);
+            CREATE INDEX IF NOT EXISTS idx_nf_status ON notas_fiscais(status);
+            """
+        )
+
     # ── Sincronização ──
     def vendas_pendentes_sync(self, limite: int = 100) -> list[dict[str, Any]]:
         with self._lock:
@@ -161,6 +233,105 @@ class Database:
             self._conn.execute(
                 f"UPDATE vendas SET sincronizado = 1 WHERE id IN ({marcas})", ids
             )
+
+    # ── Fiscal: configuração do emitente ──
+    def get_config_fiscal(self) -> dict[str, Any]:
+        with self._lock:
+            row = self._conn.execute("SELECT * FROM config_fiscal WHERE id = 1").fetchone()
+            if not row:
+                return {"habilitado": 0, "ambiente": "homologacao",
+                        "gateway": "focusnfe", "serie": 1, "proximo_numero": 1}
+            return dict(row)
+
+    def salvar_config_fiscal(self, campos: dict, agora: str) -> dict[str, Any]:
+        permitidos = {
+            "habilitado", "razao_social", "nome_fantasia", "cnpj", "inscricao_estadual",
+            "regime_tributario", "logradouro", "numero", "bairro", "municipio",
+            "codigo_municipio", "uf", "cep", "csc", "csc_id", "ambiente", "gateway",
+            "gateway_token", "serie", "proximo_numero",
+        }
+        dados = {k: v for k, v in campos.items() if k in permitidos and v is not None}
+        with self._lock, self._conn:
+            existe = self._conn.execute("SELECT 1 FROM config_fiscal WHERE id = 1").fetchone()
+            if not existe:
+                self._conn.execute("INSERT INTO config_fiscal (id) VALUES (1)")
+            if dados:
+                sets = ", ".join(f"{k} = ?" for k in dados)
+                self._conn.execute(
+                    f"UPDATE config_fiscal SET {sets}, atualizado_em = ? WHERE id = 1",
+                    list(dados.values()) + [agora],
+                )
+        return self.get_config_fiscal()
+
+    def consumir_numero_nfce(self) -> tuple[int, int]:
+        """Reserva o próximo número/série de NFC-e de forma atômica."""
+        with self._lock, self._conn:
+            row = self._conn.execute(
+                "SELECT serie, proximo_numero FROM config_fiscal WHERE id = 1"
+            ).fetchone()
+            serie = row["serie"] if row else 1
+            numero = row["proximo_numero"] if row else 1
+            self._conn.execute(
+                "UPDATE config_fiscal SET proximo_numero = ? WHERE id = 1", (numero + 1,)
+            )
+            return serie, numero
+
+    # ── Fiscal: notas ──
+    def criar_nota(self, dados: dict) -> dict[str, Any]:
+        cols = ("venda_id", "user_id", "ref", "modelo", "numero", "serie", "ambiente",
+                "status", "chave", "protocolo", "mensagem", "xml_url", "danfe_url",
+                "qrcode_url", "payload", "criado_em", "atualizado_em")
+        with self._lock, self._conn:
+            cur = self._conn.execute(
+                f"INSERT INTO notas_fiscais ({', '.join(cols)}) "
+                f"VALUES ({', '.join('?' for _ in cols)})",
+                tuple(dados.get(c) for c in cols),
+            )
+            return self.get_nota(cur.lastrowid)
+
+    def get_nota(self, nota_id: int) -> dict[str, Any] | None:
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT * FROM notas_fiscais WHERE id = ?", (nota_id,)
+            ).fetchone()
+            return dict(row) if row else None
+
+    def get_nota_por_ref(self, ref: str) -> dict[str, Any] | None:
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT * FROM notas_fiscais WHERE ref = ?", (ref,)
+            ).fetchone()
+            return dict(row) if row else None
+
+    def get_nota_por_venda(self, venda_id: int) -> dict[str, Any] | None:
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT * FROM notas_fiscais WHERE venda_id = ? ORDER BY id DESC LIMIT 1",
+                (venda_id,),
+            ).fetchone()
+            return dict(row) if row else None
+
+    def atualizar_nota(self, nota_id: int, campos: dict, agora: str) -> dict[str, Any] | None:
+        permitidos = {"numero", "serie", "ambiente", "status", "chave", "protocolo",
+                      "mensagem", "xml_url", "danfe_url", "qrcode_url", "payload"}
+        dados = {k: v for k, v in campos.items() if k in permitidos}
+        if not dados:
+            return self.get_nota(nota_id)
+        sets = ", ".join(f"{k} = ?" for k in dados)
+        with self._lock, self._conn:
+            self._conn.execute(
+                f"UPDATE notas_fiscais SET {sets}, atualizado_em = ? WHERE id = ?",
+                list(dados.values()) + [agora, nota_id],
+            )
+        return self.get_nota(nota_id)
+
+    def notas_pendentes(self, limite: int = 50) -> list[dict[str, Any]]:
+        with self._lock:
+            rows = self._conn.execute(
+                "SELECT * FROM notas_fiscais WHERE status IN ('pendente','processando') "
+                "ORDER BY id LIMIT ?", (limite,)
+            ).fetchall()
+            return [dict(r) for r in rows]
 
     def create_user(self, email: str, nome: str, senha_hash: str, criado_em: str) -> dict[str, Any] | None:
         with self._lock, self._conn:
@@ -233,7 +404,9 @@ class Database:
 
     def update_produto(self, produto_id: int, user_id: int, **kwargs) -> dict[str, Any] | None:
         allowed = {"nome", "categoria_id", "preco_custo", "preco_venda", "estoque",
-                   "estoque_minimo", "codigo_barras", "unidade", "ativo", "atualizado_em"}
+                   "estoque_minimo", "codigo_barras", "unidade", "ativo", "atualizado_em",
+                   "ncm", "cest", "cfop", "origem", "unidade_tributavel", "cst_csosn",
+                   "aliquota_icms", "cst_pis", "aliquota_pis", "cst_cofins", "aliquota_cofins"}
         fields = {k: v for k, v in kwargs.items() if k in allowed}
         if not fields:
             return self.get_produto(produto_id, user_id)

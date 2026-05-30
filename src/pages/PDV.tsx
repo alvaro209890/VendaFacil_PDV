@@ -39,6 +39,8 @@ export default function PDV() {
   const [dash, setDash] = useState<DashboardData | null>(null);
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [clienteFiado, setClienteFiado] = useState<number | "">("");
+  const [emitirNota, setEmitirNota] = useState(false);
+  const [cpfConsumidor, setCpfConsumidor] = useState("");
 
   // PIX QR Code state
   const [pixModal, setPixModal] = useState<PixQrCodeResponse | null>(null);
@@ -177,12 +179,16 @@ export default function PDV() {
         desconto,
         forma_pagamento: pagamento,
         cliente_id: pagamento === "fiado" ? Number(clienteFiado) : undefined,
+        emitir_nota: emitirNota,
+        cpf_consumidor: emitirNota ? cpfConsumidor : undefined,
       });
-      setMsg({ tipo: "ok", texto: `Venda finalizada! Total: R$ ${total.toFixed(2)}` });
+      setMsg({ tipo: "ok", texto: `Venda finalizada! Total: R$ ${total.toFixed(2)}${emitirNota ? " (Nota emitida)" : ""}` });
       setCarrinho([]);
       setDesconto(0);
       setPagamento("dinheiro");
       setClienteFiado("");
+      setEmitirNota(false);
+      setCpfConsumidor("");
       setPixModal(null);
       carregar();
     } catch (err: unknown) {
@@ -417,26 +423,50 @@ export default function PDV() {
             )}
 
             {/* Botão finalizar */}
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={finalizarVenda}
-              disabled={loading || pixLoading || carrinho.length === 0}
-              className={`w-full py-4 rounded-2xl text-white font-black text-lg tracking-tight shadow-xl transition-all flex items-center justify-center gap-3 ${
-                loading || pixLoading || carrinho.length === 0
-                  ? "bg-slate-800 text-slate-500 cursor-not-allowed"
-                  : "bg-gradient-to-r from-emerald-600 to-teal-600 shadow-emerald-900/20"
-              }`}
-            >
-              {loading ? (
-                <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <>
-                  <CheckCircle2 size={22} />
-                  <span>FINALIZAR VENDA</span>
-                </>
+            <div className="space-y-3">
+              <label className="flex items-center gap-2 cursor-pointer group">
+                <input 
+                  type="checkbox" 
+                  checked={emitirNota} 
+                  onChange={(e) => setEmitirNota(e.target.checked)}
+                  className="w-4 h-4 rounded accent-brand-500 bg-slate-800 border-slate-700" 
+                />
+                <span className="text-slate-400 text-xs font-bold group-hover:text-slate-300 transition-colors">Emitir NFC-e (Cupom Fiscal)</span>
+              </label>
+
+              {emitirNota && (
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="overflow-hidden">
+                  <input
+                    type="text"
+                    value={cpfConsumidor}
+                    onChange={(e) => setCpfConsumidor(e.target.value)}
+                    placeholder="CPF/CNPJ do Consumidor (opcional)"
+                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-xs focus:outline-none focus:border-brand-500"
+                  />
+                </motion.div>
               )}
-            </motion.button>
+
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={finalizarVenda}
+                disabled={loading || pixLoading || carrinho.length === 0}
+                className={`w-full py-4 rounded-2xl text-white font-black text-lg tracking-tight shadow-xl transition-all flex items-center justify-center gap-3 ${
+                  loading || pixLoading || carrinho.length === 0
+                    ? "bg-slate-800 text-slate-500 cursor-not-allowed"
+                    : "bg-gradient-to-r from-emerald-600 to-teal-600 shadow-emerald-900/20"
+                }`}
+              >
+                {loading ? (
+                  <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <CheckCircle2 size={22} />
+                    <span>FINALIZAR VENDA</span>
+                  </>
+                )}
+              </motion.button>
+            </div>
           </div>
         )}
 

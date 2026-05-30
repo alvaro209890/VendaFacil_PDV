@@ -1,11 +1,15 @@
 import { useState, useEffect, useCallback } from "react";
-import { listarVendas, obterVenda } from "../lib/api";
-import type { Venda } from "../lib/api";
+import { FileText, ExternalLink, RefreshCw } from "lucide-react";
+import { listarVendas, obterVenda, getNotaDaVenda, emitirNfce, consultarNfce } from "../lib/api";
+import type { Venda, NotaFiscal } from "../lib/api";
 
 export default function VendasPage() {
   const [vendas, setVendas] = useState<Venda[]>([]);
   const [loading, setLoading] = useState(true);
   const [detalhe, setDetalhe] = useState<Venda | null>(null);
+  const [nota, setNota] = useState<NotaFiscal | null>(null);
+  const [emitindo, setEmitindo] = useState(false);
+  const [cpf, setCpf] = useState("");
 
   const carregar = useCallback(async () => {
     try {
@@ -27,8 +31,37 @@ export default function VendasPage() {
     try {
       const res = await obterVenda(id);
       setDetalhe(res.venda);
+      const resNota = await getNotaDaVenda(id);
+      setNota(resNota.nota);
+      setCpf("");
     } catch {
       // silent
+    }
+  }
+
+  async function handleEmitir() {
+    if (!detalhe) return;
+    setEmitindo(true);
+    try {
+      const { nota: n } = await emitirNfce(detalhe.id, cpf);
+      setNota(n);
+    } catch (err) {
+      alert((err as Error).message);
+    } finally {
+      setEmitindo(false);
+    }
+  }
+
+  async function handleConsultar() {
+    if (!nota) return;
+    setEmitindo(true);
+    try {
+      const { nota: n } = await consultarNfce(nota.id);
+      setNota(n);
+    } catch (err) {
+      alert((err as Error).message);
+    } finally {
+      setEmitindo(false);
     }
   }
 
@@ -172,9 +205,87 @@ export default function VendasPage() {
                 <span>− R$ {detalhe.desconto.toFixed(2)}</span>
               </div>
             )}
-            <div className="flex justify-between font-bold text-base sm:text-lg">
+            <div className="flex justify-between font-bold text-base sm:text-lg mb-4">
               <span className="text-white">Total</span>
               <span className="text-brand-400">R$ {detalhe.total.toFixed(2)}</span>
+            </div>
+
+            {/* Parte Fiscal */}
+            <div className="pt-4 border-t border-slate-800">
+              <h4 className="text-white font-bold text-xs mb-3 flex items-center gap-2">
+                <FileText size={14} /> NFC-e (Cupom Fiscal)
+              </h4>
+
+              {!nota ? (
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    placeholder="CPF/CNPJ (opcional)"
+                    value={cpf}
+                    onChange={(e) => setCpf(e.target.value)}
+                    className="w-full px-3 py-1.5 bg-slate-800 border border-slate-700 rounded text-white text-xs"
+                  />
+                  <button
+                    onClick={handleEmitir}
+                    disabled={emitindo}
+                    className="w-full py-2 bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white text-xs font-bold rounded flex items-center justify-center gap-2"
+                  >
+                    {emitindo ? <RefreshCw size={14} className="animate-spin" /> : <ExternalLink size={14} />}
+                    Emitir NFC-e
+                  </button>
+                </div>
+              ) : (
+                <div className="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${
+                      nota.status === "autorizada" ? "bg-emerald-500/10 text-emerald-400" :
+                      nota.status === "rejeitada" ? "bg-red-500/10 text-red-400" :
+                      "bg-amber-500/10 text-amber-400"
+                    }`}>
+                      {nota.status}
+                    </span>
+                    <button onClick={handleConsultar} disabled={emitindo} title="Atualizar status" className="text-slate-500 hover:text-white transition-colors">
+                      <RefreshCw size={14} className={emitindo ? "animate-spin" : ""} />
+                    </button>
+                  </div>
+
+                  {nota.numero && (
+                    <p className="text-slate-400 text-[10px] mb-1">Série {nota.serie} • Nº {nota.numero}</p>
+                  )}
+                  {nota.chave && (
+                    <p className="text-slate-500 text-[9px] font-mono break-all mb-2">{nota.chave}</p>
+                  )}
+
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {nota.danfe_url && (
+                      <a
+                        href={nota.danfe_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex-1 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-[10px] font-bold rounded flex items-center justify-center gap-1"
+                      >
+                        <ExternalLink size={12} /> DANFE
+                      </a>
+                    )}
+                    {nota.xml_url && (
+                      <a
+                        href={nota.xml_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex-1 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-[10px] font-bold rounded flex items-center justify-center gap-1"
+                      >
+                        XML
+                      </a>
+                    )}
+                  </div>
+
+                  {nota.mensagem && nota.status !== "autorizada" && (
+                    <p className="mt-3 text-[10px] text-red-400 bg-red-400/5 p-2 rounded border border-red-400/20">
+                      {nota.mensagem}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>

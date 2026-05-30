@@ -96,7 +96,22 @@ export function getMe(): Promise<User | null> {
 
 // ── Produtos ──
 
-export interface Produto {
+/** Campos fiscais (NFC-e) — todos opcionais. */
+export interface CamposFiscais {
+  ncm?: string;
+  cest?: string;
+  cfop?: string;
+  origem?: string;
+  unidade_tributavel?: string;
+  cst_csosn?: string;
+  aliquota_icms?: number;
+  cst_pis?: string;
+  aliquota_pis?: number;
+  cst_cofins?: string;
+  aliquota_cofins?: number;
+}
+
+export interface Produto extends CamposFiscais {
   id: number;
   user_id: number;
   categoria_id: number | null;
@@ -113,7 +128,7 @@ export interface Produto {
   atualizado_em: string;
 }
 
-export interface ProdutoInput {
+export interface ProdutoInput extends CamposFiscais {
   nome: string;
   categoria_id?: number | null;
   preco_custo?: number;
@@ -124,7 +139,7 @@ export interface ProdutoInput {
   unidade?: string;
 }
 
-export interface ProdutoUpdate {
+export interface ProdutoUpdate extends CamposFiscais {
   nome?: string;
   categoria_id?: number | null;
   preco_custo?: number;
@@ -331,9 +346,16 @@ export interface CheckoutInput {
   forma_pagamento?: string;
   observacao?: string;
   cliente_id?: number | null;
+  cpf_consumidor?: string | null;
+  emitir_nota?: boolean;
 }
 
-export function checkout(data: CheckoutInput): Promise<{ venda: Venda; itens: ItemVendaProcessado[] }> {
+export function checkout(data: CheckoutInput): Promise<{ 
+  venda: Venda; 
+  itens: ItemVendaProcessado[]; 
+  nota?: NotaFiscal; 
+  erro_nota?: string 
+}> {
   return request("/api/vendas/checkout", {
     method: "POST",
     body: JSON.stringify(data),
@@ -375,5 +397,79 @@ export async function gerarPixQrCode(valor: number): Promise<PixQrCodeResponse> 
   return request("/api/pix/qrcode", {
     method: "POST",
     body: JSON.stringify({ valor }),
+  });
+}
+
+// ── Fiscal (NFC-e) ──
+
+export interface ConfigFiscal {
+  habilitado?: number;
+  razao_social?: string;
+  nome_fantasia?: string;
+  cnpj?: string;
+  inscricao_estadual?: string;
+  regime_tributario?: string;
+  logradouro?: string;
+  numero?: string;
+  bairro?: string;
+  municipio?: string;
+  codigo_municipio?: string;
+  uf?: string;
+  cep?: string;
+  csc?: string;
+  csc_id?: string;
+  ambiente?: string;
+  gateway?: string;
+  gateway_token?: string;
+  serie?: number;
+  proximo_numero?: number;
+  gateway_token_preenchido?: boolean;
+  csc_preenchido?: boolean;
+}
+
+export interface NotaFiscal {
+  id: number;
+  venda_id: number;
+  ref: string;
+  modelo: string;
+  numero: number | null;
+  serie: number | null;
+  ambiente: string | null;
+  status: string;
+  chave: string | null;
+  protocolo: string | null;
+  mensagem: string | null;
+  xml_url: string | null;
+  danfe_url: string | null;
+  qrcode_url: string | null;
+}
+
+export function getConfigFiscal(): Promise<{ config: ConfigFiscal }> {
+  return request("/api/fiscal/config");
+}
+
+export function salvarConfigFiscal(data: ConfigFiscal): Promise<{ config: ConfigFiscal }> {
+  return request("/api/fiscal/config", { method: "PUT", body: JSON.stringify(data) });
+}
+
+export function getNotaDaVenda(vendaId: number): Promise<{ nota: NotaFiscal | null }> {
+  return request(`/api/fiscal/nfce/venda/${vendaId}`);
+}
+
+export function emitirNfce(vendaId: number, cpf?: string): Promise<{ nota: NotaFiscal }> {
+  return request(`/api/fiscal/nfce/venda/${vendaId}/emitir`, { 
+    method: "POST", 
+    body: JSON.stringify({ cpf_consumidor: cpf })
+  });
+}
+
+export function consultarNfce(notaId: number): Promise<{ nota: NotaFiscal }> {
+  return request(`/api/fiscal/nfce/${notaId}/consultar`, { method: "POST" });
+}
+
+export function cancelarNfce(notaId: number, justificativa: string): Promise<{ nota: NotaFiscal }> {
+  return request(`/api/fiscal/nfce/${notaId}/cancelar`, {
+    method: "POST",
+    body: JSON.stringify({ justificativa }),
   });
 }

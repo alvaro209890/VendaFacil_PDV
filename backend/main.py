@@ -13,6 +13,8 @@ from categorias import router as categorias_router
 from clientes import router as clientes_router
 from contas_receber import router as contas_receber_router
 from pix import router as pix_router
+from fiscal_config import router as fiscal_config_router
+from fiscal_router import router as fiscal_router
 from database import db
 
 app = FastAPI(title="VendaFácil PDV", version="0.1.0")
@@ -39,6 +41,8 @@ app.include_router(vendas_router, prefix="/api/vendas", tags=["vendas"])
 app.include_router(clientes_router, prefix="/api/clientes", tags=["clientes"])
 app.include_router(contas_receber_router, prefix="/api/contas-receber", tags=["contas-receber"])
 app.include_router(pix_router, prefix="/api/pix", tags=["pix"])
+app.include_router(fiscal_config_router, prefix="/api/fiscal/config", tags=["fiscal"])
+app.include_router(fiscal_router, prefix="/api/fiscal/nfce", tags=["fiscal"])
 
 
 def _get_user_id(request: Request) -> int:
@@ -52,9 +56,11 @@ def _get_user_id(request: Request) -> int:
 
 
 @app.on_event("startup")
-async def _iniciar_sync() -> None:
+async def _iniciar_servicos() -> None:
     import sync_client
+    import fiscal
     sync_client.iniciar_em_background()
+    fiscal.iniciar_em_background()
 
 
 @app.get("/health")

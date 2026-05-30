@@ -6,7 +6,12 @@ import {
   desativarProduto,
   listarCategorias,
 } from "../lib/api";
-import type { Produto, ProdutoInput, Categoria } from "../lib/api";
+import type { Produto, ProdutoInput, Categoria, CamposFiscais } from "../lib/api";
+
+const FISCAL_VAZIO: CamposFiscais = {
+  ncm: "", cest: "", cfop: "5102", origem: "0", unidade_tributavel: "",
+  cst_csosn: "102", cst_pis: "07", cst_cofins: "07",
+};
 
 export default function ProdutosPage() {
   const [produtos, setProdutos] = useState<Produto[]>([]);
@@ -25,6 +30,11 @@ export default function ProdutosPage() {
   const [estoqueMinimo, setEstoqueMinimo] = useState("5");
   const [codigoBarras, setCodigoBarras] = useState("");
   const [unidade, setUnidade] = useState("UN");
+  const [fiscal, setFiscal] = useState<CamposFiscais>({ ...FISCAL_VAZIO });
+  const [mostrarFiscal, setMostrarFiscal] = useState(false);
+
+  const setF = (campo: keyof CamposFiscais, valor: string) =>
+    setFiscal((f) => ({ ...f, [campo]: valor }));
 
   const carregar = useCallback(async () => {
     try {
@@ -55,6 +65,8 @@ export default function ProdutosPage() {
     setEstoqueMinimo("5");
     setCodigoBarras("");
     setUnidade("UN");
+    setFiscal({ ...FISCAL_VAZIO });
+    setMostrarFiscal(false);
     setEditando(null);
     setNovo(false);
   }
@@ -70,6 +82,13 @@ export default function ProdutosPage() {
     setEstoqueMinimo(String(p.estoque_minimo));
     setCodigoBarras(p.codigo_barras || "");
     setUnidade(p.unidade);
+    setFiscal({
+      ncm: p.ncm || "", cest: p.cest || "", cfop: p.cfop || "5102",
+      origem: p.origem || "0", unidade_tributavel: p.unidade_tributavel || "",
+      cst_csosn: p.cst_csosn || "102", aliquota_icms: p.aliquota_icms,
+      cst_pis: p.cst_pis || "07", aliquota_pis: p.aliquota_pis,
+      cst_cofins: p.cst_cofins || "07", aliquota_cofins: p.aliquota_cofins,
+    });
     setMsg(null);
   }
 
@@ -96,6 +115,17 @@ export default function ProdutosPage() {
       estoque_minimo: Number(estoqueMinimo) || 0,
       codigo_barras: codigoBarras.trim(),
       unidade: unidade.trim() || "UN",
+      ncm: (fiscal.ncm || "").trim(),
+      cest: (fiscal.cest || "").trim(),
+      cfop: (fiscal.cfop || "").trim(),
+      origem: fiscal.origem || "0",
+      unidade_tributavel: (fiscal.unidade_tributavel || "").trim(),
+      cst_csosn: (fiscal.cst_csosn || "").trim(),
+      aliquota_icms: Number(fiscal.aliquota_icms) || 0,
+      cst_pis: (fiscal.cst_pis || "").trim(),
+      aliquota_pis: Number(fiscal.aliquota_pis) || 0,
+      cst_cofins: (fiscal.cst_cofins || "").trim(),
+      aliquota_cofins: Number(fiscal.aliquota_cofins) || 0,
     };
 
     try {
@@ -372,6 +402,51 @@ export default function ProdutosPage() {
                   placeholder="UN, KG, LT"
                 />
               </div>
+            </div>
+
+            {/* ── Dados fiscais (NFC-e) ── */}
+            <div className="border border-slate-800 rounded-lg overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setMostrarFiscal((v) => !v)}
+                className="w-full flex items-center justify-between px-3 py-2 bg-slate-800/60 text-slate-300 text-xs font-bold uppercase tracking-wide"
+              >
+                <span>🧾 Dados fiscais (NFC-e)</span>
+                <span>{mostrarFiscal ? "−" : "+"}</span>
+              </button>
+              {mostrarFiscal && (
+                <div className="p-3 space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-slate-400 text-xs block mb-0.5">NCM</label>
+                      <input value={fiscal.ncm} onChange={(e) => setF("ncm", e.target.value)} placeholder="8 dígitos" className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500" />
+                    </div>
+                    <div>
+                      <label className="text-slate-400 text-xs block mb-0.5">CFOP</label>
+                      <input value={fiscal.cfop} onChange={(e) => setF("cfop", e.target.value)} placeholder="5102" className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500" />
+                    </div>
+                    <div>
+                      <label className="text-slate-400 text-xs block mb-0.5">CEST</label>
+                      <input value={fiscal.cest} onChange={(e) => setF("cest", e.target.value)} placeholder="opcional" className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500" />
+                    </div>
+                    <div>
+                      <label className="text-slate-400 text-xs block mb-0.5">Origem</label>
+                      <input value={fiscal.origem} onChange={(e) => setF("origem", e.target.value)} placeholder="0" className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500" />
+                    </div>
+                    <div>
+                      <label className="text-slate-400 text-xs block mb-0.5">CST/CSOSN</label>
+                      <input value={fiscal.cst_csosn} onChange={(e) => setF("cst_csosn", e.target.value)} placeholder="102" className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500" />
+                    </div>
+                    <div>
+                      <label className="text-slate-400 text-xs block mb-0.5">Alíq. ICMS %</label>
+                      <input type="number" step="0.01" value={fiscal.aliquota_icms ?? ""} onChange={(e) => setF("aliquota_icms", e.target.value)} placeholder="0" className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500" />
+                    </div>
+                  </div>
+                  <p className="text-slate-500 text-[11px] leading-snug">
+                    No Simples Nacional use CSOSN (ex.: 102). NCM e CFOP são obrigatórios para emitir. Em dúvida, consulte seu contador.
+                  </p>
+                </div>
+              )}
             </div>
 
             <button

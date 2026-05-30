@@ -22,6 +22,8 @@ class CheckoutRequest(BaseModel):
     forma_pagamento: str = Field(default="dinheiro", max_length=30)
     observacao: str = Field(default="", max_length=200)
     cliente_id: int | None = None
+    cpf_consumidor: str | None = Field(default=None, max_length=14)
+    emitir_nota: bool = False
 
 
 # ── Rotas ──
@@ -113,7 +115,18 @@ async def checkout(data: CheckoutRequest, request: Request):
             agora=agora,
         )
 
-    return {"venda": venda, "itens": itens_processados}
+    # Emissão de nota fiscal se solicitado
+    nota = None
+    if data.emitir_nota and venda:
+        import fiscal
+        try:
+            # Passar o CPF se fornecido
+            nota = fiscal.emitir_nfce(venda["id"], user_id, cpf=data.cpf_consumidor)
+        except Exception as e:
+            # Não falha a venda se a nota der erro, mas avisa
+            return {"venda": venda, "itens": itens_processados, "erro_nota": str(e)}
+
+    return {"venda": venda, "itens": itens_processados, "nota": nota}
 
 
 @router.get("")
