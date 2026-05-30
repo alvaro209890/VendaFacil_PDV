@@ -261,3 +261,7 @@ if STATIC_DIR.is_dir():
     @app.get("/", include_in_schema=False)
     async def _admin_ui() -> FileResponse:
         return FileResponse(str(STATIC_DIR / "index.html"))
+
+    @app.get("/config.js", include_in_schema=False)
+    async def _admin_cfg() -> FileResponse:
+        return FileResponse(str(STATIC_DIR / "config.js"), media_type="application/javascript")

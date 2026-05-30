@@ -5,12 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>VendaFácil — Painel</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- URL da API (Render). Vazio = mesma origem (quando servido pela própria
+       API). No Vercel, defina aqui ou pelo botão de config na tela. -->
+  <script src="config.js"></script>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen">
   <div id="app" class="max-w-5xl mx-auto p-4 md:p-8"></div>
 
   <script>
-    const API = "";
+    // Resolve a base da API: config.js → localStorage → mesma origem.
+    const API = (window.PAINEL_API_URL || localStorage.getItem("painel_api_url") || "").replace(/\/+$/, "");
     const tokenKey = "painel_admin_token";
     const $ = (sel) => document.querySelector(sel);
     const getToken = () => localStorage.getItem(tokenKey) || "";
@@ -33,17 +37,37 @@
     }
     function moeda(v) { return "R$ " + Number(v || 0).toFixed(2); }
 
+    // Pede a URL da API e recarrega (usado quando hospedado no Vercel sem config.js).
+    function configurarApi() {
+      const atual = window.PAINEL_API_URL || localStorage.getItem("painel_api_url") || "";
+      const url = prompt("URL da API do Painel (ex.: https://vendafacil-painel.onrender.com)", atual);
+      if (url !== null) {
+        localStorage.setItem("painel_api_url", url.trim());
+        location.reload();
+      }
+    }
+
+    function telaErroConexao(msg) {
+      $("#app").innerHTML = cardWrap(`
+        <p class="text-red-400 text-sm mb-4">Não consegui falar com a API.<br><span class="text-slate-500">${msg || ""}</span></p>
+        <p class="text-slate-400 text-xs mb-4">API atual: <b>${API || "(mesma origem)"}</b></p>
+        <button onclick="configurarApi()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg py-2 font-bold">Configurar URL da API</button>
+      `);
+    }
+
     // ── Telas ──
     async function rota() {
       const app = $("#app");
       app.innerHTML = `<p class="text-slate-500">Carregando…</p>`;
-      if (!getToken()) {
-        const { precisa_setup } = await api("/api/admin/precisa-setup");
-        return precisa_setup ? telaSetup() : telaLogin();
-      }
       try {
+        if (!getToken()) {
+          const { precisa_setup } = await api("/api/admin/precisa-setup");
+          return precisa_setup ? telaSetup() : telaLogin();
+        }
         await telaPainel();
       } catch (e) {
+        // Falha de rede/CORS → provável URL da API errada (caso Vercel).
+        if (e instanceof TypeError) return telaErroConexao(e.message);
         clearToken();
         telaLogin();
       }
