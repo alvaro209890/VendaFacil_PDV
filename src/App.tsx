@@ -10,6 +10,7 @@ import Categorias from "./pages/Categorias";
 import Clientes from "./pages/Clientes";
 import ContasReceber from "./pages/ContasReceber";
 import Fiscal from "./pages/Fiscal";
+import Maquininha from "./pages/Maquininha";
 import GateAtivacao from "./pages/Ativacao";
 import Mascote from "./components/Mascote";
 import { clearToken } from "./lib/api";
@@ -23,6 +24,7 @@ import {
   ReceiptText, 
   Wallet,
   FileText,
+  CreditCard,
   LogOut
 } from "lucide-react";
 
@@ -35,6 +37,7 @@ const navItems = [
   { to: "/vendas", label: "Vendas", short: "Vendas", icon: <ReceiptText size={20} /> },
   { to: "/contas-receber", label: "Contas a Receber", short: "Fiado", icon: <Wallet size={20} /> },
   { to: "/fiscal", label: "Fiscal / NFC-e", short: "Fiscal", icon: <FileText size={20} /> },
+  { to: "/maquininha", label: "Maquininha", short: "Cartão", icon: <CreditCard size={20} /> },
 ];
 
 function Layout({ children }: { children: React.ReactNode }) {
@@ -223,6 +226,7 @@ export default function App() {
                   <Route path="/vendas" element={<Vendas />} />
                   <Route path="/contas-receber" element={<ContasReceber />} />
                   <Route path="/fiscal" element={<Fiscal />} />
+                  <Route path="/maquininha" element={<Maquininha />} />
                   <Route path="*" element={<Navigate to="/pdv" replace />} />
                 </Routes>
               </Layout>

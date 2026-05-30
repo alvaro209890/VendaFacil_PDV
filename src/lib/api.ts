@@ -473,3 +473,36 @@ export function cancelarNfce(notaId: number, justificativa: string): Promise<{ n
     body: JSON.stringify({ justificativa }),
   });
 }
+
+// ── Maquininha (Mercado Pago Point) ──
+
+export interface ConfigMaquininha {
+  habilitado?: number;
+  provedor?: string;
+  access_token?: string;
+  device_id?: string;
+  store_id?: string;
+  pos_id?: string;
+  imprimir_comprovante?: number;
+  access_token_preenchido?: boolean;
+}
+
+export interface DispositivoPoint {
+  id: string;
+  pos_id?: number | string;
+  store_id?: string;
+  external_pos_id?: string;
+  operating_mode?: string;
+}
+
+export function getConfigMaquininha(): Promise<{ config: ConfigMaquininha }> {
+  return request("/api/maquininha/config");
+}
+
+export function salvarConfigMaquininha(data: ConfigMaquininha): Promise<{ config: ConfigMaquininha }> {
+  return request("/api/maquininha/config", { method: "PUT", body: JSON.stringify(data) });
+}
+
+export function listarDispositivosMaquininha(): Promise<{ dispositivos: DispositivoPoint[] }> {
+  return request("/api/maquininha/dispositivos");
+}
