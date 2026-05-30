@@ -59,8 +59,8 @@ Pronto. O arquivo final fica em **`dist_exe\VendaFacilPDV.exe`**. Esse é o
 
 > Na primeira execução o Windows SmartScreen pode avisar que é de "editor
 > desconhecido" (normal para apps sem assinatura digital). Basta
-> "Mais informações" → "Executar assim mesmo". Para remover o aviso é preciso
-> comprar um certificado de assinatura de código (opcional).
+> "Mais informações" → "Executar assim mesmo". **Decidimos não assinar** o .exe
+> por enquanto — não é essencial.
 
 ---
 

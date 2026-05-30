@@ -16,8 +16,9 @@ falta é **negócio, distribuição e robustez de produção**, não funcionalid
 - [x] **Instalador amigável** — **pronto**: script Inno Setup em
       `installer/vendafacil.iss` + `installer/build_installer.bat`. Só compilar
       no Windows (ver [`BUILD_WINDOWS.md`](BUILD_WINDOWS.md)).
-- [~] **Assinatura de código** — **script e guia prontos** (`installer/sign.bat`).
-      Falta você **comprar um certificado** de Code Signing (OV/EV) e assinar.
+- [x] **Assinatura de código** — **decidido: NÃO vamos assinar** (não é
+      essencial). O Windows mostra aviso do SmartScreen na 1ª execução →
+      "Mais informações → Executar assim mesmo". Detalhe em `BUILD_WINDOWS.md`.
 - [~] **Termos de Uso + Política de Privacidade + LGPD** — **modelos prontos** em
       [`legal/`](legal/). Falta **revisar com advogado** e preencher os campos.
 - [ ] **Empresa/CNPJ** para faturar o serviço (só você pode providenciar).

@@ -10,13 +10,15 @@ verdade e calcula receita/lucro automaticamente.
 
 ## 📌 Situação atual (custo hoje ≈ R$ 0)
 
-- **Render**: plano **gratuito** → R$ 0.
+- **Render**: plano **gratuito** → R$ 0. Mantido **acordado** pelo keep-alive
+  (`keepalive.py` pinga `/health` a cada 10 min) — não hiberna.
 - **Supabase**: plano **gratuito** → R$ 0.
 - **Vercel**: plano **gratuito** → R$ 0.
 - **Domínio**: **não comprado por enquanto** (usando `.onrender.com`/`.vercel.app`).
 - **NFC-e (Focus NFe)**: **adiado** — ainda precisa ser pago e vinculado; não
   está no custo. (No PDV a NFC-e já é opcional; ninguém é obrigado a usar.)
-- **Code signing**: ainda não comprado.
+- **Assinatura de código (.exe)**: **não vamos fazer** — não é essencial. O
+  Windows mostra um aviso do SmartScreen na 1ª execução; é só "Executar assim mesmo".
 
 Por isso os custos vêm **zerados** no painel. Conforme você for assinando algo
 (plano pago, domínio, NFC-e), adicione/edite na tela **💰 Financeiro**.
@@ -29,8 +31,10 @@ Por isso os custos vêm **zerados** no painel. Conforme você for assinando algo
 | **Supabase** | banco de dados | R$ 0 (limites) | Pro ~US$ 25/mês (~R$ 135) |
 | **Vercel** | painel admin (UI) | R$ 0 (Hobby) | Pro ~US$ 20/mês se uso comercial |
 | **Domínio .com.br** | seu endereço | — | ~R$ 40/ano (~R$ 4/mês) |
-| **Certificado Code Signing** | assinar o .exe | — | ~US$ 100–300/ano (~R$ 60/mês rateado) |
 | **Focus NFe** | emitir NFC-e (por loja) | sandbox grátis | ~R$ 20–50/mês por loja (volume) |
+
+> Assinatura de código do `.exe` **não entra** — decidimos não assinar (não é
+> essencial; ver `BUILD_WINDOWS.md`).
 
 > **Importante — o que NÃO é seu custo:**
 > - **Certificado digital A1 (e-CNPJ)** da NFC-e → cada **varejista** paga (~R$120–250/ano).
@@ -39,20 +43,20 @@ Por isso os custos vêm **zerados** no painel. Conforme você for assinando algo
 ## A conta cobrando R$ 180/loja/mês
 
 Usando as referências acima num cenário de produção:
-- **Custo fixo** (independe do nº de lojas): Render + Supabase + Vercel + domínio +
-  code signing ≈ **R$ 240/mês** (ou bem menos no free).
+- **Custo fixo** (independe do nº de lojas): Render + Supabase + Vercel + domínio
+  ≈ **R$ 180/mês** num cenário pago (hoje, no free, ≈ **R$ 0**).
 - **Custo por loja** (variável): Focus NFe ≈ **R$ 30/loja** (só se a loja usa NFC-e).
 - **Margem por loja** = 180 − 30 = **R$ 150**.
-- **Break-even** ≈ custo fixo ÷ margem = 240 ÷ 150 ≈ **2 lojas** já pagam a operação.
+- **Break-even** ≈ custo fixo ÷ margem = 180 ÷ 150 ≈ **2 lojas** já pagam a operação.
 
-Exemplo com **10 lojas**:
+Exemplo com **10 lojas** (cenário pago + NFC-e):
 - Receita: 10 × 180 = **R$ 1.800**
-- Custo: 240 (fixo) + 10 × 30 = **R$ 540**
-- **Lucro: R$ 1.260/mês**
+- Custo: 180 (fixo) + 10 × 30 = **R$ 480**
+- **Lucro: R$ 1.320/mês**
 
-> No começo, rodando tudo em **free** (custo fixo ≈ R$ 0) e sem NFC-e, quase tudo
-> dos R$ 180 é lucro — mas o free não é recomendado para produção séria (Render
-> dorme, Supabase tem limites). Suba para os pagos quando tiver clientes.
+> **Hoje** rodamos tudo em **free** (custo fixo ≈ R$ 0) e sem NFC-e, então quase
+> tudo dos R$ 180 por loja é lucro. O free do Render é mantido acordado pelo
+> keep-alive (ver abaixo); quando crescer, vale subir para planos pagos.
 
 ## Onde controlar no painel
 

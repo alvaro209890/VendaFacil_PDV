@@ -17,8 +17,6 @@ frontend exige Node 20+).
 | **Node.js 20+** | buildar o frontend React | https://nodejs.org |
 | **Python 3.10+** | backend + PyInstaller (marque "Add to PATH") | https://python.org |
 | **Inno Setup 6** | gerar o instalador | https://jrsoftware.org/isdl.php |
-| **Windows SDK** (signtool) | assinar o código (opcional, mas recomendado) | https://developer.microsoft.com/windows/downloads/windows-sdk/ |
-| **Certificado de Code Signing** | assinar (OV/EV) | Certisign, Valid, DigiCert, Sectigo… |
 
 Baixe o projeto (git clone ou ZIP) numa pasta, ex.: `C:\VendaFacil_PDV`.
 
@@ -74,29 +72,25 @@ atalho no Menu Iniciar e na Área de Trabalho, e registra o desinstalador.
 
 ---
 
-## 4) Assinar o código (recomendado)
+## 4) Aviso do Windows SmartScreen (sem assinatura)
 
-Sem assinatura, o Windows SmartScreen mostra **"Editor desconhecido"** e pode
-bloquear o download — péssimo para vender. Com um certificado de Code Signing:
+> **Decisão atual: NÃO assinamos o executável** (assinatura de código não é
+> essencial agora).
 
-```bat
-REM Assine o app E o instalador (edite installer\sign.bat com seu .pfx/senha)
-installer\sign.bat dist_exe\VendaFacilPDV.exe
-installer\sign.bat dist_installer\VendaFacilPDV-Setup-1.0.0.exe
-```
+Como o instalador não é assinado, na 1ª execução o Windows pode mostrar uma
+tela azul do **SmartScreen** ("O Windows protegeu o seu PC"). É normal para apps
+sem certificado. Para abrir: clique em **"Mais informações" → "Executar assim
+mesmo"**. Vale orientar o lojista sobre isso (ou mande um print no manual).
 
-Dicas:
-- **Certificado EV** dá reputação imediata no SmartScreen; **OV** ganha
-  reputação conforme downloads.
-- Sempre use **timestamp** (já está no `sign.bat`) para a assinatura não vencer
-  junto com o certificado.
-- Assine o `.exe` **antes** de empacotar no instalador e o **instalador** depois.
+Se um dia quiser eliminar esse aviso, basta comprar um **certificado de Code
+Signing** e assinar o `.exe` e o instalador com o `signtool` — mas isso fica
+para depois, não bloqueia a venda.
 
 ---
 
 ## 5) Distribuir
 
-Entregue o **`VendaFacilPDV-Setup-x.y.z.exe`** (de preferência assinado).
+Entregue o **`VendaFacilPDV-Setup-x.y.z.exe`**.
 Canais comuns: link de download no seu site, Google Drive, ou e-mail.
 
 Ao instalar, o lojista:
