@@ -71,6 +71,18 @@ _SCHEMA_SQLITE = """
         payload TEXT,
         UNIQUE(conta_id, venda_uuid)
     );
+    CREATE TABLE IF NOT EXISTS fin_config (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        preco_por_loja REAL NOT NULL DEFAULT 180,
+        atualizado_em TEXT
+    );
+    CREATE TABLE IF NOT EXISTS fin_custos (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nome TEXT NOT NULL,
+        valor REAL NOT NULL DEFAULT 0,
+        tipo TEXT NOT NULL DEFAULT 'fixo',
+        ativo INTEGER NOT NULL DEFAULT 1
+    );
 """
 
 _SCHEMA_PG = """
@@ -104,6 +116,18 @@ _SCHEMA_PG = """
         recebido_em TEXT NOT NULL,
         payload TEXT,
         UNIQUE(conta_id, venda_uuid)
+    );
+    CREATE TABLE IF NOT EXISTS fin_config (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        preco_por_loja DOUBLE PRECISION NOT NULL DEFAULT 180,
+        atualizado_em TEXT
+    );
+    CREATE TABLE IF NOT EXISTS fin_custos (
+        id SERIAL PRIMARY KEY,
+        nome TEXT NOT NULL,
+        valor DOUBLE PRECISION NOT NULL DEFAULT 0,
+        tipo TEXT NOT NULL DEFAULT 'fixo',
+        ativo INTEGER NOT NULL DEFAULT 1
     );
 """
 
@@ -143,6 +167,28 @@ class Database:
             else:
                 with self._conn:
                     self._conn.executescript(ddl)
+        self._seed_financeiro()
+
+    def _seed_financeiro(self) -> None:
+        """Garante a linha de config e os custos de referência (1ª vez)."""
+        if not self._fetchone("SELECT 1 FROM fin_config WHERE id = 1"):
+            self._exec("INSERT INTO fin_config (id, preco_por_loja) VALUES (1, 180)")
+        if not self._fetchone("SELECT 1 FROM fin_custos LIMIT 1"):
+            # Valores de REFERÊNCIA (R$/mês) — edite no painel conforme sua
+            # realidade. Em planos free, ponha 0.
+            padrao = [
+                ("Render — hospedagem da API", 38.0, "fixo"),
+                ("Supabase — banco de dados", 0.0, "fixo"),
+                ("Vercel — painel admin", 0.0, "fixo"),
+                ("Domínio próprio (rateio mensal)", 4.0, "fixo"),
+                ("Certificado Code Signing (rateio mensal)", 60.0, "fixo"),
+                ("Focus NFe — NFC-e (por loja)", 30.0, "por_loja"),
+            ]
+            for nome, valor, tipo in padrao:
+                self._exec(
+                    "INSERT INTO fin_custos (nome, valor, tipo) VALUES (?,?,?)",
+                    (nome, valor, tipo),
+                )
 
     def _fetchone(self, sql: str, params: tuple = ()) -> Optional[dict]:
         with self._lock:
@@ -282,6 +328,75 @@ class Database:
             "FROM vendas_sync WHERE conta_id = ?", (conta_id,)
         )
         return {"qtd_vendas": row["qtd"], "total_vendido": row["total"]}
+
+    # ── Financeiro (orçamento do SaaS) ──
+    def contar_lojas_ativas(self) -> int:
+        row = self._fetchone("SELECT COUNT(*) AS c FROM contas WHERE ativo = 1")
+        return int(row["c"]) if row else 0
+
+    def get_preco_por_loja(self) -> float:
+        row = self._fetchone("SELECT preco_por_loja FROM fin_config WHERE id = 1")
+        return float(row["preco_por_loja"]) if row else 180.0
+
+    def set_preco_por_loja(self, valor: float) -> None:
+        if not self._fetchone("SELECT 1 FROM fin_config WHERE id = 1"):
+            self._exec("INSERT INTO fin_config (id, preco_por_loja) VALUES (1, ?)", (valor,))
+        else:
+            self._exec(
+                "UPDATE fin_config SET preco_por_loja = ?, atualizado_em = ? WHERE id = 1",
+                (valor, agora()),
+            )
+
+    def listar_custos(self) -> list[dict]:
+        return self._fetchall(
+            "SELECT id, nome, valor, tipo, ativo FROM fin_custos ORDER BY id"
+        )
+
+    def add_custo(self, nome: str, valor: float, tipo: str) -> Optional[dict]:
+        new_id = self._insert_id(
+            "INSERT INTO fin_custos (nome, valor, tipo) VALUES (?,?,?)",
+            (nome, valor, tipo),
+        )
+        return self._fetchone("SELECT * FROM fin_custos WHERE id = ?", (new_id,)) if new_id else None
+
+    def update_custo(self, custo_id: int, campos: dict) -> bool:
+        permitidos = {"nome", "valor", "tipo", "ativo"}
+        dados = {k: v for k, v in campos.items() if k in permitidos and v is not None}
+        if not dados:
+            return False
+        sets = ", ".join(f"{k} = ?" for k in dados)
+        return self._exec(
+            f"UPDATE fin_custos SET {sets} WHERE id = ?",
+            tuple(dados.values()) + (custo_id,),
+        ) > 0
+
+    def excluir_custo(self, custo_id: int) -> bool:
+        return self._exec("DELETE FROM fin_custos WHERE id = ?", (custo_id,)) > 0
+
+    def resumo_financeiro(self) -> dict:
+        import math
+        lojas = self.contar_lojas_ativas()
+        preco = self.get_preco_por_loja()
+        custos = self.listar_custos()
+        fixo = sum(c["valor"] for c in custos if c["ativo"] and c["tipo"] == "fixo")
+        por_loja = sum(c["valor"] for c in custos if c["ativo"] and c["tipo"] == "por_loja")
+        receita = lojas * preco
+        custo_total = fixo + por_loja * lojas
+        lucro = receita - custo_total
+        margem_unit = preco - por_loja  # contribuição por loja antes dos fixos
+        equilibrio = math.ceil(fixo / margem_unit) if margem_unit > 0 else None
+        return {
+            "lojas_ativas": lojas,
+            "preco_por_loja": round(preco, 2),
+            "custo_fixo_mensal": round(fixo, 2),
+            "custo_por_loja": round(por_loja, 2),
+            "receita_mensal": round(receita, 2),
+            "custo_total_mensal": round(custo_total, 2),
+            "lucro_mensal": round(lucro, 2),
+            "margem_por_loja": round(margem_unit, 2),
+            "lojas_para_equilibrio": equilibrio,
+            "custos": custos,
+        }
 
 
 db = Database()

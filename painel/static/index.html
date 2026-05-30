@@ -150,7 +150,10 @@
         </div>
         <div class="flex justify-between items-center mb-4">
           <h2 class="font-bold text-slate-300">Lojas (${contas.length})</h2>
-          <button id="nova" class="bg-emerald-600 hover:bg-emerald-500 rounded-lg px-4 py-2 text-sm font-bold">+ Nova loja</button>
+          <div class="flex gap-2">
+            <button id="fin" class="bg-slate-800 hover:bg-slate-700 rounded-lg px-4 py-2 text-sm font-bold">💰 Financeiro</button>
+            <button id="nova" class="bg-emerald-600 hover:bg-emerald-500 rounded-lg px-4 py-2 text-sm font-bold">+ Nova loja</button>
+          </div>
         </div>
         <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-x-auto">
           <table class="w-full text-sm"><thead><tr class="text-left text-slate-500 text-xs uppercase">
@@ -160,6 +163,7 @@
         <div id="modal"></div>`;
 
       $("#sair").onclick = () => { clearToken(); rota(); };
+      $("#fin").onclick = () => telaFinanceiro();
       $("#nova").onclick = () => modalConta(null);
       document.querySelectorAll("[data-edit]").forEach(b =>
         b.onclick = () => modalConta(contas.find(c => c.id == b.dataset.edit)));
@@ -178,6 +182,102 @@
             telaPainel();
           } catch (err) { alert("Erro ao excluir: " + err.message); }
         });
+    }
+
+    async function telaFinanceiro() {
+      $("#app").innerHTML = `<p class="text-slate-500">Carregando…</p>`;
+      const r = await api("/api/admin/financeiro");
+      const card = (titulo, valor, cor) => `
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+          <div class="text-xs text-slate-500 uppercase tracking-wide">${titulo}</div>
+          <div class="text-2xl font-black ${cor || ''}">${valor}</div>
+        </div>`;
+      const linhasCustos = r.custos.map(c => `
+        <tr class="border-t border-slate-800" data-row="${c.id}">
+          <td class="py-2 pr-2"><input data-f="nome" value="${c.nome.replace(/"/g,'&quot;')}" class="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-sm"/></td>
+          <td class="px-2"><input data-f="valor" type="number" step="0.01" value="${c.valor}" class="w-28 bg-slate-950 border border-slate-800 rounded px-2 py-1 text-sm"/></td>
+          <td class="px-2">
+            <select data-f="tipo" class="bg-slate-950 border border-slate-800 rounded px-2 py-1 text-sm">
+              <option value="fixo" ${c.tipo==='fixo'?'selected':''}>Fixo (mês)</option>
+              <option value="por_loja" ${c.tipo==='por_loja'?'selected':''}>Por loja</option>
+            </select>
+          </td>
+          <td class="px-2 text-center"><input data-f="ativo" type="checkbox" ${c.ativo?'checked':''}/></td>
+          <td class="px-2 text-right whitespace-nowrap">
+            <button data-save="${c.id}" class="text-xs px-2 py-1 rounded bg-emerald-700 hover:bg-emerald-600">Salvar</button>
+            <button data-del="${c.id}" class="text-xs px-2 py-1 rounded bg-red-700 hover:bg-red-600">x</button>
+          </td>
+        </tr>`).join("");
+      const equil = r.lojas_para_equilibrio == null ? "—" : r.lojas_para_equilibrio + " loja(s)";
+      $("#app").innerHTML = `
+        <div class="flex items-center justify-between mb-6">
+          <h1 class="text-2xl font-black">💰 Controle <span class="text-emerald-400">Financeiro</span></h1>
+          <button id="voltar" class="text-sm text-slate-400 hover:text-white">← Voltar</button>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+          ${card("Lojas ativas", r.lojas_ativas)}
+          ${card("Receita / mês", moeda(r.receita_mensal), "text-emerald-400")}
+          ${card("Custo / mês", moeda(r.custo_total_mensal), "text-amber-400")}
+          ${card("Lucro / mês", moeda(r.lucro_mensal), r.lucro_mensal>=0?"text-emerald-400":"text-red-400")}
+        </div>
+        <div class="grid md:grid-cols-3 gap-3 mb-6 text-sm">
+          ${card("Preço por loja", moeda(r.preco_por_loja))}
+          ${card("Custo por loja (variável)", moeda(r.custo_por_loja))}
+          ${card("Lojas p/ empatar (break-even)", equil)}
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 mb-6 flex items-end gap-3">
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">Preço cobrado por loja (R$/mês)</label>
+            <input id="preco" type="number" step="0.01" value="${r.preco_por_loja}" class="w-40 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2"/>
+          </div>
+          <button id="salvarPreco" class="bg-emerald-600 hover:bg-emerald-500 rounded-lg px-4 py-2 text-sm font-bold">Salvar preço</button>
+        </div>
+        <h2 class="font-bold text-slate-300 mb-2">Custos (o que você paga)</h2>
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-x-auto mb-4">
+          <table class="w-full text-sm"><thead><tr class="text-left text-slate-500 text-xs uppercase">
+            <th class="py-3 px-2">Item</th><th class="px-2">Valor (R$)</th><th class="px-2">Tipo</th><th class="px-2">Ativo</th><th></th>
+          </tr></thead><tbody>${linhasCustos}</tbody></table>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-wrap items-end gap-2">
+          <div class="flex-1 min-w-[160px]"><label class="block text-xs text-slate-500 mb-1">Novo custo</label>
+            <input id="nNome" placeholder="Ex.: Mercado Pago, e-mail..." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2"/></div>
+          <div><label class="block text-xs text-slate-500 mb-1">Valor</label>
+            <input id="nValor" type="number" step="0.01" value="0" class="w-28 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2"/></div>
+          <div><label class="block text-xs text-slate-500 mb-1">Tipo</label>
+            <select id="nTipo" class="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2">
+              <option value="fixo">Fixo (mês)</option><option value="por_loja">Por loja</option></select></div>
+          <button id="addCusto" class="bg-slate-700 hover:bg-slate-600 rounded-lg px-4 py-2 text-sm font-bold">+ Adicionar</button>
+        </div>
+        <p class="text-slate-500 text-xs mt-3">Valores são <b>referências editáveis</b>. Em planos gratuitos, deixe 0. "Por loja" multiplica pelo nº de lojas ativas; "Fixo" é o mesmo todo mês.</p>`;
+
+      $("#voltar").onclick = () => telaPainel();
+      $("#salvarPreco").onclick = async () => {
+        await api("/api/admin/financeiro", { method: "PUT", body: JSON.stringify({ preco_por_loja: Number($("#preco").value) }) });
+        telaFinanceiro();
+      };
+      $("#addCusto").onclick = async () => {
+        const nome = $("#nNome").value.trim();
+        if (!nome) return;
+        await api("/api/admin/financeiro/custos", { method: "POST", body: JSON.stringify({
+          nome, valor: Number($("#nValor").value), tipo: $("#nTipo").value }) });
+        telaFinanceiro();
+      };
+      document.querySelectorAll("[data-save]").forEach(b => b.onclick = async () => {
+        const tr = document.querySelector(`[data-row="${b.dataset.save}"]`);
+        const body = {
+          nome: tr.querySelector('[data-f="nome"]').value,
+          valor: Number(tr.querySelector('[data-f="valor"]').value),
+          tipo: tr.querySelector('[data-f="tipo"]').value,
+          ativo: tr.querySelector('[data-f="ativo"]').checked,
+        };
+        await api("/api/admin/financeiro/custos/" + b.dataset.save, { method: "PUT", body: JSON.stringify(body) });
+        telaFinanceiro();
+      });
+      document.querySelectorAll("[data-del]").forEach(b => b.onclick = async () => {
+        if (!confirm("Remover este custo?")) return;
+        await api("/api/admin/financeiro/custos/" + b.dataset.del, { method: "DELETE" });
+        telaFinanceiro();
+      });
     }
 
     function modalConta(conta) {

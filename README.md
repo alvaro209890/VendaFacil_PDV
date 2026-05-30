@@ -6,6 +6,7 @@ distribuído como **executável único (.exe)** com controle central de licença
 > 📦 **Deploy e produção:** [`docs/DEPLOY_E_PRODUCAO.md`](docs/DEPLOY_E_PRODUCAO.md)
 > · **Gerar o .exe no Windows:** [`docs/BUILD_WINDOWS.md`](docs/BUILD_WINDOWS.md)
 > · **Cobrança/bloqueio manual:** [`docs/COBRANCA_MANUAL.md`](docs/COBRANCA_MANUAL.md)
+> · **Custos & financeiro:** [`docs/CUSTOS.md`](docs/CUSTOS.md)
 > · **Jurídico (Termos/Privacidade/LGPD):** [`docs/legal/`](docs/legal/)
 > · **O que falta para comercializar:** [`docs/CHECKLIST_COMERCIALIZACAO.md`](docs/CHECKLIST_COMERCIALIZACAO.md)
 

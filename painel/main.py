@@ -114,6 +114,23 @@ class SyncPayload(BaseModel):
     vendas: list[VendaSync] = []
 
 
+class PrecoInput(BaseModel):
+    preco_por_loja: float = Field(ge=0)
+
+
+class CustoInput(BaseModel):
+    nome: str = Field(min_length=1, max_length=120)
+    valor: float = Field(ge=0)
+    tipo: str = "fixo"  # fixo | por_loja
+
+
+class CustoUpdate(BaseModel):
+    nome: Optional[str] = Field(default=None, max_length=120)
+    valor: Optional[float] = Field(default=None, ge=0)
+    tipo: Optional[str] = None
+    ativo: Optional[bool] = None
+
+
 # ── Health ──
 @app.get("/health")
 async def health() -> dict:
@@ -205,6 +222,47 @@ async def excluir_conta(conta_id: int, request: Request) -> dict:
         raise HTTPException(status_code=404, detail="Conta não encontrada.")
     db.excluir_conta(conta_id)
     return {"ok": True}
+
+
+# ── Financeiro (orçamento do SaaS) ──
+@app.get("/api/admin/financeiro")
+async def financeiro(request: Request) -> dict:
+    _admin_atual(request)
+    return db.resumo_financeiro()
+
+
+@app.put("/api/admin/financeiro")
+async def salvar_preco(data: PrecoInput, request: Request) -> dict:
+    _admin_atual(request)
+    db.set_preco_por_loja(data.preco_por_loja)
+    return db.resumo_financeiro()
+
+
+@app.post("/api/admin/financeiro/custos")
+async def add_custo(data: CustoInput, request: Request) -> dict:
+    _admin_atual(request)
+    tipo = data.tipo if data.tipo in ("fixo", "por_loja") else "fixo"
+    db.add_custo(data.nome, data.valor, tipo)
+    return db.resumo_financeiro()
+
+
+@app.put("/api/admin/financeiro/custos/{custo_id}")
+async def editar_custo(custo_id: int, data: CustoUpdate, request: Request) -> dict:
+    _admin_atual(request)
+    campos = data.model_dump(exclude_none=True)
+    if "ativo" in campos:
+        campos["ativo"] = 1 if campos["ativo"] else 0
+    if campos.get("tipo") and campos["tipo"] not in ("fixo", "por_loja"):
+        campos.pop("tipo")
+    db.update_custo(custo_id, campos)
+    return db.resumo_financeiro()
+
+
+@app.delete("/api/admin/financeiro/custos/{custo_id}")
+async def remover_custo(custo_id: int, request: Request) -> dict:
+    _admin_atual(request)
+    db.excluir_custo(custo_id)
+    return db.resumo_financeiro()
 
 
 # ── PDV: validação de conta (login controlado centralmente) ──
