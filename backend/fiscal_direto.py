@@ -31,10 +31,14 @@ WS = {
     ("65", "producao", "autorizacao"): "https://nfce.sefaz.mt.gov.br/nfcews/services/NFeAutorizacao4",
     ("65", "homologacao", "consulta"): "https://homologacao.sefaz.mt.gov.br/nfcews/services/NFeConsultaProtocolo4",
     ("65", "producao", "consulta"): "https://nfce.sefaz.mt.gov.br/nfcews/services/NFeConsultaProtocolo4",
+    ("65", "homologacao", "evento"): "https://homologacao.sefaz.mt.gov.br/nfcews/services/NFeRecepcaoEvento4",
+    ("65", "producao", "evento"): "https://nfce.sefaz.mt.gov.br/nfcews/services/NFeRecepcaoEvento4",
     ("55", "homologacao", "autorizacao"): "https://homologacao.sefaz.mt.gov.br/nfews/v2/services/NFeAutorizacao4",
     ("55", "producao", "autorizacao"): "https://nfe.sefaz.mt.gov.br/nfews/v2/services/NFeAutorizacao4",
     ("55", "homologacao", "consulta"): "https://homologacao.sefaz.mt.gov.br/nfews/v2/services/NFeConsultaProtocolo4",
     ("55", "producao", "consulta"): "https://nfe.sefaz.mt.gov.br/nfews/v2/services/NFeConsultaProtocolo4",
+    ("55", "homologacao", "evento"): "https://homologacao.sefaz.mt.gov.br/nfews/v2/services/NFeRecepcaoEvento4",
+    ("55", "producao", "evento"): "https://nfe.sefaz.mt.gov.br/nfews/v2/services/NFeRecepcaoEvento4",
 }
 
 
@@ -231,7 +235,8 @@ def montar_documento(venda: dict, config: dict, modelo: str = "65",
 
     total = _tag(inf, "total")
     icmst = _tag(total, "ICMSTot")
-    for tag in ("vBC", "vICMS", "vICMSDeson", "vFCP", "vBCST", "vST", "vFCPST", "vFCPSTRet"):
+    for tag in ("vBC", "vICMS", "vICMSDeson", "vFCPUFDest", "vICMSUFDest",
+                "vICMSUFRemet", "vFCP", "vBCST", "vST", "vFCPST", "vFCPSTRet"):
         _tag(icmst, tag, "0.00")
     _tag(icmst, "vProd", f"{total_prod:.2f}")
     for tag in ("vFrete", "vSeg", "vDesc", "vII", "vIPI", "vIPIDevol", "vPIS", "vCOFINS", "vOutro"):
@@ -281,8 +286,16 @@ def assinar_xml(xml: str, config: dict) -> str:
     cert_pem = cert.public_bytes(Encoding.PEM)
     root = etree.fromstring(xml.encode("utf-8"))
     inf = root.find(f".//{{{NFE_NS}}}infNFe")
+    if inf is None:
+        inf = root.find(f".//{{{NFE_NS}}}infEvento")
+    if inf is None or not inf.get("Id"):
+        raise FiscalDiretoError("XML fiscal sem identificador para assinatura.")
     ref = "#" + inf.get("Id")
-    signed = XMLSigner(method=methods.enveloped, digest_algorithm="sha1", signature_algorithm="rsa-sha1").sign(
+    class NFeXMLSigner(XMLSigner):
+        def check_deprecated_methods(self):
+            return
+
+    signed = NFeXMLSigner(method=methods.enveloped, digest_algorithm="sha1", signature_algorithm="rsa-sha1").sign(
         root, key=key_pem, cert=cert_pem, reference_uri=ref
     )
     return etree.tostring(signed, encoding="utf-8", xml_declaration=True).decode("utf-8")
@@ -306,10 +319,11 @@ def transmitir_autorizacao(modelo: str, xml_assinado: str, config: dict) -> dict
     try:
         sess = requests.Session()
         sess.mount("https://", Pkcs12Adapter(pkcs12_filename=pfx_path, pkcs12_password=senha))
+        xml_inner = xml_assinado.split("?>", 1)[-1].strip()
         body = f"""<?xml version="1.0" encoding="utf-8"?>
 <soap12:Envelope xmlns:soap12="http://www.w3.org/2003/05/soap-envelope">
   <soap12:Body>
-    <nfeDadosMsg xmlns="{NFE_NS}"><enviNFe versao="{VERSAO}"><idLote>1</idLote><indSinc>1</indSinc>{xml_assinado}</enviNFe></nfeDadosMsg>
+    <nfeDadosMsg xmlns="{NFE_NS}"><enviNFe versao="{VERSAO}"><idLote>1</idLote><indSinc>1</indSinc>{xml_inner}</enviNFe></nfeDadosMsg>
   </soap12:Body>
 </soap12:Envelope>"""
         resp = sess.post(url, data=body.encode("utf-8"), headers={"Content-Type": "application/soap+xml; charset=utf-8"}, timeout=30)
@@ -319,6 +333,218 @@ def transmitir_autorizacao(modelo: str, xml_assinado: str, config: dict) -> dict
             Path(pfx_path).unlink(missing_ok=True)
         except Exception:
             pass
+
+
+def _texto(el, nome: str) -> str | None:
+    if el is None:
+        return None
+    achado = el.find(f".//{{*}}{nome}")
+    if achado is None:
+        achado = el.find(nome)
+    if achado is None or achado.text is None:
+        return None
+    return achado.text.strip()
+
+
+def _sem_declaracao_xml(xml: str | None) -> str:
+    return (xml or "").split("?>", 1)[-1].strip()
+
+
+def _xml_autorizado(xml_assinado: str | None, prot_el) -> str | None:
+    if not xml_assinado or prot_el is None:
+        return None
+    prot_xml = ET.tostring(prot_el, encoding="utf-8").decode("utf-8")
+    return (
+        f'<?xml version="1.0" encoding="UTF-8"?>'
+        f'<nfeProc xmlns="{NFE_NS}" versao="{VERSAO}">'
+        f'{_sem_declaracao_xml(xml_assinado)}{prot_xml}'
+        f'</nfeProc>'
+    )
+
+
+def normalizar_retorno_sefaz(texto: str | None, xml_assinado: str | None = None,
+                             http_status: int | None = None) -> dict:
+    """Interpreta retorno SOAP/XML da SEFAZ e devolve campos de notas_fiscais."""
+    if not texto:
+        return {
+            "status": "rejeitada" if http_status and http_status >= 400 else "processando",
+            "mensagem": "SEFAZ não retornou corpo de resposta.",
+        }
+    try:
+        root = ET.fromstring(texto.encode("utf-8"))
+    except ET.ParseError:
+        return {
+            "status": "rejeitada" if http_status and http_status >= 400 else "processando",
+            "mensagem": texto[:500],
+        }
+
+    inf_prot = root.find(".//{*}infProt")
+    prot = root.find(".//{*}protNFe")
+    if inf_prot is not None:
+        cstat = _texto(inf_prot, "cStat")
+        motivo = _texto(inf_prot, "xMotivo") or "Retorno SEFAZ sem motivo."
+        protocolo = _texto(inf_prot, "nProt")
+        if cstat in {"100", "150"}:
+            return {
+                "status": "autorizada",
+                "protocolo": protocolo,
+                "mensagem": motivo,
+                "xml_autorizado": _xml_autorizado(xml_assinado, prot),
+                "motivo_rejeicao": None,
+            }
+        if cstat in {"101", "135", "155"}:
+            return {"status": "cancelada", "protocolo": protocolo, "mensagem": motivo}
+        return {
+            "status": "rejeitada",
+            "protocolo": protocolo,
+            "mensagem": motivo,
+            "motivo_rejeicao": motivo,
+        }
+
+    cstat = _texto(root, "cStat")
+    motivo = _texto(root, "xMotivo") or "Retorno SEFAZ recebido."
+    recibo = _texto(root, "nRec")
+    if cstat in {"103", "105", "106"}:
+        return {"status": "processando", "mensagem": motivo, "recibo": recibo}
+    if cstat in {"100", "150"}:
+        return {"status": "autorizada", "mensagem": motivo, "recibo": recibo}
+    if http_status and http_status >= 400:
+        return {"status": "rejeitada", "mensagem": motivo, "motivo_rejeicao": motivo, "recibo": recibo}
+    return {"status": "processando", "mensagem": motivo, "recibo": recibo}
+
+
+def normalizar_retorno_evento(texto: str | None, http_status: int | None = None) -> dict:
+    if not texto:
+        return {
+            "status": "rejeitada" if http_status and http_status >= 400 else "processando",
+            "mensagem": "SEFAZ não retornou corpo de resposta do evento.",
+        }
+    try:
+        root = ET.fromstring(texto.encode("utf-8"))
+    except ET.ParseError:
+        return {
+            "status": "rejeitada" if http_status and http_status >= 400 else "processando",
+            "mensagem": texto[:500],
+        }
+    inf_evento = root.find(".//{*}retEvento/{*}infEvento")
+    if inf_evento is None:
+        inf_evento = root.find(".//{*}infEvento")
+    cstat = _texto(inf_evento or root, "cStat")
+    motivo = _texto(inf_evento or root, "xMotivo") or "Retorno de evento recebido."
+    protocolo = _texto(inf_evento or root, "nProt")
+    if cstat in {"135", "155"}:
+        return {"status": "cancelada", "protocolo": protocolo, "mensagem": motivo}
+    if http_status and http_status >= 400:
+        return {"status": "rejeitada", "mensagem": motivo, "motivo_rejeicao": motivo}
+    return {"status": "processando", "mensagem": motivo, "motivo_rejeicao": motivo if cstat else None}
+
+
+def consultar_chave(modelo: str, chave: str, config: dict) -> dict:
+    try:
+        import requests
+        from requests_pkcs12 import Pkcs12Adapter
+    except Exception as e:
+        raise FiscalDiretoError(f"Dependências de transmissão fiscal não instaladas: {e}")
+    ambiente = config.get("ambiente") or "homologacao"
+    url = WS.get((str(modelo), ambiente, "consulta"))
+    if not url:
+        raise FiscalDiretoError(f"Webservice de consulta SEFAZ-MT não configurado para modelo {modelo}/{ambiente}.")
+    if not config.get("certificado_a1_b64") or not config.get("certificado_senha"):
+        raise FiscalDiretoError("Informe o certificado A1 da loja e a senha em Configurações Fiscais.")
+    pfx = base64.b64decode(config.get("certificado_a1_b64") or "")
+    senha = config.get("certificado_senha") or ""
+    tp_amb = "1" if ambiente == "producao" else "2"
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pfx") as fp:
+        fp.write(pfx)
+        pfx_path = fp.name
+    try:
+        sess = requests.Session()
+        sess.mount("https://", Pkcs12Adapter(pkcs12_filename=pfx_path, pkcs12_password=senha))
+        body = f"""<?xml version="1.0" encoding="utf-8"?>
+<soap12:Envelope xmlns:soap12="http://www.w3.org/2003/05/soap-envelope">
+  <soap12:Body>
+    <nfeDadosMsg xmlns="{NFE_NS}"><consSitNFe versao="{VERSAO}"><tpAmb>{tp_amb}</tpAmb><xServ>CONSULTAR</xServ><chNFe>{chave}</chNFe></consSitNFe></nfeDadosMsg>
+  </soap12:Body>
+</soap12:Envelope>"""
+        resp = sess.post(url, data=body.encode("utf-8"), headers={"Content-Type": "application/soap+xml; charset=utf-8"}, timeout=30)
+        return {"status_code": resp.status_code, "texto": resp.text}
+    finally:
+        try:
+            Path(pfx_path).unlink(missing_ok=True)
+        except Exception:
+            pass
+
+
+def montar_cancelamento_xml(nota: dict, config: dict, justificativa: str) -> str:
+    chave = so_digitos(nota.get("chave"))
+    protocolo = str(nota.get("protocolo") or "").strip()
+    if not chave:
+        raise FiscalDiretoError("Nota sem chave de acesso para cancelamento.")
+    if not protocolo:
+        raise FiscalDiretoError("Nota sem protocolo de autorização para cancelamento.")
+    ambiente = config.get("ambiente") or "homologacao"
+    tp_amb = "1" if ambiente == "producao" else "2"
+    evento = ET.Element(f"{{{NFE_NS}}}evento")
+    evento.set("versao", "1.00")
+    inf = _tag(evento, "infEvento")
+    inf.set("Id", f"ID110111{chave}01")
+    _tag(inf, "cOrgao", C_UF_MT)
+    _tag(inf, "tpAmb", tp_amb)
+    _tag(inf, "CNPJ", so_digitos(config.get("cnpj")))
+    _tag(inf, "chNFe", chave)
+    _tag(inf, "dhEvento", agora_mt())
+    _tag(inf, "tpEvento", "110111")
+    _tag(inf, "nSeqEvento", "1")
+    _tag(inf, "verEvento", "1.00")
+    det = _tag(inf, "detEvento")
+    det.set("versao", "1.00")
+    _tag(det, "descEvento", "Cancelamento")
+    _tag(det, "nProt", protocolo)
+    _tag(det, "xJust", justificativa.strip())
+    return ET.tostring(evento, encoding="utf-8", xml_declaration=True).decode("utf-8")
+
+
+def transmitir_evento(modelo: str, xml_evento_assinado: str, config: dict) -> dict:
+    try:
+        import requests
+        from requests_pkcs12 import Pkcs12Adapter
+    except Exception as e:
+        raise FiscalDiretoError(f"Dependências de transmissão fiscal não instaladas: {e}")
+    ambiente = config.get("ambiente") or "homologacao"
+    url = WS.get((str(modelo), ambiente, "evento"))
+    if not url:
+        raise FiscalDiretoError(f"Webservice de evento SEFAZ-MT não configurado para modelo {modelo}/{ambiente}.")
+    if not config.get("certificado_a1_b64") or not config.get("certificado_senha"):
+        raise FiscalDiretoError("Informe o certificado A1 da loja e a senha em Configurações Fiscais.")
+    pfx = base64.b64decode(config.get("certificado_a1_b64") or "")
+    senha = config.get("certificado_senha") or ""
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pfx") as fp:
+        fp.write(pfx)
+        pfx_path = fp.name
+    try:
+        sess = requests.Session()
+        sess.mount("https://", Pkcs12Adapter(pkcs12_filename=pfx_path, pkcs12_password=senha))
+        xml_inner = _sem_declaracao_xml(xml_evento_assinado)
+        body = f"""<?xml version="1.0" encoding="utf-8"?>
+<soap12:Envelope xmlns:soap12="http://www.w3.org/2003/05/soap-envelope">
+  <soap12:Body>
+    <nfeDadosMsg xmlns="{NFE_NS}"><envEvento versao="1.00"><idLote>1</idLote>{xml_inner}</envEvento></nfeDadosMsg>
+  </soap12:Body>
+</soap12:Envelope>"""
+        resp = sess.post(url, data=body.encode("utf-8"), headers={"Content-Type": "application/soap+xml; charset=utf-8"}, timeout=30)
+        return {"status_code": resp.status_code, "texto": resp.text}
+    finally:
+        try:
+            Path(pfx_path).unlink(missing_ok=True)
+        except Exception:
+            pass
+
+
+def cancelar_documento(nota: dict, config: dict, justificativa: str) -> dict:
+    xml_evento = montar_cancelamento_xml(nota, config, justificativa)
+    xml_evento_assinado = assinar_xml(xml_evento, config)
+    retorno = transmitir_evento(nota.get("modelo") or "65", xml_evento_assinado, config)
+    return {"xml_evento": xml_evento_assinado, "retorno": retorno}
 
 
 def preparar_e_tentar_transmitir(venda: dict, config: dict, modelo: str = "65",

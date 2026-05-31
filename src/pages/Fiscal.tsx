@@ -73,7 +73,7 @@ export default function FiscalPage() {
         <div className="w-10 h-10 rounded-xl bg-brand-600/20 grid place-items-center text-brand-400"><FileText size={20} /></div>
         <div>
           <h1 className="text-xl font-black text-white">Configurações Fiscais (NFC-e)</h1>
-          <p className="text-slate-500 text-xs">Dados da loja e do gateway de emissão de nota.</p>
+          <p className="text-slate-500 text-xs">Dados da loja, certificado A1 e emissão direta SEFAZ-MT.</p>
         </div>
       </div>
 
@@ -88,7 +88,7 @@ export default function FiscalPage() {
           <input type="checkbox" checked={!!cfg.habilitado} onChange={(e) => set("habilitado", e.target.checked)} className="w-5 h-5 accent-brand-500" />
           <div>
             <p className="text-white font-bold text-sm">Emissão fiscal habilitada</p>
-            <p className="text-slate-500 text-xs">Quando ligado, a venda pode gerar NFC-e pelo gateway.</p>
+            <p className="text-slate-500 text-xs">Quando ligado, a venda pode gerar NFC-e/NF-e pelo provedor fiscal.</p>
           </div>
         </label>
 
@@ -124,10 +124,10 @@ export default function FiscalPage() {
         </fieldset>
 
         <fieldset className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3">
-          <legend className="text-slate-300 text-xs font-bold uppercase px-2">Gateway & Ambiente</legend>
+          <legend className="text-slate-300 text-xs font-bold uppercase px-2">SEFAZ-MT & Ambiente</legend>
           <div className="grid md:grid-cols-2 gap-3">
             <div>
-              <label className={lbl}>Gateway</label>
+              <label className={lbl}>Provedor fiscal</label>
               <select className={inputCls} value={cfg.provedor_fiscal || "sefaz_mt_direto"} onChange={(e) => set("provedor_fiscal", e.target.value)}>
                 <option value="sefaz_mt_direto">SEFAZ-MT direto</option>
                 <option value="focusnfe">Focus NFe (legado)</option>
@@ -140,10 +140,12 @@ export default function FiscalPage() {
                 <option value="producao">Produção (vale fiscalmente)</option>
               </select>
             </div>
-            <div className="md:col-span-2">
-              <label className={lbl}>Token do gateway {cfg.gateway_token_preenchido && <span className="text-emerald-400">(já configurado — preencha só para alterar)</span>}</label>
-              <input className={inputCls} type="password" value={cfg.gateway_token || ""} onChange={(e) => set("gateway_token", e.target.value)} placeholder={cfg.gateway_token_preenchido ? "••••••••" : "token da API"} />
-            </div>
+            {cfg.provedor_fiscal !== "sefaz_mt_direto" && (
+              <div className="md:col-span-2">
+                <label className={lbl}>Token do gateway legado {cfg.gateway_token_preenchido && <span className="text-emerald-400">(já configurado — preencha só para alterar)</span>}</label>
+                <input className={inputCls} type="password" value={cfg.gateway_token || ""} onChange={(e) => set("gateway_token", e.target.value)} placeholder={cfg.gateway_token_preenchido ? "••••••••" : "token da API"} />
+              </div>
+            )}
             <div className="md:col-span-2">
               <label className={lbl}>Certificado A1 da loja {cfg.certificado_a1_b64_preenchido && <span className="text-emerald-400">(salvo)</span>}</label>
               <input className={inputCls} type="file" accept=".pfx,.p12" onChange={(e) => carregarCertificado(e.target.files?.[0])} />
@@ -151,7 +153,7 @@ export default function FiscalPage() {
             </div>
             <div className="md:col-span-2">
               <label className={lbl}>Senha do certificado {cfg.certificado_senha_preenchido && <span className="text-emerald-400">(salva)</span>}</label>
-              <input className={inputCls} type="password" value={cfg.certificado_senha || ""} onChange={(e) => set("certificado_senha", e.target.value)} placeholder={cfg.certificado_senha_preenchido ? "preencha sÃ³ para alterar" : "senha do A1"} />
+              <input className={inputCls} type="password" value={cfg.certificado_senha || ""} onChange={(e) => set("certificado_senha", e.target.value)} placeholder={cfg.certificado_senha_preenchido ? "preencha só para alterar" : "senha do A1"} />
             </div>
             <div><label className={lbl}>CSC (idCSC) {cfg.csc_preenchido && <span className="text-emerald-400">(salvo)</span>}</label><input className={inputCls} type="password" value={cfg.csc || ""} onChange={(e) => set("csc", e.target.value)} /></div>
             <div><label className={lbl}>ID do CSC (Token)</label><input className={inputCls} value={cfg.csc_id || ""} onChange={(e) => set("csc_id", e.target.value)} placeholder="ex.: 000001" /></div>
@@ -161,7 +163,7 @@ export default function FiscalPage() {
             <div><label className={lbl}>Próx. NF-e</label><input type="number" className={inputCls} value={cfg.proximo_numero_nfe ?? 1} onChange={(e) => set("proximo_numero_nfe", Number(e.target.value))} /></div>
           </div>
           <p className="text-slate-500 text-[11px] leading-snug">
-            O certificado digital A1 e o CSC são cadastrados no painel do gateway (Focus NFe). Aqui o sistema só guarda o token de API. Comece em <b>Homologação</b> para testar; só mude para <b>Produção</b> quando as notas de teste autorizarem.
+            Use o certificado A1 da própria mercearia e o CSC/idCSC liberado pela SEFAZ-MT. Comece em <b>Homologação</b> para testar; só mude para <b>Produção</b> depois de validar com o contador e autorizar notas reais.
           </p>
         </fieldset>
 

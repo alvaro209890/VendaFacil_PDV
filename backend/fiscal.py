@@ -1,15 +1,8 @@
-"""Emissão de NFC-e (modelo 65) via gateway fiscal.
+"""Emissão fiscal NFC-e/NF-e.
 
-NÃO falamos direto com a SEFAZ. Usamos um gateway (Focus NFe ou PlugNotas) que
-cuida de assinatura, transmissão, contingência e devolve a nota autorizada +
-DANFE + QR Code. O certificado digital A1 e o CSC ficam cadastrados NO PAINEL DO
-GATEWAY — o .exe só guarda o token de API.
-
-Fluxo:
-  1. monta o payload a partir da venda + dados fiscais dos produtos + emitente;
-  2. envia ao gateway (assíncrono → status "processando");
-  3. consulta o status (loop em background reprocessa as pendentes);
-  4. guarda chave/protocolo/links de XML e DANFE em notas_fiscais.
+O fluxo padrão é direto com a SEFAZ-MT: monta XML 4.00, assina com o A1 da
+mercearia e transmite pelos webservices estaduais. O gateway Focus permanece
+apenas como legado para instalações antigas que ainda usem token.
 """
 import base64
 import json
@@ -262,16 +255,24 @@ def emitir_nfce(venda_id: int, user_id: int, cpf: str | None = None) -> dict:
         try:
             r = fiscal_direto.preparar_e_tentar_transmitir(venda, config, "65", cpf_consumidor=cpf)
             agora = _agora()
-            return db.criar_nota({
+            retorno = r.get("retorno") or {}
+            sefaz = fiscal_direto.normalizar_retorno_sefaz(
+                retorno.get("texto"), r["xml_assinado"], retorno.get("status_code")
+            )
+            dados = {
                 "venda_id": venda_id, "user_id": user_id, "ref": f"v{venda_id}-65-{r['numero']}",
                 "modelo": "65", "numero": r["numero"], "serie": r["serie"],
-                "ambiente": config.get("ambiente"), "status": "processando",
+                "ambiente": config.get("ambiente"), "status": sefaz.get("status") or "processando",
                 "chave": r["chave"], "qrcode_url": r.get("qrcode_url"),
                 "payload": r["payload"], "xml_assinado": r["xml_assinado"],
-                "mensagem": f"Transmitido para SEFAZ-MT ({r['retorno']['status_code']}). Consulte o status.",
-                "recibo": r["retorno"].get("texto", "")[:4000],
+                "mensagem": sefaz.get("mensagem") or f"Transmitido para SEFAZ-MT ({retorno.get('status_code')}). Consulte o status.",
+                "recibo": sefaz.get("recibo") or retorno.get("texto", "")[:4000],
                 "criado_em": agora, "atualizado_em": agora,
-            })
+            }
+            for campo in ("protocolo", "xml_autorizado", "motivo_rejeicao"):
+                if campo in sefaz:
+                    dados[campo] = sefaz[campo]
+            return db.criar_nota(dados)
         except fiscal_direto.FiscalDiretoError as e:
             raise FiscalError(str(e))
     gw = _gateway(config)
@@ -307,10 +308,27 @@ def consultar_nfce(nota_id: int) -> dict:
     if not nota:
         raise FiscalError("Nota não encontrada.")
     if (db.get_config_fiscal().get("provedor_fiscal") or "sefaz_mt_direto") == "sefaz_mt_direto":
-        return db.atualizar_nota(nota_id, {
-            "status": nota.get("status") or "processando",
-            "mensagem": nota.get("mensagem") or "Consulta direta SEFAZ-MT será concluída pelo retorno autorizado.",
-        }, _agora())
+        if nota.get("status") in ("autorizada", "cancelada", "rejeitada"):
+            return nota
+        config = db.get_config_fiscal()
+        if not nota.get("chave"):
+            raise FiscalError("Nota sem chave de acesso para consulta.")
+        try:
+            retorno = fiscal_direto.consultar_chave(nota.get("modelo") or "65", nota["chave"], config)
+            sefaz = fiscal_direto.normalizar_retorno_sefaz(
+                retorno.get("texto"), nota.get("xml_assinado"), retorno.get("status_code")
+            )
+            dados = {
+                "status": sefaz.get("status") or nota.get("status") or "processando",
+                "mensagem": sefaz.get("mensagem") or nota.get("mensagem"),
+                "recibo": sefaz.get("recibo") or retorno.get("texto", "")[:4000],
+            }
+            for campo in ("protocolo", "xml_autorizado", "motivo_rejeicao"):
+                if campo in sefaz:
+                    dados[campo] = sefaz[campo]
+            return db.atualizar_nota(nota_id, dados, _agora())
+        except fiscal_direto.FiscalDiretoError as e:
+            raise FiscalError(str(e))
     config = db.get_config_fiscal()
     gw = _gateway(config)
     code, resp = gw.consultar(nota["ref"])
@@ -327,6 +345,22 @@ def cancelar_nfce(nota_id: int, justificativa: str) -> dict:
     if nota["status"] != "autorizada":
         raise FiscalError("Só é possível cancelar uma nota autorizada.")
     config = db.get_config_fiscal()
+    if (config.get("provedor_fiscal") or "sefaz_mt_direto") == "sefaz_mt_direto":
+        try:
+            r = fiscal_direto.cancelar_documento(nota, config, justificativa)
+            retorno = r.get("retorno") or {}
+            sefaz = fiscal_direto.normalizar_retorno_evento(retorno.get("texto"), retorno.get("status_code"))
+            dados = {
+                "status": sefaz.get("status") or "processando",
+                "mensagem": sefaz.get("mensagem") or "Evento de cancelamento enviado para SEFAZ-MT.",
+                "recibo": retorno.get("texto", "")[:4000],
+            }
+            for campo in ("protocolo", "motivo_rejeicao"):
+                if campo in sefaz:
+                    dados[campo] = sefaz[campo]
+            return db.atualizar_nota(nota_id, dados, _agora())
+        except fiscal_direto.FiscalDiretoError as e:
+            raise FiscalError(str(e))
     gw = _gateway(config)
     gw.cancelar(nota["ref"], justificativa)
     return db.atualizar_nota(nota_id, {"status": "cancelada", "mensagem": justificativa}, _agora())
@@ -353,16 +387,24 @@ def emitir_nfe(venda_id: int, user_id: int, cliente_id: int) -> dict:
     try:
         r = fiscal_direto.preparar_e_tentar_transmitir(venda, config, "55", destinatario=dict(cliente))
         agora = _agora()
-        return db.criar_nota({
+        retorno = r.get("retorno") or {}
+        sefaz = fiscal_direto.normalizar_retorno_sefaz(
+            retorno.get("texto"), r["xml_assinado"], retorno.get("status_code")
+        )
+        dados = {
             "venda_id": venda_id, "user_id": user_id, "ref": f"v{venda_id}-55-{r['numero']}",
             "modelo": "55", "numero": r["numero"], "serie": r["serie"],
-            "ambiente": config.get("ambiente"), "status": "processando",
+            "ambiente": config.get("ambiente"), "status": sefaz.get("status") or "processando",
             "chave": r["chave"], "payload": r["payload"], "xml_assinado": r["xml_assinado"],
-            "mensagem": f"Transmitido para SEFAZ-MT ({r['retorno']['status_code']}). Consulte o status.",
-            "recibo": r["retorno"].get("texto", "")[:4000],
+            "mensagem": sefaz.get("mensagem") or f"Transmitido para SEFAZ-MT ({retorno.get('status_code')}). Consulte o status.",
+            "recibo": sefaz.get("recibo") or retorno.get("texto", "")[:4000],
             "destinatario_snapshot": json.dumps(dict(cliente), ensure_ascii=False),
             "criado_em": agora, "atualizado_em": agora,
-        })
+        }
+        for campo in ("protocolo", "xml_autorizado", "motivo_rejeicao"):
+            if campo in sefaz:
+                dados[campo] = sefaz[campo]
+        return db.criar_nota(dados)
     except fiscal_direto.FiscalDiretoError as e:
         raise FiscalError(str(e))
 

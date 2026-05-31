@@ -13,8 +13,12 @@ datas = [(dist_dir, "dist")]
 # qrcode embute fontes/recursos próprios em alguns casos
 datas += collect_data_files("qrcode")
 
-# uvicorn carrega loops/protocolos dinamicamente — precisa coletar submódulos
+# uvicorn, signxml e transporte mTLS carregam partes dinamicamente.
 hiddenimports = collect_submodules("uvicorn")
+hiddenimports += collect_submodules("signxml")
+hiddenimports += collect_submodules("requests_pkcs12")
+hiddenimports += collect_submodules("cryptography")
+hiddenimports += collect_submodules("lxml")
 
 a = Analysis(
     ["run.py"],

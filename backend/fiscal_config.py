@@ -1,4 +1,4 @@
-"""Configuração fiscal do emitente (dados da loja + gateway NFC-e)."""
+"""Configuração fiscal do emitente (dados da loja + SEFAZ-MT direto)."""
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
