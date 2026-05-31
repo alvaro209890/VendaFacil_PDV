@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install)",
+      "Bash(npm install:*)",
+      "Bash(npm ci)",
+      "Bash(npm ci:*)",
+      "Bash(npm run build)",
+      "Bash(npm run build:*)",
+      "Bash(npx tsc:*)",
+      "Bash(node:*)",
+      "Bash(python:*)",
+      "Bash(python3:*)",
+      "Bash(py:*)",
+      "Bash(pip:*)",
+      "Bash(pip3:*)",
+      "Bash(pyinstaller:*)",
+      "Bash(build_exe.bat)",
+      "Bash(build_exe.bat:*)",
+      "Bash(./build_exe.bat)",
+      "Bash(./build_exe.bat:*)",
+      "Bash(installer/build_installer.bat:*)",
+      "Bash(./installer/build_installer.bat:*)",
+      "Bash(ISCC:*)",
+      "Bash(.venv/Scripts/pip:*)",
+      "Bash(.venv/Scripts/pyinstaller:*)",
+      "Bash(.venv/bin/pip:*)",
+      "Bash(.venv/bin/pyinstaller:*)",
+      "Bash(.venv/bin/python:*)"
+    ]
+  }
+}

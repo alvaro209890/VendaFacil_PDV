@@ -11,6 +11,9 @@ dados/
 dist_exe/
 build/
 jwt_secret.key
-.claude/
+dist_installer/
+# Ignora o .claude local, MAS versiona o settings.json (permissões do agente de build)
+.claude/*
+!.claude/settings.json
 .agents/
 skills-lock.json
