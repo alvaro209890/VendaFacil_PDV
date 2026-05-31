@@ -18,6 +18,11 @@ on:
 permissions:
   contents: write   # necessário para anexar o instalador às Releases (em tags)
 
+# Roda as actions (checkout/setup-*) no Node 24, encerrando o aviso de
+# deprecação do Node 20 sem arriscar versões inexistentes das actions.
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   build:
     runs-on: windows-latest

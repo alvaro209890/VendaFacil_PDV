@@ -41,6 +41,6 @@ exe = EXE(
     strip=False,
     upx=True,
     runtime_tmpdir=None,
-    console=True,          # mostra janela de log; troque para False se quiser ocultar
+    console=False,         # sem janela de console (abre direto no navegador)
     # icon="icone.ico",    # opcional: aponte para um .ico (Windows) se quiser ícone próprio
 )
