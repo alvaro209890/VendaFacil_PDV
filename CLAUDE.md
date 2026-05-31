@@ -14,6 +14,13 @@ já estão **pré-autorizados** em `.claude/settings.json` (não deve pedir perm
 - **painel/**: backend SaaS separado (Render+Supabase) — **NÃO** faz parte do .exe;
   ignore ao gerar o executável.
 
+## Build automático (GitHub Actions)
+
+Já existe `.github/workflows/build-exe.yml`: a cada push no `master` (e em tags
+`vX.Y.Z`) a GitHub gera o `.exe` + instalador num runner Windows. Baixe em
+**Actions → Artifacts**, ou em **Releases** (nas tags). Para gerar localmente,
+siga abaixo.
+
 ## Pré-requisitos (na máquina Windows)
 
 - **Node.js 20+** (o Vite recusa Node 18) e **Python 3.10+** (com "Add to PATH").

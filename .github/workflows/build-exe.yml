@@ -1,0 +1,83 @@
+name: Build Windows EXE
+
+# Gera o executável + instalador a cada atualização no master, em tags de versão
+# (vX.Y.Z) e sob demanda. Roda num runner Windows da própria GitHub — você não
+# precisa de Node/Python/Inno Setup na sua máquina.
+#
+# Em repositório PÚBLICO os minutos de Actions são gratuitos/ilimitados. Se o
+# repo for PRIVADO e quiser economizar, adicione um paths-ignore aqui (ex.:
+# docs/**, painel/**, deploy/**, **/*.md) para não buildar em mudanças que não
+# afetam o .exe.
+
+on:
+  push:
+    branches: [ master ]
+    tags: [ "v*" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write   # necessário para anexar o instalador às Releases (em tags)
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Opcional: embute a URL do painel (Render) no .exe. Defina uma "Repository
+      # variable" chamada PAINEL_URL (Settings > Secrets and variables > Actions
+      # > Variables). Sem ela, o .exe sai em MODO LOCAL (sem controle de licença).
+      - name: Configurar URL do painel (se definida)
+        if: ${{ vars.PAINEL_URL != '' }}
+        shell: pwsh
+        run: Set-Content backend/painel_config.py 'PAINEL_URL = "${{ vars.PAINEL_URL }}"'
+
+      - name: Build do frontend (React)
+        run: |
+          npm ci
+          npm run build
+
+      - name: Build do executável (PyInstaller)
+        shell: cmd
+        working-directory: backend
+        run: |
+          python -m venv .venv
+          .venv\Scripts\python -m pip install --upgrade pip
+          .venv\Scripts\pip install -r requirements-build.txt
+          .venv\Scripts\pyinstaller vendafacil.spec --noconfirm --distpath ..\dist_exe --workpath ..\build
+
+      - name: Instalar Inno Setup
+        shell: pwsh
+        run: choco install innosetup -y --no-progress
+
+      - name: Gerar instalador (Inno Setup)
+        shell: pwsh
+        run: '& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\vendafacil.iss'
+
+      - name: Publicar artefatos (baixe na aba Actions)
+        uses: actions/upload-artifact@v4
+        with:
+          name: VendaFacilPDV
+          path: |
+            dist_installer/*.exe
+            dist_exe/VendaFacilPDV.exe
+          if-no-files-found: error
+
+      - name: Anexar à Release (somente em tags vX.Y.Z)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist_installer/*.exe
+            dist_exe/VendaFacilPDV.exe

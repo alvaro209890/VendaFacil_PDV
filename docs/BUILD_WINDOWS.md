@@ -10,6 +10,25 @@ frontend exige Node 20+).
 
 ---
 
+## ⚡ Opção mais fácil: build automático na nuvem (GitHub Actions)
+
+Você **não precisa instalar nada** na sua máquina. O repositório tem um workflow
+(`.github/workflows/build-exe.yml`) que **gera o `.exe` + instalador a cada
+push** num runner Windows da GitHub.
+
+- **Onde baixar:** aba **Actions** do repositório → abra a execução mais recente
+  → seção **Artifacts** → baixe **VendaFacilPDV** (contém o `VendaFacilPDV-Setup-*.exe`).
+- **Release versionada:** crie uma tag `vX.Y.Z` (`git tag v1.0.0 && git push --tags`)
+  → o instalador é anexado automaticamente em **Releases**.
+- **Conectar ao painel:** em *Settings → Secrets and variables → Actions →
+  Variables*, crie a variável **`PAINEL_URL`** com a URL do Render. O .exe sai
+  já "conectado". Sem ela, sai em **modo local**.
+
+Se preferir gerar localmente (ou ajustar detalhes), siga o passo a passo manual
+abaixo.
+
+---
+
 ## 0) Pré-requisitos (instalar uma vez)
 
 | Ferramenta | Para quê | Link |
