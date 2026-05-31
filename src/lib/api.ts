@@ -266,6 +266,23 @@ export function ajustarEstoque(produtoId: number, tipo: TipoAjuste, quantidade: 
   });
 }
 
+export interface Movimentacao {
+  id: number;
+  produto_id: number;
+  produto_nome: string | null;
+  tipo: "entrada" | "saida";
+  quantidade: number;
+  custo_unitario: number | null;
+  origem: string;        // manual | xml | venda | perda | quebra | inventario
+  documento: string;
+  observacao: string;
+  criado_em: string;
+}
+
+export function listarMovimentacoes(produtoId: number): Promise<{ movimentacoes: Movimentacao[] }> {
+  return request(`/api/produtos/${produtoId}/movimentacoes`);
+}
+
 // ── Categorias ──
 
 export interface Categoria {

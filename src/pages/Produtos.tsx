@@ -9,9 +9,10 @@ import {
   importarXmlConfirmar,
   entradaEstoque,
   ajustarEstoque,
+  listarMovimentacoes,
 } from "../lib/api";
 import type {
-  Produto, ProdutoInput, Categoria, CamposFiscais, PreviewXml, ItemConfirmarXml,
+  Produto, ProdutoInput, Categoria, CamposFiscais, PreviewXml, ItemConfirmarXml, Movimentacao,
 } from "../lib/api";
 
 // Item da importação com flags editáveis na tela.
@@ -31,6 +32,14 @@ const UNIDADES = ["UN", "KG", "G", "LT", "ML", "CX", "FD", "PCT", "SC"];
 const normUn = (v: string, fallback = "UN") => (v || fallback).trim().toUpperCase() || fallback;
 const fatorSeguro = (v: number | string | undefined) => Math.max(Number(v) || 1, 0.0001);
 const fmtQtd = (v: number) => Number(v || 0).toLocaleString("pt-BR", { maximumFractionDigits: 3 });
+const fmtData = (iso: string) => {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? iso : d.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+};
+const ORIGEM_LABEL: Record<string, string> = {
+  manual: "Entrada manual", xml: "Entrada (XML)", venda: "Venda",
+  perda: "Perda", quebra: "Quebra", inventario: "Inventário",
+};
 
 export default function ProdutosPage() {
   const [produtos, setProdutos] = useState<Produto[]>([]);
@@ -59,6 +68,25 @@ export default function ProdutosPage() {
   const [importInfo, setImportInfo] = useState<{ emitente: string; numero: string; chave: string } | null>(null);
   const [importItens, setImportItens] = useState<ItemImport[]>([]);
   const [importBusy, setImportBusy] = useState(false);
+
+  // Histórico de movimentações de um produto
+  const [histProduto, setHistProduto] = useState<Produto | null>(null);
+  const [histMovs, setHistMovs] = useState<Movimentacao[]>([]);
+  const [histBusy, setHistBusy] = useState(false);
+
+  async function abrirHistorico(p: Produto) {
+    setHistProduto(p);
+    setHistMovs([]);
+    setHistBusy(true);
+    try {
+      const r = await listarMovimentacoes(p.id);
+      setHistMovs(r.movimentacoes);
+    } catch (err) {
+      setMsg({ tipo: "erro", texto: (err as Error).message });
+    } finally {
+      setHistBusy(false);
+    }
+  }
 
   async function onXmlEscolhido(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -446,6 +474,7 @@ export default function ProdutosPage() {
                           <div className="flex gap-1 justify-end">
                             {p.ativo ? <button onClick={() => entradaRapida(p)} className="text-emerald-400 hover:text-emerald-300 text-xs px-2 py-1 rounded hover:bg-slate-700 active:scale-95" title="Dar entrada no estoque">+ Estoque</button> : null}
                             {p.ativo ? <button onClick={() => ajusteRapido(p)} className="text-amber-400 hover:text-amber-300 text-xs px-2 py-1 rounded hover:bg-slate-700 active:scale-95" title="Perda, quebra ou inventário">Ajustar</button> : null}
+                            <button onClick={() => abrirHistorico(p)} className="text-sky-400 hover:text-sky-300 text-xs px-2 py-1 rounded hover:bg-slate-700 active:scale-95" title="Histórico de movimentações">Histórico</button>
                             <button onClick={() => abrirEdicao(p)} className="text-slate-400 hover:text-white text-xs px-2 py-1 rounded hover:bg-slate-700 active:scale-95">Editar</button>
                             {p.ativo ? <button onClick={() => handleDesativar(p.id)} className="text-red-400 hover:text-red-300 text-xs px-2 py-1 rounded hover:bg-slate-700 active:scale-95">Desativar</button> : null}
                           </div>
@@ -733,6 +762,62 @@ export default function ProdutosPage() {
                 <button onClick={() => { setImportInfo(null); setImportItens([]); }} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm font-bold">Cancelar</button>
                 <button onClick={confirmarImportacao} disabled={importBusy} className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white rounded-lg text-sm font-bold">{importBusy ? "Importando..." : "Confirmar importação"}</button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal: Histórico de movimentações ── */}
+      {histProduto && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 bg-black/80 backdrop-blur-sm">
+          <div className="w-full max-w-3xl max-h-[90vh] flex flex-col bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b border-slate-800">
+              <div>
+                <h3 className="text-white font-black text-lg">📊 Movimentações — {histProduto.nome}</h3>
+                <p className="text-slate-500 text-xs">Estoque atual: {fmtQtd(histProduto.estoque)} {histProduto.unidade}</p>
+              </div>
+              <button onClick={() => { setHistProduto(null); setHistMovs([]); }} className="text-slate-400 hover:text-white text-2xl leading-none">×</button>
+            </div>
+
+            <div className="flex-1 overflow-auto p-3">
+              {histBusy ? (
+                <p className="text-slate-500 text-sm text-center py-8">Carregando...</p>
+              ) : histMovs.length === 0 ? (
+                <p className="text-slate-500 text-sm text-center py-8">Nenhuma movimentação registrada.</p>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead className="text-slate-500 text-xs uppercase text-left">
+                    <tr>
+                      <th className="p-2">Data</th>
+                      <th className="p-2">Tipo</th>
+                      <th className="p-2 text-right">Qtd</th>
+                      <th className="p-2">Detalhe</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {histMovs.map((m) => {
+                      const entrada = m.tipo === "entrada";
+                      return (
+                        <tr key={m.id} className="border-t border-slate-800">
+                          <td className="p-2 text-slate-400 whitespace-nowrap">{fmtData(m.criado_em)}</td>
+                          <td className="p-2">
+                            <span className={`text-2xs font-black uppercase px-2 py-0.5 rounded ${entrada ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"}`}>
+                              {ORIGEM_LABEL[m.origem] || m.origem || (entrada ? "Entrada" : "Saída")}
+                            </span>
+                          </td>
+                          <td className={`p-2 text-right font-bold ${entrada ? "text-emerald-400" : "text-red-400"}`}>
+                            {entrada ? "+" : "−"}{fmtQtd(m.quantidade)}
+                          </td>
+                          <td className="p-2 text-slate-400">
+                            {m.observacao || "—"}
+                            {m.documento ? <span className="text-slate-600"> · doc {m.documento}</span> : null}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
             </div>
           </div>
         </div>
