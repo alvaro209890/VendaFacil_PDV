@@ -236,6 +236,31 @@ class Database:
             );
             CREATE INDEX IF NOT EXISTS idx_mov_user ON movimentacoes_estoque(user_id);
             CREATE INDEX IF NOT EXISTS idx_mov_produto ON movimentacoes_estoque(produto_id);
+
+            CREATE TABLE IF NOT EXISTS caixa_sessoes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                valor_abertura REAL NOT NULL DEFAULT 0,
+                aberto_em TEXT NOT NULL,
+                fechado_em TEXT,
+                valor_fechamento REAL,
+                valor_esperado REAL,
+                diferenca REAL,
+                observacao TEXT DEFAULT '',
+                criado_em TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_caixa_user ON caixa_sessoes(user_id);
+
+            CREATE TABLE IF NOT EXISTS caixa_movimentos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                sessao_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL,
+                tipo TEXT NOT NULL,          -- sangria | suprimento
+                valor REAL NOT NULL,
+                motivo TEXT DEFAULT '',
+                criado_em TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_caixamov_sessao ON caixa_movimentos(sessao_id);
             """
         )
 
@@ -541,6 +566,101 @@ class Database:
             q += " ORDER BY m.id DESC LIMIT ?"
             params.append(limit)
             rows = self._conn.execute(q, params).fetchall()
+        return [dict(r) for r in rows]
+
+    # ── Caixa (abertura/fechamento) ──
+    def get_caixa_aberto(self, user_id: int) -> dict[str, Any] | None:
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT * FROM caixa_sessoes WHERE user_id = ? AND fechado_em IS NULL "
+                "ORDER BY id DESC LIMIT 1", (user_id,)
+            ).fetchone()
+        return dict(row) if row else None
+
+    def abrir_caixa(self, user_id: int, valor_abertura: float, agora: str) -> dict[str, Any]:
+        with self._lock, self._conn:
+            cur = self._conn.execute(
+                "INSERT INTO caixa_sessoes (user_id, valor_abertura, aberto_em, criado_em) "
+                "VALUES (?,?,?,?)", (user_id, valor_abertura, agora, agora),
+            )
+            row = self._conn.execute(
+                "SELECT * FROM caixa_sessoes WHERE id = ?", (cur.lastrowid,)
+            ).fetchone()
+        return dict(row)
+
+    def registrar_movimento_caixa(self, sessao_id: int, user_id: int, tipo: str,
+                                  valor: float, motivo: str, agora: str) -> None:
+        with self._lock, self._conn:
+            self._conn.execute(
+                "INSERT INTO caixa_movimentos (sessao_id, user_id, tipo, valor, motivo, criado_em) "
+                "VALUES (?,?,?,?,?,?)", (sessao_id, user_id, tipo, valor, motivo, agora),
+            )
+
+    def resumo_caixa(self, sessao: dict) -> dict[str, Any]:
+        """Totais da sessão: vendas por forma de pagamento, sangrias/suprimentos
+        e dinheiro esperado em caixa."""
+        user_id = sessao["user_id"]
+        ini = sessao["aberto_em"]
+        fim = sessao.get("fechado_em")
+        with self._lock:
+            if fim:
+                vrows = self._conn.execute(
+                    "SELECT forma_pagamento, COUNT(*) qtd, COALESCE(SUM(total),0) total "
+                    "FROM vendas WHERE user_id = ? AND status = 'concluida' "
+                    "AND criado_em >= ? AND criado_em <= ? GROUP BY forma_pagamento",
+                    (user_id, ini, fim),
+                ).fetchall()
+            else:
+                vrows = self._conn.execute(
+                    "SELECT forma_pagamento, COUNT(*) qtd, COALESCE(SUM(total),0) total "
+                    "FROM vendas WHERE user_id = ? AND status = 'concluida' "
+                    "AND criado_em >= ? GROUP BY forma_pagamento", (user_id, ini),
+                ).fetchall()
+            mrows = self._conn.execute(
+                "SELECT tipo, COALESCE(SUM(valor),0) total, COUNT(*) qtd "
+                "FROM caixa_movimentos WHERE sessao_id = ? GROUP BY tipo",
+                (sessao["id"],),
+            ).fetchall()
+
+        por_forma = {r["forma_pagamento"]: {"qtd": r["qtd"], "total": r["total"]} for r in vrows}
+        vendas_total = sum(v["total"] for v in por_forma.values())
+        vendas_qtd = sum(v["qtd"] for v in por_forma.values())
+        dinheiro = por_forma.get("dinheiro", {}).get("total", 0.0)
+        mov = {r["tipo"]: r["total"] for r in mrows}
+        suprimentos = mov.get("suprimento", 0.0)
+        sangrias = mov.get("sangria", 0.0)
+        esperado = sessao["valor_abertura"] + dinheiro + suprimentos - sangrias
+        return {
+            "vendas_qtd": vendas_qtd,
+            "vendas_total": round(vendas_total, 2),
+            "por_forma": por_forma,
+            "vendas_dinheiro": round(dinheiro, 2),
+            "suprimentos": round(suprimentos, 2),
+            "sangrias": round(sangrias, 2),
+            "valor_abertura": round(sessao["valor_abertura"], 2),
+            "dinheiro_esperado": round(esperado, 2),
+        }
+
+    def fechar_caixa(self, sessao_id: int, valor_fechamento: float, esperado: float,
+                    agora: str, observacao: str) -> dict[str, Any] | None:
+        with self._lock, self._conn:
+            self._conn.execute(
+                "UPDATE caixa_sessoes SET fechado_em = ?, valor_fechamento = ?, "
+                "valor_esperado = ?, diferenca = ?, observacao = ? WHERE id = ?",
+                (agora, valor_fechamento, esperado, round(valor_fechamento - esperado, 2),
+                 observacao, sessao_id),
+            )
+            row = self._conn.execute(
+                "SELECT * FROM caixa_sessoes WHERE id = ?", (sessao_id,)
+            ).fetchone()
+        return dict(row) if row else None
+
+    def list_caixa_historico(self, user_id: int, limit: int = 30) -> list[dict[str, Any]]:
+        with self._lock:
+            rows = self._conn.execute(
+                "SELECT * FROM caixa_sessoes WHERE user_id = ? AND fechado_em IS NOT NULL "
+                "ORDER BY id DESC LIMIT ?", (user_id, limit),
+            ).fetchall()
         return [dict(r) for r in rows]
 
     # ── Vendas ──

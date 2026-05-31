@@ -11,6 +11,7 @@ import Clientes from "./pages/Clientes";
 import ContasReceber from "./pages/ContasReceber";
 import Fiscal from "./pages/Fiscal";
 import Maquininha from "./pages/Maquininha";
+import Caixa from "./pages/Caixa";
 import GateAtivacao from "./pages/Ativacao";
 import Mascote from "./components/Mascote";
 import { clearToken } from "./lib/api";
@@ -25,6 +26,7 @@ import {
   Wallet,
   FileText,
   CreditCard,
+  Banknote,
   LogOut
 } from "lucide-react";
 
@@ -35,6 +37,7 @@ const navItems = [
   { to: "/categorias", label: "Categorias", short: "Cat.", icon: <Tags size={20} /> },
   { to: "/clientes", label: "Clientes", short: "Clientes", icon: <Users size={20} /> },
   { to: "/vendas", label: "Vendas", short: "Vendas", icon: <ReceiptText size={20} /> },
+  { to: "/caixa", label: "Caixa", short: "Caixa", icon: <Banknote size={20} /> },
   { to: "/contas-receber", label: "Contas a Receber", short: "Fiado", icon: <Wallet size={20} /> },
   { to: "/fiscal", label: "Fiscal / NFC-e", short: "Fiscal", icon: <FileText size={20} /> },
   { to: "/maquininha", label: "Maquininha", short: "Cartão", icon: <CreditCard size={20} /> },
@@ -224,6 +227,7 @@ export default function App() {
                   <Route path="/categorias" element={<Categorias />} />
                   <Route path="/clientes" element={<Clientes />} />
                   <Route path="/vendas" element={<Vendas />} />
+                  <Route path="/caixa" element={<Caixa />} />
                   <Route path="/contas-receber" element={<ContasReceber />} />
                   <Route path="/fiscal" element={<Fiscal />} />
                   <Route path="/maquininha" element={<Maquininha />} />

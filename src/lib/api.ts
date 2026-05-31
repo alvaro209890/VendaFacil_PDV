@@ -451,6 +451,56 @@ export function getDashboard(): Promise<DashboardData> {
   return request("/api/dashboard");
 }
 
+// ── Caixa (abertura/fechamento) ──
+
+export interface CaixaResumo {
+  vendas_qtd: number;
+  vendas_total: number;
+  por_forma: Record<string, { qtd: number; total: number }>;
+  vendas_dinheiro: number;
+  suprimentos: number;
+  sangrias: number;
+  valor_abertura: number;
+  dinheiro_esperado: number;
+}
+
+export interface CaixaSessao {
+  id: number;
+  valor_abertura: number;
+  aberto_em: string;
+  fechado_em: string | null;
+  valor_fechamento: number | null;
+  valor_esperado: number | null;
+  diferenca: number | null;
+  observacao: string;
+}
+
+export interface CaixaAtual {
+  aberto: boolean;
+  sessao?: CaixaSessao;
+  resumo?: CaixaResumo;
+}
+
+export function caixaAtual(): Promise<CaixaAtual> {
+  return request("/api/caixa/atual");
+}
+
+export function abrirCaixa(valor_abertura: number): Promise<CaixaAtual> {
+  return request("/api/caixa/abrir", { method: "POST", body: JSON.stringify({ valor_abertura }) });
+}
+
+export function movimentoCaixa(tipo: "sangria" | "suprimento", valor: number, motivo: string): Promise<{ resumo: CaixaResumo }> {
+  return request("/api/caixa/movimento", { method: "POST", body: JSON.stringify({ tipo, valor, motivo }) });
+}
+
+export function fecharCaixa(valor_fechamento: number, observacao: string): Promise<{ sessao: CaixaSessao; resumo: CaixaResumo }> {
+  return request("/api/caixa/fechar", { method: "POST", body: JSON.stringify({ valor_fechamento, observacao }) });
+}
+
+export function historicoCaixa(): Promise<{ sessoes: CaixaSessao[] }> {
+  return request("/api/caixa/historico");
+}
+
 // ── PIX ──
 
 export interface PixQrCodeResponse {
