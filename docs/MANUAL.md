@@ -16,7 +16,7 @@ Sumário rápido:
 - [9. Caixa (abrir/fechar)](#9-caixa-abrirfechar)
 - [10. Recibo na impressora térmica](#10-recibo-na-impressora-térmica)
 - [11. Relatórios](#11-relatórios)
-- [12. Nota fiscal (NFC-e)](#12-nota-fiscal-nfce)
+- [12. Nota fiscal (NFC-e e NF-e)](#12-nota-fiscal-nfce-e-nf-e)
 - [13. Backup](#13-backup)
 - [Parte 2 — Administrador (Painel)](#parte-2--administrador-painel)
 - [FAQ / Problemas comuns](#faq--problemas-comuns)
@@ -73,7 +73,17 @@ Tela **Produtos**:
   unidade e (opcional) dados fiscais.
 - **Editar / Desativar** cada produto.
 - **+ Estoque**: dá entrada rápida (soma quantidade) num produto.
+- **Ajustar**: corrige o estoque fora de venda/entrada. Três tipos:
+  - **Perda** — baixa a quantidade (ex.: produto vencido).
+  - **Quebra** — baixa a quantidade (ex.: avaria).
+  - **Inventário** — você informa a **contagem real** da prateleira e o sistema
+    acerta o estoque, lançando a diferença (sobra ou falta).
+- **Histórico**: abre a lista de **todas as movimentações** do produto — entradas
+  (manual/XML), saídas (venda) e ajustes (perda/quebra/inventário), com data,
+  sinal +/− e observação.
 - Estoque baixo aparece no **Dashboard** (alerta).
+
+Detalhes: [`ESTOQUE_E_XML.md`](ESTOQUE_E_XML.md).
 
 ## 6. Importar XML (entrada de mercadoria)
 Quando o fornecedor entrega a mercadoria com a **NF-e (.xml)**:
@@ -116,11 +126,37 @@ Tela **Relatórios**: escolha o período (atalhos: hoje / 7 / 30 dias / mês) e 
 **faturamento, nº de vendas, ticket médio, lucro estimado**, vendas **por forma de
 pagamento**, **produtos mais vendidos** e **vendas por dia**.
 
-## 12. Nota fiscal (NFC-e)
-Opcional. Para emitir NFC-e, configure a tela **Fiscal** (dados da loja + gateway
-Focus NFe) — exige certificado A1, CSC e credenciamento na SEFAZ do estado.
-Detalhes em [`CHECKLIST_COMERCIALIZACAO.md`](CHECKLIST_COMERCIALIZACAO.md) e na
-seção fiscal.
+## 12. Nota fiscal (NFC-e e NF-e)
+Opcional. O sistema emite **NFC-e (modelo 65)** — o cupom fiscal do consumidor — e
+**NF-e (modelo 55)** — a nota para outra empresa/cliente identificado. O fluxo
+padrão é **direto com a SEFAZ-MT** (sem intermediário); o gateway Focus NFe segue
+disponível apenas como legado.
+
+### O que o lojista precisa (uma vez)
+1. **Certificado A1** da loja (arquivo `.pfx`/`.p12` + senha).
+2. **CSC e ID do CSC** gerados no portal da **SEFAZ-MT**.
+3. **Credenciamento** de NFC-e/NF-e na SEFAZ-MT (gratuito, online) e **Inscrição
+   Estadual** ativa.
+
+### Configurar (tela Fiscal)
+1. Ligue **"Emissão fiscal habilitada"**.
+2. Preencha **Emitente** (CNPJ, IE, regime) e **Endereço**.
+3. Em **SEFAZ-MT & Ambiente**: deixe o provedor em **SEFAZ-MT direto**, carregue o
+   **certificado A1** + senha e informe **CSC** e **ID do CSC**.
+4. Comece em **Homologação** (teste, sem valor fiscal). Só mude para **Produção**
+   depois de autorizar uma nota de teste com sucesso.
+5. *(Avançado, opcional)* **Responsável Técnico** — **Mato Grosso não exige**;
+   deixe desligado. Veja [`RESPONSAVEL_TECNICO.md`](RESPONSAVEL_TECNICO.md).
+
+### Emitir e acompanhar
+- No **PDV**, marque **"Emitir nota"** ao finalizar (pode informar o CPF do
+  consumidor). A NFC-e autorizada já imprime no recibo térmico, com QR de consulta.
+- Em **Vendas**, abra uma venda para **emitir**, **consultar status** ou
+  **cancelar** a nota (com justificativa). A NF-e (modelo 55) exige um cliente com
+  endereço/documento completos.
+
+> Notas que ficarem em **"processando"** são reconsultadas automaticamente em
+> segundo plano até a SEFAZ dar o resultado.
 
 ## 13. Backup
 Tela **Backup**:
@@ -189,6 +225,16 @@ backups regularmente e guarde fora do PC.
 Hoje não há "esqueci a senha" por e-mail. Estando logado, use **Trocar senha**.
 Se ficou totalmente sem acesso, é preciso redefinir direto no banco (Supabase) —
 fale com o suporte técnico.
+
+**A nota fiscal não autoriza / fica "rejeitada".**
+Confira na tela **Fiscal**: certificado A1 e senha corretos, CSC/ID do CSC
+preenchidos, CNPJ/IE regulares e credenciados na SEFAZ-MT. A mensagem de rejeição
+da SEFAZ aparece na venda (em **Vendas**) e indica o motivo. Teste sempre em
+**Homologação** antes de **Produção**.
+
+**Preciso de certificado A1 para usar o sistema?**
+Só para **emitir nota fiscal**. Vender, controlar estoque, caixa e recibo
+funcionam sem nada disso. O A1 é da **loja** (cada CNPJ tem o seu).
 
 **O painel no Vercel não conecta na API.**
 Confira se o backend (Render) está no ar (`/health`) e se a URL da API está certa
