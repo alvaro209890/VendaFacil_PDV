@@ -338,6 +338,15 @@ class Database:
             "proximo_numero_nfce": "INTEGER NOT NULL DEFAULT 1",
             "serie_nfe": "INTEGER NOT NULL DEFAULT 1",
             "proximo_numero_nfe": "INTEGER NOT NULL DEFAULT 1",
+            # Responsável Técnico (infRespTec) — desligado por padrão. MT não exige
+            # hoje; ligar só se/quando a UF passar a exigir. Ver docs/RESPONSAVEL_TECNICO.md
+            "resp_tec_habilitado": "INTEGER NOT NULL DEFAULT 0",
+            "resp_tec_cnpj": "TEXT DEFAULT ''",
+            "resp_tec_contato": "TEXT DEFAULT ''",
+            "resp_tec_email": "TEXT DEFAULT ''",
+            "resp_tec_fone": "TEXT DEFAULT ''",
+            "resp_tec_csrt": "TEXT DEFAULT ''",
+            "resp_tec_id_csrt": "TEXT DEFAULT ''",
         }
         for col, ddl in fiscal_cols.items():
             if col not in fcols:
@@ -398,6 +407,8 @@ class Database:
             "provedor_fiscal", "gateway_token", "certificado_a1_b64", "certificado_senha",
             "certificado_nome", "certificado_validade", "serie", "proximo_numero",
             "serie_nfce", "proximo_numero_nfce", "serie_nfe", "proximo_numero_nfe",
+            "resp_tec_habilitado", "resp_tec_cnpj", "resp_tec_contato",
+            "resp_tec_email", "resp_tec_fone", "resp_tec_csrt", "resp_tec_id_csrt",
         }
         dados = {k: v for k, v in campos.items() if k in permitidos and v is not None}
         with self._lock, self._conn:

@@ -684,10 +684,19 @@ export interface ConfigFiscal {
   proximo_numero_nfce?: number;
   serie_nfe?: number;
   proximo_numero_nfe?: number;
+  // Responsável Técnico (infRespTec) — opcional, desligado por padrão.
+  resp_tec_habilitado?: number;
+  resp_tec_cnpj?: string;
+  resp_tec_contato?: string;
+  resp_tec_email?: string;
+  resp_tec_fone?: string;
+  resp_tec_csrt?: string;
+  resp_tec_id_csrt?: string;
   gateway_token_preenchido?: boolean;
   csc_preenchido?: boolean;
   certificado_a1_b64_preenchido?: boolean;
   certificado_senha_preenchido?: boolean;
+  resp_tec_csrt_preenchido?: boolean;
 }
 
 export interface NotaFiscal {

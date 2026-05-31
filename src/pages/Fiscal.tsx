@@ -37,6 +37,7 @@ export default function FiscalPage() {
       if (!payload.csc) delete payload.csc;
       if (!payload.certificado_a1_b64) delete payload.certificado_a1_b64;
       if (!payload.certificado_senha) delete payload.certificado_senha;
+      if (!payload.resp_tec_csrt) delete payload.resp_tec_csrt;
       const { config } = await salvarConfigFiscal(payload);
       setCfg({ ambiente: "homologacao", provedor_fiscal: "sefaz_mt_direto", uf: "MT", ...config });
       setMsg({ tipo: "ok", texto: "Configuração fiscal salva!" });
@@ -166,6 +167,31 @@ export default function FiscalPage() {
             Use o certificado A1 da própria mercearia e o CSC/idCSC liberado pela SEFAZ-MT. Comece em <b>Homologação</b> para testar; só mude para <b>Produção</b> depois de validar com o contador e autorizar notas reais.
           </p>
         </fieldset>
+
+        <details className="bg-slate-900 border border-slate-800 rounded-xl p-4">
+          <summary className="text-slate-300 text-xs font-bold uppercase cursor-pointer select-none">
+            Responsável Técnico (avançado) {cfg.resp_tec_habilitado ? <span className="text-emerald-400 normal-case">— ligado</span> : <span className="text-slate-500 normal-case">— desligado (padrão)</span>}
+          </summary>
+          <div className="mt-3 space-y-3">
+            <p className="text-slate-500 text-[11px] leading-snug">
+              <b>Mato Grosso não exige</b> este grupo hoje — deixe <b>desligado</b>. Ligue apenas se a SEFAZ da sua UF passar a exigir o Responsável Técnico (ex.: PR a partir de 2026). Informe o CNPJ da empresa de software. O CSRT só é necessário em UFs que o exijam — sem ele, envia-se apenas o contato.
+            </p>
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input type="checkbox" checked={!!cfg.resp_tec_habilitado} onChange={(e) => set("resp_tec_habilitado", e.target.checked)} className="w-5 h-5 accent-brand-500" />
+              <span className="text-white font-bold text-sm">Enviar grupo infRespTec no XML</span>
+            </label>
+            {cfg.resp_tec_habilitado && (
+              <div className="grid md:grid-cols-2 gap-3">
+                <div><label className={lbl}>CNPJ (empresa de software)</label><input className={inputCls} value={cfg.resp_tec_cnpj || ""} onChange={(e) => set("resp_tec_cnpj", e.target.value)} placeholder="00.000.000/0001-00" /></div>
+                <div><label className={lbl}>Contato</label><input className={inputCls} value={cfg.resp_tec_contato || ""} onChange={(e) => set("resp_tec_contato", e.target.value)} /></div>
+                <div><label className={lbl}>E-mail</label><input className={inputCls} value={cfg.resp_tec_email || ""} onChange={(e) => set("resp_tec_email", e.target.value)} /></div>
+                <div><label className={lbl}>Telefone</label><input className={inputCls} value={cfg.resp_tec_fone || ""} onChange={(e) => set("resp_tec_fone", e.target.value)} placeholder="só dígitos" /></div>
+                <div><label className={lbl}>ID do CSRT</label><input className={inputCls} value={cfg.resp_tec_id_csrt || ""} onChange={(e) => set("resp_tec_id_csrt", e.target.value)} placeholder="ex.: 01" /></div>
+                <div><label className={lbl}>CSRT {cfg.resp_tec_csrt_preenchido && <span className="text-emerald-400">(salvo)</span>}</label><input className={inputCls} type="password" value={cfg.resp_tec_csrt || ""} onChange={(e) => set("resp_tec_csrt", e.target.value)} placeholder={cfg.resp_tec_csrt_preenchido ? "preencha só para alterar" : "código fornecido pela SEFAZ"} /></div>
+              </div>
+            )}
+          </div>
+        </details>
 
         <button disabled={salvando} className="w-full md:w-auto px-6 py-2.5 bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white font-bold rounded-lg flex items-center justify-center gap-2">
           <Save size={18} /> {salvando ? "Salvando..." : "Salvar configuração"}

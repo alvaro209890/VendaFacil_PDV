@@ -8,7 +8,7 @@ from database import db
 router = APIRouter()
 
 # Campos sensíveis que não devem voltar para o frontend por inteiro.
-_SENSIVEIS = {"gateway_token", "csc", "certificado_a1_b64", "certificado_senha"}
+_SENSIVEIS = {"gateway_token", "csc", "certificado_a1_b64", "certificado_senha", "resp_tec_csrt"}
 
 
 def _auth(request: Request) -> int:
@@ -48,6 +48,14 @@ class ConfigFiscalInput(BaseModel):
     proximo_numero_nfce: int | None = Field(default=None, ge=1)
     serie_nfe: int | None = Field(default=None, ge=1)
     proximo_numero_nfe: int | None = Field(default=None, ge=1)
+    # Responsável Técnico (infRespTec) — opcional, desligado por padrão.
+    resp_tec_habilitado: bool | None = None
+    resp_tec_cnpj: str | None = Field(default=None, max_length=18)
+    resp_tec_contato: str | None = Field(default=None, max_length=60)
+    resp_tec_email: str | None = Field(default=None, max_length=60)
+    resp_tec_fone: str | None = Field(default=None, max_length=14)
+    resp_tec_csrt: str | None = Field(default=None, max_length=64)
+    resp_tec_id_csrt: str | None = Field(default=None, max_length=10)
 
 
 def _mascarar(cfg: dict) -> dict:
@@ -70,7 +78,8 @@ async def obter(request: Request) -> dict:
 async def salvar(data: ConfigFiscalInput, request: Request) -> dict:
     _auth(request)
     campos = data.model_dump(exclude_none=True)
-    if "habilitado" in campos:
-        campos["habilitado"] = 1 if campos["habilitado"] else 0
+    for flag in ("habilitado", "resp_tec_habilitado"):
+        if flag in campos:
+            campos[flag] = 1 if campos[flag] else 0
     cfg = db.salvar_config_fiscal(campos, _agora())
     return {"config": _mascarar(cfg)}

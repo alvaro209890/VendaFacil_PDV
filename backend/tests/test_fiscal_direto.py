@@ -75,6 +75,43 @@ def test_monta_xml_nfe_55_para_empresa(client, auth):
     assert "<CNPJ>11222333000181</CNPJ>" in doc.xml
 
 
+def test_resp_tec_desligado_por_padrao_nao_aparece(client, auth):
+    produto = client.post("/api/produtos", headers=auth, json={
+        "nome": "Sem RespTec", "preco_venda": 10, "estoque": 5,
+        "ncm": "22021000", "cfop": "5102", "cst_csosn": "102", "unidade": "UN",
+    }).json()["produto"]
+    doc = fiscal_direto.montar_documento(_venda(produto), _cfg(), "65", serie=1, numero=1)
+    assert "infRespTec" not in doc.xml
+
+
+def test_resp_tec_ligado_sem_csrt_inclui_contato(client, auth):
+    produto = client.post("/api/produtos", headers=auth, json={
+        "nome": "Com RespTec", "preco_venda": 10, "estoque": 5,
+        "ncm": "22021000", "cfop": "5102", "cst_csosn": "102", "unidade": "UN",
+    }).json()["produto"]
+    cfg = {**_cfg(), "resp_tec_habilitado": 1, "resp_tec_cnpj": "11222333000181",
+           "resp_tec_contato": "Suporte VendaFacil", "resp_tec_email": "suporte@vf.com",
+           "resp_tec_fone": "6535551234"}
+    doc = fiscal_direto.montar_documento(_venda(produto), cfg, "65", serie=1, numero=1)
+    assert "<infRespTec>" in doc.xml
+    assert "<CNPJ>11222333000181</CNPJ>" in doc.xml
+    assert "idCSRT" not in doc.xml  # sem CSRT cadastrado, não envia hash
+
+
+def test_resp_tec_com_csrt_inclui_hash(client, auth):
+    produto = client.post("/api/produtos", headers=auth, json={
+        "nome": "RespTec CSRT", "preco_venda": 10, "estoque": 5,
+        "ncm": "22021000", "cfop": "5102", "cst_csosn": "102", "unidade": "UN",
+    }).json()["produto"]
+    cfg = {**_cfg(), "resp_tec_habilitado": 1, "resp_tec_cnpj": "11222333000181",
+           "resp_tec_csrt": "G8L88UN1234567890ABCDEF", "resp_tec_id_csrt": "01"}
+    doc = fiscal_direto.montar_documento(_venda(produto), cfg, "65", serie=1, numero=1)
+    assert "<idCSRT>01</idCSRT>" in doc.xml
+    # hashCSRT confere com Base64(SHA1(CSRT+chave))
+    esperado = fiscal_direto._hash_csrt("G8L88UN1234567890ABCDEF", doc.chave)
+    assert f"<hashCSRT>{esperado}</hashCSRT>" in doc.xml
+
+
 def test_numeracao_separada_nfce_nfe():
     db.salvar_config_fiscal({"serie_nfce": 7, "proximo_numero_nfce": 11, "serie_nfe": 3, "proximo_numero_nfe": 21}, "agora")
     assert db.consumir_numero_fiscal("65") == (7, 11)

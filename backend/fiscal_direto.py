@@ -249,6 +249,8 @@ def montar_documento(venda: dict, config: dict, modelo: str = "65",
     _tag(detp, "tPag", {"dinheiro": "01", "credito": "03", "debito": "04", "pix": "17"}.get(venda.get("forma_pagamento"), "99"))
     _tag(detp, "vPag", f"{float(venda.get('total') or total_prod):.2f}")
 
+    _anexar_resp_tec(inf, config, chave)
+
     qrcode_url = None
     if modelo == "65":
         infsupl = _tag(nfe, "infNFeSupl")
@@ -259,6 +261,36 @@ def montar_documento(venda: dict, config: dict, modelo: str = "65",
     xml = ET.tostring(nfe, encoding="utf-8", xml_declaration=True).decode("utf-8")
     payload = {"modelo": modelo, "chave": chave, "ambiente": ambiente, "serie": serie, "numero": numero}
     return DocumentoMontado(chave=chave, xml=xml, payload=payload, qrcode_url=qrcode_url)
+
+
+def _hash_csrt(csrt: str, chave: str) -> str:
+    """hashCSRT = Base64( SHA-1( CSRT + chave_de_acesso ) ), conforme NT 2018.005."""
+    digest = hashlib.sha1((csrt + chave).encode("utf-8")).digest()
+    return base64.b64encode(digest).decode("ascii")
+
+
+def _anexar_resp_tec(inf, config: dict, chave: str) -> None:
+    """Anexa o grupo infRespTec (Responsável Técnico) ao infNFe, quando habilitado.
+
+    Desligado por padrão. MT não exige hoje (ver docs/RESPONSAVEL_TECNICO.md); este
+    grupo existe como blindagem para UFs que passem a exigir. Quando ligado sem CSRT,
+    envia só os dados de contato; com CSRT cadastrado na SEFAZ, inclui idCSRT/hashCSRT
+    (necessário em UFs que exigem o CSRT, p. ex. PR a partir de 2026)."""
+    if not config.get("resp_tec_habilitado"):
+        return
+    cnpj = so_digitos(config.get("resp_tec_cnpj"))
+    if not cnpj:
+        return
+    rt = _tag(inf, "infRespTec")
+    _tag(rt, "CNPJ", cnpj)
+    _tag(rt, "xContato", (config.get("resp_tec_contato") or "")[:60] or "SUPORTE")
+    _tag(rt, "email", (config.get("resp_tec_email") or "")[:60])
+    _tag(rt, "fone", so_digitos(config.get("resp_tec_fone")))
+    csrt = (config.get("resp_tec_csrt") or "").strip()
+    id_csrt = (config.get("resp_tec_id_csrt") or "").strip()
+    if csrt and id_csrt:
+        _tag(rt, "idCSRT", id_csrt)
+        _tag(rt, "hashCSRT", _hash_csrt(csrt, chave))
 
 
 def gerar_qrcode_url(chave: str, config: dict, ambiente: str) -> str:
