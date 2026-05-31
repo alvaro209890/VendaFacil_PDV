@@ -15,6 +15,7 @@ import Caixa from "./pages/Caixa";
 import Backup from "./pages/Backup";
 import Relatorios from "./pages/Relatorios";
 import PixConfig from "./pages/PixConfig";
+import Manual from "./pages/Manual";
 import GateAtivacao from "./pages/Ativacao";
 import Mascote from "./components/Mascote";
 import { clearToken } from "./lib/api";
@@ -33,7 +34,8 @@ import {
   Database,
   BarChart3,
   Smartphone,
-  LogOut
+  LogOut,
+  BookOpen
 } from "lucide-react";
 
 const navItems = [
@@ -50,6 +52,7 @@ const navItems = [
   { to: "/maquininha", label: "Maquininha", short: "Cartão", icon: <CreditCard size={20} /> },
   { to: "/pix", label: "PIX", short: "PIX", icon: <Smartphone size={20} /> },
   { to: "/backup", label: "Backup", short: "Backup", icon: <Database size={20} /> },
+  { to: "/manual", label: "Manual", short: "Manual", icon: <BookOpen size={20} /> },
 ];
 
 function Layout({ children }: { children: React.ReactNode }) {
@@ -242,6 +245,7 @@ export default function App() {
                   <Route path="/maquininha" element={<Maquininha />} />
                   <Route path="/pix" element={<PixConfig />} />
                   <Route path="/backup" element={<Backup />} />
+                  <Route path="/manual" element={<Manual />} />
                   <Route path="/relatorios" element={<Relatorios />} />
                   <Route path="*" element={<Navigate to="/pdv" replace />} />
                 </Routes>
