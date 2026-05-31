@@ -221,6 +221,21 @@ class Database:
                 imprimir_comprovante INTEGER NOT NULL DEFAULT 1,
                 atualizado_em TEXT
             );
+
+            CREATE TABLE IF NOT EXISTS movimentacoes_estoque (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                produto_id INTEGER NOT NULL,
+                tipo TEXT NOT NULL,            -- entrada | saida | ajuste
+                quantidade REAL NOT NULL,
+                custo_unitario REAL,
+                origem TEXT,                   -- xml | manual | venda
+                documento TEXT,                -- nº/chave da NF-e (entrada por XML)
+                observacao TEXT,
+                criado_em TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_mov_user ON movimentacoes_estoque(user_id);
+            CREATE INDEX IF NOT EXISTS idx_mov_produto ON movimentacoes_estoque(produto_id);
             """
         )
 
@@ -472,6 +487,61 @@ class Database:
                 (quantidade, produto_id),
             )
             return True
+
+    def get_produto_by_codigo(self, user_id: int, codigo: str) -> dict[str, Any] | None:
+        """Busca produto ativo pelo código de barras (para casar itens do XML)."""
+        codigo = (codigo or "").strip()
+        if not codigo:
+            return None
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT * FROM produtos WHERE user_id = ? AND codigo_barras = ? AND ativo = 1",
+                (user_id, codigo),
+            ).fetchone()
+        return dict(row) if row else None
+
+    def entrada_estoque(self, produto_id: int, user_id: int, quantidade: float,
+                        agora: str, novo_custo: float | None = None) -> dict[str, Any] | None:
+        """Soma quantidade ao estoque; opcionalmente atualiza o preço de custo."""
+        with self._lock, self._conn:
+            sets = "estoque = estoque + ?, atualizado_em = ?"
+            vals: list = [quantidade, agora]
+            if novo_custo is not None:
+                sets += ", preco_custo = ?"
+                vals.append(novo_custo)
+            vals += [produto_id, user_id]
+            self._conn.execute(
+                f"UPDATE produtos SET {sets} WHERE id = ? AND user_id = ?", vals
+            )
+        return self.get_produto(produto_id, user_id)
+
+    def registrar_movimentacao(self, user_id: int, produto_id: int, tipo: str,
+                               quantidade: float, agora: str,
+                               custo_unitario: float | None = None,
+                               origem: str = "manual", documento: str = "",
+                               observacao: str = "") -> None:
+        with self._lock, self._conn:
+            self._conn.execute(
+                "INSERT INTO movimentacoes_estoque (user_id, produto_id, tipo, quantidade, "
+                "custo_unitario, origem, documento, observacao, criado_em) "
+                "VALUES (?,?,?,?,?,?,?,?,?)",
+                (user_id, produto_id, tipo, quantidade, custo_unitario, origem,
+                 documento, observacao, agora),
+            )
+
+    def list_movimentacoes(self, user_id: int, produto_id: int | None = None,
+                          limit: int = 100) -> list[dict[str, Any]]:
+        with self._lock:
+            q = ("SELECT m.*, p.nome AS produto_nome FROM movimentacoes_estoque m "
+                 "LEFT JOIN produtos p ON p.id = m.produto_id WHERE m.user_id = ?")
+            params: list = [user_id]
+            if produto_id is not None:
+                q += " AND m.produto_id = ?"
+                params.append(produto_id)
+            q += " ORDER BY m.id DESC LIMIT ?"
+            params.append(limit)
+            rows = self._conn.execute(q, params).fetchall()
+        return [dict(r) for r in rows]
 
     # ── Vendas ──
 

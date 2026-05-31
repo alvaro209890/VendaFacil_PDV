@@ -103,6 +103,15 @@ async def checkout(data: CheckoutRequest, request: Request):
         agora=agora,
     )
 
+    # Registra a saída de estoque de cada item (histórico de movimentações).
+    if venda:
+        for item in itens_processados:
+            db.registrar_movimentacao(
+                user_id, item["produto_id"], "saida", item["quantidade"], agora,
+                custo_unitario=None, origem="venda", documento=str(venda["id"]),
+                observacao=item["nome_produto"],
+            )
+
     # Se for venda fiada, cria conta a receber automaticamente
     if data.forma_pagamento == "fiado" and venda:
         db.create_conta_receber(

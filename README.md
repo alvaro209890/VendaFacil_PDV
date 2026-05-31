@@ -7,6 +7,7 @@ distribuído como **executável único (.exe)** com controle central de licença
 > · **Gerar o .exe no Windows:** [`docs/BUILD_WINDOWS.md`](docs/BUILD_WINDOWS.md)
 > · **Cobrança/bloqueio manual:** [`docs/COBRANCA_MANUAL.md`](docs/COBRANCA_MANUAL.md)
 > · **Custos & financeiro:** [`docs/CUSTOS.md`](docs/CUSTOS.md)
+> · **Estoque & importação de XML:** [`docs/ESTOQUE_E_XML.md`](docs/ESTOQUE_E_XML.md)
 > · **Jurídico (Termos/Privacidade/LGPD):** [`docs/legal/`](docs/legal/)
 > · **O que falta para comercializar:** [`docs/CHECKLIST_COMERCIALIZACAO.md`](docs/CHECKLIST_COMERCIALIZACAO.md)
 
@@ -63,6 +64,10 @@ online o PDV trava. Sem `VENDAFACIL_PAINEL_URL` configurado, o PDV roda em
 - Edição inline
 - Soft delete (desativar)
 - Alerta visual de estoque baixo
+- **Entrada manual de estoque** ("+ Estoque") e **histórico de movimentações**
+- **Importação de XML de NF-e** (entrada de mercadoria do fornecedor): casa por
+  código de barras, repõe estoque e cadastra produtos novos — veja
+  [`docs/ESTOQUE_E_XML.md`](docs/ESTOQUE_E_XML.md)
 
 ### 📊 Dashboard
 - Métricas em tempo real: produtos ativos, vendas do dia, total em vendas

@@ -1,12 +1,24 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   listarProdutos,
   criarProduto,
   atualizarProduto,
   desativarProduto,
   listarCategorias,
+  importarXmlPreview,
+  importarXmlConfirmar,
+  entradaEstoque,
 } from "../lib/api";
-import type { Produto, ProdutoInput, Categoria, CamposFiscais } from "../lib/api";
+import type {
+  Produto, ProdutoInput, Categoria, CamposFiscais, PreviewXml, ItemConfirmarXml,
+} from "../lib/api";
+
+// Item da importação com flags editáveis na tela.
+type ItemImport = ItemConfirmarXml & {
+  acao: "atualizar" | "criar";
+  estoque_atual: number;
+  incluir: boolean;
+};
 
 const FISCAL_VAZIO: CamposFiscais = {
   ncm: "", cest: "", cfop: "5102", origem: "0", unidade_tributavel: "",
@@ -32,6 +44,93 @@ export default function ProdutosPage() {
   const [unidade, setUnidade] = useState("UN");
   const [fiscal, setFiscal] = useState<CamposFiscais>({ ...FISCAL_VAZIO });
   const [mostrarFiscal, setMostrarFiscal] = useState(false);
+
+  // Importação de XML (NF-e)
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [importInfo, setImportInfo] = useState<{ emitente: string; numero: string; chave: string } | null>(null);
+  const [importItens, setImportItens] = useState<ItemImport[]>([]);
+  const [importBusy, setImportBusy] = useState(false);
+
+  async function onXmlEscolhido(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // permite reimportar o mesmo arquivo
+    if (!file) return;
+    setImportBusy(true);
+    setMsg(null);
+    try {
+      const prev: PreviewXml = await importarXmlPreview(file);
+      setImportInfo({ emitente: prev.emitente, numero: prev.numero, chave: prev.chave });
+      setImportItens(prev.itens.map((it) => ({
+        produto_id: it.produto_id,
+        nome: it.nome,
+        codigo_barras: it.codigo_barras,
+        unidade: it.unidade,
+        quantidade: it.quantidade,
+        preco_custo: it.valor_unitario,
+        preco_venda: it.preco_venda_atual ?? Number((it.valor_unitario * 1.3).toFixed(2)),
+        atualizar_custo: true,
+        ncm: it.ncm,
+        cfop: it.cfop,
+        acao: it.acao,
+        estoque_atual: it.estoque_atual,
+        incluir: true,
+      })));
+    } catch (err) {
+      setMsg({ tipo: "erro", texto: (err as Error).message });
+    } finally {
+      setImportBusy(false);
+    }
+  }
+
+  const setItem = (i: number, campo: keyof ItemImport, valor: string | number | boolean) =>
+    setImportItens((arr) => arr.map((it, idx) => (idx === i ? { ...it, [campo]: valor } : it)));
+
+  async function confirmarImportacao() {
+    const sel = importItens.filter((it) => it.incluir && it.quantidade > 0);
+    if (sel.length === 0) {
+      setMsg({ tipo: "erro", texto: "Selecione ao menos um item para importar." });
+      return;
+    }
+    setImportBusy(true);
+    try {
+      const doc = importInfo ? (importInfo.numero || importInfo.chave) : "";
+      const itens: ItemConfirmarXml[] = sel.map((it) => ({
+        produto_id: it.produto_id,
+        nome: it.nome,
+        codigo_barras: it.codigo_barras,
+        unidade: it.unidade,
+        quantidade: it.quantidade,
+        preco_custo: it.preco_custo,
+        preco_venda: it.preco_venda,
+        atualizar_custo: it.atualizar_custo,
+        ncm: it.ncm,
+        cfop: it.cfop,
+      }));
+      const r = await importarXmlConfirmar(doc, itens);
+      setImportInfo(null);
+      setImportItens([]);
+      setMsg({ tipo: "ok", texto: `Importado! ${r.atualizados} atualizado(s), ${r.criados} novo(s).` });
+      carregar();
+    } catch (err) {
+      setMsg({ tipo: "erro", texto: (err as Error).message });
+    } finally {
+      setImportBusy(false);
+    }
+  }
+
+  async function entradaRapida(p: Produto) {
+    const q = prompt(`Entrada de estoque — "${p.nome}"\nQuantidade a adicionar:`, "1");
+    if (q === null) return;
+    const qtd = Number(q);
+    if (!qtd || qtd <= 0) { setMsg({ tipo: "erro", texto: "Quantidade inválida." }); return; }
+    try {
+      await entradaEstoque(p.id, qtd);
+      setMsg({ tipo: "ok", texto: `+${qtd} em "${p.nome}".` });
+      carregar();
+    } catch (err) {
+      setMsg({ tipo: "erro", texto: (err as Error).message });
+    }
+  }
 
   const setF = (campo: keyof CamposFiscais, valor: string) =>
     setFiscal((f) => ({ ...f, [campo]: valor }));
@@ -167,12 +266,23 @@ export default function ProdutosPage() {
       <div className="flex-1 min-h-0 flex flex-col">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-white font-bold text-base sm:text-lg">📦 Produtos ({produtos.length})</h2>
-          <button
-            onClick={abrirNovo}
-            className="px-3 sm:px-4 py-1.5 sm:py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors active:scale-95"
-          >
-            + Novo
-          </button>
+          <div className="flex gap-2">
+            <input ref={fileRef} type="file" accept=".xml,text/xml,application/xml" onChange={onXmlEscolhido} className="hidden" />
+            <button
+              onClick={() => fileRef.current?.click()}
+              disabled={importBusy}
+              className="px-3 sm:px-4 py-1.5 sm:py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-60 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors active:scale-95"
+              title="Importar produtos/estoque de um XML de NF-e"
+            >
+              {importBusy ? "Lendo..." : "📄 Importar XML"}
+            </button>
+            <button
+              onClick={abrirNovo}
+              className="px-3 sm:px-4 py-1.5 sm:py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors active:scale-95"
+            >
+              + Novo
+            </button>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto rounded-xl bg-slate-900 border border-slate-800">
@@ -268,6 +378,7 @@ export default function ProdutosPage() {
                         </td>
                         <td className="p-3">
                           <div className="flex gap-1 justify-end">
+                            {p.ativo ? <button onClick={() => entradaRapida(p)} className="text-emerald-400 hover:text-emerald-300 text-xs px-2 py-1 rounded hover:bg-slate-700 active:scale-95" title="Dar entrada no estoque">+ Estoque</button> : null}
                             <button onClick={() => abrirEdicao(p)} className="text-slate-400 hover:text-white text-xs px-2 py-1 rounded hover:bg-slate-700 active:scale-95">Editar</button>
                             {p.ativo ? <button onClick={() => handleDesativar(p.id)} className="text-red-400 hover:text-red-300 text-xs px-2 py-1 rounded hover:bg-slate-700 active:scale-95">Desativar</button> : null}
                           </div>
@@ -456,6 +567,67 @@ export default function ProdutosPage() {
               {editando ? "Salvar Alterações" : "Criar Produto"}
             </button>
           </form>
+        </div>
+      )}
+
+      {/* ── Modal: Importar XML (NF-e) ── */}
+      {importInfo && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 bg-black/80 backdrop-blur-sm">
+          <div className="w-full max-w-4xl max-h-[90vh] flex flex-col bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b border-slate-800">
+              <div>
+                <h3 className="text-white font-black text-lg">📄 Importar XML — entrada de estoque</h3>
+                <p className="text-slate-500 text-xs">{importInfo.emitente || "Fornecedor"} · NF {importInfo.numero || "—"}</p>
+              </div>
+              <button onClick={() => { setImportInfo(null); setImportItens([]); }} className="text-slate-400 hover:text-white text-2xl leading-none">×</button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-3">
+              <table className="w-full text-sm">
+                <thead className="text-slate-500 text-xs uppercase text-left">
+                  <tr>
+                    <th className="p-2">Imp.</th>
+                    <th className="p-2">Produto</th>
+                    <th className="p-2">Ação</th>
+                    <th className="p-2 w-20">Qtd</th>
+                    <th className="p-2 w-24">Custo R$</th>
+                    <th className="p-2 w-24">Venda R$</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {importItens.map((it, i) => (
+                    <tr key={i} className={`border-t border-slate-800 ${!it.incluir ? "opacity-40" : ""}`}>
+                      <td className="p-2"><input type="checkbox" checked={it.incluir} onChange={(e) => setItem(i, "incluir", e.target.checked)} className="w-4 h-4 accent-brand-500" /></td>
+                      <td className="p-2">
+                        <div className="text-white truncate max-w-48">{it.nome}</div>
+                        <div className="text-slate-500 text-2xs">{it.codigo_barras || "sem código"} · {it.unidade}</div>
+                      </td>
+                      <td className="p-2">
+                        {it.acao === "atualizar"
+                          ? <span className="text-emerald-400 text-xs">repor (tem {it.estoque_atual})</span>
+                          : <span className="text-amber-400 text-xs">criar novo</span>}
+                      </td>
+                      <td className="p-2"><input type="number" step="0.01" value={it.quantidade} onChange={(e) => setItem(i, "quantidade", Number(e.target.value))} className="w-16 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white" /></td>
+                      <td className="p-2"><input type="number" step="0.01" value={it.preco_custo} onChange={(e) => setItem(i, "preco_custo", Number(e.target.value))} className="w-20 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white" /></td>
+                      <td className="p-2">
+                        {it.acao === "criar"
+                          ? <input type="number" step="0.01" value={it.preco_venda} onChange={(e) => setItem(i, "preco_venda", Number(e.target.value))} className="w-20 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white" />
+                          : <span className="text-slate-600 text-xs">mantém</span>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="p-4 border-t border-slate-800 flex items-center justify-between gap-3">
+              <p className="text-slate-500 text-xs">Confira quantidades e custos. "Repor" soma ao estoque atual; "criar novo" cadastra o produto.</p>
+              <div className="flex gap-2 shrink-0">
+                <button onClick={() => { setImportInfo(null); setImportItens([]); }} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm font-bold">Cancelar</button>
+                <button onClick={confirmarImportacao} disabled={importBusy} className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white rounded-lg text-sm font-bold">{importBusy ? "Importando..." : "Confirmar importação"}</button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

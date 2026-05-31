@@ -177,6 +177,71 @@ export function desativarProduto(id: number): Promise<{ ok: boolean }> {
   return request(`/api/produtos/${id}`, { method: "DELETE" });
 }
 
+// ── Estoque: importação de XML (NF-e) e entrada manual ──
+
+export interface ItemXml {
+  nome: string;
+  codigo_barras: string;
+  unidade: string;
+  quantidade: number;
+  valor_unitario: number;
+  ncm: string;
+  cfop: string;
+  produto_id: number | null;
+  produto_nome: string | null;
+  estoque_atual: number;
+  preco_custo_atual: number | null;
+  preco_venda_atual: number | null;
+  acao: "atualizar" | "criar";
+}
+
+export interface PreviewXml {
+  emitente: string;
+  numero: string;
+  chave: string;
+  itens: ItemXml[];
+}
+
+export interface ItemConfirmarXml {
+  produto_id: number | null;
+  nome: string;
+  codigo_barras: string;
+  unidade: string;
+  quantidade: number;
+  preco_custo: number;
+  preco_venda: number;
+  atualizar_custo: boolean;
+  ncm?: string;
+  cfop?: string;
+}
+
+/** Envia o arquivo XML cru e recebe os itens já casados com o estoque. */
+export async function importarXmlPreview(file: File | Blob): Promise<PreviewXml> {
+  const token = getToken();
+  const res = await fetch(`${API_BASE}/api/produtos/importar-xml/preview`, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: file,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(typeof data.detail === "string" ? data.detail : "Não consegui ler o XML.");
+  return data;
+}
+
+export function importarXmlConfirmar(documento: string, itens: ItemConfirmarXml[]): Promise<{ criados: number; atualizados: number; total: number }> {
+  return request("/api/produtos/importar-xml/confirmar", {
+    method: "POST",
+    body: JSON.stringify({ documento, itens }),
+  });
+}
+
+export function entradaEstoque(produtoId: number, quantidade: number, custo_unitario?: number, observacao?: string): Promise<{ produto: Produto }> {
+  return request(`/api/produtos/${produtoId}/entrada`, {
+    method: "POST",
+    body: JSON.stringify({ quantidade, custo_unitario, observacao }),
+  });
+}
+
 // ── Categorias ──
 
 export interface Categoria {
