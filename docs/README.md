@@ -12,6 +12,7 @@
 - Relatórios de vendas: ver [MANUAL.md › Relatórios](MANUAL.md#11-relatórios).
 
 ## 🛠️ Gerar e testar o .exe (Windows)
+- [INSTALACAO_WINDOWS.md](INSTALACAO_WINDOWS.md) — instalar o PDV no computador do cliente.
 - [BUILD_WINDOWS.md](BUILD_WINDOWS.md) — gerar o .exe + instalador (local ou via GitHub Actions).
 - [EMPACOTAMENTO_EXE.md](EMPACOTAMENTO_EXE.md) — detalhes do empacotamento (PyInstaller).
 - [TESTE_WINDOWS.md](TESTE_WINDOWS.md) — roteiro de teste manual antes de vender.

@@ -10,9 +10,13 @@ call npm run build || goto :erro
 
 echo ==^> Preparando ambiente Python
 cd backend
+set "PYTHON_CMD=python"
+py -3.11 --version >nul 2>&1
+if not errorlevel 1 set "PYTHON_CMD=py -3.11"
 if not exist .venv (
-    python -m venv .venv || goto :erro
+    %PYTHON_CMD% -m venv .venv || goto :erro
 )
+call .venv\Scripts\python -m pip install --upgrade pip || goto :erro
 call .venv\Scripts\pip install -q -r requirements-build.txt || goto :erro
 
 echo ==^> Empacotando com PyInstaller

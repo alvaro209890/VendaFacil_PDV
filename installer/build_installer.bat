@@ -17,8 +17,9 @@ if not exist "..\dist_exe\VendaFacilPDV.exe" (
 REM Caminho padrao do compilador do Inno Setup 6. Ajuste se instalou em outro lugar.
 set "ISCC=%ProgramFiles(x86)%\Inno Setup 6\ISCC.exe"
 if not exist "%ISCC%" set "ISCC=%ProgramFiles%\Inno Setup 6\ISCC.exe"
+if not exist "%ISCC%" set "ISCC=%LOCALAPPDATA%\Programs\Inno Setup 6\ISCC.exe"
 if not exist "%ISCC%" (
-    echo ERRO: ISCC.exe (Inno Setup) nao encontrado.
+    echo ERRO: ISCC.exe - Inno Setup nao encontrado.
     echo Instale o Inno Setup 6: https://jrsoftware.org/isdl.php
     exit /b 1
 )
@@ -26,5 +27,5 @@ if not exist "%ISCC%" (
 "%ISCC%" vendafacil.iss || exit /b 1
 
 echo.
-echo OK! Instalador gerado em: dist_installer\VendaFacilPDV-Setup-*.exe
+echo OK! Instalador gerado em: ..\dist_installer\VendaFacilPDV-Setup-*.exe
 endlocal

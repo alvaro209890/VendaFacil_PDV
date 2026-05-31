@@ -7,6 +7,7 @@ from PyInstaller.utils.hooks import collect_submodules, collect_data_files
 
 here = SPECPATH
 dist_dir = os.path.join(here, "..", "dist")
+icon_path = os.path.join(here, "..", "installer", "vendafacil.ico")
 
 datas = [(dist_dir, "dist")]
 # qrcode embute fontes/recursos próprios em alguns casos
@@ -42,5 +43,5 @@ exe = EXE(
     upx=True,
     runtime_tmpdir=None,
     console=False,         # sem janela de console (abre direto no navegador)
-    # icon="icone.ico",    # opcional: aponte para um .ico (Windows) se quiser ícone próprio
+    icon=icon_path,
 )

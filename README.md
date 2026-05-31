@@ -7,6 +7,7 @@ distribuído como **executável único (.exe)** com controle central de licença
 > 📘 **Manual completo (lojista + admin):** [`docs/MANUAL.md`](docs/MANUAL.md)
 > 📦 **Deploy e produção:** [`docs/DEPLOY_E_PRODUCAO.md`](docs/DEPLOY_E_PRODUCAO.md)
 > · **Gerar o .exe no Windows:** [`docs/BUILD_WINDOWS.md`](docs/BUILD_WINDOWS.md)
+> · **Instalar no PC Windows:** [`docs/INSTALACAO_WINDOWS.md`](docs/INSTALACAO_WINDOWS.md)
 > · **Roteiro de teste no Windows:** [`docs/TESTE_WINDOWS.md`](docs/TESTE_WINDOWS.md)
 > · **Instruções p/ agente de build:** [`CLAUDE.md`](CLAUDE.md)
 > · **Licença offline-first:** [`docs/LICENCA.md`](docs/LICENCA.md)

@@ -36,10 +36,8 @@ OutputBaseFilename=VendaFacilPDV-Setup-{#AppVersion}
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
-; Ícone do instalador/app (opcional). Coloque um icone.ico em installer\ e
-; descomente as duas linhas abaixo:
-; SetupIconFile=icone.ico
-; UninstallDisplayIcon={app}\{#AppExe}
+SetupIconFile={#SourcePath}\vendafacil.ico
+UninstallDisplayIcon={app}\{#AppExe}
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 PrivilegesRequired=admin

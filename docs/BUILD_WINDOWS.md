@@ -71,6 +71,9 @@ Ele faz: `npm install` → `npm run build` → cria a venv → instala
 > abre o navegador em `http://127.0.0.1:3020/`. O banco fica em
 > `%LOCALAPPDATA%\VendaFacilPDV\dados\vendafacil.db`.
 
+O executável já sai com o ícone oficial do VendaFácil PDV definido em
+`installer\vendafacil.ico`.
+
 ---
 
 ## 3) Gerar o instalador (Inno Setup)
@@ -84,6 +87,7 @@ Antes, edite o topo do `installer\vendafacil.iss` com os seus dados:
 **Resultado:** `dist_installer\VendaFacilPDV-Setup-1.0.0.exe` — **este é o
 arquivo que você entrega ao lojista.** Ele instala em Program Files, cria
 atalho no Menu Iniciar e na Área de Trabalho, e registra o desinstalador.
+O instalador também usa o mesmo ícone oficial do app.
 
 > O banco do lojista fica em `%LOCALAPPDATA%\VendaFacilPDV\dados` — sobrevive a
 > reinstalações/atualizações e **não** é apagado ao desinstalar (proposital,

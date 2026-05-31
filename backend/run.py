@@ -9,6 +9,7 @@ do executável. Variáveis de ambiente (opcionais):
   VENDAFACIL_NO_BROWSER = 1  → não abre o navegador automaticamente
 """
 import os
+import sys
 import threading
 import webbrowser
 
@@ -18,6 +19,19 @@ from main import app
 
 HOST = os.environ.get("VENDAFACIL_HOST", "127.0.0.1")
 PORT = int(os.environ.get("VENDAFACIL_PORT", "3020"))
+_DEVNULL = None
+
+
+def _preparar_saida_sem_console() -> None:
+    """Evita erro do Uvicorn quando o PyInstaller roda sem console."""
+    global _DEVNULL
+    if sys.stdout is not None and sys.stderr is not None:
+        return
+    _DEVNULL = open(os.devnull, "w", encoding="utf-8")
+    if sys.stdout is None:
+        sys.stdout = _DEVNULL
+    if sys.stderr is None:
+        sys.stderr = _DEVNULL
 
 
 def _abrir_navegador() -> None:
@@ -25,10 +39,12 @@ def _abrir_navegador() -> None:
 
 
 def main() -> None:
+    _preparar_saida_sem_console()
     if os.environ.get("VENDAFACIL_NO_BROWSER") != "1":
         threading.Timer(1.5, _abrir_navegador).start()
     print(f"VendaFácil PDV rodando em http://{HOST}:{PORT}/  (Ctrl+C para sair)")
-    uvicorn.run(app, host=HOST, port=PORT, log_level="info")
+    log_config = None if getattr(sys, "frozen", False) else uvicorn.config.LOGGING_CONFIG
+    uvicorn.run(app, host=HOST, port=PORT, log_level="info", log_config=log_config)
 
 
 if __name__ == "__main__":
