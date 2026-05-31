@@ -9,9 +9,18 @@ mercadoria importando o XML da nota do fornecedor.
 - **Venda** baixa o estoque automaticamente (e bloqueia se faltar).
 - **Estoque baixo**: o Dashboard mostra alerta quando `estoque <= estoque_mínimo`.
 - **Entrada manual**: na tela Produtos, botão **"+ Estoque"** soma uma quantidade
-  ao produto (ex.: acerto de inventário, compra avulsa).
-- **Histórico de movimentações**: toda entrada (XML/manual) e saída (venda) fica
-  registrada em `movimentacoes_estoque` (tipo, quantidade, origem, documento).
+  ao produto (ex.: compra avulsa).
+- **Ajuste manual**: na tela Produtos, botão **"Ajustar"** corrige o estoque fora
+  de venda/entrada. Três tipos:
+  - **Perda** — baixa a quantidade informada (ex.: produto vencido).
+  - **Quebra** — baixa a quantidade informada (ex.: avaria).
+  - **Inventário** — você informa a **contagem real** e o sistema acerta o
+    estoque, lançando a diferença como entrada (sobra) ou saída (falta).
+  Perda/quebra são bloqueadas se a quantidade passar do estoque disponível.
+- **Histórico de movimentações**: toda entrada (XML/manual), saída (venda) e
+  ajuste (perda/quebra/inventário) fica registrada em `movimentacoes_estoque`
+  (tipo, quantidade, origem, documento). Na tela Produtos, o botão **"Histórico"**
+  abre o painel com tudo que entrou e saiu do produto.
 
 ## Importação de XML (NF-e de entrada)
 
@@ -50,6 +59,7 @@ Também o fornecedor (`emit/xNome`) e o número da nota.
 | `POST` | `/api/produtos/importar-xml/preview` | envia o XML cru; devolve itens casados |
 | `POST` | `/api/produtos/importar-xml/confirmar` | aplica a entrada (repõe/cria) |
 | `POST` | `/api/produtos/{id}/entrada` | entrada manual de estoque |
+| `POST` | `/api/produtos/{id}/ajuste` | ajuste manual: `tipo` = `perda`/`quebra`/`inventario` |
 | `GET`  | `/api/produtos/{id}/movimentacoes` | histórico de movimentações do produto |
 
 > Tudo isso roda no **.exe local** (offline-first). A importação de XML não
