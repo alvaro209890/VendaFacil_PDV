@@ -1,7 +1,7 @@
 # Instalar o VendaFacil PDV em um PC Windows
 
 Este guia e para instalar o sistema no computador do caixa usando o instalador
-`VendaFacilPDV-Setup-1.0.2.exe`.
+`VendaFacilPDV-Setup-1.0.3.exe`.
 
 ## Requisitos do computador
 
@@ -15,7 +15,7 @@ Este guia e para instalar o sistema no computador do caixa usando o instalador
 Entregue ao cliente o instalador:
 
 ```text
-dist_installer\VendaFacilPDV-Setup-1.0.2.exe
+dist_installer\VendaFacilPDV-Setup-1.0.3.exe
 ```
 
 O executavel direto tambem existe em:
@@ -29,7 +29,7 @@ o desinstalador e usa o icone oficial do VendaFacil PDV.
 
 ## Passo a passo de instalacao
 
-1. Copie ou baixe `VendaFacilPDV-Setup-1.0.2.exe` no PC do caixa.
+1. Copie ou baixe `VendaFacilPDV-Setup-1.0.3.exe` no PC do caixa.
 2. Clique com o botao direito no instalador e escolha `Executar como administrador`.
 3. Se o Windows SmartScreen aparecer, clique em `Mais informacoes` e depois `Executar assim mesmo`.
 4. Avance no instalador e deixe marcada a opcao de criar atalho na Area de Trabalho.
@@ -38,8 +38,7 @@ o desinstalador e usa o icone oficial do VendaFacil PDV.
 
 ## Primeiro uso
 
-- Em modo local, crie o usuario inicial na tela de registro/login.
-- Se o painel SaaS estiver configurado no build, entre com o login e senha cadastrados no painel.
+- Entre com o usuario e senha cadastrados no painel admin.
 - Cadastre produtos, configure PIX/maquininha/fiscal se necessario, e faca uma venda de teste.
 
 ## Onde ficam os dados

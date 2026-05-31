@@ -105,35 +105,55 @@ def _user_response(user: dict) -> dict:
     usuario = user.get("usuario") or user.get("email", "")
     return {"id": user["id"], "usuario": usuario, "email": usuario, "nome": user["nome"]}
 
+
+def _token_user(user: dict) -> dict:
+    exp = datetime.now(timezone.utc) + timedelta(hours=TOKEN_EXPIRE_HOURS)
+    usuario = user.get("usuario") or user.get("email")
+    return {
+        "sub": str(user["id"]),
+        "usuario": usuario,
+        "email": usuario,
+        "nome": user["nome"],
+        "iat": int(datetime.now(timezone.utc).timestamp()),
+        "exp": int(exp.timestamp()),
+    }
+
 # ── Rotas ──
 
 @router.post("/login")
 async def login(data: LoginRequest) -> dict:
     import conta as conta_mod
-    lic = conta_mod.status()
-    if lic.get("bloqueado"):
-        raise HTTPException(status_code=403, detail=lic.get("motivo", "Sistema não ativado."))
-
     usuario = _usuario(data)
-    user = db.get_user_by_usuario(usuario)
-    if not user or not _verificar_senha(data.senha, user["senha_hash"]):
-        raise HTTPException(status_code=401, detail="Usuário ou senha incorretos.")
+
+    if conta_mod.licenca_obrigatoria():
+        try:
+            st = conta_mod.ativar(usuario, data.senha)
+            if st.get("bloqueado"):
+                raise HTTPException(status_code=403, detail=st.get("motivo", "Conta bloqueada."))
+            user = db.upsert_user(usuario, st.get("nome_loja") or usuario, _hash_senha(data.senha), _agora())
+        except ConnectionError as exc:
+            st = conta_mod.status()
+            if st.get("bloqueado"):
+                raise HTTPException(status_code=403, detail=str(exc))
+            user = db.get_user_by_usuario(usuario)
+            if not user or not _verificar_senha(data.senha, user["senha_hash"]):
+                raise HTTPException(status_code=503, detail="Sem internet. Faça o primeiro login online com a conta do painel.")
+        except ValueError as exc:
+            raise HTTPException(status_code=401, detail=str(exc))
+    else:
+        user = db.get_user_by_usuario(usuario)
+        if not user or not _verificar_senha(data.senha, user["senha_hash"]):
+            raise HTTPException(status_code=401, detail="Usuário ou senha incorretos.")
 
     db.update_last_login(usuario, _agora())
-    exp = datetime.now(timezone.utc) + timedelta(hours=TOKEN_EXPIRE_HOURS)
-    token = _gerar_jwt({
-        "sub": str(user["id"]),
-        "usuario": user.get("usuario") or user.get("email"),
-        "email": user.get("usuario") or user.get("email"),
-        "nome": user["nome"],
-        "iat": int(datetime.now(timezone.utc).timestamp()),
-        "exp": int(exp.timestamp()),
-    })
+    token = _gerar_jwt(_token_user(user))
     return {"token": token, "user": _user_response(user)}
 
 @router.post("/registro")
 async def registro(data: RegistroRequest) -> dict:
     import conta as conta_mod
+    if conta_mod.licenca_obrigatoria():
+        raise HTTPException(status_code=403, detail="Registro local desativado. Use o usuário criado no painel.")
     lic = conta_mod.status()
     if lic.get("bloqueado"):
         raise HTTPException(status_code=403, detail=lic.get("motivo", "Sistema não ativado."))

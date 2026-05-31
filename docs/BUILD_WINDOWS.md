@@ -84,7 +84,7 @@ Dê dois cliques em **`installer\build_installer.bat`** (ou abra
 Antes, edite o topo do `installer\vendafacil.iss` com os seus dados:
 `AppPublisher` (empresa), `AppURL` (site) e, se tiver, `SetupIconFile` (ícone).
 
-**Resultado:** `dist_installer\VendaFacilPDV-Setup-1.0.2.exe` — **este é o
+**Resultado:** `dist_installer\VendaFacilPDV-Setup-1.0.3.exe` — **este é o
 arquivo que você entrega ao lojista.** Ele instala em Program Files, cria
 atalho no Menu Iniciar e na Área de Trabalho, e registra o desinstalador.
 O instalador também usa o mesmo ícone oficial do app.

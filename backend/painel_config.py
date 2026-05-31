@@ -11,4 +11,4 @@ Deixe vazio ("") para distribuir em MODO LOCAL (sem controle central de licença
 A variável de ambiente VENDAFACIL_PAINEL_URL, se definida, tem prioridade sobre
 este valor.
 """
-PAINEL_URL = ""
+PAINEL_URL = "https://vendafacil-painel.onrender.com"

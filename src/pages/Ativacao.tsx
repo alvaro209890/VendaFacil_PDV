@@ -36,7 +36,7 @@ export default function GateAtivacao({ children }: { children: React.ReactNode }
     );
   }
 
-  if (status && (!status.obrigatoria || (status.ativado && !status.bloqueado))) {
+  if (status && (!status.obrigatoria || !status.ativado || (status.ativado && !status.bloqueado))) {
     return <>{children}</>;
   }
 

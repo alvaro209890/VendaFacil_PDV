@@ -27,8 +27,12 @@ try:
 except ImportError:
     _PAINEL_PADRAO = ""
 
-# Env tem prioridade; senão usa o valor embutido no build (painel_config.py).
-PAINEL_URL = (os.environ.get("VENDAFACIL_PAINEL_URL") or _PAINEL_PADRAO).rstrip("/")
+# Env tem prioridade, inclusive quando vazia; senão usa o valor embutido no build.
+PAINEL_URL = (
+    os.environ["VENDAFACIL_PAINEL_URL"]
+    if "VENDAFACIL_PAINEL_URL" in os.environ
+    else _PAINEL_PADRAO
+).rstrip("/")
 CARENCIA_DIAS = int(os.environ.get("VENDAFACIL_CARENCIA_DIAS", "30"))
 # De quanto em quanto tempo revalidar online quando a licença está saudável.
 # Entre uma revalidação e outra, o login usa o cache (instantâneo, sem rede).

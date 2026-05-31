@@ -9,16 +9,14 @@ import {
   AlertCircle,
   Loader2
 } from "lucide-react";
-import { login, registro, setToken } from "../lib/api";
+import { login, setToken } from "../lib/api";
 import { useAuthStore } from "../store/authStore";
 
 export default function Login() {
   const [usuario, setUsuario] = useState("");
   const [senha, setSenha] = useState("");
-  const [nome, setNome] = useState("");
   const [erro, setErro] = useState("");
   const [carregando, setCarregando] = useState(false);
-  const [modo, setModo] = useState<"login" | "registro">("login");
   const navigate = useNavigate();
   const setUser = useAuthStore((s) => s.setUser);
 
@@ -37,30 +35,6 @@ export default function Login() {
       navigate("/dashboard", { replace: true });
     } catch (err: unknown) {
       setErro((err as Error).message || "Erro ao entrar.");
-    } finally {
-      setCarregando(false);
-    }
-  }
-
-  async function handleRegistro(e: React.FormEvent) {
-    e.preventDefault();
-    setErro("");
-    if (!usuario.trim() || !senha.trim() || !nome.trim()) {
-      setErro("Preencha todos os campos.");
-      return;
-    }
-    if (senha.length < 4) {
-      setErro("A senha deve ter pelo menos 4 caracteres.");
-      return;
-    }
-    setCarregando(true);
-    try {
-      const data = await registro(usuario.trim(), nome.trim(), senha);
-      setToken(data.token);
-      setUser(data.user);
-      navigate("/dashboard", { replace: true });
-    } catch (err: unknown) {
-      setErro((err as Error).message || "Erro ao cadastrar.");
     } finally {
       setCarregando(false);
     }
@@ -96,30 +70,6 @@ export default function Login() {
           {/* Subtle reflection */}
           <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-slate-700/50 to-transparent" />
           
-          {/* Abas */}
-          <div className="flex gap-1 bg-slate-950/50 border border-slate-800/50 rounded-2xl p-1.5 mb-8">
-            <button
-              onClick={() => { setModo("login"); setErro(""); }}
-              className={`flex-1 py-2.5 text-xs font-black uppercase tracking-widest rounded-xl transition-all duration-300 ${
-                modo === "login" 
-                  ? "bg-brand-600 text-white shadow-lg shadow-brand-600/20" 
-                  : "text-slate-500 hover:text-slate-300"
-              }`}
-            >
-              Login
-            </button>
-            <button
-              onClick={() => { setModo("registro"); setErro(""); }}
-              className={`flex-1 py-2.5 text-xs font-black uppercase tracking-widest rounded-xl transition-all duration-300 ${
-                modo === "registro" 
-                  ? "bg-brand-600 text-white shadow-lg shadow-brand-600/20" 
-                  : "text-slate-500 hover:text-slate-300"
-              }`}
-            >
-              Registro
-            </button>
-          </div>
-
           <AnimatePresence mode="wait">
             {erro && (
               <motion.div 
@@ -136,32 +86,14 @@ export default function Login() {
 
           <AnimatePresence mode="wait">
             <motion.form
-              key={modo}
-              initial={{ opacity: 0, x: modo === "login" ? -10 : 10 }}
+              key="login"
+              initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: modo === "login" ? 10 : -10 }}
+              exit={{ opacity: 0, x: 10 }}
               transition={{ duration: 0.2 }}
-              onSubmit={modo === "login" ? handleLogin : handleRegistro} 
+              onSubmit={handleLogin} 
               className="space-y-5"
             >
-              {modo === "registro" && (
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Nome Completo</label>
-                  <div className="relative group">
-                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-brand-500 transition-colors">
-                      <User size={18} />
-                    </div>
-                    <input 
-                      type="text" 
-                      value={nome} 
-                      onChange={(e) => setNome(e.target.value)} 
-                      placeholder="Ex: João Silva" 
-                      className="w-full pl-12 pr-4 py-4 bg-slate-950/50 border border-slate-800 rounded-2xl text-white placeholder-slate-600 focus:outline-none focus:border-brand-500/50 focus:ring-4 focus:ring-brand-500/5 transition-all text-sm font-medium shadow-inner" 
-                    />
-                  </div>
-                </div>
-              )}
-
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Usuário</label>
                 <div className="relative group">
@@ -206,7 +138,7 @@ export default function Login() {
                   <Loader2 className="animate-spin" size={20} />
                 ) : (
                   <>
-                    <span>{modo === "login" ? "Entrar no Sistema" : "Criar Minha Conta"}</span>
+                    <span>Entrar no Sistema</span>
                     <ChevronRight size={18} />
                   </>
                 )}

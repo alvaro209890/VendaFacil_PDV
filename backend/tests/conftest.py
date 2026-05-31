@@ -10,7 +10,7 @@ from pathlib import Path
 
 os.environ["VENDAFACIL_DATA_DIR"] = tempfile.mkdtemp(prefix="vf_test_")
 os.environ["VENDAFACIL_NO_BROWSER"] = "1"
-os.environ.pop("VENDAFACIL_PAINEL_URL", None)  # modo local (sem licença remota)
+os.environ["VENDAFACIL_PAINEL_URL"] = ""  # modo local (sem licença remota)
 
 # backend/ no path para importar main, database, etc.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))

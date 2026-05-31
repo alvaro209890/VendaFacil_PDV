@@ -482,6 +482,22 @@ class Database:
             )
         return cursor.rowcount > 0
 
+    def upsert_user(self, usuario: str, nome: str, senha_hash: str, agora: str) -> dict[str, Any]:
+        login = usuario.strip().lower()
+        user = self.get_user_by_usuario(login)
+        with self._lock, self._conn:
+            if user:
+                self._conn.execute(
+                    "UPDATE users SET nome = ?, senha_hash = ? WHERE email = ?",
+                    (nome.strip() or user["nome"], senha_hash, login),
+                )
+                return self.get_user_by_usuario(login) or user
+            cursor = self._conn.execute(
+                "INSERT INTO users (email, nome, senha_hash, criado_em) VALUES (?, ?, ?, ?)",
+                (login, nome.strip() or login, senha_hash, agora),
+            )
+            return {"id": cursor.lastrowid, "usuario": login, "email": login, "nome": nome.strip() or login}
+
     # ── Produtos ──
 
     def list_produtos(self, user_id: int, ativos_only: bool = True) -> list[dict[str, Any]]:
