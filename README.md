@@ -3,6 +3,7 @@
 Sistema de **Ponto de Venda (PDV)** para mercadinhos e pequenos comércios,
 distribuído como **executável único (.exe)** com controle central de licenças.
 
+> 📚 **Índice da documentação:** [`docs/README.md`](docs/README.md)
 > 📘 **Manual completo (lojista + admin):** [`docs/MANUAL.md`](docs/MANUAL.md)
 > 📦 **Deploy e produção:** [`docs/DEPLOY_E_PRODUCAO.md`](docs/DEPLOY_E_PRODUCAO.md)
 > · **Gerar o .exe no Windows:** [`docs/BUILD_WINDOWS.md`](docs/BUILD_WINDOWS.md)
