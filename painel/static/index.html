@@ -154,7 +154,10 @@
       $("#app").innerHTML = `
         <div class="flex items-center justify-between mb-6">
           <h1 class="text-2xl font-black">🛒 VendaFácil <span class="text-emerald-400">Painel</span></h1>
-          <button id="sair" class="text-sm text-slate-400 hover:text-white">Sair</button>
+          <div class="flex items-center gap-3">
+            <button id="trocarSenha" class="text-sm text-slate-400 hover:text-white">Trocar senha</button>
+            <button id="sair" class="text-sm text-slate-400 hover:text-white">Sair</button>
+          </div>
         </div>
         <div class="flex justify-between items-center mb-4">
           <h2 class="font-bold text-slate-300">Lojas (${contas.length})</h2>
@@ -171,6 +174,7 @@
         <div id="modal"></div>`;
 
       $("#sair").onclick = () => { clearToken(); rota(); };
+      $("#trocarSenha").onclick = () => modalSenha();
       $("#fin").onclick = () => telaFinanceiro();
       $("#nova").onclick = () => modalConta(null);
       document.querySelectorAll("[data-edit]").forEach(b =>
@@ -286,6 +290,34 @@
         await api("/api/admin/financeiro/custos/" + b.dataset.del, { method: "DELETE" });
         telaFinanceiro();
       });
+    }
+
+    function modalSenha() {
+      $("#modal").innerHTML = `
+        <div class="fixed inset-0 bg-black/70 grid place-items-center p-4 z-50">
+          <div class="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-2xl p-6">
+            <h3 class="font-black text-lg mb-4">Trocar senha</h3>
+            <form id="fs" class="space-y-3">
+              <input name="atual" type="password" placeholder="Senha atual" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2" />
+              <input name="nova" type="password" placeholder="Nova senha (mín. 6)" required minlength="6" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2" />
+              <div class="flex gap-2 pt-2">
+                <button type="button" id="cancel" class="flex-1 bg-slate-800 rounded-lg py-2">Cancelar</button>
+                <button class="flex-1 bg-emerald-600 hover:bg-emerald-500 rounded-lg py-2 font-bold">Salvar</button>
+              </div>
+              <p id="erro" class="text-red-400 text-sm"></p>
+            </form>
+          </div>
+        </div>`;
+      $("#cancel").onclick = () => $("#modal").innerHTML = "";
+      $("#fs").onsubmit = async (e) => {
+        e.preventDefault();
+        const f = new FormData(e.target);
+        try {
+          await api("/api/admin/senha", { method: "PUT", body: JSON.stringify({ senha_atual: f.get("atual"), nova_senha: f.get("nova") }) });
+          $("#modal").innerHTML = "";
+          alert("Senha alterada com sucesso!");
+        } catch (err) { $("#erro").textContent = err.message; }
+      };
     }
 
     function modalConta(conta) {

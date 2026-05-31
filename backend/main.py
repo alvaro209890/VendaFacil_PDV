@@ -103,6 +103,18 @@ async def dashboard(request: Request) -> dict:
     return db.get_dashboard(user_id)
 
 
+@app.get("/api/relatorios/vendas")
+async def relatorio_vendas(request: Request, inicio: str | None = None, fim: str | None = None) -> dict:
+    user_id = _get_user_id(request)
+    from datetime import date
+    hoje = date.today().isoformat()
+    if not inicio:
+        inicio = hoje[:8] + "01"   # 1º dia do mês corrente
+    if not fim:
+        fim = hoje
+    return db.relatorio_vendas(user_id, inicio, fim)
+
+
 # ── Frontend embutido (serve o build do React na mesma origem) ──
 # Habilitado automaticamente quando a pasta 'dist' existe ao lado do app
 # (caso do .exe). Assim o sistema roda 100% local: abrir o navegador na

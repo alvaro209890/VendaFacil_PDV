@@ -252,6 +252,14 @@ class Database:
             return None
         return {"id": new_id, "email": email.lower(), "nome": nome}
 
+    def get_admin(self, admin_id: int) -> Optional[dict]:
+        return self._fetchone("SELECT * FROM admins WHERE id = ?", (admin_id,))
+
+    def update_admin_senha(self, admin_id: int, senha_hash: str) -> bool:
+        return self._exec(
+            "UPDATE admins SET senha_hash = ? WHERE id = ?", (senha_hash, admin_id)
+        ) > 0
+
     # ── Contas (lojas) ──
     def listar_contas(self) -> list[dict]:
         return self._fetchall(

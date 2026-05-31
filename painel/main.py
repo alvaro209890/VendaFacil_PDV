@@ -16,6 +16,7 @@ from pydantic import BaseModel, Field
 
 from database import db
 import security
+import ratelimit
 
 app = FastAPI(title="VendaFácil — Painel SaaS", version="1.0.0")
 
@@ -76,6 +77,11 @@ class AdminSetup(BaseModel):
 class AdminLogin(BaseModel):
     email: str
     senha: str
+
+
+class AdminSenha(BaseModel):
+    senha_atual: str
+    nova_senha: str = Field(min_length=6, max_length=128)
 
 
 class ContaInput(BaseModel):
@@ -163,11 +169,27 @@ async def admin_setup(data: AdminSetup) -> dict:
 
 @app.post("/api/admin/login")
 async def admin_login(data: AdminLogin) -> dict:
+    chave = f"admin:{data.email.lower()}"
+    rest = ratelimit.bloqueado(chave)
+    if rest:
+        raise HTTPException(status_code=429, detail=f"Muitas tentativas. Tente novamente em {rest}s.")
     admin = db.get_admin_by_email(data.email)
     if not admin or not security.verificar_senha(data.senha, admin["senha_hash"]):
+        ratelimit.registrar_falha(chave)
         raise HTTPException(status_code=401, detail="E-mail ou senha incorretos.")
+    ratelimit.limpar(chave)
     token = security.gerar_jwt({"sub": str(admin["id"]), "tipo": "admin", "nome": admin["nome"]})
     return {"token": token, "admin": {"id": admin["id"], "email": admin["email"], "nome": admin["nome"]}}
+
+
+@app.put("/api/admin/senha")
+async def trocar_senha(data: AdminSenha, request: Request) -> dict:
+    payload = _admin_atual(request)
+    admin = db.get_admin(int(payload["sub"]))
+    if not admin or not security.verificar_senha(data.senha_atual, admin["senha_hash"]):
+        raise HTTPException(status_code=401, detail="Senha atual incorreta.")
+    db.update_admin_senha(admin["id"], security.hash_senha(data.nova_senha))
+    return {"ok": True}
 
 
 @app.get("/api/admin/contas")
@@ -268,9 +290,15 @@ async def remover_custo(custo_id: int, request: Request) -> dict:
 # ── PDV: validação de conta (login controlado centralmente) ──
 @app.post("/api/conta/validar")
 async def validar_conta(data: ContaValidar) -> dict:
+    chave = f"conta:{data.login.lower()}"
+    rest = ratelimit.bloqueado(chave)
+    if rest:
+        raise HTTPException(status_code=429, detail=f"Muitas tentativas. Tente novamente em {rest}s.")
     conta = db.get_conta_by_login(data.login)
     if not conta or not security.verificar_senha(data.senha, conta["senha_hash"]):
+        ratelimit.registrar_falha(chave)
         raise HTTPException(status_code=401, detail="Login ou senha incorretos.")
+    ratelimit.limpar(chave)
     ok, motivo = _licenca_valida(conta)
     db.marcar_acesso(conta["id"])
     # Token de conta com validade longa = período de carência offline (30 dias)

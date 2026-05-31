@@ -1,0 +1,6 @@
+# Dependências só para rodar os testes (pytest).
+# Instale dentro de cada venv (backend e painel):
+#   backend/.venv/bin/pip install -r requirements-dev.txt
+#   painel/.venv/bin/pip install -r requirements-dev.txt
+pytest>=8.0
+httpx>=0.27

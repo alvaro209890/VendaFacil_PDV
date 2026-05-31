@@ -907,7 +907,7 @@ class Database:
             ).fetchone()[0]
 
             vendas_hoje = self._conn.execute(
-                "SELECT COUNT(*), COALESCE(SUM(total), 0) FROM vendas WHERE user_id = ? AND date(criado_em) = ?",
+                "SELECT COUNT(*), COALESCE(SUM(total), 0) FROM vendas WHERE user_id = ? AND date(criado_em, 'localtime') = ?",
                 (user_id, hoje),
             ).fetchone()
 
@@ -943,6 +943,57 @@ class Database:
             "contas_pendentes_total": contas_pendentes[1],
             "ultimas_vendas": [dict(r) for r in ultimas_vendas_rows],
             "produtos_baixo_estoque": [dict(r) for r in produtos_baixo],
+        }
+
+    # ── Relatórios ──
+    def relatorio_vendas(self, user_id: int, inicio: str, fim: str) -> dict[str, Any]:
+        """Relatório de vendas concluídas no período [inicio, fim] (datas locais
+        YYYY-MM-DD), consistente com o filtro do Dashboard (date(criado_em))."""
+        with self._lock:
+            resumo = self._conn.execute(
+                "SELECT COUNT(*) qtd, COALESCE(SUM(total),0) total, COALESCE(SUM(desconto),0) desconto "
+                "FROM vendas WHERE user_id=? AND status='concluida' "
+                "AND date(criado_em, 'localtime') BETWEEN ? AND ?", (user_id, inicio, fim)
+            ).fetchone()
+            por_forma = self._conn.execute(
+                "SELECT forma_pagamento, COUNT(*) qtd, COALESCE(SUM(total),0) total FROM vendas "
+                "WHERE user_id=? AND status='concluida' AND date(criado_em, 'localtime') BETWEEN ? AND ? "
+                "GROUP BY forma_pagamento ORDER BY total DESC", (user_id, inicio, fim)
+            ).fetchall()
+            por_dia = self._conn.execute(
+                "SELECT date(criado_em, 'localtime') dia, COUNT(*) qtd, COALESCE(SUM(total),0) total FROM vendas "
+                "WHERE user_id=? AND status='concluida' AND date(criado_em, 'localtime') BETWEEN ? AND ? "
+                "GROUP BY dia ORDER BY dia", (user_id, inicio, fim)
+            ).fetchall()
+            top = self._conn.execute(
+                "SELECT i.produto_id, i.nome_produto, SUM(i.quantidade) qtd, SUM(i.subtotal) total "
+                "FROM itens_venda i JOIN vendas v ON v.id=i.venda_id "
+                "WHERE v.user_id=? AND v.status='concluida' AND date(v.criado_em, 'localtime') BETWEEN ? AND ? "
+                "GROUP BY i.produto_id, i.nome_produto ORDER BY total DESC LIMIT 10",
+                (user_id, inicio, fim)
+            ).fetchall()
+            margem = self._conn.execute(
+                "SELECT COALESCE(SUM((i.preco_unitario - COALESCE(p.preco_custo,0)) * i.quantidade),0) m "
+                "FROM itens_venda i JOIN vendas v ON v.id=i.venda_id "
+                "LEFT JOIN produtos p ON p.id=i.produto_id "
+                "WHERE v.user_id=? AND v.status='concluida' AND date(v.criado_em, 'localtime') BETWEEN ? AND ?",
+                (user_id, inicio, fim)
+            ).fetchone()["m"]
+        faturamento = resumo["total"]
+        qtd = resumo["qtd"]
+        desconto = resumo["desconto"]
+        # Lucro estimado: margem por item (custo atual) menos os descontos da venda.
+        lucro = margem - desconto
+        return {
+            "inicio": inicio, "fim": fim,
+            "faturamento": round(faturamento, 2),
+            "qtd_vendas": qtd,
+            "ticket_medio": round(faturamento / qtd, 2) if qtd else 0.0,
+            "desconto_total": round(desconto, 2),
+            "lucro_estimado": round(lucro, 2),
+            "por_forma": [dict(r) for r in por_forma],
+            "por_dia": [dict(r) for r in por_dia],
+            "top_produtos": [dict(r) for r in top],
         }
 
     def close(self) -> None:
