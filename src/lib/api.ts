@@ -257,6 +257,15 @@ export function entradaEstoque(produtoId: number, quantidade: number, custo_unit
   });
 }
 
+export type TipoAjuste = "perda" | "quebra" | "inventario";
+
+export function ajustarEstoque(produtoId: number, tipo: TipoAjuste, quantidade: number, observacao?: string): Promise<{ produto: Produto }> {
+  return request(`/api/produtos/${produtoId}/ajuste`, {
+    method: "POST",
+    body: JSON.stringify({ tipo, quantidade, observacao }),
+  });
+}
+
 // ── Categorias ──
 
 export interface Categoria {

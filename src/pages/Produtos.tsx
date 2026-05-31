@@ -8,6 +8,7 @@ import {
   importarXmlPreview,
   importarXmlConfirmar,
   entradaEstoque,
+  ajustarEstoque,
 } from "../lib/api";
 import type {
   Produto, ProdutoInput, Categoria, CamposFiscais, PreviewXml, ItemConfirmarXml,
@@ -157,6 +158,33 @@ export default function ProdutosPage() {
     try {
       await entradaEstoque(p.id, qtd);
       setMsg({ tipo: "ok", texto: `+${fmtQtd(qtd)} ${p.unidade} em "${p.nome}".` });
+      carregar();
+    } catch (err) {
+      setMsg({ tipo: "erro", texto: (err as Error).message });
+    }
+  }
+
+  async function ajusteRapido(p: Produto) {
+    const op = prompt(
+      `Ajustar estoque — "${p.nome}" (atual: ${fmtQtd(p.estoque)} ${p.unidade})\n\n` +
+      "1 = Perda (vencido/avaria)\n2 = Quebra\n3 = Inventário (informar contagem real)\n\nDigite 1, 2 ou 3:",
+      "1",
+    );
+    if (op === null) return;
+    const tipo = ({ "1": "perda", "2": "quebra", "3": "inventario" } as const)[op.trim()];
+    if (!tipo) { setMsg({ tipo: "erro", texto: "Opção inválida." }); return; }
+    const rotulo = tipo === "inventario"
+      ? `Contagem real em ${p.unidade}:`
+      : `Quantidade a baixar (${tipo}) em ${p.unidade}:`;
+    const q = prompt(rotulo, tipo === "inventario" ? String(p.estoque) : "1");
+    if (q === null) return;
+    const qtd = Number(q);
+    if (qtd < 0 || Number.isNaN(qtd) || (tipo !== "inventario" && qtd <= 0)) {
+      setMsg({ tipo: "erro", texto: "Quantidade inválida." }); return;
+    }
+    try {
+      const r = await ajustarEstoque(p.id, tipo, qtd);
+      setMsg({ tipo: "ok", texto: `Estoque de "${p.nome}" ajustado para ${fmtQtd(r.produto.estoque)} ${p.unidade}.` });
       carregar();
     } catch (err) {
       setMsg({ tipo: "erro", texto: (err as Error).message });
@@ -417,6 +445,7 @@ export default function ProdutosPage() {
                         <td className="p-3">
                           <div className="flex gap-1 justify-end">
                             {p.ativo ? <button onClick={() => entradaRapida(p)} className="text-emerald-400 hover:text-emerald-300 text-xs px-2 py-1 rounded hover:bg-slate-700 active:scale-95" title="Dar entrada no estoque">+ Estoque</button> : null}
+                            {p.ativo ? <button onClick={() => ajusteRapido(p)} className="text-amber-400 hover:text-amber-300 text-xs px-2 py-1 rounded hover:bg-slate-700 active:scale-95" title="Perda, quebra ou inventário">Ajustar</button> : null}
                             <button onClick={() => abrirEdicao(p)} className="text-slate-400 hover:text-white text-xs px-2 py-1 rounded hover:bg-slate-700 active:scale-95">Editar</button>
                             {p.ativo ? <button onClick={() => handleDesativar(p.id)} className="text-red-400 hover:text-red-300 text-xs px-2 py-1 rounded hover:bg-slate-700 active:scale-95">Desativar</button> : null}
                           </div>

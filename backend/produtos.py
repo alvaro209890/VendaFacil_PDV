@@ -103,6 +103,14 @@ class EntradaInput(BaseModel):
     observacao: str = Field(default="", max_length=200)
 
 
+class AjusteInput(BaseModel):
+    """Ajuste manual de estoque: baixa por perda/quebra ou acerto por inventário."""
+    tipo: str = Field(pattern="^(perda|quebra|inventario)$")
+    # perda/quebra: quantidade a baixar (>0). inventario: contagem real (>=0).
+    quantidade: float = Field(ge=0)
+    observacao: str = Field(default="", max_length=200)
+
+
 # ── Rotas ──
 
 @router.get("")
@@ -273,6 +281,48 @@ async def entrada_manual(produto_id: int, data: EntradaInput, request: Request):
         user_id, produto_id, "entrada", data.quantidade, agora,
         custo_unitario=data.custo_unitario, origem="manual", observacao=data.observacao,
     )
+    return {"produto": db.get_produto(produto_id, user_id)}
+
+
+@router.post("/{produto_id}/ajuste")
+async def ajuste_estoque(produto_id: int, data: AjusteInput, request: Request):
+    """Ajusta o estoque manualmente.
+
+    - perda/quebra: baixa `quantidade` do estoque (não pode passar do disponível).
+    - inventario: define o estoque para a contagem real informada em `quantidade`,
+      registrando a diferença como entrada (sobra) ou saída (falta).
+    """
+    user_id = _get_user_id(request)
+    produto = db.get_produto(produto_id, user_id)
+    if not produto:
+        raise HTTPException(status_code=404, detail="Produto não encontrado.")
+    agora = _agora()
+    estoque_atual = float(produto["estoque"])
+
+    if data.tipo == "inventario":
+        diferenca = round(data.quantidade - estoque_atual, 4)
+        db.definir_estoque(produto_id, user_id, data.quantidade, agora)
+        if diferenca != 0:
+            db.registrar_movimentacao(
+                user_id, produto_id,
+                "entrada" if diferenca > 0 else "saida", abs(diferenca), agora,
+                origem="inventario",
+                observacao=data.observacao or f"Inventário: contagem {data.quantidade} (antes {estoque_atual})",
+            )
+    else:  # perda | quebra
+        if data.quantidade <= 0:
+            raise HTTPException(status_code=400, detail="Informe a quantidade a baixar.")
+        if data.quantidade > estoque_atual:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Não há estoque suficiente: tem {estoque_atual} {produto['unidade']}.",
+            )
+        db.definir_estoque(produto_id, user_id, estoque_atual - data.quantidade, agora)
+        db.registrar_movimentacao(
+            user_id, produto_id, "saida", data.quantidade, agora,
+            origem=data.tipo, observacao=data.observacao or data.tipo.capitalize(),
+        )
+
     return {"produto": db.get_produto(produto_id, user_id)}
 
 

@@ -700,6 +700,17 @@ class Database:
             )
         return self.get_produto(produto_id, user_id)
 
+    def definir_estoque(self, produto_id: int, user_id: int, novo_estoque: float,
+                        agora: str) -> dict[str, Any] | None:
+        """Define o estoque para um valor absoluto (ajuste/inventário)."""
+        novo = max(0.0, float(novo_estoque))
+        with self._lock, self._conn:
+            self._conn.execute(
+                "UPDATE produtos SET estoque = ?, atualizado_em = ? WHERE id = ? AND user_id = ?",
+                (novo, agora, produto_id, user_id),
+            )
+        return self.get_produto(produto_id, user_id)
+
     def registrar_movimentacao(self, user_id: int, produto_id: int, tipo: str,
                                quantidade: float, agora: str,
                                custo_unitario: float | None = None,

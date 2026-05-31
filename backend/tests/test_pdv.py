@@ -48,6 +48,43 @@ def test_entrada_manual_estoque(client, auth):
     assert r.json()["produto"]["estoque"] == 8
 
 
+def test_ajuste_perda_baixa_estoque(client, auth):
+    p = _criar_produto(client, auth, nome="Perda", estoque=10)
+    r = client.post(f"/api/produtos/{p['id']}/ajuste", json={
+        "tipo": "perda", "quantidade": 3, "observacao": "Vencido",
+    }, headers=auth)
+    assert r.status_code == 200, r.text
+    assert r.json()["produto"]["estoque"] == 7
+    movs = client.get(f"/api/produtos/{p['id']}/movimentacoes", headers=auth).json()["movimentacoes"]
+    assert movs[0]["tipo"] == "saida" and movs[0]["origem"] == "perda"
+
+
+def test_ajuste_perda_acima_do_estoque_falha(client, auth):
+    p = _criar_produto(client, auth, nome="PerdaDemais", estoque=2)
+    r = client.post(f"/api/produtos/{p['id']}/ajuste", json={
+        "tipo": "quebra", "quantidade": 5,
+    }, headers=auth)
+    assert r.status_code == 400
+
+
+def test_ajuste_inventario_acerta_para_cima_e_para_baixo(client, auth):
+    p = _criar_produto(client, auth, nome="Inventario", estoque=10)
+    # contagem real maior → vira entrada da diferença
+    r = client.post(f"/api/produtos/{p['id']}/ajuste", json={
+        "tipo": "inventario", "quantidade": 13,
+    }, headers=auth)
+    assert r.status_code == 200 and r.json()["produto"]["estoque"] == 13
+    movs = client.get(f"/api/produtos/{p['id']}/movimentacoes", headers=auth).json()["movimentacoes"]
+    assert movs[0]["tipo"] == "entrada" and movs[0]["quantidade"] == 3
+    # contagem real menor → vira saída da diferença
+    r2 = client.post(f"/api/produtos/{p['id']}/ajuste", json={
+        "tipo": "inventario", "quantidade": 8,
+    }, headers=auth)
+    assert r2.status_code == 200 and r2.json()["produto"]["estoque"] == 8
+    movs2 = client.get(f"/api/produtos/{p['id']}/movimentacoes", headers=auth).json()["movimentacoes"]
+    assert movs2[0]["tipo"] == "saida" and movs2[0]["quantidade"] == 5
+
+
 def test_importar_xml(client, auth):
     prev = client.post("/api/produtos/importar-xml/preview", content=XML_NFE, headers=auth)
     assert prev.status_code == 200, prev.text
