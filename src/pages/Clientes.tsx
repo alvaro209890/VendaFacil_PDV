@@ -13,7 +13,8 @@ export default function Clientes() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editando, setEditando] = useState<Cliente | null>(null);
-  const [form, setForm] = useState<ClienteInput>({ nome: "", telefone: "", email: "", endereco: "", observacao: "" });
+  const vazio: ClienteInput = { nome: "", telefone: "", email: "", endereco: "", observacao: "", documento: "", inscricao_estadual: "", indicador_ie: "9", logradouro: "", numero: "", bairro: "", municipio: "", codigo_municipio: "", uf: "MT", cep: "" };
+  const [form, setForm] = useState<ClienteInput>({ ...vazio });
   const [msg, setMsg] = useState<{ tipo: "ok" | "erro"; texto: string } | null>(null);
 
   const carregar = useCallback(async () => {
@@ -32,12 +33,17 @@ export default function Clientes() {
   }, [carregar]);
 
   function resetForm() {
-    setForm({ nome: "", telefone: "", email: "", endereco: "", observacao: "" });
+    setForm({ ...vazio });
     setEditando(null);
   }
 
   function abrirEdicao(c: Cliente) {
-    setForm({ nome: c.nome, telefone: c.telefone, email: c.email, endereco: c.endereco, observacao: c.observacao });
+    setForm({
+      nome: c.nome, telefone: c.telefone, email: c.email, endereco: c.endereco, observacao: c.observacao,
+      documento: c.documento, inscricao_estadual: c.inscricao_estadual, indicador_ie: c.indicador_ie || "9",
+      logradouro: c.logradouro, numero: c.numero, bairro: c.bairro, municipio: c.municipio,
+      codigo_municipio: c.codigo_municipio, uf: c.uf || "MT", cep: c.cep,
+    });
     setEditando(c);
     setShowModal(true);
   }
@@ -166,6 +172,23 @@ export default function Clientes() {
                 onChange={(e) => setForm({ ...form, endereco: e.target.value })}
                 className="w-full px-3 py-2.5 bg-slate-800 text-white rounded-lg border border-slate-700 focus:border-brand-500 outline-none text-sm"
               />
+              <div className="grid grid-cols-2 gap-2">
+                <input placeholder="CPF/CNPJ" value={form.documento || ""} onChange={(e) => setForm({ ...form, documento: e.target.value })} className="w-full px-3 py-2.5 bg-slate-800 text-white rounded-lg border border-slate-700 focus:border-brand-500 outline-none text-sm" />
+                <input placeholder="IE" value={form.inscricao_estadual || ""} onChange={(e) => setForm({ ...form, inscricao_estadual: e.target.value })} className="w-full px-3 py-2.5 bg-slate-800 text-white rounded-lg border border-slate-700 focus:border-brand-500 outline-none text-sm" />
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <input placeholder="Logradouro" value={form.logradouro || ""} onChange={(e) => setForm({ ...form, logradouro: e.target.value })} className="col-span-2 w-full px-3 py-2.5 bg-slate-800 text-white rounded-lg border border-slate-700 focus:border-brand-500 outline-none text-sm" />
+                <input placeholder="Nº" value={form.numero || ""} onChange={(e) => setForm({ ...form, numero: e.target.value })} className="w-full px-3 py-2.5 bg-slate-800 text-white rounded-lg border border-slate-700 focus:border-brand-500 outline-none text-sm" />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <input placeholder="Bairro" value={form.bairro || ""} onChange={(e) => setForm({ ...form, bairro: e.target.value })} className="w-full px-3 py-2.5 bg-slate-800 text-white rounded-lg border border-slate-700 focus:border-brand-500 outline-none text-sm" />
+                <input placeholder="Município" value={form.municipio || ""} onChange={(e) => setForm({ ...form, municipio: e.target.value })} className="w-full px-3 py-2.5 bg-slate-800 text-white rounded-lg border border-slate-700 focus:border-brand-500 outline-none text-sm" />
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <input placeholder="Cód. IBGE" value={form.codigo_municipio || ""} onChange={(e) => setForm({ ...form, codigo_municipio: e.target.value })} className="w-full px-3 py-2.5 bg-slate-800 text-white rounded-lg border border-slate-700 focus:border-brand-500 outline-none text-sm" />
+                <input placeholder="UF" maxLength={2} value={form.uf || "MT"} onChange={(e) => setForm({ ...form, uf: e.target.value.toUpperCase() })} className="w-full px-3 py-2.5 bg-slate-800 text-white rounded-lg border border-slate-700 focus:border-brand-500 outline-none text-sm" />
+                <input placeholder="CEP" value={form.cep || ""} onChange={(e) => setForm({ ...form, cep: e.target.value })} className="w-full px-3 py-2.5 bg-slate-800 text-white rounded-lg border border-slate-700 focus:border-brand-500 outline-none text-sm" />
+              </div>
               <textarea
                 placeholder="Observação"
                 value={form.observacao}

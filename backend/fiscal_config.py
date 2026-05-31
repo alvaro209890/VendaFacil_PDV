@@ -8,7 +8,7 @@ from database import db
 router = APIRouter()
 
 # Campos sensíveis que não devem voltar para o frontend por inteiro.
-_SENSIVEIS = {"gateway_token", "csc"}
+_SENSIVEIS = {"gateway_token", "csc", "certificado_a1_b64", "certificado_senha"}
 
 
 def _auth(request: Request) -> int:
@@ -36,9 +36,18 @@ class ConfigFiscalInput(BaseModel):
     csc_id: str | None = None
     ambiente: str | None = None  # homologacao | producao
     gateway: str | None = None   # focusnfe | plugnotas
+    provedor_fiscal: str | None = None  # sefaz_mt_direto | focusnfe legado
     gateway_token: str | None = None
+    certificado_a1_b64: str | None = None
+    certificado_senha: str | None = None
+    certificado_nome: str | None = None
+    certificado_validade: str | None = None
     serie: int | None = Field(default=None, ge=1)
     proximo_numero: int | None = Field(default=None, ge=1)
+    serie_nfce: int | None = Field(default=None, ge=1)
+    proximo_numero_nfce: int | None = Field(default=None, ge=1)
+    serie_nfe: int | None = Field(default=None, ge=1)
+    proximo_numero_nfe: int | None = Field(default=None, ge=1)
 
 
 def _mascarar(cfg: dict) -> dict:
@@ -47,6 +56,7 @@ def _mascarar(cfg: dict) -> dict:
         if out.get(k):
             out[k + "_preenchido"] = True
             out[k] = ""
+    out["provedor_fiscal"] = out.get("provedor_fiscal") or "sefaz_mt_direto"
     return out
 
 

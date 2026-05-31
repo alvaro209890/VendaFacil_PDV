@@ -25,6 +25,16 @@ class ClienteCreate(BaseModel):
     email: str = Field(default="", max_length=120)
     endereco: str = Field(default="", max_length=255)
     observacao: str = Field(default="", max_length=500)
+    documento: str = Field(default="", max_length=18)
+    inscricao_estadual: str = Field(default="", max_length=20)
+    indicador_ie: str = Field(default="9", max_length=1)
+    logradouro: str = Field(default="", max_length=120)
+    numero: str = Field(default="", max_length=20)
+    bairro: str = Field(default="", max_length=80)
+    municipio: str = Field(default="", max_length=80)
+    codigo_municipio: str = Field(default="", max_length=7)
+    uf: str = Field(default="", max_length=2)
+    cep: str = Field(default="", max_length=9)
 
 
 class ClienteUpdate(BaseModel):
@@ -33,6 +43,16 @@ class ClienteUpdate(BaseModel):
     email: str | None = Field(default=None, max_length=120)
     endereco: str | None = Field(default=None, max_length=255)
     observacao: str | None = Field(default=None, max_length=500)
+    documento: str | None = Field(default=None, max_length=18)
+    inscricao_estadual: str | None = Field(default=None, max_length=20)
+    indicador_ie: str | None = Field(default=None, max_length=1)
+    logradouro: str | None = Field(default=None, max_length=120)
+    numero: str | None = Field(default=None, max_length=20)
+    bairro: str | None = Field(default=None, max_length=80)
+    municipio: str | None = Field(default=None, max_length=80)
+    codigo_municipio: str | None = Field(default=None, max_length=7)
+    uf: str | None = Field(default=None, max_length=2)
+    cep: str | None = Field(default=None, max_length=9)
 
 
 @router.get("")
@@ -57,6 +77,10 @@ async def criar(data: ClienteCreate, request: Request):
     c = db.create_cliente(
         user_id, data.nome, data.telefone, data.email,
         data.endereco, data.observacao, agora,
+        documento=data.documento, inscricao_estadual=data.inscricao_estadual,
+        indicador_ie=data.indicador_ie, logradouro=data.logradouro,
+        numero=data.numero, bairro=data.bairro, municipio=data.municipio,
+        codigo_municipio=data.codigo_municipio, uf=data.uf.upper(), cep=data.cep,
     )
     return {"cliente": c}
 

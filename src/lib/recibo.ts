@@ -27,6 +27,8 @@ export interface ReciboData {
   desconto: number;
   total: number;
   forma: string;
+  recebido?: number;
+  troco?: number;
   vendaId?: number | string;
   data?: string; // ISO; usa agora se ausente
   nota?: ReciboNota | null;  // NFC-e autorizada → imprime bloco fiscal + QR
@@ -62,6 +64,10 @@ function montarHtml(d: ReciboData, larguraMm: number): string {
   const cnpj = d.loja.cnpj ? `<div class="c">CNPJ: ${esc(d.loja.cnpj)}</div>` : "";
   const end = d.loja.endereco ? `<div class="c">${esc(d.loja.endereco)}</div>` : "";
   const desc = d.desconto > 0 ? `<div class="ln"><span>Desconto</span><span>-${moeda(d.desconto)}</span></div>` : "";
+  const dinheiro = d.forma === "dinheiro" && d.recebido !== undefined
+    ? `<div class="ln"><span>Recebido</span><span>${moeda(d.recebido)}</span></div>
+       <div class="ln"><span>Troco</span><span>${moeda(d.troco || 0)}</span></div>`
+    : "";
 
   // Bloco fiscal (NFC-e autorizada): nº/série, chave, protocolo e QR de consulta.
   let fiscal = "";
@@ -109,6 +115,7 @@ function montarHtml(d: ReciboData, larguraMm: number): string {
   ${desc}
   <div class="ln tot"><span>TOTAL</span><span>R$ ${moeda(d.total)}</span></div>
   <div class="ln"><span>Pagamento</span><span>${FORMA_LABEL[d.forma] || d.forma}</span></div>
+  ${dinheiro}
   ${fiscal}
   <hr>
   <div class="rod">Obrigado pela preferência!</div>

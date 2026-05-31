@@ -5,7 +5,7 @@ import { getConfigFiscal, salvarConfigFiscal } from "../lib/api";
 import type { ConfigFiscal } from "../lib/api";
 
 export default function FiscalPage() {
-  const [cfg, setCfg] = useState<ConfigFiscal>({ ambiente: "homologacao", gateway: "focusnfe" });
+  const [cfg, setCfg] = useState<ConfigFiscal>({ ambiente: "homologacao", provedor_fiscal: "sefaz_mt_direto", uf: "MT" });
   const [loading, setLoading] = useState(true);
   const [salvando, setSalvando] = useState(false);
   const [msg, setMsg] = useState<{ tipo: "ok" | "erro"; texto: string } | null>(null);
@@ -13,7 +13,7 @@ export default function FiscalPage() {
   const carregar = useCallback(async () => {
     try {
       const { config } = await getConfigFiscal();
-      setCfg({ ambiente: "homologacao", gateway: "focusnfe", ...config });
+      setCfg({ ambiente: "homologacao", provedor_fiscal: "sefaz_mt_direto", uf: "MT", ...config });
     } catch {
       setMsg({ tipo: "erro", texto: "Erro ao carregar configuração." });
     } finally {
@@ -35,8 +35,10 @@ export default function FiscalPage() {
       const payload: ConfigFiscal = { ...cfg };
       if (!payload.gateway_token) delete payload.gateway_token;
       if (!payload.csc) delete payload.csc;
+      if (!payload.certificado_a1_b64) delete payload.certificado_a1_b64;
+      if (!payload.certificado_senha) delete payload.certificado_senha;
       const { config } = await salvarConfigFiscal(payload);
-      setCfg({ ambiente: "homologacao", gateway: "focusnfe", ...config });
+      setCfg({ ambiente: "homologacao", provedor_fiscal: "sefaz_mt_direto", uf: "MT", ...config });
       setMsg({ tipo: "ok", texto: "Configuração fiscal salva!" });
     } catch (err) {
       setMsg({ tipo: "erro", texto: (err as Error).message });
@@ -55,6 +57,15 @@ export default function FiscalPage() {
 
   const inputCls = "w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500";
   const lbl = "text-slate-400 text-xs block mb-0.5";
+
+  async function carregarCertificado(file?: File) {
+    if (!file) return;
+    const data = await file.arrayBuffer();
+    const bytes = new Uint8Array(data);
+    let bin = "";
+    bytes.forEach((b) => { bin += String.fromCharCode(b); });
+    setCfg((c) => ({ ...c, certificado_a1_b64: btoa(bin), certificado_nome: file.name }));
+  }
 
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="max-w-3xl mx-auto">
@@ -117,9 +128,9 @@ export default function FiscalPage() {
           <div className="grid md:grid-cols-2 gap-3">
             <div>
               <label className={lbl}>Gateway</label>
-              <select className={inputCls} value={cfg.gateway || "focusnfe"} onChange={(e) => set("gateway", e.target.value)}>
-                <option value="focusnfe">Focus NFe</option>
-                <option value="plugnotas">PlugNotas (em breve)</option>
+              <select className={inputCls} value={cfg.provedor_fiscal || "sefaz_mt_direto"} onChange={(e) => set("provedor_fiscal", e.target.value)}>
+                <option value="sefaz_mt_direto">SEFAZ-MT direto</option>
+                <option value="focusnfe">Focus NFe (legado)</option>
               </select>
             </div>
             <div>
@@ -133,10 +144,21 @@ export default function FiscalPage() {
               <label className={lbl}>Token do gateway {cfg.gateway_token_preenchido && <span className="text-emerald-400">(já configurado — preencha só para alterar)</span>}</label>
               <input className={inputCls} type="password" value={cfg.gateway_token || ""} onChange={(e) => set("gateway_token", e.target.value)} placeholder={cfg.gateway_token_preenchido ? "••••••••" : "token da API"} />
             </div>
+            <div className="md:col-span-2">
+              <label className={lbl}>Certificado A1 da loja {cfg.certificado_a1_b64_preenchido && <span className="text-emerald-400">(salvo)</span>}</label>
+              <input className={inputCls} type="file" accept=".pfx,.p12" onChange={(e) => carregarCertificado(e.target.files?.[0])} />
+              {cfg.certificado_nome && <p className="text-slate-500 text-[11px] mt-1">{cfg.certificado_nome}</p>}
+            </div>
+            <div className="md:col-span-2">
+              <label className={lbl}>Senha do certificado {cfg.certificado_senha_preenchido && <span className="text-emerald-400">(salva)</span>}</label>
+              <input className={inputCls} type="password" value={cfg.certificado_senha || ""} onChange={(e) => set("certificado_senha", e.target.value)} placeholder={cfg.certificado_senha_preenchido ? "preencha sÃ³ para alterar" : "senha do A1"} />
+            </div>
             <div><label className={lbl}>CSC (idCSC) {cfg.csc_preenchido && <span className="text-emerald-400">(salvo)</span>}</label><input className={inputCls} type="password" value={cfg.csc || ""} onChange={(e) => set("csc", e.target.value)} /></div>
             <div><label className={lbl}>ID do CSC (Token)</label><input className={inputCls} value={cfg.csc_id || ""} onChange={(e) => set("csc_id", e.target.value)} placeholder="ex.: 000001" /></div>
-            <div><label className={lbl}>Série NFC-e</label><input type="number" className={inputCls} value={cfg.serie ?? 1} onChange={(e) => set("serie", Number(e.target.value))} /></div>
-            <div><label className={lbl}>Próximo número</label><input type="number" className={inputCls} value={cfg.proximo_numero ?? 1} onChange={(e) => set("proximo_numero", Number(e.target.value))} /></div>
+            <div><label className={lbl}>Série NFC-e</label><input type="number" className={inputCls} value={cfg.serie_nfce ?? 1} onChange={(e) => set("serie_nfce", Number(e.target.value))} /></div>
+            <div><label className={lbl}>Próx. NFC-e</label><input type="number" className={inputCls} value={cfg.proximo_numero_nfce ?? 1} onChange={(e) => set("proximo_numero_nfce", Number(e.target.value))} /></div>
+            <div><label className={lbl}>Série NF-e</label><input type="number" className={inputCls} value={cfg.serie_nfe ?? 1} onChange={(e) => set("serie_nfe", Number(e.target.value))} /></div>
+            <div><label className={lbl}>Próx. NF-e</label><input type="number" className={inputCls} value={cfg.proximo_numero_nfe ?? 1} onChange={(e) => set("proximo_numero_nfe", Number(e.target.value))} /></div>
           </div>
           <p className="text-slate-500 text-[11px] leading-snug">
             O certificado digital A1 e o CSC são cadastrados no painel do gateway (Focus NFe). Aqui o sistema só guarda o token de API. Comece em <b>Homologação</b> para testar; só mude para <b>Produção</b> quando as notas de teste autorizarem.

@@ -44,6 +44,8 @@ const ESTADO_MAQ: Record<string, string> = {
 
 const fmtQtd = (v: number) => Number(v || 0).toLocaleString("pt-BR", { maximumFractionDigits: 3 });
 const passoQtd = (unidade?: string) => ["KG", "G", "LT", "ML"].includes((unidade || "").toUpperCase()) ? 0.1 : 1;
+const moeda = (v: number) => `R$ ${Number(v || 0).toFixed(2)}`;
+const parseMoeda = (v: string) => Number((v || "").replace(",", ".")) || 0;
 
 export default function PDV() {
   const [produtos, setProdutos] = useState<Produto[]>([]);
@@ -51,6 +53,7 @@ export default function PDV() {
   const [carrinho, setCarrinho] = useState<CartItem[]>([]);
   const [desconto, setDesconto] = useState(0);
   const [pagamento, setPagamento] = useState("dinheiro");
+  const [valorRecebido, setValorRecebido] = useState("");
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<{ tipo: "ok" | "erro"; texto: string } | null>(null);
   const [dash, setDash] = useState<DashboardData | null>(null);
@@ -171,7 +174,7 @@ export default function PDV() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [carrinho, loading, pagamento, clienteFiado, desconto, maqModal, pixModal]);
+  }, [carrinho, loading, pagamento, clienteFiado, desconto, valorRecebido, maqModal, pixModal]);
 
   function removerDoCarrinho(id: number) {
     setCarrinho((prev) => prev.filter((i) => i.id !== id));
@@ -201,6 +204,10 @@ export default function PDV() {
 
   const subtotal = carrinho.reduce((s, i) => s + i.qtd * (i.preco_venda || i.preco_custo), 0);
   const total = Math.max(0, subtotal - desconto);
+  const recebidoDinheiro = parseMoeda(valorRecebido);
+  const trocoDinheiro = Math.max(0, recebidoDinheiro - total);
+  const faltaDinheiro = Math.max(0, total - recebidoDinheiro);
+  const dinheiroOk = pagamento !== "dinheiro" || (total > 0 && recebidoDinheiro >= total);
 
   async function gerarPix() {
     if (carrinho.length === 0 || total <= 0) return;
@@ -240,6 +247,10 @@ export default function PDV() {
 
   async function finalizarVenda() {
     if (carrinho.length === 0) return;
+    if (!dinheiroOk) {
+      setMsg({ tipo: "erro", texto: `Informe o dinheiro recebido. Ainda faltam ${moeda(faltaDinheiro)}.` });
+      return;
+    }
     if (podeCobrarMaquininha) {
       await iniciarCobrancaMaquininha();   // cartão ou PIX na telinha da maquininha
       return;
@@ -313,12 +324,21 @@ export default function PDV() {
       setLoading(false);
       return;
     }
+    if (!dinheiroOk) {
+      setMsg({ tipo: "erro", texto: `Informe o dinheiro recebido. Ainda faltam ${moeda(faltaDinheiro)}.` });
+      setLoading(false);
+      return;
+    }
+    const obsPagamento = pagamento === "dinheiro"
+      ? `Dinheiro recebido: ${moeda(recebidoDinheiro)} | Troco: ${moeda(trocoDinheiro)}`
+      : "";
+    const observacao = [obsExtra, obsPagamento].filter(Boolean).join(" | ");
     try {
       const resp = await checkout({
         itens: carrinho.map((i) => ({ produto_id: i.id, quantidade: i.qtd })),
         desconto,
         forma_pagamento: pagamento,
-        observacao: obsExtra,
+        observacao,
         cliente_id: pagamento === "fiado" ? Number(clienteFiado) : undefined,
         emitir_nota: emitirNota,
         cpf_consumidor: emitirNota ? cpfConsumidor : undefined,
@@ -337,6 +357,8 @@ export default function PDV() {
         desconto,
         total,
         forma: pagamento,
+        recebido: pagamento === "dinheiro" ? recebidoDinheiro : undefined,
+        troco: pagamento === "dinheiro" ? trocoDinheiro : undefined,
         vendaId: resp.venda?.id,
         data: resp.venda?.criado_em,
         nota: resp.nota && resp.nota.status === "autorizada" ? {
@@ -351,6 +373,7 @@ export default function PDV() {
       setCarrinho([]);
       setDesconto(0);
       setPagamento("dinheiro");
+      setValorRecebido("");
       setClienteFiado("");
       setEmitirNota(false);
       setCpfConsumidor("");
@@ -569,6 +592,43 @@ export default function PDV() {
               </div>
             </div>
 
+            {pagamento === "dinheiro" && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-6 rounded-2xl border border-slate-700/40 bg-slate-800/30 p-4"
+              >
+                <div className="flex items-center justify-between gap-3 mb-3">
+                  <label className="text-slate-500 text-[10px] font-black uppercase tracking-widest">Dinheiro recebido</label>
+                  <span className={`text-xs font-black ${dinheiroOk ? "text-emerald-400" : "text-amber-400"}`}>
+                    {dinheiroOk ? `Troco ${moeda(trocoDinheiro)}` : `Falta ${moeda(faltaDinheiro)}`}
+                  </span>
+                </div>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-sm font-bold">R$</span>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={valorRecebido}
+                    onChange={(e) => setValorRecebido(e.target.value.replace(/[^\d,.]/g, ""))}
+                    placeholder="0,00"
+                    className="w-full bg-slate-950/60 border border-slate-700 rounded-xl pl-11 pr-4 py-3 text-white text-2xl font-black text-right focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+                <div className="grid grid-cols-4 gap-2 mt-3">
+                  {[total, 50, 100, 200].map((v, idx) => (
+                    <button
+                      key={`${v}-${idx}`}
+                      onClick={() => setValorRecebido(v.toFixed(2))}
+                      className="py-2 rounded-xl bg-slate-900/70 hover:bg-slate-700 text-slate-300 text-xs font-black transition-colors active:scale-95"
+                    >
+                      {idx === 0 ? "Exato" : moeda(v).replace("R$ ", "")}
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+
             {/* Select de cliente para venda fiada */}
             {pagamento === "fiado" && (
               <motion.div
@@ -645,9 +705,9 @@ export default function PDV() {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={finalizarVenda}
-                disabled={loading || pixLoading || !!maqModal || carrinho.length === 0}
+                disabled={loading || pixLoading || !!maqModal || carrinho.length === 0 || !dinheiroOk}
                 className={`w-full py-4 rounded-2xl text-white font-black text-lg tracking-tight shadow-xl transition-all flex items-center justify-center gap-3 ${
-                  loading || pixLoading || !!maqModal || carrinho.length === 0
+                  loading || pixLoading || !!maqModal || carrinho.length === 0 || !dinheiroOk
                     ? "bg-slate-800 text-slate-500 cursor-not-allowed"
                     : "bg-gradient-to-r from-emerald-600 to-teal-600 shadow-emerald-900/20"
                 }`}

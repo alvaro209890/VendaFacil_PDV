@@ -306,6 +306,16 @@ export interface Cliente {
   email: string;
   endereco: string;
   observacao: string;
+  documento: string;
+  inscricao_estadual: string;
+  indicador_ie: string;
+  logradouro: string;
+  numero: string;
+  bairro: string;
+  municipio: string;
+  codigo_municipio: string;
+  uf: string;
+  cep: string;
   ativo: number;
   criado_em: string;
 }
@@ -316,6 +326,16 @@ export interface ClienteInput {
   email?: string;
   endereco?: string;
   observacao?: string;
+  documento?: string;
+  inscricao_estadual?: string;
+  indicador_ie?: string;
+  logradouro?: string;
+  numero?: string;
+  bairro?: string;
+  municipio?: string;
+  codigo_municipio?: string;
+  uf?: string;
+  cep?: string;
 }
 
 export function listarClientes(): Promise<{ clientes: Cliente[] }> {
@@ -626,11 +646,22 @@ export interface ConfigFiscal {
   csc_id?: string;
   ambiente?: string;
   gateway?: string;
+  provedor_fiscal?: string;
   gateway_token?: string;
+  certificado_a1_b64?: string;
+  certificado_senha?: string;
+  certificado_nome?: string;
+  certificado_validade?: string;
   serie?: number;
   proximo_numero?: number;
+  serie_nfce?: number;
+  proximo_numero_nfce?: number;
+  serie_nfe?: number;
+  proximo_numero_nfe?: number;
   gateway_token_preenchido?: boolean;
   csc_preenchido?: boolean;
+  certificado_a1_b64_preenchido?: boolean;
+  certificado_senha_preenchido?: boolean;
 }
 
 export interface NotaFiscal {
@@ -649,6 +680,12 @@ export interface NotaFiscal {
   danfe_url: string | null;
   qrcode_url: string | null;
   qrcode_base64?: string | null;
+  xml_assinado?: string | null;
+  xml_autorizado?: string | null;
+  tipo_emissao?: string | null;
+  recibo?: string | null;
+  motivo_rejeicao?: string | null;
+  destinatario_snapshot?: string | null;
 }
 
 export function getConfigFiscal(): Promise<{ config: ConfigFiscal }> {
@@ -679,6 +716,21 @@ export function cancelarNfce(notaId: number, justificativa: string): Promise<{ n
     method: "POST",
     body: JSON.stringify({ justificativa }),
   });
+}
+
+export function getNfeDaVenda(vendaId: number): Promise<{ nota: NotaFiscal | null }> {
+  return request(`/api/fiscal/nfe/venda/${vendaId}`);
+}
+
+export function emitirNfe(vendaId: number, clienteId: number): Promise<{ nota: NotaFiscal }> {
+  return request(`/api/fiscal/nfe/venda/${vendaId}/emitir`, {
+    method: "POST",
+    body: JSON.stringify({ cliente_id: clienteId }),
+  });
+}
+
+export function consultarNfe(notaId: number): Promise<{ nota: NotaFiscal }> {
+  return request(`/api/fiscal/nfe/${notaId}/consultar`, { method: "POST" });
 }
 
 // ── Maquininha (Mercado Pago Point) ──

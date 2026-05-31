@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { FileText, ExternalLink, RefreshCw } from "lucide-react";
-import { listarVendas, obterVenda, getNotaDaVenda, emitirNfce, consultarNfce } from "../lib/api";
+import { listarVendas, obterVenda, getNotaDaVenda, emitirNfce, consultarNfce, listarClientes, getNfeDaVenda, emitirNfe, consultarNfe } from "../lib/api";
+import type { Cliente } from "../lib/api";
 import type { Venda, NotaFiscal } from "../lib/api";
 
 export default function VendasPage() {
@@ -8,6 +9,9 @@ export default function VendasPage() {
   const [loading, setLoading] = useState(true);
   const [detalhe, setDetalhe] = useState<Venda | null>(null);
   const [nota, setNota] = useState<NotaFiscal | null>(null);
+  const [nfe, setNfe] = useState<NotaFiscal | null>(null);
+  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [clienteNfe, setClienteNfe] = useState<number | "">("");
   const [emitindo, setEmitindo] = useState(false);
   const [cpf, setCpf] = useState("");
 
@@ -15,6 +19,8 @@ export default function VendasPage() {
     try {
       const res = await listarVendas(100);
       setVendas(res.vendas);
+      const cs = await listarClientes();
+      setClientes(cs.clientes);
     } catch {
       // silent
     } finally {
@@ -32,7 +38,10 @@ export default function VendasPage() {
       setDetalhe(res.venda);
       const resNota = await getNotaDaVenda(id);
       setNota(resNota.nota);
+      const resNfe = await getNfeDaVenda(id);
+      setNfe(resNfe.nota);
       setCpf("");
+      setClienteNfe("");
     } catch {
       // silent
     }
@@ -57,6 +66,19 @@ export default function VendasPage() {
     try {
       const { nota: n } = await consultarNfce(nota.id);
       setNota(n);
+    } catch (err) {
+      alert((err as Error).message);
+    } finally {
+      setEmitindo(false);
+    }
+  }
+
+  async function handleEmitirNfe() {
+    if (!detalhe || !clienteNfe) return alert("Selecione o cliente destinatário da NF-e.");
+    setEmitindo(true);
+    try {
+      const { nota: n } = await emitirNfe(detalhe.id, Number(clienteNfe));
+      setNfe(n);
     } catch (err) {
       alert((err as Error).message);
     } finally {
@@ -283,6 +305,44 @@ export default function VendasPage() {
                       {nota.mensagem}
                     </p>
                   )}
+                </div>
+              )}
+            </div>
+
+            <div className="pt-4 border-t border-slate-800 mt-4">
+              <h4 className="text-white font-bold text-xs mb-3 flex items-center gap-2">
+                <FileText size={14} /> NF-e modelo 55
+              </h4>
+              {!nfe ? (
+                <div className="space-y-2">
+                  <select
+                    value={clienteNfe}
+                    onChange={(e) => setClienteNfe(e.target.value ? Number(e.target.value) : "")}
+                    className="w-full px-3 py-1.5 bg-slate-800 border border-slate-700 rounded text-white text-xs"
+                  >
+                    <option value="">Cliente destinatário...</option>
+                    {clientes.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
+                  </select>
+                  <button
+                    onClick={handleEmitirNfe}
+                    disabled={emitindo || !clienteNfe}
+                    className="w-full py-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-white text-xs font-bold rounded flex items-center justify-center gap-2"
+                  >
+                    {emitindo ? <RefreshCw size={14} className="animate-spin" /> : <ExternalLink size={14} />}
+                    Emitir NF-e
+                  </button>
+                </div>
+              ) : (
+                <div className="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-amber-500/10 text-amber-400">{nfe.status}</span>
+                    <button onClick={async () => { const r = await consultarNfe(nfe.id); setNfe(r.nota); }} disabled={emitindo} title="Atualizar status" className="text-slate-500 hover:text-white transition-colors">
+                      <RefreshCw size={14} className={emitindo ? "animate-spin" : ""} />
+                    </button>
+                  </div>
+                  {nfe.numero && <p className="text-slate-400 text-[10px] mb-1">Série {nfe.serie} • Nº {nfe.numero}</p>}
+                  {nfe.chave && <p className="text-slate-500 text-[9px] font-mono break-all mb-2">{nfe.chave}</p>}
+                  {nfe.mensagem && <p className="mt-3 text-[10px] text-amber-400 bg-amber-400/5 p-2 rounded border border-amber-400/20">{nfe.mensagem}</p>}
                 </div>
               )}
             </div>

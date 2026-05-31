@@ -71,9 +71,19 @@ class Database:
                     nome TEXT NOT NULL,
                     telefone TEXT DEFAULT '',
                     email TEXT DEFAULT '',
-                    endereco TEXT DEFAULT '',
-                    observacao TEXT DEFAULT '',
-                    ativo INTEGER NOT NULL DEFAULT 1,
+                endereco TEXT DEFAULT '',
+                observacao TEXT DEFAULT '',
+                documento TEXT DEFAULT '',
+                inscricao_estadual TEXT DEFAULT '',
+                indicador_ie TEXT DEFAULT '9',
+                logradouro TEXT DEFAULT '',
+                numero TEXT DEFAULT '',
+                bairro TEXT DEFAULT '',
+                municipio TEXT DEFAULT '',
+                codigo_municipio TEXT DEFAULT '',
+                uf TEXT DEFAULT '',
+                cep TEXT DEFAULT '',
+                ativo INTEGER NOT NULL DEFAULT 1,
                     criado_em TEXT NOT NULL,
                     atualizado_em TEXT NOT NULL,
                     FOREIGN KEY (user_id) REFERENCES users(id)
@@ -172,6 +182,23 @@ class Database:
             if col not in pcols:
                 self._conn.execute(f"ALTER TABLE produtos ADD COLUMN {col} {ddl}")
 
+        ccols = {r["name"] for r in self._conn.execute("PRAGMA table_info(clientes)")}
+        cliente_fiscal = {
+            "documento": "TEXT DEFAULT ''",
+            "inscricao_estadual": "TEXT DEFAULT ''",
+            "indicador_ie": "TEXT DEFAULT '9'",
+            "logradouro": "TEXT DEFAULT ''",
+            "numero": "TEXT DEFAULT ''",
+            "bairro": "TEXT DEFAULT ''",
+            "municipio": "TEXT DEFAULT ''",
+            "codigo_municipio": "TEXT DEFAULT ''",
+            "uf": "TEXT DEFAULT ''",
+            "cep": "TEXT DEFAULT ''",
+        }
+        for col, ddl in cliente_fiscal.items():
+            if col not in ccols:
+                self._conn.execute(f"ALTER TABLE clientes ADD COLUMN {col} {ddl}")
+
         # Configuração fiscal do emitente (1 linha) + notas emitidas
         self._conn.executescript(
             """
@@ -194,9 +221,18 @@ class Database:
                 csc_id TEXT DEFAULT '',
                 ambiente TEXT DEFAULT 'homologacao',
                 gateway TEXT DEFAULT 'focusnfe',
+                provedor_fiscal TEXT DEFAULT 'sefaz_mt_direto',
                 gateway_token TEXT DEFAULT '',
+                certificado_a1_b64 TEXT DEFAULT '',
+                certificado_senha TEXT DEFAULT '',
+                certificado_nome TEXT DEFAULT '',
+                certificado_validade TEXT DEFAULT '',
                 serie INTEGER NOT NULL DEFAULT 1,
                 proximo_numero INTEGER NOT NULL DEFAULT 1,
+                serie_nfce INTEGER NOT NULL DEFAULT 1,
+                proximo_numero_nfce INTEGER NOT NULL DEFAULT 1,
+                serie_nfe INTEGER NOT NULL DEFAULT 1,
+                proximo_numero_nfe INTEGER NOT NULL DEFAULT 1,
                 atualizado_em TEXT
             );
 
@@ -217,6 +253,12 @@ class Database:
                 danfe_url TEXT,
                 qrcode_url TEXT,
                 payload TEXT,
+                xml_assinado TEXT,
+                xml_autorizado TEXT,
+                tipo_emissao TEXT DEFAULT '1',
+                recibo TEXT,
+                motivo_rejeicao TEXT,
+                destinatario_snapshot TEXT,
                 criado_em TEXT NOT NULL,
                 atualizado_em TEXT NOT NULL
             );
@@ -285,6 +327,35 @@ class Database:
             """
         )
 
+        fcols = {r["name"] for r in self._conn.execute("PRAGMA table_info(config_fiscal)")}
+        fiscal_cols = {
+            "provedor_fiscal": "TEXT DEFAULT 'sefaz_mt_direto'",
+            "certificado_a1_b64": "TEXT DEFAULT ''",
+            "certificado_senha": "TEXT DEFAULT ''",
+            "certificado_nome": "TEXT DEFAULT ''",
+            "certificado_validade": "TEXT DEFAULT ''",
+            "serie_nfce": "INTEGER NOT NULL DEFAULT 1",
+            "proximo_numero_nfce": "INTEGER NOT NULL DEFAULT 1",
+            "serie_nfe": "INTEGER NOT NULL DEFAULT 1",
+            "proximo_numero_nfe": "INTEGER NOT NULL DEFAULT 1",
+        }
+        for col, ddl in fiscal_cols.items():
+            if col not in fcols:
+                self._conn.execute(f"ALTER TABLE config_fiscal ADD COLUMN {col} {ddl}")
+
+        ncols = {r["name"] for r in self._conn.execute("PRAGMA table_info(notas_fiscais)")}
+        nota_cols = {
+            "xml_assinado": "TEXT",
+            "xml_autorizado": "TEXT",
+            "tipo_emissao": "TEXT DEFAULT '1'",
+            "recibo": "TEXT",
+            "motivo_rejeicao": "TEXT",
+            "destinatario_snapshot": "TEXT",
+        }
+        for col, ddl in nota_cols.items():
+            if col not in ncols:
+                self._conn.execute(f"ALTER TABLE notas_fiscais ADD COLUMN {col} {ddl}")
+
     # ── Sincronização ──
     def vendas_pendentes_sync(self, limite: int = 100) -> list[dict[str, Any]]:
         with self._lock:
@@ -313,7 +384,10 @@ class Database:
             row = self._conn.execute("SELECT * FROM config_fiscal WHERE id = 1").fetchone()
             if not row:
                 return {"habilitado": 0, "ambiente": "homologacao",
-                        "gateway": "focusnfe", "serie": 1, "proximo_numero": 1}
+                        "gateway": "focusnfe", "provedor_fiscal": "sefaz_mt_direto",
+                        "serie": 1, "proximo_numero": 1,
+                        "serie_nfce": 1, "proximo_numero_nfce": 1,
+                        "serie_nfe": 1, "proximo_numero_nfe": 1}
             return dict(row)
 
     def salvar_config_fiscal(self, campos: dict, agora: str) -> dict[str, Any]:
@@ -321,7 +395,9 @@ class Database:
             "habilitado", "razao_social", "nome_fantasia", "cnpj", "inscricao_estadual",
             "regime_tributario", "logradouro", "numero", "bairro", "municipio",
             "codigo_municipio", "uf", "cep", "csc", "csc_id", "ambiente", "gateway",
-            "gateway_token", "serie", "proximo_numero",
+            "provedor_fiscal", "gateway_token", "certificado_a1_b64", "certificado_senha",
+            "certificado_nome", "certificado_validade", "serie", "proximo_numero",
+            "serie_nfce", "proximo_numero_nfce", "serie_nfe", "proximo_numero_nfe",
         }
         dados = {k: v for k, v in campos.items() if k in permitidos and v is not None}
         with self._lock, self._conn:
@@ -387,24 +463,33 @@ class Database:
                 )
         return self.get_config_loja()
 
-    def consumir_numero_nfce(self) -> tuple[int, int]:
-        """Reserva o próximo número/série de NFC-e de forma atômica."""
+    def consumir_numero_fiscal(self, modelo: str = "65") -> tuple[int, int]:
+        """Reserva o próximo número/série por modelo fiscal."""
+        serie_col, numero_col = (
+            ("serie_nfe", "proximo_numero_nfe") if str(modelo) == "55"
+            else ("serie_nfce", "proximo_numero_nfce")
+        )
         with self._lock, self._conn:
             row = self._conn.execute(
-                "SELECT serie, proximo_numero FROM config_fiscal WHERE id = 1"
+                f"SELECT {serie_col} AS serie, {numero_col} AS proximo_numero FROM config_fiscal WHERE id = 1"
             ).fetchone()
             serie = row["serie"] if row else 1
             numero = row["proximo_numero"] if row else 1
             self._conn.execute(
-                "UPDATE config_fiscal SET proximo_numero = ? WHERE id = 1", (numero + 1,)
+                f"UPDATE config_fiscal SET {numero_col} = ? WHERE id = 1", (numero + 1,)
             )
             return serie, numero
+
+    def consumir_numero_nfce(self) -> tuple[int, int]:
+        """Reserva o próximo número/série de NFC-e de forma atômica."""
+        return self.consumir_numero_fiscal("65")
 
     # ── Fiscal: notas ──
     def criar_nota(self, dados: dict) -> dict[str, Any]:
         cols = ("venda_id", "user_id", "ref", "modelo", "numero", "serie", "ambiente",
                 "status", "chave", "protocolo", "mensagem", "xml_url", "danfe_url",
-                "qrcode_url", "payload", "criado_em", "atualizado_em")
+                "qrcode_url", "payload", "xml_assinado", "xml_autorizado", "tipo_emissao",
+                "recibo", "motivo_rejeicao", "destinatario_snapshot", "criado_em", "atualizado_em")
         with self._lock, self._conn:
             cur = self._conn.execute(
                 f"INSERT INTO notas_fiscais ({', '.join(cols)}) "
@@ -427,17 +512,25 @@ class Database:
             ).fetchone()
             return dict(row) if row else None
 
-    def get_nota_por_venda(self, venda_id: int) -> dict[str, Any] | None:
+    def get_nota_por_venda(self, venda_id: int, modelo: str | None = None) -> dict[str, Any] | None:
         with self._lock:
-            row = self._conn.execute(
-                "SELECT * FROM notas_fiscais WHERE venda_id = ? ORDER BY id DESC LIMIT 1",
-                (venda_id,),
-            ).fetchone()
+            if modelo:
+                row = self._conn.execute(
+                    "SELECT * FROM notas_fiscais WHERE venda_id = ? AND modelo = ? ORDER BY id DESC LIMIT 1",
+                    (venda_id, str(modelo)),
+                ).fetchone()
+            else:
+                row = self._conn.execute(
+                    "SELECT * FROM notas_fiscais WHERE venda_id = ? ORDER BY id DESC LIMIT 1",
+                    (venda_id,),
+                ).fetchone()
             return dict(row) if row else None
 
     def atualizar_nota(self, nota_id: int, campos: dict, agora: str) -> dict[str, Any] | None:
         permitidos = {"numero", "serie", "ambiente", "status", "chave", "protocolo",
-                      "mensagem", "xml_url", "danfe_url", "qrcode_url", "payload"}
+                      "mensagem", "xml_url", "danfe_url", "qrcode_url", "payload",
+                      "xml_assinado", "xml_autorizado", "tipo_emissao", "recibo",
+                      "motivo_rejeicao", "destinatario_snapshot"}
         dados = {k: v for k, v in campos.items() if k in permitidos}
         if not dados:
             return self.get_nota(nota_id)
@@ -859,18 +952,27 @@ class Database:
         return dict(row) if row else None
 
     def create_cliente(self, user_id: int, nome: str, telefone: str, email: str,
-                       endereco: str, observacao: str, agora: str) -> dict[str, Any] | None:
+                       endereco: str, observacao: str, agora: str, **fiscais) -> dict[str, Any] | None:
+        extra_cols = ("documento", "inscricao_estadual", "indicador_ie", "logradouro",
+                      "numero", "bairro", "municipio", "codigo_municipio", "uf", "cep")
+        cols = ("user_id", "nome", "telefone", "email", "endereco", "observacao",
+                *extra_cols, "criado_em", "atualizado_em")
+        vals = [
+            user_id, nome.strip(), telefone.strip(), email.strip(), endereco.strip(), observacao.strip(),
+            *[(fiscais.get(c) or "").strip() for c in extra_cols],
+            agora, agora,
+        ]
         with self._lock, self._conn:
             cursor = self._conn.execute(
-                """INSERT INTO clientes (user_id, nome, telefone, email, endereco, observacao, criado_em, atualizado_em)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-                (user_id, nome.strip(), telefone.strip(), email.strip(),
-                 endereco.strip(), observacao.strip(), agora, agora),
+                f"INSERT INTO clientes ({', '.join(cols)}) VALUES ({', '.join('?' for _ in cols)})",
+                vals,
             )
             return self.get_cliente(cursor.lastrowid)
 
     def update_cliente(self, cliente_id: int, user_id: int, **kwargs) -> dict[str, Any] | None:
-        allowed = {"nome", "telefone", "email", "endereco", "observacao", "ativo", "atualizado_em"}
+        allowed = {"nome", "telefone", "email", "endereco", "observacao", "ativo", "atualizado_em",
+                   "documento", "inscricao_estadual", "indicador_ie", "logradouro",
+                   "numero", "bairro", "municipio", "codigo_municipio", "uf", "cep"}
         fields = {k: v for k, v in kwargs.items() if k in allowed}
         if not fields:
             return self.get_cliente(cliente_id, user_id)

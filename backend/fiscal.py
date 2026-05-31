@@ -20,6 +20,7 @@ import urllib.request
 from datetime import datetime, timedelta, timezone
 
 from database import db
+import fiscal_direto
 
 INTERVALO_SEG = 45
 _TIMEOUT = 25
@@ -158,6 +159,8 @@ class PlugNotas:
 
 
 def _gateway(config: dict):
+    if (config.get("provedor_fiscal") or "").lower() == "sefaz_mt_direto":
+        raise FiscalError("Fluxo direto SEFAZ-MT não usa gateway.")
     nome = (config.get("gateway") or "focusnfe").lower()
     token = config.get("gateway_token") or ""
     ambiente = config.get("ambiente") or "homologacao"
@@ -234,6 +237,12 @@ def _so_digitos(s: str) -> str:
 def _validar_config(config: dict) -> None:
     if not config.get("habilitado"):
         raise FiscalError("Emissão fiscal desativada (ative em Configurações Fiscais).")
+    if (config.get("provedor_fiscal") or "sefaz_mt_direto") == "sefaz_mt_direto":
+        try:
+            fiscal_direto._validar_emitente(config)
+        except fiscal_direto.FiscalDiretoError as e:
+            raise FiscalError(str(e))
+        return
     faltando = [c for c in ("cnpj", "gateway_token") if not config.get(c)]
     if faltando:
         raise FiscalError(f"Configuração fiscal incompleta: {', '.join(faltando)}.")
@@ -243,12 +252,28 @@ def emitir_nfce(venda_id: int, user_id: int, cpf: str | None = None) -> dict:
     venda = db.get_venda_completa(venda_id, user_id)
     if not venda:
         raise FiscalError("Venda não encontrada.")
-    existente = db.get_nota_por_venda(venda_id)
+    existente = db.get_nota_por_venda(venda_id, "65")
     if existente and existente["status"] in ("autorizada", "processando", "pendente"):
         return existente
 
     config = db.get_config_fiscal()
     _validar_config(config)
+    if (config.get("provedor_fiscal") or "sefaz_mt_direto") == "sefaz_mt_direto":
+        try:
+            r = fiscal_direto.preparar_e_tentar_transmitir(venda, config, "65", cpf_consumidor=cpf)
+            agora = _agora()
+            return db.criar_nota({
+                "venda_id": venda_id, "user_id": user_id, "ref": f"v{venda_id}-65-{r['numero']}",
+                "modelo": "65", "numero": r["numero"], "serie": r["serie"],
+                "ambiente": config.get("ambiente"), "status": "processando",
+                "chave": r["chave"], "qrcode_url": r.get("qrcode_url"),
+                "payload": r["payload"], "xml_assinado": r["xml_assinado"],
+                "mensagem": f"Transmitido para SEFAZ-MT ({r['retorno']['status_code']}). Consulte o status.",
+                "recibo": r["retorno"].get("texto", "")[:4000],
+                "criado_em": agora, "atualizado_em": agora,
+            })
+        except fiscal_direto.FiscalDiretoError as e:
+            raise FiscalError(str(e))
     gw = _gateway(config)
 
     serie, numero = db.consumir_numero_nfce()
@@ -281,6 +306,11 @@ def consultar_nfce(nota_id: int) -> dict:
     nota = db.get_nota(nota_id)
     if not nota:
         raise FiscalError("Nota não encontrada.")
+    if (db.get_config_fiscal().get("provedor_fiscal") or "sefaz_mt_direto") == "sefaz_mt_direto":
+        return db.atualizar_nota(nota_id, {
+            "status": nota.get("status") or "processando",
+            "mensagem": nota.get("mensagem") or "Consulta direta SEFAZ-MT será concluída pelo retorno autorizado.",
+        }, _agora())
     config = db.get_config_fiscal()
     gw = _gateway(config)
     code, resp = gw.consultar(nota["ref"])
@@ -300,6 +330,41 @@ def cancelar_nfce(nota_id: int, justificativa: str) -> dict:
     gw = _gateway(config)
     gw.cancelar(nota["ref"], justificativa)
     return db.atualizar_nota(nota_id, {"status": "cancelada", "mensagem": justificativa}, _agora())
+
+
+def emitir_nfe(venda_id: int, user_id: int, cliente_id: int) -> dict:
+    venda = db.get_venda_completa(venda_id, user_id)
+    if not venda:
+        raise FiscalError("Venda não encontrada.")
+    cliente = db.get_cliente(cliente_id, user_id)
+    if not cliente:
+        raise FiscalError("Cliente não encontrado.")
+    existente = db.get_nota_por_venda(venda_id, "55")
+    if existente and existente["status"] in ("autorizada", "processando", "pendente"):
+        return existente
+    obrig = ("documento", "logradouro", "numero", "bairro", "municipio", "codigo_municipio", "uf", "cep")
+    faltando = [c for c in obrig if not str(cliente.get(c) or "").strip()]
+    if faltando:
+        raise FiscalError("Cliente sem dados fiscais para NF-e: " + ", ".join(faltando))
+    config = db.get_config_fiscal()
+    _validar_config(config)
+    if (config.get("provedor_fiscal") or "sefaz_mt_direto") != "sefaz_mt_direto":
+        raise FiscalError("NF-e modelo 55 direta exige provedor fiscal SEFAZ-MT direto.")
+    try:
+        r = fiscal_direto.preparar_e_tentar_transmitir(venda, config, "55", destinatario=dict(cliente))
+        agora = _agora()
+        return db.criar_nota({
+            "venda_id": venda_id, "user_id": user_id, "ref": f"v{venda_id}-55-{r['numero']}",
+            "modelo": "55", "numero": r["numero"], "serie": r["serie"],
+            "ambiente": config.get("ambiente"), "status": "processando",
+            "chave": r["chave"], "payload": r["payload"], "xml_assinado": r["xml_assinado"],
+            "mensagem": f"Transmitido para SEFAZ-MT ({r['retorno']['status_code']}). Consulte o status.",
+            "recibo": r["retorno"].get("texto", "")[:4000],
+            "destinatario_snapshot": json.dumps(dict(cliente), ensure_ascii=False),
+            "criado_em": agora, "atualizado_em": agora,
+        })
+    except fiscal_direto.FiscalDiretoError as e:
+        raise FiscalError(str(e))
 
 
 def processar_pendentes() -> int:
