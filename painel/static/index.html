@@ -96,7 +96,7 @@
         <p class="text-slate-400 text-sm mb-4">Primeiro acesso — crie o administrador master.</p>
         <form id="f" class="space-y-3">
           <input name="nome" placeholder="Seu nome" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2" />
-          <input name="email" type="email" placeholder="E-mail" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2" />
+          <input name="login" type="text" placeholder="Usuário" required autocomplete="username" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2" />
           <input name="senha" type="password" placeholder="Senha (mín. 6)" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2" />
           <button class="w-full bg-emerald-600 hover:bg-emerald-500 rounded-lg py-2 font-bold">Criar admin</button>
           <p id="erro" class="text-red-400 text-sm"></p>
@@ -115,7 +115,7 @@
       $("#app").innerHTML = cardWrap(`
         <p class="text-slate-400 text-sm mb-4">Acesso do administrador.</p>
         <form id="f" class="space-y-3">
-          <input name="email" type="email" placeholder="E-mail" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2" />
+          <input name="login" type="text" placeholder="Usuário" required autocomplete="username" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2" />
           <input name="senha" type="password" placeholder="Senha" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2" />
           <button class="w-full bg-emerald-600 hover:bg-emerald-500 rounded-lg py-2 font-bold">Entrar</button>
           <p id="erro" class="text-red-400 text-sm"></p>

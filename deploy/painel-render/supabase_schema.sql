@@ -12,10 +12,15 @@
 CREATE TABLE IF NOT EXISTS admins (
     id          SERIAL PRIMARY KEY,
     email       TEXT NOT NULL UNIQUE,
+    login       TEXT UNIQUE,
     nome        TEXT NOT NULL,
     senha_hash  TEXT NOT NULL,
     criado_em   TEXT NOT NULL
 );
+UPDATE admins
+SET login = LOWER(SPLIT_PART(email, '@', 1))
+WHERE login IS NULL OR login = '';
+CREATE UNIQUE INDEX IF NOT EXISTS idx_admins_login ON admins(login);
 
 -- ── CONTAS (cada loja/mercado que usa o sistema) ──
 CREATE TABLE IF NOT EXISTS contas (

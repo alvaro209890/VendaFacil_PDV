@@ -43,6 +43,7 @@ _SCHEMA_SQLITE = """
     CREATE TABLE IF NOT EXISTS admins (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         email TEXT NOT NULL UNIQUE,
+        login TEXT UNIQUE,
         nome TEXT NOT NULL,
         senha_hash TEXT NOT NULL,
         criado_em TEXT NOT NULL
@@ -89,6 +90,7 @@ _SCHEMA_PG = """
     CREATE TABLE IF NOT EXISTS admins (
         id SERIAL PRIMARY KEY,
         email TEXT NOT NULL UNIQUE,
+        login TEXT UNIQUE,
         nome TEXT NOT NULL,
         senha_hash TEXT NOT NULL,
         criado_em TEXT NOT NULL
@@ -167,7 +169,23 @@ class Database:
             else:
                 with self._conn:
                     self._conn.executescript(ddl)
+        self._migrar()
         self._seed_financeiro()
+
+    def _migrar(self) -> None:
+        """Migrações idempotentes do painel."""
+        if self.pg:
+            with self._lock, self._conn.cursor() as cur:
+                cur.execute("ALTER TABLE admins ADD COLUMN IF NOT EXISTS login TEXT")
+                cur.execute("UPDATE admins SET login = LOWER(SPLIT_PART(email, '@', 1)) WHERE login IS NULL OR login = ''")
+                cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_admins_login ON admins(login)")
+        else:
+            cols = {r["name"] for r in self._conn.execute("PRAGMA table_info(admins)")}
+            with self._lock, self._conn:
+                if "login" not in cols:
+                    self._conn.execute("ALTER TABLE admins ADD COLUMN login TEXT")
+                    self._conn.execute("UPDATE admins SET login = LOWER(SUBSTR(email, 1, INSTR(email || '@', '@') - 1)) WHERE login IS NULL OR login = ''")
+                self._conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_admins_login ON admins(login)")
 
     def _seed_financeiro(self) -> None:
         """Garante a linha de config e os custos de referência (1ª vez)."""
@@ -237,20 +255,29 @@ class Database:
 
     # ── Admins ──
     def get_admin_by_email(self, email: str) -> Optional[dict]:
-        return self._fetchone("SELECT * FROM admins WHERE email = ?", (email.lower(),))
+        return self.get_admin_by_login(email)
+
+    def get_admin_by_login(self, login: str) -> Optional[dict]:
+        valor = login.strip().lower()
+        return self._fetchone(
+            "SELECT * FROM admins WHERE LOWER(login) = ? OR LOWER(email) = ?",
+            (valor, valor),
+        )
 
     def count_admins(self) -> int:
         row = self._fetchone("SELECT COUNT(*) AS c FROM admins")
         return int(row["c"]) if row else 0
 
-    def create_admin(self, email: str, nome: str, senha_hash: str) -> Optional[dict]:
+    def create_admin(self, login: str, nome: str, senha_hash: str) -> Optional[dict]:
+        usuario = login.strip().lower()
+        email = usuario if "@" in usuario else f"{usuario}@local"
         new_id = self._insert_id(
-            "INSERT INTO admins (email, nome, senha_hash, criado_em) VALUES (?,?,?,?)",
-            (email.lower(), nome, senha_hash, agora()),
+            "INSERT INTO admins (email, login, nome, senha_hash, criado_em) VALUES (?,?,?,?,?)",
+            (email.lower(), usuario, nome, senha_hash, agora()),
         )
         if new_id is None:
             return None
-        return {"id": new_id, "email": email.lower(), "nome": nome}
+        return {"id": new_id, "login": usuario, "email": email.lower(), "nome": nome}
 
     def get_admin(self, admin_id: int) -> Optional[dict]:
         return self._fetchone("SELECT * FROM admins WHERE id = ?", (admin_id,))

@@ -7,7 +7,7 @@ def test_setup_e_login(client, admin):
 
 
 def test_login_errado(client, admin):
-    r = client.post("/api/admin/login", json={"email": "admin@teste.com", "senha": "errada"})
+    r = client.post("/api/admin/login", json={"login": "admin", "senha": "errada"})
     assert r.status_code == 401
 
 
@@ -53,14 +53,14 @@ def test_trocar_senha(client, admin):
     # token do fixture continua válido; troca a senha e valida login novo/antigo
     r = client.put("/api/admin/senha", headers=admin, json={"senha_atual": "admin123", "nova_senha": "novaSenha1"})
     assert r.status_code == 200
-    assert client.post("/api/admin/login", json={"email": "admin@teste.com", "senha": "novaSenha1"}).status_code == 200
-    assert client.post("/api/admin/login", json={"email": "admin@teste.com", "senha": "admin123"}).status_code == 401
+    assert client.post("/api/admin/login", json={"login": "admin", "senha": "novaSenha1"}).status_code == 200
+    assert client.post("/api/admin/login", json={"login": "admin", "senha": "admin123"}).status_code == 401
     # volta ao original para não afetar outros testes
     client.put("/api/admin/senha", headers=admin, json={"senha_atual": "novaSenha1", "nova_senha": "admin123"})
 
 
 def test_rate_limit(client):
-    # e-mail dedicado para não bloquear o admin dos outros testes
-    alvo = {"email": "bruteforce@teste.com", "senha": "x"}
+    # usuário dedicado para não bloquear o admin dos outros testes
+    alvo = {"login": "bruteforce", "senha": "x"}
     codigos = [client.post("/api/admin/login", json=alvo).status_code for _ in range(7)]
     assert 429 in codigos  # após várias falhas, passa a bloquear

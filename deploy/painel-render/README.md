@@ -25,6 +25,9 @@ e o serviço pode rodar no **plano free**.
    Se preferir preparar/conferir o banco antes, cole
    [`supabase_schema.sql`](./supabase_schema.sql) no **SQL Editor → New query →
    Run** (é idempotente, pode rodar de novo sem problema).
+4. Para apagar tudo e criar um ambiente de teste do zero, rode
+   [`reset_supabase_teste.sql`](./reset_supabase_teste.sql). Ele cria:
+   `usuario: teste` e `senha: teste123` para o admin do painel e para a loja/PDV.
 
 ## 2. Deploy no Render
 
@@ -50,8 +53,15 @@ e o serviço pode rodar no **plano free**.
 
 ## Primeiro acesso
 
-Abra a URL do serviço → a tela pedirá para criar o **admin master** (você).
-Depois você já cadastra as lojas.
+Abra a URL do serviço → a tela pedirá para criar o **admin master** (você), usando
+um usuário simples, sem precisar de e-mail. Depois você já cadastra as lojas.
+
+Se rodou o reset de teste, entre com:
+
+```text
+usuario: teste
+senha: teste123
+```
 
 ## Conectar os PDVs ao painel
 

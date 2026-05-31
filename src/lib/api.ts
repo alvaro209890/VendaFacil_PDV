@@ -69,21 +69,22 @@ export function ativar(login: string, senha: string): Promise<AtivacaoStatus> {
 
 export interface User {
   id: number;
+  usuario: string;
   email: string;
   nome: string;
 }
 
-export function login(email: string, senha: string) {
+export function login(usuario: string, senha: string) {
   return request("/api/auth/login", {
     method: "POST",
-    body: JSON.stringify({ email, senha }),
+    body: JSON.stringify({ usuario, senha }),
   });
 }
 
-export function registro(email: string, nome: string, senha: string) {
+export function registro(usuario: string, nome: string, senha: string) {
   return request("/api/auth/registro", {
     method: "POST",
-    body: JSON.stringify({ email, nome, senha }),
+    body: JSON.stringify({ usuario, nome, senha }),
   });
 }
 

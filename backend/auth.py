@@ -41,11 +41,13 @@ TOKEN_EXPIRE_HOURS = 720  # 30 dias
 # ── Models ──
 
 class LoginRequest(BaseModel):
-    email: str = Field(min_length=3, max_length=120)
+    usuario: str | None = Field(default=None, min_length=3, max_length=120)
+    email: str | None = Field(default=None, min_length=3, max_length=120)
     senha: str = Field(min_length=1, max_length=128)
 
 class RegistroRequest(BaseModel):
-    email: str = Field(min_length=3, max_length=120)
+    usuario: str | None = Field(default=None, min_length=3, max_length=120)
+    email: str | None = Field(default=None, min_length=3, max_length=120)
     nome: str = Field(min_length=1, max_length=80)
     senha: str = Field(min_length=4, max_length=128)
 
@@ -91,6 +93,18 @@ def _verificar_jwt(token: str) -> dict | None:
 def _agora() -> str:
     return datetime.now(timezone.utc).isoformat()
 
+
+def _usuario(data: LoginRequest | RegistroRequest) -> str:
+    valor = (data.usuario or data.email or "").strip().lower()
+    if not valor:
+        raise HTTPException(status_code=422, detail="Usuário não informado.")
+    return valor
+
+
+def _user_response(user: dict) -> dict:
+    usuario = user.get("usuario") or user.get("email", "")
+    return {"id": user["id"], "usuario": usuario, "email": usuario, "nome": user["nome"]}
+
 # ── Rotas ──
 
 @router.post("/login")
@@ -100,20 +114,22 @@ async def login(data: LoginRequest) -> dict:
     if lic.get("bloqueado"):
         raise HTTPException(status_code=403, detail=lic.get("motivo", "Sistema não ativado."))
 
-    user = db.get_user_by_email(data.email)
+    usuario = _usuario(data)
+    user = db.get_user_by_usuario(usuario)
     if not user or not _verificar_senha(data.senha, user["senha_hash"]):
-        raise HTTPException(status_code=401, detail="E-mail ou senha incorretos.")
+        raise HTTPException(status_code=401, detail="Usuário ou senha incorretos.")
 
-    db.update_last_login(data.email, _agora())
+    db.update_last_login(usuario, _agora())
     exp = datetime.now(timezone.utc) + timedelta(hours=TOKEN_EXPIRE_HOURS)
     token = _gerar_jwt({
         "sub": str(user["id"]),
-        "email": user["email"],
+        "usuario": user.get("usuario") or user.get("email"),
+        "email": user.get("usuario") or user.get("email"),
         "nome": user["nome"],
         "iat": int(datetime.now(timezone.utc).timestamp()),
         "exp": int(exp.timestamp()),
     })
-    return {"token": token, "user": {"id": user["id"], "email": user["email"], "nome": user["nome"]}}
+    return {"token": token, "user": _user_response(user)}
 
 @router.post("/registro")
 async def registro(data: RegistroRequest) -> dict:
@@ -122,23 +138,25 @@ async def registro(data: RegistroRequest) -> dict:
     if lic.get("bloqueado"):
         raise HTTPException(status_code=403, detail=lic.get("motivo", "Sistema não ativado."))
 
-    if data.senha.lower() in ("senha", "1234", "12345", "123456", "password", data.email.split("@")[0].lower()):
+    usuario = _usuario(data)
+    if data.senha.lower() in ("senha", "1234", "12345", "123456", "password", usuario):
         raise HTTPException(status_code=400, detail="Senha muito fraca.")
 
     hash_senha = _hash_senha(data.senha)
-    user = db.create_user(data.email, data.nome, hash_senha, _agora())
+    user = db.create_user(usuario, data.nome, hash_senha, _agora())
     if not user:
-        raise HTTPException(status_code=409, detail="Este e-mail já está cadastrado.")
+        raise HTTPException(status_code=409, detail="Este usuário já está cadastrado.")
 
     exp = datetime.now(timezone.utc) + timedelta(hours=TOKEN_EXPIRE_HOURS)
     token = _gerar_jwt({
         "sub": str(user["id"]),
-        "email": user["email"],
+        "usuario": user.get("usuario") or user.get("email"),
+        "email": user.get("usuario") or user.get("email"),
         "nome": user["nome"],
         "iat": int(datetime.now(timezone.utc).timestamp()),
         "exp": int(exp.timestamp()),
     })
-    return {"token": token, "user": {"id": user["id"], "email": user["email"], "nome": user["nome"]}}
+    return {"token": token, "user": _user_response(user)}
 
 @router.get("/me")
 async def me(request: Request) -> dict:
@@ -148,4 +166,5 @@ async def me(request: Request) -> dict:
     payload = _verificar_jwt(auth[7:])
     if not payload:
         raise HTTPException(status_code=401, detail="Token inválido ou expirado.")
-    return {"user": {"id": payload["sub"], "email": payload["email"], "nome": payload["nome"]}}
+    usuario = payload.get("usuario") or payload.get("email", "")
+    return {"user": {"id": payload["sub"], "usuario": usuario, "email": usuario, "nome": payload["nome"]}}

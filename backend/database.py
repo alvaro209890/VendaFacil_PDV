@@ -444,30 +444,34 @@ class Database:
             ).fetchall()
             return [dict(r) for r in rows]
 
-    def create_user(self, email: str, nome: str, senha_hash: str, criado_em: str) -> dict[str, Any] | None:
+    def create_user(self, usuario: str, nome: str, senha_hash: str, criado_em: str) -> dict[str, Any] | None:
+        login = usuario.strip().lower()
         with self._lock, self._conn:
             try:
                 cursor = self._conn.execute(
                     "INSERT INTO users (email, nome, senha_hash, criado_em) VALUES (?, ?, ?, ?)",
-                    (email.strip().lower(), nome.strip(), senha_hash, criado_em),
+                    (login, nome.strip(), senha_hash, criado_em),
                 )
-                return {"id": cursor.lastrowid, "email": email.strip().lower(), "nome": nome.strip()}
+                return {"id": cursor.lastrowid, "usuario": login, "email": login, "nome": nome.strip()}
             except sqlite3.IntegrityError:
                 return None
 
     def get_user_by_email(self, email: str) -> dict[str, Any] | None:
+        return self.get_user_by_usuario(email)
+
+    def get_user_by_usuario(self, usuario: str) -> dict[str, Any] | None:
         with self._lock:
             row = self._conn.execute(
-                "SELECT id, email, nome, senha_hash FROM users WHERE email = ?",
-                (email.strip().lower(),),
+                "SELECT id, email AS usuario, email, nome, senha_hash FROM users WHERE email = ?",
+                (usuario.strip().lower(),),
             ).fetchone()
         return dict(row) if row else None
 
-    def update_last_login(self, email: str, timestamp: str) -> None:
+    def update_last_login(self, usuario: str, timestamp: str) -> None:
         with self._lock, self._conn:
             self._conn.execute(
                 "UPDATE users SET ultimo_login = ? WHERE email = ?",
-                (timestamp, email.strip().lower()),
+                (timestamp, usuario.strip().lower()),
             )
 
     def update_password(self, email: str, senha_hash: str) -> bool:

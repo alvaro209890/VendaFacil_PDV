@@ -125,7 +125,7 @@ function Layout({ children }: { children: React.ReactNode }) {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-white text-sm font-bold truncate">{user?.nome || "Usuário"}</p>
-              <p className="text-slate-500 text-[10px] font-medium truncate uppercase tracking-wider">{user?.email}</p>
+              <p className="text-slate-500 text-[10px] font-medium truncate uppercase tracking-wider">{user?.usuario || user?.email}</p>
             </div>
             <motion.button
               whileHover={{ scale: 1.1 }}

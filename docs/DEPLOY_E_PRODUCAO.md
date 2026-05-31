@@ -39,6 +39,8 @@ linkados ao longo do texto.
    - ⚠️ Sem colchetes na senha; sem espaços no host.
 3. SQL: as tabelas são criadas automaticamente no 1º boot. Para rodar à mão:
    `deploy/painel-render/supabase_schema.sql` no SQL Editor.
+   Para resetar tudo e criar o usuário de teste, rode
+   `deploy/painel-render/reset_supabase_teste.sql`.
 
 > Não usamos Auth/API/JWT keys do Supabase — só a connection string (Postgres puro).
 

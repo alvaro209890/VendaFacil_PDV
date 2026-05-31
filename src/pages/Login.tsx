@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  Mail, 
   Lock, 
   User, 
   ShoppingCart,
@@ -14,7 +13,7 @@ import { login, registro, setToken } from "../lib/api";
 import { useAuthStore } from "../store/authStore";
 
 export default function Login() {
-  const [email, setEmail] = useState("");
+  const [usuario, setUsuario] = useState("");
   const [senha, setSenha] = useState("");
   const [nome, setNome] = useState("");
   const [erro, setErro] = useState("");
@@ -26,13 +25,13 @@ export default function Login() {
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setErro("");
-    if (!email.trim() || !senha.trim()) {
+    if (!usuario.trim() || !senha.trim()) {
       setErro("Preencha todos os campos.");
       return;
     }
     setCarregando(true);
     try {
-      const data = await login(email.trim(), senha);
+      const data = await login(usuario.trim(), senha);
       setToken(data.token);
       setUser(data.user);
       navigate("/dashboard", { replace: true });
@@ -46,7 +45,7 @@ export default function Login() {
   async function handleRegistro(e: React.FormEvent) {
     e.preventDefault();
     setErro("");
-    if (!email.trim() || !senha.trim() || !nome.trim()) {
+    if (!usuario.trim() || !senha.trim() || !nome.trim()) {
       setErro("Preencha todos os campos.");
       return;
     }
@@ -56,7 +55,7 @@ export default function Login() {
     }
     setCarregando(true);
     try {
-      const data = await registro(email.trim(), nome.trim(), senha);
+      const data = await registro(usuario.trim(), nome.trim(), senha);
       setToken(data.token);
       setUser(data.user);
       navigate("/dashboard", { replace: true });
@@ -164,16 +163,17 @@ export default function Login() {
               )}
 
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">E-mail</label>
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Usuário</label>
                 <div className="relative group">
                   <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-brand-500 transition-colors">
-                    <Mail size={18} />
+                    <User size={18} />
                   </div>
                   <input 
-                    type="email" 
-                    value={email} 
-                    onChange={(e) => setEmail(e.target.value)} 
-                    placeholder="seu@email.com" 
+                    type="text" 
+                    value={usuario} 
+                    onChange={(e) => setUsuario(e.target.value)} 
+                    placeholder="Ex: teste" 
+                    autoCapitalize="none"
                     className="w-full pl-12 pr-4 py-4 bg-slate-950/50 border border-slate-800 rounded-2xl text-white placeholder-slate-600 focus:outline-none focus:border-brand-500/50 focus:ring-4 focus:ring-brand-500/5 transition-all text-sm font-medium shadow-inner" 
                   />
                 </div>

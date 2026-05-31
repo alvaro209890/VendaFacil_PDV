@@ -23,7 +23,7 @@ def client():
 
 @pytest.fixture(scope="session")
 def admin(client):
-    client.post("/api/admin/setup", json={"email": "admin@teste.com", "nome": "Admin", "senha": "admin123"})
-    r = client.post("/api/admin/login", json={"email": "admin@teste.com", "senha": "admin123"})
+    client.post("/api/admin/setup", json={"login": "admin", "nome": "Admin", "senha": "admin123"})
+    r = client.post("/api/admin/login", json={"login": "admin", "senha": "admin123"})
     assert r.status_code == 200, r.text
     return {"Authorization": "Bearer " + r.json()["token"]}

@@ -28,7 +28,7 @@ def client():
 @pytest.fixture(scope="session")
 def auth(client):
     r = client.post("/api/auth/registro", json={
-        "email": "teste@loja.com", "nome": "Teste", "senha": "Loja@2026xy",
+        "usuario": "teste", "nome": "Teste", "senha": "Loja@2026xy",
     })
     assert r.status_code == 200, r.text
     return {"Authorization": "Bearer " + r.json()["token"]}

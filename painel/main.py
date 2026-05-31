@@ -69,13 +69,15 @@ def _licenca_valida(conta: dict) -> tuple[bool, str]:
 
 # ── Models ──
 class AdminSetup(BaseModel):
-    email: str = Field(min_length=3, max_length=120)
+    login: str | None = Field(default=None, min_length=3, max_length=120)
+    email: str | None = Field(default=None, min_length=3, max_length=120)
     nome: str = Field(min_length=1, max_length=80)
     senha: str = Field(min_length=6, max_length=128)
 
 
 class AdminLogin(BaseModel):
-    email: str
+    login: str | None = None
+    email: str | None = None
     senha: str
 
 
@@ -137,6 +139,13 @@ class CustoUpdate(BaseModel):
     ativo: Optional[bool] = None
 
 
+def _login_admin(data: AdminSetup | AdminLogin) -> str:
+    login = (data.login or data.email or "").strip().lower()
+    if not login:
+        raise HTTPException(status_code=422, detail="Usuário não informado.")
+    return login
+
+
 # ── Health ──
 @app.get("/health")
 async def health() -> dict:
@@ -160,26 +169,27 @@ async def precisa_setup() -> dict:
 async def admin_setup(data: AdminSetup) -> dict:
     if db.count_admins() > 0:
         raise HTTPException(status_code=403, detail="Admin já configurado.")
-    admin = db.create_admin(data.email, data.nome, security.hash_senha(data.senha))
+    admin = db.create_admin(_login_admin(data), data.nome, security.hash_senha(data.senha))
     if not admin:
-        raise HTTPException(status_code=409, detail="E-mail já cadastrado.")
-    token = security.gerar_jwt({"sub": str(admin["id"]), "tipo": "admin", "nome": admin["nome"]})
+        raise HTTPException(status_code=409, detail="Usuário já cadastrado.")
+    token = security.gerar_jwt({"sub": str(admin["id"]), "tipo": "admin", "nome": admin["nome"], "login": admin["login"]})
     return {"token": token, "admin": admin}
 
 
 @app.post("/api/admin/login")
 async def admin_login(data: AdminLogin) -> dict:
-    chave = f"admin:{data.email.lower()}"
+    login = _login_admin(data)
+    chave = f"admin:{login}"
     rest = ratelimit.bloqueado(chave)
     if rest:
         raise HTTPException(status_code=429, detail=f"Muitas tentativas. Tente novamente em {rest}s.")
-    admin = db.get_admin_by_email(data.email)
+    admin = db.get_admin_by_login(login)
     if not admin or not security.verificar_senha(data.senha, admin["senha_hash"]):
         ratelimit.registrar_falha(chave)
-        raise HTTPException(status_code=401, detail="E-mail ou senha incorretos.")
+        raise HTTPException(status_code=401, detail="Usuário ou senha incorretos.")
     ratelimit.limpar(chave)
-    token = security.gerar_jwt({"sub": str(admin["id"]), "tipo": "admin", "nome": admin["nome"]})
-    return {"token": token, "admin": {"id": admin["id"], "email": admin["email"], "nome": admin["nome"]}}
+    token = security.gerar_jwt({"sub": str(admin["id"]), "tipo": "admin", "nome": admin["nome"], "login": admin.get("login")})
+    return {"token": token, "admin": {"id": admin["id"], "login": admin.get("login") or admin["email"], "email": admin["email"], "nome": admin["nome"]}}
 
 
 @app.put("/api/admin/senha")
