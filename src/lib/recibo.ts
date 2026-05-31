@@ -11,6 +11,14 @@ export interface ReciboItem {
   subtotal: number;
 }
 
+export interface ReciboNota {
+  numero?: number | null;
+  serie?: number | null;
+  chave?: string | null;
+  protocolo?: string | null;
+  qrcode_base64?: string | null;
+}
+
 export interface ReciboData {
   loja: { nome: string; cnpj?: string; endereco?: string };
   itens: ReciboItem[];
@@ -20,6 +28,7 @@ export interface ReciboData {
   forma: string;
   vendaId?: number | string;
   data?: string; // ISO; usa agora se ausente
+  nota?: ReciboNota | null;  // NFC-e autorizada → imprime bloco fiscal + QR
 }
 
 const FORMA_LABEL: Record<string, string> = {
@@ -52,6 +61,23 @@ function montarHtml(d: ReciboData, larguraMm: number): string {
   const end = d.loja.endereco ? `<div class="c">${esc(d.loja.endereco)}</div>` : "";
   const desc = d.desconto > 0 ? `<div class="ln"><span>Desconto</span><span>-${moeda(d.desconto)}</span></div>` : "";
 
+  // Bloco fiscal (NFC-e autorizada): nº/série, chave, protocolo e QR de consulta.
+  let fiscal = "";
+  if (d.nota && d.nota.chave) {
+    const chave = esc(d.nota.chave).replace(/(.{4})/g, "$1 ").trim();
+    const qr = d.nota.qrcode_base64
+      ? `<div class="c" style="margin-top:4px"><img src="data:image/png;base64,${d.nota.qrcode_base64}" style="width:${larguraMm === 58 ? 40 : 50}mm;height:auto" /></div>`
+      : "";
+    fiscal = `<hr>
+      <div class="c b">DOCUMENTO FISCAL — NFC-e</div>
+      <div class="c">NFC-e nº ${d.nota.numero ?? "-"} série ${d.nota.serie ?? "-"}</div>
+      ${d.nota.protocolo ? `<div class="c">Protocolo: ${esc(String(d.nota.protocolo))}</div>` : ""}
+      <div class="c" style="font-size:.85em;margin-top:2px">Chave de acesso</div>
+      <div class="c" style="font-size:.8em;word-break:break-all">${chave}</div>
+      ${qr}
+      <div class="c" style="font-size:.8em;margin-top:2px">Consulte pela chave de acesso em<br>portal da SEFAZ do seu estado</div>`;
+  }
+
   return `<!doctype html><html><head><meta charset="utf-8"><title>Recibo</title>
 <style>
   @page { size: ${larguraMm}mm auto; margin: 0; }
@@ -81,9 +107,10 @@ function montarHtml(d: ReciboData, larguraMm: number): string {
   ${desc}
   <div class="ln tot"><span>TOTAL</span><span>R$ ${moeda(d.total)}</span></div>
   <div class="ln"><span>Pagamento</span><span>${FORMA_LABEL[d.forma] || d.forma}</span></div>
+  ${fiscal}
   <hr>
   <div class="rod">Obrigado pela preferência!</div>
-  <div class="rod" style="font-size:.85em">*Este documento não é fiscal*</div>
+  ${d.nota && d.nota.chave ? "" : '<div class="rod" style="font-size:.85em">*Este documento não é fiscal*</div>'}
 </body></html>`;
 }
 

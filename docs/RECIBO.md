@@ -31,5 +31,15 @@ nível, então funciona com a maioria das térmicas via driver.
 - Subtotal, desconto, **TOTAL** e a **forma de pagamento**.
 - Rodapé "Obrigado pela preferência" + aviso de que **não é documento fiscal**.
 
-> Para emitir **documento fiscal** (NFC-e), veja [`MAQUININHA...`] e a tela
-> **Fiscal** — o recibo aqui é apenas um comprovante de venda.
+## Quando a venda emite NFC-e
+
+Se a venda for com **"emitir nota"** e a NFC-e for **autorizada**, o recibo
+térmico inclui automaticamente um **bloco fiscal**: número/série, **chave de
+acesso**, protocolo e o **QR Code** de consulta da NFC-e. Nesse caso o cupom
+deixa de ter o aviso "não é fiscal" — ele é o comprovante da nota.
+
+> Observação: o layout do cupom fiscal traz os elementos essenciais (emitente,
+> itens, total, chave e QR). Valide com a SEFAZ do seu estado antes de usar em
+> produção; em homologação dá para conferir tudo.
+
+Para configurar a emissão de NFC-e, use a tela **Fiscal** (gateway Focus NFe).

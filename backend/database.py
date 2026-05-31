@@ -261,6 +261,14 @@ class Database:
                 criado_em TEXT NOT NULL
             );
             CREATE INDEX IF NOT EXISTS idx_caixamov_sessao ON caixa_movimentos(sessao_id);
+
+            CREATE TABLE IF NOT EXISTS config_loja (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                pix_chave TEXT DEFAULT '',
+                pix_nome TEXT DEFAULT '',
+                pix_cidade TEXT DEFAULT '',
+                atualizado_em TEXT
+            );
             """
         )
 
@@ -345,6 +353,26 @@ class Database:
                     list(dados.values()) + [agora],
                 )
         return self.get_config_maquininha()
+
+    # ── Config da loja (PIX) ──
+    def get_config_loja(self) -> dict[str, Any]:
+        with self._lock:
+            row = self._conn.execute("SELECT * FROM config_loja WHERE id = 1").fetchone()
+            return dict(row) if row else {"pix_chave": "", "pix_nome": "", "pix_cidade": ""}
+
+    def salvar_config_loja(self, campos: dict, agora: str) -> dict[str, Any]:
+        permitidos = {"pix_chave", "pix_nome", "pix_cidade"}
+        dados = {k: v for k, v in campos.items() if k in permitidos and v is not None}
+        with self._lock, self._conn:
+            if not self._conn.execute("SELECT 1 FROM config_loja WHERE id = 1").fetchone():
+                self._conn.execute("INSERT INTO config_loja (id) VALUES (1)")
+            if dados:
+                sets = ", ".join(f"{k} = ?" for k in dados)
+                self._conn.execute(
+                    f"UPDATE config_loja SET {sets}, atualizado_em = ? WHERE id = 1",
+                    list(dados.values()) + [agora],
+                )
+        return self.get_config_loja()
 
     def consumir_numero_nfce(self) -> tuple[int, int]:
         """Reserva o próximo número/série de NFC-e de forma atômica."""

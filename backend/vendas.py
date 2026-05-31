@@ -130,7 +130,7 @@ async def checkout(data: CheckoutRequest, request: Request):
         import fiscal
         try:
             # Passar o CPF se fornecido
-            nota = fiscal.emitir_nfce(venda["id"], user_id, cpf=data.cpf_consumidor)
+            nota = fiscal.anexar_qrcode(fiscal.emitir_nfce(venda["id"], user_id, cpf=data.cpf_consumidor))
         except Exception as e:
             # Não falha a venda se a nota der erro, mas avisa
             return {"venda": venda, "itens": itens_processados, "erro_nota": str(e)}

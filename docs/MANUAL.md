@@ -53,12 +53,19 @@ Atalhos: **F2** finaliza, **F4** foca a busca.
 
 ## 4. Formas de pagamento
 - **Dinheiro / Débito / Crédito**: registra direto.
-- **PIX**: gera um **QR Code** na tela para o cliente pagar (precisa configurar a
-  chave PIX).
+- **PIX** — dois jeitos:
+  - **QR na tela do PDV**: precisa cadastrar a **chave PIX** em **PIX** (menu).
+  - **QR na maquininha**: se a maquininha (Mercado Pago Point) estiver ligada e
+    online, o PIX é cobrado **na telinha do aparelho** (não precisa configurar
+    chave; o Mercado Pago concilia). Depende da Point suportar PIX.
 - **Cartão pela maquininha (Mercado Pago Point)**: se habilitada e com internet,
   o sistema **dispara a cobrança na maquininha** e aguarda a aprovação. Sem
   internet, registre como **cartão manual** (passa no aparelho e confirma).
 - **Fiado**: escolha o cliente; gera uma conta a receber.
+
+> O **comprovante** (recibo térmico) sai para **qualquer** forma de pagamento.
+> Se a venda emitir **NFC-e**, o recibo já inclui o **bloco fiscal** (nº, chave,
+> protocolo e QR de consulta) — ou seja, a nota também sai na térmica.
 
 ## 5. Produtos e estoque
 Tela **Produtos**:

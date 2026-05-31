@@ -28,14 +28,14 @@ class EmitirInput(BaseModel):
 @router.get("/venda/{venda_id}")
 async def nota_da_venda(venda_id: int, request: Request) -> dict:
     _user(request)
-    return {"nota": db.get_nota_por_venda(venda_id)}
+    return {"nota": fiscal.anexar_qrcode(db.get_nota_por_venda(venda_id))}
 
 
 @router.post("/venda/{venda_id}/emitir")
 async def emitir(venda_id: int, data: EmitirInput, request: Request) -> dict:
     user_id = _user(request)
     try:
-        return {"nota": fiscal.emitir_nfce(venda_id, user_id, cpf=data.cpf_consumidor)}
+        return {"nota": fiscal.anexar_qrcode(fiscal.emitir_nfce(venda_id, user_id, cpf=data.cpf_consumidor))}
     except fiscal.FiscalError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -45,7 +45,7 @@ async def emitir(venda_id: int, data: EmitirInput, request: Request) -> dict:
 async def consultar(nota_id: int, request: Request) -> dict:
     _user(request)
     try:
-        return {"nota": fiscal.consultar_nfce(nota_id)}
+        return {"nota": fiscal.anexar_qrcode(fiscal.consultar_nfce(nota_id))}
     except fiscal.FiscalError as e:
         raise HTTPException(status_code=400, detail=str(e))
 

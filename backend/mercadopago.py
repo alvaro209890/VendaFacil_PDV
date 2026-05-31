@@ -91,9 +91,11 @@ class MercadoPagoPoint:
             raise PointError(status, _msg(resp))
         return resp.get("devices", [])
 
-    # Cria a intenção de pagamento (a maquininha acende e pede o cartão).
+    # Cria a intenção de pagamento. Para cartão, força o tipo (crédito/débito);
+    # para PIX, deixa o aparelho apresentar o QR (depende da Point suportar PIX).
     def criar_cobranca(self, device_id: str, valor_centavos: int,
-                       referencia: str, imprimir: bool) -> dict:
+                       referencia: str, imprimir: bool,
+                       payment: dict | None = None) -> dict:
         body = {
             "amount": valor_centavos,
             "additional_info": {
@@ -101,6 +103,8 @@ class MercadoPagoPoint:
                 "print_on_terminal": imprimir,
             },
         }
+        if payment:
+            body["payment"] = payment
         status, resp = self._req(
             "POST", f"/point/integration-api/devices/{device_id}/payment-intents", body
         )
@@ -153,6 +157,15 @@ class ConfigMaquininhaInput(BaseModel):
 class CobrancaInput(BaseModel):
     valor: float = Field(gt=0, le=999999.99)
     venda_uuid: str | None = Field(default=None, max_length=64)
+    forma: str | None = Field(default=None, max_length=12)  # credito | debito | pix
+
+
+# Mapeia a forma do PDV para o tipo de pagamento do Mercado Pago Point.
+# PIX → None (o aparelho apresenta o QR; depende da Point suportar PIX).
+_FORMA_PARA_PAYMENT = {
+    "credito": {"type": "credit_card", "installments": 1},
+    "debito": {"type": "debit_card", "installments": 1},
+}
 
 
 # ─────────────────────────── Rotas: configuração ───────────────────────────
@@ -196,10 +209,11 @@ async def criar_cobranca(data: CobrancaInput, request: Request) -> dict:
         raise HTTPException(status_code=400, detail="device_id da maquininha não configurado.")
     referencia = data.venda_uuid or "venda"
     valor_centavos = int(round(data.valor * 100))
+    payment = _FORMA_PARA_PAYMENT.get((data.forma or "").lower())  # None p/ PIX
     try:
         resp = cli.criar_cobranca(
             device_id, valor_centavos, referencia,
-            bool(cfg.get("imprimir_comprovante", 1)),
+            bool(cfg.get("imprimir_comprovante", 1)), payment,
         )
     except PointError as e:
         raise HTTPException(status_code=e.status, detail=e.mensagem)

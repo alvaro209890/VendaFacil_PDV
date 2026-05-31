@@ -577,6 +577,20 @@ export async function gerarPixQrCode(valor: number): Promise<PixQrCodeResponse> 
   });
 }
 
+export interface ConfigPix {
+  pix_chave: string;
+  pix_nome: string;
+  pix_cidade: string;
+}
+
+export function getConfigPix(): Promise<{ config: ConfigPix }> {
+  return request("/api/pix/config");
+}
+
+export function salvarConfigPix(data: Partial<ConfigPix>): Promise<{ config: ConfigPix }> {
+  return request("/api/pix/config", { method: "PUT", body: JSON.stringify(data) });
+}
+
 // ── Fiscal (NFC-e) ──
 
 export interface ConfigFiscal {
@@ -619,6 +633,7 @@ export interface NotaFiscal {
   xml_url: string | null;
   danfe_url: string | null;
   qrcode_url: string | null;
+  qrcode_base64?: string | null;
 }
 
 export function getConfigFiscal(): Promise<{ config: ConfigFiscal }> {
@@ -699,10 +714,10 @@ export interface CobrancaStatus {
   payment_type?: string;  // credit_card | debit_card
 }
 
-export function criarCobrancaMaquininha(valor: number, venda_uuid?: string): Promise<CobrancaMaquininha> {
+export function criarCobrancaMaquininha(valor: number, venda_uuid?: string, forma?: string): Promise<CobrancaMaquininha> {
   return request("/api/maquininha/cobranca", {
     method: "POST",
-    body: JSON.stringify({ valor, venda_uuid }),
+    body: JSON.stringify({ valor, venda_uuid, forma }),
   });
 }
 

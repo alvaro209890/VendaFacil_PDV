@@ -217,20 +217,21 @@ export default function PDV() {
   // Limpa o polling se a tela for desmontada.
   useEffect(() => pararPollMaquininha, [pararPollMaquininha]);
 
-  // Cobrança no cartão pela maquininha só vale quando: habilitada, com
-  // dispositivo configurado E com internet. Sem isso, cai no cartão manual.
+  // Cobrança pela maquininha (cartão OU PIX) só vale quando: habilitada, com
+  // dispositivo configurado E com internet. Sem isso, cartão = manual e PIX =
+  // QR estático na tela do PDV.
   const podeCobrarMaquininha =
-    (pagamento === "debito" || pagamento === "credito") &&
+    (pagamento === "debito" || pagamento === "credito" || pagamento === "pix") &&
     maqHabilitada && maqDeviceOk && navigator.onLine;
 
   async function finalizarVenda() {
     if (carrinho.length === 0) return;
-    if (pagamento === "pix") {
-      await gerarPix();
+    if (podeCobrarMaquininha) {
+      await iniciarCobrancaMaquininha();   // cartão ou PIX na telinha da maquininha
       return;
     }
-    if (podeCobrarMaquininha) {
-      await iniciarCobrancaMaquininha();
+    if (pagamento === "pix") {
+      await gerarPix();                    // sem maquininha → QR estático no PDV
       return;
     }
     await confirmarVenda();
@@ -242,7 +243,7 @@ export default function PDV() {
     const uuid = crypto.randomUUID();
     let intentId: string;
     try {
-      const r = await criarCobrancaMaquininha(total, uuid);
+      const r = await criarCobrancaMaquininha(total, uuid, pagamento);
       intentId = r.payment_intent_id;
     } catch (err) {
       // Falhou ao acionar a máquina (ex.: caiu a internet) → oferece manual.
@@ -320,6 +321,10 @@ export default function PDV() {
         forma: pagamento,
         vendaId: resp.venda?.id,
         data: resp.venda?.criado_em,
+        nota: resp.nota && resp.nota.status === "autorizada" ? {
+          numero: resp.nota.numero, serie: resp.nota.serie, chave: resp.nota.chave,
+          protocolo: resp.nota.protocolo, qrcode_base64: resp.nota.qrcode_base64,
+        } : null,
       };
       setUltimaVenda(recibo);
       if (imprimirAuto) imprimirRecibo(recibo, largura);
@@ -808,7 +813,11 @@ export default function PDV() {
                 <>
                   <div className="w-10 h-10 border-2 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
                   <p className="text-white text-sm font-bold mb-1">
-                    {maqModal.fase === "criando" ? "Acionando a maquininha..." : "Peça o cartão ao cliente"}
+                    {maqModal.fase === "criando"
+                      ? "Acionando a maquininha..."
+                      : pagamento === "pix"
+                        ? "Cliente paga o PIX na maquininha"
+                        : "Peça o cartão ao cliente"}
                   </p>
                   <p className="text-slate-500 text-xs mb-8">
                     {ESTADO_MAQ[maqModal.estado || ""] || "Aguardando a maquininha..."}

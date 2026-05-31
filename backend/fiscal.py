@@ -112,6 +112,29 @@ def _abs_focus(caminho: str | None) -> str | None:
     return f"https://app.focusnfe.com.br{caminho}"
 
 
+def _qr_base64(texto: str) -> str:
+    """Gera o QR Code (PNG base64) do conteúdo de consulta da NFC-e."""
+    import io
+    import qrcode
+    img = qrcode.make(texto, box_size=4, border=2)
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return base64.b64encode(buf.getvalue()).decode()
+
+
+def anexar_qrcode(nota: dict | None) -> dict | None:
+    """Acrescenta `qrcode_base64` à nota autorizada (para imprimir o cupom
+    fiscal na térmica). Não persiste — é só para a resposta."""
+    if not nota or nota.get("status") != "autorizada" or not nota.get("qrcode_url"):
+        return nota
+    try:
+        nota = dict(nota)
+        nota["qrcode_base64"] = _qr_base64(nota["qrcode_url"])
+    except Exception:
+        pass
+    return nota
+
+
 class PlugNotas:
     """Gateway PlugNotas (esqueleto). A API difere do Focus; preencher conforme
     a documentação (https://docs.plugnotas.com.br). Estrutura pronta para implementar."""

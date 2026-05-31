@@ -94,3 +94,17 @@ def test_backup_exportar(client, auth):
     r = client.get("/api/backup/exportar", headers=auth)
     assert r.status_code == 200
     assert r.content[:15] == b"SQLite format 3"
+
+
+def test_pix_config_e_qrcode(client, auth):
+    # sem chave → não dá pra gerar
+    client.put("/api/pix/config", headers=auth, json={"pix_chave": "", "pix_nome": "", "pix_cidade": ""})
+    assert client.get("/api/pix/chave", headers=auth).json()["configurada"] is False
+    assert client.post("/api/pix/qrcode", headers=auth, json={"valor": 10}).status_code == 503
+    # configura e gera o QR
+    client.put("/api/pix/config", headers=auth, json={
+        "pix_chave": "teste@pix.com", "pix_nome": "Minha Loja", "pix_cidade": "Cidade",
+    })
+    assert client.get("/api/pix/chave", headers=auth).json()["configurada"] is True
+    r = client.post("/api/pix/qrcode", headers=auth, json={"valor": 12.5})
+    assert r.status_code == 200 and r.json()["payload"] and r.json()["qr_base64"]

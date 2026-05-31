@@ -10,13 +10,24 @@ import qrcode
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
-from auth import _verificar_jwt
+from auth import _verificar_jwt, _agora
+from database import db
 
 router = APIRouter()
 
-PIX_KEY = os.environ.get("VENDAFACIL_PIX_KEY", "")
-MERCHANT_NAME = os.environ.get("VENDAFACIL_MERCHANT_NAME", "VendaFacil PDV")
-MERCHANT_CITY = os.environ.get("VENDAFACIL_MERCHANT_CITY", "Querencia")
+# Fallback por env (compatibilidade); a config da loja (banco) tem prioridade.
+_PIX_KEY_ENV = os.environ.get("VENDAFACIL_PIX_KEY", "")
+_MERCHANT_NAME_ENV = os.environ.get("VENDAFACIL_MERCHANT_NAME", "VendaFacil PDV")
+_MERCHANT_CITY_ENV = os.environ.get("VENDAFACIL_MERCHANT_CITY", "Querencia")
+
+
+def _pix_config() -> tuple[str, str, str]:
+    """Resolve chave/nome/cidade do PIX: banco (config da loja) → env."""
+    cfg = db.get_config_loja()
+    chave = (cfg.get("pix_chave") or _PIX_KEY_ENV).strip()
+    nome = (cfg.get("pix_nome") or _MERCHANT_NAME_ENV).strip() or "VendaFacil PDV"
+    cidade = (cfg.get("pix_cidade") or _MERCHANT_CITY_ENV).strip() or "Querencia"
+    return chave, nome, cidade
 
 
 def _get_user_id(request: Request) -> int:
@@ -121,6 +132,12 @@ class PixQrCodeResponse(BaseModel):
     qr_base64: str
 
 
+class PixConfigInput(BaseModel):
+    pix_chave: str | None = Field(default=None, max_length=120)
+    pix_nome: str | None = Field(default=None, max_length=60)
+    pix_cidade: str | None = Field(default=None, max_length=60)
+
+
 # ── Rotas ──
 
 
@@ -129,19 +146,14 @@ async def gerar_qr_pix(data: PixQrCodeRequest, request: Request) -> PixQrCodeRes
     """Gera um QR Code PIX com o valor informado."""
     _get_user_id(request)
 
-    if not PIX_KEY:
+    chave, nome, cidade = _pix_config()
+    if not chave:
         raise HTTPException(
             status_code=503,
-            detail="Chave PIX não configurada. Configure VENDAFACIL_PIX_KEY no servidor.",
+            detail="Chave PIX não configurada. Configure em Configurações da Loja.",
         )
 
-    payload = gerar_payload(
-        chave_pix=PIX_KEY,
-        valor=data.valor,
-        nome=MERCHANT_NAME,
-        cidade=MERCHANT_CITY,
-        txid="***",
-    )
+    payload = gerar_payload(chave_pix=chave, valor=data.valor, nome=nome, cidade=cidade, txid="***")
     qr = gerar_qrcode_base64(payload)
     return PixQrCodeResponse(payload=payload, qr_base64=qr)
 
@@ -150,4 +162,24 @@ async def gerar_qr_pix(data: PixQrCodeRequest, request: Request) -> PixQrCodeRes
 async def obter_chave_pix(request: Request) -> dict:
     """Retorna se a chave PIX está configurada (sem expor o valor)."""
     _get_user_id(request)
-    return {"configurada": bool(PIX_KEY)}
+    chave, _, _ = _pix_config()
+    return {"configurada": bool(chave)}
+
+
+@router.get("/config")
+async def obter_config_pix(request: Request) -> dict:
+    """Config do PIX da loja (a chave é da própria loja, exibida para conferência)."""
+    _get_user_id(request)
+    chave, nome, cidade = _pix_config()
+    return {"config": {"pix_chave": chave, "pix_nome": nome, "pix_cidade": cidade}}
+
+
+@router.put("/config")
+async def salvar_config_pix(data: PixConfigInput, request: Request) -> dict:
+    _get_user_id(request)
+    cfg = db.salvar_config_loja(data.model_dump(exclude_none=True), _agora())
+    return {"config": {
+        "pix_chave": cfg.get("pix_chave", ""),
+        "pix_nome": cfg.get("pix_nome", ""),
+        "pix_cidade": cfg.get("pix_cidade", ""),
+    }}
