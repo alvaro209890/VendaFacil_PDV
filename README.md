@@ -8,6 +8,7 @@ distribuído como **executável único (.exe)** com controle central de licença
 > · **Gerar o .exe no Windows:** [`docs/BUILD_WINDOWS.md`](docs/BUILD_WINDOWS.md)
 > · **Roteiro de teste no Windows:** [`docs/TESTE_WINDOWS.md`](docs/TESTE_WINDOWS.md)
 > · **Instruções p/ agente de build:** [`CLAUDE.md`](CLAUDE.md)
+> · **Licença offline-first:** [`docs/LICENCA.md`](docs/LICENCA.md)
 > · **Cobrança/bloqueio manual:** [`docs/COBRANCA_MANUAL.md`](docs/COBRANCA_MANUAL.md)
 > · **Custos & financeiro:** [`docs/CUSTOS.md`](docs/CUSTOS.md)
 > · **Estoque & importação de XML:** [`docs/ESTOQUE_E_XML.md`](docs/ESTOQUE_E_XML.md)
