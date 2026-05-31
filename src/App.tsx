@@ -13,6 +13,7 @@ import Fiscal from "./pages/Fiscal";
 import Maquininha from "./pages/Maquininha";
 import Caixa from "./pages/Caixa";
 import Backup from "./pages/Backup";
+import Relatorios from "./pages/Relatorios";
 import GateAtivacao from "./pages/Ativacao";
 import Mascote from "./components/Mascote";
 import { clearToken } from "./lib/api";
@@ -29,6 +30,7 @@ import {
   CreditCard,
   Banknote,
   Database,
+  BarChart3,
   LogOut
 } from "lucide-react";
 
@@ -40,6 +42,7 @@ const navItems = [
   { to: "/clientes", label: "Clientes", short: "Clientes", icon: <Users size={20} /> },
   { to: "/vendas", label: "Vendas", short: "Vendas", icon: <ReceiptText size={20} /> },
   { to: "/caixa", label: "Caixa", short: "Caixa", icon: <Banknote size={20} /> },
+  { to: "/relatorios", label: "Relatórios", short: "Relat.", icon: <BarChart3 size={20} /> },
   { to: "/contas-receber", label: "Contas a Receber", short: "Fiado", icon: <Wallet size={20} /> },
   { to: "/fiscal", label: "Fiscal / NFC-e", short: "Fiscal", icon: <FileText size={20} /> },
   { to: "/maquininha", label: "Maquininha", short: "Cartão", icon: <CreditCard size={20} /> },
@@ -235,6 +238,7 @@ export default function App() {
                   <Route path="/fiscal" element={<Fiscal />} />
                   <Route path="/maquininha" element={<Maquininha />} />
                   <Route path="/backup" element={<Backup />} />
+                  <Route path="/relatorios" element={<Relatorios />} />
                   <Route path="*" element={<Navigate to="/pdv" replace />} />
                 </Routes>
               </Layout>

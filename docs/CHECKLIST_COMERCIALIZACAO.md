@@ -32,10 +32,11 @@ falta é **negócio, distribuição e robustez de produção**, não funcionalid
       rotina de backup/exportação.
 - [ ] **Domínio próprio** (ex.: `painel.seudominio.com.br`) em vez de
       `onrender.com`/`vercel.app` — passa confiança.
-- [ ] **Recuperação de senha do admin do painel** (hoje não existe; se esquecer,
-      trava). E e-mail transacional para isso e para avisos de vencimento.
-- [ ] **Proteção de login**: rate limiting / bloqueio por tentativas no login
-      do admin e na validação de conta (anti brute-force).
+- [~] **Recuperação de senha do admin**: já dá para **trocar a senha** logado
+      (botão no painel). Falta o fluxo "esqueci a senha" por e-mail (precisa de
+      SMTP) e avisos de vencimento por e-mail.
+- [x] **Proteção de login (anti brute-force)** — **feito**: rate limiting no
+      login do admin e na validação de conta do PDV (bloqueia após 5 falhas).
 - [ ] **Testar a maquininha com hardware real** (Point física + conta Mercado
       Pago de produção). O fluxo está pronto no código, mas o happy-path só se
       confirma com aparelho.
@@ -46,10 +47,9 @@ falta é **negócio, distribuição e robustez de produção**, não funcionalid
 ## 🟡 Recomendado (qualidade e operação)
 
 - [ ] **Monitoramento de erros** (ex.: Sentry) e uptime no backend.
-- [ ] **Testes automatizados** (não há suíte hoje) — ao menos do checkout,
-      licença e sync.
-- [ ] **Manual do usuário** (lojista): instalar, configurar impressora,
-      maquininha, emitir nota.
+- [x] **Testes automatizados** — **feito**: suíte pytest do PDV e do Painel
+      (ver [`TESTES.md`](TESTES.md)).
+- [x] **Manual do usuário** — **feito**: [`MANUAL.md`](MANUAL.md) (lojista + admin).
 - [ ] **Onboarding/ativação** simples para a loja (passo a passo no 1º uso).
 - [ ] **Atualização do .exe** (auto-update ou processo claro de nova versão).
 - [ ] **Política de preços e planos** definida.
@@ -59,11 +59,15 @@ falta é **negócio, distribuição e robustez de produção**, não funcionalid
 
 - PDV offline-first completo (produtos, vendas, fiado, dashboard, PIX, cartão).
 - Maquininha Mercado Pago integrada ao checkout, à prova de offline.
+- **Estoque + importação de XML de NF-e** e entrada manual com histórico.
+- **Fechamento de caixa** (abertura, sangria/suprimento, conferência).
+- **Relatórios de vendas** (período, formas de pagamento, top produtos, lucro).
+- **Recibo térmico** (58/80mm) e **backup local** (manual + automático).
 - Painel SaaS: criar/editar/bloquear/excluir contas + validade de licença +
-  vendas sincronizadas.
+  vendas sincronizadas + **financeiro** + troca de senha + rate limit.
 - Licença offline-first com carência.
 - Deploy: Render (API) + Vercel (painel) + Supabase (banco) documentado.
-- Anti-hibernação no Render free.
+- Anti-hibernação no Render free. Suíte de testes (pytest).
 
 ---
 

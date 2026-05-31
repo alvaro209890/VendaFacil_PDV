@@ -3,6 +3,7 @@
 Sistema de **Ponto de Venda (PDV)** para mercadinhos e pequenos comércios,
 distribuído como **executável único (.exe)** com controle central de licenças.
 
+> 📘 **Manual completo (lojista + admin):** [`docs/MANUAL.md`](docs/MANUAL.md)
 > 📦 **Deploy e produção:** [`docs/DEPLOY_E_PRODUCAO.md`](docs/DEPLOY_E_PRODUCAO.md)
 > · **Gerar o .exe no Windows:** [`docs/BUILD_WINDOWS.md`](docs/BUILD_WINDOWS.md)
 > · **Cobrança/bloqueio manual:** [`docs/COBRANCA_MANUAL.md`](docs/COBRANCA_MANUAL.md)
@@ -11,6 +12,7 @@ distribuído como **executável único (.exe)** com controle central de licença
 > · **Fechamento de caixa:** [`docs/CAIXA.md`](docs/CAIXA.md)
 > · **Backup local:** [`docs/BACKUP.md`](docs/BACKUP.md)
 > · **Recibo (impressora térmica):** [`docs/RECIBO.md`](docs/RECIBO.md)
+> · **Testes automatizados:** [`docs/TESTES.md`](docs/TESTES.md)
 > · **Jurídico (Termos/Privacidade/LGPD):** [`docs/legal/`](docs/legal/)
 > · **O que falta para comercializar:** [`docs/CHECKLIST_COMERCIALIZACAO.md`](docs/CHECKLIST_COMERCIALIZACAO.md)
 
@@ -82,6 +84,11 @@ online o PDV trava. Sem `VENDAFACIL_PAINEL_URL` configurado, o PDV roda em
 - Lista paginada de todas as vendas
 - Detalhamento com itens, forma de pagamento, descontos
 - Total do dia
+
+### 📈 Relatórios e Caixa
+- Relatórios por período: faturamento, ticket médio, lucro estimado, vendas por
+  forma de pagamento e produtos mais vendidos — veja [`docs/RELATORIOS`](docs/MANUAL.md#11-relatórios)
+- Fechamento de caixa: abertura, sangria/suprimento e conferência da gaveta
 
 ---
 

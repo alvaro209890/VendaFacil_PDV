@@ -451,6 +451,25 @@ export function getDashboard(): Promise<DashboardData> {
   return request("/api/dashboard");
 }
 
+// ── Relatórios ──
+
+export interface RelatorioVendas {
+  inicio: string;
+  fim: string;
+  faturamento: number;
+  qtd_vendas: number;
+  ticket_medio: number;
+  desconto_total: number;
+  lucro_estimado: number;
+  por_forma: { forma_pagamento: string; qtd: number; total: number }[];
+  por_dia: { dia: string; qtd: number; total: number }[];
+  top_produtos: { produto_id: number; nome_produto: string; qtd: number; total: number }[];
+}
+
+export function relatorioVendas(inicio: string, fim: string): Promise<RelatorioVendas> {
+  return request(`/api/relatorios/vendas?inicio=${encodeURIComponent(inicio)}&fim=${encodeURIComponent(fim)}`);
+}
+
 // ── Caixa (abertura/fechamento) ──
 
 export interface CaixaResumo {
