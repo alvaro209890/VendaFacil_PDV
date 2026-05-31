@@ -17,9 +17,11 @@ import {
 import {
   listarProdutos, checkout, getDashboard, gerarPixQrCode, listarClientes,
   getConfigMaquininha, criarCobrancaMaquininha, consultarCobrancaMaquininha,
-  cancelarCobrancaMaquininha,
+  cancelarCobrancaMaquininha, getConfigFiscal,
 } from "../lib/api";
 import type { Produto, DashboardData, PixQrCodeResponse, Cliente } from "../lib/api";
+import { imprimirRecibo, getLarguraRecibo, setLarguraRecibo } from "../lib/recibo";
+import type { ReciboData } from "../lib/recibo";
 import Mascote from "../components/Mascote";
 
 type CartItem = Produto & { qtd: number };
@@ -58,6 +60,12 @@ export default function PDV() {
   const [pixModal, setPixModal] = useState<PixQrCodeResponse | null>(null);
   const [pixLoading, setPixLoading] = useState(false);
 
+  // Recibo (impressora térmica)
+  const [lojaInfo, setLojaInfo] = useState<{ nome: string; cnpj?: string; endereco?: string }>({ nome: "VendaFácil PDV" });
+  const [ultimaVenda, setUltimaVenda] = useState<ReciboData | null>(null);
+  const [imprimirAuto, setImprimirAuto] = useState(() => localStorage.getItem("recibo_auto") === "1");
+  const [largura, setLargura] = useState<58 | 80>(getLarguraRecibo());
+
   // Maquininha (Mercado Pago Point) — cobrança integrada, só quando online.
   const [maqHabilitada, setMaqHabilitada] = useState(false);
   const [maqDeviceOk, setMaqDeviceOk] = useState(false);
@@ -86,6 +94,17 @@ export default function PDV() {
     } catch {
       setMaqHabilitada(false);
     }
+    // Cabeçalho do recibo (usa os dados fiscais da loja, se preenchidos).
+    try {
+      const { config } = await getConfigFiscal();
+      const partes = [config.logradouro, config.numero, config.bairro, config.municipio, config.uf]
+        .filter(Boolean).join(", ");
+      setLojaInfo({
+        nome: config.nome_fantasia || config.razao_social || "VendaFácil PDV",
+        cnpj: config.cnpj || undefined,
+        endereco: partes || undefined,
+      });
+    } catch { /* mantém o padrão */ }
   }, []);
 
   useEffect(() => {
@@ -280,7 +299,7 @@ export default function PDV() {
       return;
     }
     try {
-      await checkout({
+      const resp = await checkout({
         itens: carrinho.map((i) => ({ produto_id: i.id, quantidade: i.qtd })),
         desconto,
         forma_pagamento: pagamento,
@@ -289,6 +308,22 @@ export default function PDV() {
         emitir_nota: emitirNota,
         cpf_consumidor: emitirNota ? cpfConsumidor : undefined,
       });
+      // Monta o recibo antes de limpar o carrinho.
+      const recibo: ReciboData = {
+        loja: lojaInfo,
+        itens: (resp.itens || []).map((i) => ({
+          nome: i.nome_produto, qtd: i.quantidade, preco: i.preco_unitario, subtotal: i.subtotal,
+        })),
+        subtotal,
+        desconto,
+        total,
+        forma: pagamento,
+        vendaId: resp.venda?.id,
+        data: resp.venda?.criado_em,
+      };
+      setUltimaVenda(recibo);
+      if (imprimirAuto) imprimirRecibo(recibo, largura);
+
       setMsg({ tipo: "ok", texto: `Venda finalizada! Total: R$ ${total.toFixed(2)}${emitirNota ? " (Nota emitida)" : ""}` });
       setCarrinho([]);
       setDesconto(0);
@@ -553,6 +588,28 @@ export default function PDV() {
                 </motion.div>
               )}
 
+              {/* Recibo (impressora térmica) */}
+              <div className="flex items-center justify-between gap-2 mb-3 text-xs">
+                <label className="flex items-center gap-2 text-slate-400 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={imprimirAuto}
+                    onChange={(e) => { setImprimirAuto(e.target.checked); localStorage.setItem("recibo_auto", e.target.checked ? "1" : "0"); }}
+                    className="w-4 h-4 accent-brand-500"
+                  />
+                  🖨️ Imprimir recibo ao finalizar
+                </label>
+                <select
+                  value={largura}
+                  onChange={(e) => { const v = Number(e.target.value) as 58 | 80; setLargura(v); setLarguraRecibo(v); }}
+                  className="bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-slate-300"
+                  title="Largura do papel da impressora térmica"
+                >
+                  <option value={80}>80mm</option>
+                  <option value={58}>58mm</option>
+                </select>
+              </div>
+
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
@@ -593,6 +650,14 @@ export default function PDV() {
               {msg.tipo === "ok" ? <CheckCircle2 size={18} className="shrink-0" /> : <AlertCircle size={18} className="shrink-0" />}
               <div className="flex-1">
                 <p className="text-xs font-bold leading-tight">{msg.texto}</p>
+                {msg.tipo === "ok" && ultimaVenda && (
+                  <button
+                    onClick={() => imprimirRecibo(ultimaVenda, largura)}
+                    className="mt-2 inline-flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 transition-colors"
+                  >
+                    🖨️ Imprimir recibo
+                  </button>
+                )}
               </div>
               <button onClick={() => setMsg(null)} className="text-slate-500 hover:text-white transition-colors">
                 <X size={14} />
