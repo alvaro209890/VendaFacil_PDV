@@ -82,6 +82,12 @@ def test_numeracao_separada_nfce_nfe():
 
 
 def test_assina_xml_com_a1_pkcs12_sintetico():
+    import pytest
+    # Dependências de assinatura só são instaladas no build Windows
+    # (requirements-build.txt). Sem elas, o teste é irrelevante neste ambiente.
+    pytest.importorskip("cryptography")
+    pytest.importorskip("signxml")
+    pytest.importorskip("lxml")
     from cryptography import x509
     from cryptography.hazmat.primitives import hashes, serialization
     from cryptography.hazmat.primitives.asymmetric import rsa

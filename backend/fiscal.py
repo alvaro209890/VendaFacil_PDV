@@ -412,7 +412,14 @@ def emitir_nfe(venda_id: int, user_id: int, cliente_id: int) -> dict:
 def processar_pendentes() -> int:
     """Reenvia/consulta notas pendentes (contingência)."""
     config = db.get_config_fiscal()
-    if not config.get("habilitado") or not config.get("gateway_token"):
+    if not config.get("habilitado"):
+        return 0
+
+    direto = (config.get("provedor_fiscal") or "sefaz_mt_direto") == "sefaz_mt_direto"
+    if direto:
+        return _processar_pendentes_direto(config)
+
+    if not config.get("gateway_token"):
         return 0
     feitas = 0
     for nota in db.notas_pendentes():
@@ -424,6 +431,38 @@ def processar_pendentes() -> int:
             if code == 422 or (isinstance(resp, dict) and resp.get("status")):
                 code, resp = gw.consultar(nota["ref"])
             db.atualizar_nota(nota["id"], gw.normalizar_status(resp), _agora())
+            feitas += 1
+        except Exception:
+            continue
+    return feitas
+
+
+def _processar_pendentes_direto(config: dict) -> int:
+    """Consulta na SEFAZ-MT as notas que ficaram pendentes/processando.
+
+    Só faz a consulta quando há chave de acesso e certificado configurado —
+    sem chave não há como localizar o documento na SEFAZ."""
+    if not config.get("certificado_a1_b64") or not config.get("certificado_senha"):
+        return 0
+    feitas = 0
+    for nota in db.notas_pendentes():
+        chave = nota.get("chave")
+        if not chave:
+            continue
+        try:
+            retorno = fiscal_direto.consultar_chave(nota.get("modelo") or "65", chave, config)
+            sefaz = fiscal_direto.normalizar_retorno_sefaz(
+                retorno.get("texto"), nota.get("xml_assinado"), retorno.get("status_code")
+            )
+            dados = {
+                "status": sefaz.get("status") or nota.get("status") or "processando",
+                "mensagem": sefaz.get("mensagem") or nota.get("mensagem"),
+                "recibo": sefaz.get("recibo") or retorno.get("texto", "")[:4000],
+            }
+            for campo in ("protocolo", "xml_autorizado", "motivo_rejeicao"):
+                if campo in sefaz:
+                    dados[campo] = sefaz[campo]
+            db.atualizar_nota(nota["id"], dados, _agora())
             feitas += 1
         except Exception:
             continue

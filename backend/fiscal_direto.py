@@ -429,9 +429,10 @@ def normalizar_retorno_evento(texto: str | None, http_status: int | None = None)
     inf_evento = root.find(".//{*}retEvento/{*}infEvento")
     if inf_evento is None:
         inf_evento = root.find(".//{*}infEvento")
-    cstat = _texto(inf_evento or root, "cStat")
-    motivo = _texto(inf_evento or root, "xMotivo") or "Retorno de evento recebido."
-    protocolo = _texto(inf_evento or root, "nProt")
+    alvo = inf_evento if inf_evento is not None else root
+    cstat = _texto(alvo, "cStat")
+    motivo = _texto(alvo, "xMotivo") or "Retorno de evento recebido."
+    protocolo = _texto(alvo, "nProt")
     if cstat in {"135", "155"}:
         return {"status": "cancelada", "protocolo": protocolo, "mensagem": motivo}
     if http_status and http_status >= 400:
