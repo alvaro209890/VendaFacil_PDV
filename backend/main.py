@@ -15,6 +15,7 @@ from contas_receber import router as contas_receber_router
 from pix import router as pix_router
 from mercadopago import router as maquininha_router
 from caixa import router as caixa_router
+from backup import router as backup_router
 from fiscal_config import router as fiscal_config_router
 from fiscal_router import router as fiscal_router
 from database import db
@@ -45,6 +46,7 @@ app.include_router(contas_receber_router, prefix="/api/contas-receber", tags=["c
 app.include_router(pix_router, prefix="/api/pix", tags=["pix"])
 app.include_router(maquininha_router, prefix="/api/maquininha", tags=["maquininha"])
 app.include_router(caixa_router, prefix="/api/caixa", tags=["caixa"])
+app.include_router(backup_router, prefix="/api/backup", tags=["backup"])
 app.include_router(fiscal_config_router, prefix="/api/fiscal/config", tags=["fiscal"])
 app.include_router(fiscal_router, prefix="/api/fiscal/nfce", tags=["fiscal"])
 
@@ -63,8 +65,10 @@ def _get_user_id(request: Request) -> int:
 async def _iniciar_servicos() -> None:
     import sync_client
     import fiscal
+    import backup
     sync_client.iniciar_em_background()
     fiscal.iniciar_em_background()
+    backup.iniciar_em_background()
 
 
 @app.get("/health")

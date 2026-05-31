@@ -948,6 +948,54 @@ class Database:
     def close(self) -> None:
         self._conn.close()
 
+    # ── Backup / restauração ──
+    def caminho_db(self) -> str:
+        return str(DB_PATH)
+
+    def backup_para(self, destino) -> None:
+        """Cópia consistente do banco (usa a API de backup do SQLite, segura
+        mesmo com o servidor em uso)."""
+        with self._lock:
+            dest = sqlite3.connect(str(destino))
+            try:
+                self._conn.backup(dest)
+            finally:
+                dest.close()
+
+    def reconectar(self) -> None:
+        self._conn = sqlite3.connect(str(DB_PATH), check_same_thread=False)
+        self._conn.row_factory = sqlite3.Row
+        with self._conn:
+            self._conn.execute("PRAGMA journal_mode = WAL")
+
+    def restaurar_de(self, origem) -> None:
+        """Substitui o banco atual por um arquivo de backup, após validar.
+
+        Lança ValueError se o arquivo não for um banco válido do VendaFácil.
+        """
+        from pathlib import Path
+        import shutil
+        # Valida: precisa abrir e ter a tabela 'users'.
+        try:
+            teste = sqlite3.connect(str(origem))
+            try:
+                teste.execute("SELECT 1 FROM users LIMIT 1")
+            finally:
+                teste.close()
+        except sqlite3.Error:
+            raise ValueError("Arquivo inválido: não é um backup do VendaFácil.")
+        with self._lock:
+            try:
+                self._conn.close()
+            except sqlite3.Error:
+                pass
+            for suf in ("-wal", "-shm"):
+                p = Path(str(DB_PATH) + suf)
+                if p.exists():
+                    p.unlink()
+            shutil.copyfile(str(origem), str(DB_PATH))
+            self.reconectar()
+
 
 # Singleton
 db = Database()

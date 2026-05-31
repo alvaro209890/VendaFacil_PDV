@@ -9,6 +9,7 @@ distribuído como **executável único (.exe)** com controle central de licença
 > · **Custos & financeiro:** [`docs/CUSTOS.md`](docs/CUSTOS.md)
 > · **Estoque & importação de XML:** [`docs/ESTOQUE_E_XML.md`](docs/ESTOQUE_E_XML.md)
 > · **Fechamento de caixa:** [`docs/CAIXA.md`](docs/CAIXA.md)
+> · **Backup local:** [`docs/BACKUP.md`](docs/BACKUP.md)
 > · **Jurídico (Termos/Privacidade/LGPD):** [`docs/legal/`](docs/legal/)
 > · **O que falta para comercializar:** [`docs/CHECKLIST_COMERCIALIZACAO.md`](docs/CHECKLIST_COMERCIALIZACAO.md)
 

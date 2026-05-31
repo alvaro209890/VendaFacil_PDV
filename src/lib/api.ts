@@ -501,6 +501,49 @@ export function historicoCaixa(): Promise<{ sessoes: CaixaSessao[] }> {
   return request("/api/caixa/historico");
 }
 
+// ── Backup local ──
+
+export interface BackupItem {
+  nome: string;
+  tamanho_kb: number;
+  data: string;
+}
+
+/** Gera e baixa um backup (.db) — dispara o download no navegador. */
+export async function baixarBackup(): Promise<void> {
+  const token = getToken();
+  const res = await fetch(`${API_BASE}/api/backup/exportar`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) throw new Error("Falha ao gerar o backup.");
+  const blob = await res.blob();
+  const dispo = res.headers.get("Content-Disposition") || "";
+  const m = dispo.match(/filename="?([^"]+)"?/);
+  const nome = m ? m[1] : "vendafacil-backup.db";
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = nome;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+export async function restaurarBackup(file: File | Blob): Promise<{ ok: boolean }> {
+  const token = getToken();
+  const res = await fetch(`${API_BASE}/api/backup/restaurar`, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: file,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(typeof data.detail === "string" ? data.detail : "Falha ao restaurar.");
+  return data;
+}
+
+export function listarBackups(): Promise<{ backups: BackupItem[]; pasta: string }> {
+  return request("/api/backup/listar");
+}
+
 // ── PIX ──
 
 export interface PixQrCodeResponse {
