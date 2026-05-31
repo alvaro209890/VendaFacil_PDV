@@ -17,7 +17,7 @@
 ; ============================================================================
 
 #define AppName "VendaFácil PDV"
-#define AppVersion "1.0.1"
+#define AppVersion "1.0.2"
 #define AppPublisher "SUA EMPRESA LTDA"          ; <-- troque pelo nome/CNPJ da sua empresa
 #define AppURL "https://seudominio.com.br"        ; <-- troque pelo seu site
 #define AppExe "VendaFacilPDV.exe"
@@ -53,7 +53,7 @@ Name: "brazilianportuguese"; MessagesFile: "compiler:Languages\BrazilianPortugue
 Name: "desktopicon"; Description: "Criar um atalho na Área de Trabalho"; GroupDescription: "Atalhos:"
 
 [Files]
-Source: "..\dist_exe\{#AppExe}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\dist_exe\{#AppExe}"; DestDir: "{app}"; Flags: ignoreversion restartreplace
 
 [Icons]
 Name: "{group}\VendaFácil PDV"; Filename: "{app}\{#AppExe}"

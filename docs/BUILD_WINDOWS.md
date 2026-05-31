@@ -84,12 +84,14 @@ Dê dois cliques em **`installer\build_installer.bat`** (ou abra
 Antes, edite o topo do `installer\vendafacil.iss` com os seus dados:
 `AppPublisher` (empresa), `AppURL` (site) e, se tiver, `SetupIconFile` (ícone).
 
-**Resultado:** `dist_installer\VendaFacilPDV-Setup-1.0.1.exe` — **este é o
+**Resultado:** `dist_installer\VendaFacilPDV-Setup-1.0.2.exe` — **este é o
 arquivo que você entrega ao lojista.** Ele instala em Program Files, cria
 atalho no Menu Iniciar e na Área de Trabalho, e registra o desinstalador.
 O instalador também usa o mesmo ícone oficial do app.
 Em atualizações, ele reutiliza a pasta instalada anteriormente, encerra o
 `VendaFacilPDV.exe` antigo se estiver aberto e copia a nova versão por cima.
+Se o Windows ainda segurar o arquivo, agenda a substituição para o próximo
+reinício em vez de quebrar a atualização.
 
 > O banco do lojista fica em `%LOCALAPPDATA%\VendaFacilPDV\dados` — sobrevive a
 > reinstalações/atualizações e **não** é apagado ao desinstalar (proposital,
