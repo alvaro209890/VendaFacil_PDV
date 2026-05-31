@@ -42,6 +42,9 @@ const ESTADO_MAQ: Record<string, string> = {
   FINISHED: "Pagamento aprovado!",
 };
 
+const fmtQtd = (v: number) => Number(v || 0).toLocaleString("pt-BR", { maximumFractionDigits: 3 });
+const passoQtd = (unidade?: string) => ["KG", "G", "LT", "ML"].includes((unidade || "").toUpperCase()) ? 0.1 : 1;
+
 export default function PDV() {
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [busca, setBusca] = useState("");
@@ -178,9 +181,20 @@ export default function PDV() {
     setCarrinho((prev) =>
       prev.map((i) => {
         if (i.id !== id) return i;
-        const nova = i.qtd + delta;
-        if (nova < 1 || nova > i.estoque) return i;
+        const nova = Number((i.qtd + delta).toFixed(3));
+        if (nova <= 0 || nova > i.estoque) return i;
         return { ...i, qtd: nova };
+      })
+    );
+  }
+
+  function definirQtd(id: number, valor: number) {
+    setCarrinho((prev) =>
+      prev.map((i) => {
+        if (i.id !== id) return i;
+        const nova = Number((valor || 0).toFixed(3));
+        if (nova <= 0) return { ...i, qtd: 0.001 };
+        return { ...i, qtd: Math.min(nova, i.estoque) };
       })
     );
   }
@@ -312,9 +326,13 @@ export default function PDV() {
       // Monta o recibo antes de limpar o carrinho.
       const recibo: ReciboData = {
         loja: lojaInfo,
-        itens: (resp.itens || []).map((i) => ({
-          nome: i.nome_produto, qtd: i.quantidade, preco: i.preco_unitario, subtotal: i.subtotal,
-        })),
+        itens: (resp.itens || []).map((i) => {
+          const produto = carrinho.find((p) => p.id === i.produto_id);
+          return {
+            nome: i.nome_produto, qtd: i.quantidade, preco: i.preco_unitario,
+            subtotal: i.subtotal, unidade: produto?.unidade,
+          };
+        }),
         subtotal,
         desconto,
         total,
@@ -403,7 +421,7 @@ export default function PDV() {
                         <p className="text-brand-400 font-black text-lg">R$ {preco.toFixed(2)}</p>
                         <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold mt-2 ${baixo ? "bg-amber-500/10 text-amber-500" : "bg-slate-700/30 text-slate-500"}`}>
                           {baixo && <AlertCircle size={10} />}
-                          {p.estoque} {p.unidade}
+                          {fmtQtd(p.estoque)} {p.unidade}
                         </div>
                       </div>
                     </motion.button>
@@ -460,18 +478,26 @@ export default function PDV() {
                     >
                       <div className="flex-1 min-w-0">
                         <p className="text-white text-sm font-bold truncate">{i.nome}</p>
-                        <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mt-0.5">R$ {preco.toFixed(2)} / un</p>
+                        <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mt-0.5">R$ {preco.toFixed(2)} / {i.unidade}</p>
                       </div>
                       <div className="flex items-center gap-2 bg-slate-900/50 rounded-xl p-1 border border-slate-700/50">
                         <button
-                          onClick={() => alterarQtd(i.id, -1)}
+                          onClick={() => alterarQtd(i.id, -passoQtd(i.unidade))}
                           className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
                         >
                           <Minus size={14} />
                         </button>
-                        <span className="text-white text-xs font-bold w-6 text-center">{i.qtd}</span>
+                        <input
+                          type="number"
+                          value={i.qtd}
+                          onChange={(e) => definirQtd(i.id, Number(e.target.value))}
+                          min={passoQtd(i.unidade)}
+                          max={i.estoque}
+                          step={passoQtd(i.unidade)}
+                          className="w-14 bg-transparent text-white text-xs font-bold text-center focus:outline-none"
+                        />
                         <button
-                          onClick={() => alterarQtd(i.id, 1)}
+                          onClick={() => alterarQtd(i.id, passoQtd(i.unidade))}
                           className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
                         >
                           <Plus size={14} />

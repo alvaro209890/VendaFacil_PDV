@@ -49,10 +49,12 @@ class Database:
                     nome TEXT NOT NULL,
                     preco_custo REAL NOT NULL DEFAULT 0,
                     preco_venda REAL NOT NULL DEFAULT 0,
-                    estoque INTEGER NOT NULL DEFAULT 0,
-                    estoque_minimo INTEGER NOT NULL DEFAULT 5,
+                    estoque REAL NOT NULL DEFAULT 0,
+                    estoque_minimo REAL NOT NULL DEFAULT 5,
                     codigo_barras TEXT DEFAULT '',
                     unidade TEXT NOT NULL DEFAULT 'UN',
+                    unidade_compra TEXT NOT NULL DEFAULT '',
+                    quantidade_por_embalagem REAL NOT NULL DEFAULT 1,
                     ativo INTEGER NOT NULL DEFAULT 1,
                     criado_em TEXT NOT NULL,
                     atualizado_em TEXT NOT NULL,
@@ -156,6 +158,17 @@ class Database:
             "aliquota_cofins": "REAL DEFAULT 0",
         }
         for col, ddl in fiscais.items():
+            if col not in pcols:
+                self._conn.execute(f"ALTER TABLE produtos ADD COLUMN {col} {ddl}")
+
+        # Campos de embalagem/conversao. O estoque sempre fica na unidade de
+        # venda (unidade); entradas por XML/manual podem vir em caixa/fardo/etc.
+        pcols = {r["name"] for r in self._conn.execute("PRAGMA table_info(produtos)")}
+        embalagem = {
+            "unidade_compra": "TEXT NOT NULL DEFAULT ''",
+            "quantidade_por_embalagem": "REAL NOT NULL DEFAULT 1",
+        }
+        for col, ddl in embalagem.items():
             if col not in pcols:
                 self._conn.execute(f"ALTER TABLE produtos ADD COLUMN {col} {ddl}")
 
@@ -520,22 +533,28 @@ class Database:
         return dict(row) if row else None
 
     def create_produto(self, user_id: int, nome: str, preco_custo: float,
-                       preco_venda: float, estoque: int, estoque_minimo: int,
+                       preco_venda: float, estoque: float, estoque_minimo: float,
                        codigo_barras: str, unidade: str, agora: str,
-                       categoria_id: int | None = None) -> dict[str, Any] | None:
+                       categoria_id: int | None = None,
+                       unidade_compra: str = "",
+                       quantidade_por_embalagem: float = 1) -> dict[str, Any] | None:
         with self._lock, self._conn:
             cursor = self._conn.execute(
                 """INSERT INTO produtos (user_id, categoria_id, nome, preco_custo, preco_venda, estoque,
-                   estoque_minimo, codigo_barras, unidade, criado_em, atualizado_em)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                   estoque_minimo, codigo_barras, unidade, unidade_compra, quantidade_por_embalagem,
+                   criado_em, atualizado_em)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (user_id, categoria_id, nome.strip(), preco_custo, preco_venda, estoque,
-                 estoque_minimo, codigo_barras.strip(), unidade.strip().upper(), agora, agora),
+                 estoque_minimo, codigo_barras.strip(), unidade.strip().upper(),
+                 (unidade_compra or unidade).strip().upper(),
+                 max(float(quantidade_por_embalagem or 1), 0.0001), agora, agora),
             )
             return self.get_produto(cursor.lastrowid)
 
     def update_produto(self, produto_id: int, user_id: int, **kwargs) -> dict[str, Any] | None:
         allowed = {"nome", "categoria_id", "preco_custo", "preco_venda", "estoque",
                    "estoque_minimo", "codigo_barras", "unidade", "ativo", "atualizado_em",
+                   "unidade_compra", "quantidade_por_embalagem",
                    "ncm", "cest", "cfop", "origem", "unidade_tributavel", "cst_csosn",
                    "aliquota_icms", "cst_pis", "aliquota_pis", "cst_cofins", "aliquota_cofins"}
         fields = {k: v for k, v in kwargs.items() if k in allowed}

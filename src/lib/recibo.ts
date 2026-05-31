@@ -9,6 +9,7 @@ export interface ReciboItem {
   qtd: number;
   preco: number;
   subtotal: number;
+  unidade?: string;
 }
 
 export interface ReciboNota {
@@ -53,7 +54,8 @@ function montarHtml(d: ReciboData, larguraMm: number): string {
   const dt = new Date(d.data || Date.now()).toLocaleString("pt-BR");
   const linhas = d.itens.map((it) => {
     const nome = esc(it.nome);
-    const calc = `${it.qtd} x ${moeda(it.preco)}`;
+    const qtd = Number(it.qtd || 0).toLocaleString("pt-BR", { maximumFractionDigits: 3 });
+    const calc = `${qtd} ${esc(it.unidade || "UN")} x ${moeda(it.preco)}`;
     return `<div class="item"><div class="nm">${nome}</div><div class="ln"><span>${calc}</span><span>${moeda(it.subtotal)}</span></div></div>`;
   }).join("");
 

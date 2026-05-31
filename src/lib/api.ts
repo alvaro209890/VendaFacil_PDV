@@ -124,6 +124,8 @@ export interface Produto extends CamposFiscais {
   estoque_minimo: number;
   codigo_barras: string;
   unidade: string;
+  unidade_compra: string;
+  quantidade_por_embalagem: number;
   ativo: number;
   criado_em: string;
   atualizado_em: string;
@@ -138,6 +140,8 @@ export interface ProdutoInput extends CamposFiscais {
   estoque_minimo?: number;
   codigo_barras?: string;
   unidade?: string;
+  unidade_compra?: string;
+  quantidade_por_embalagem?: number;
 }
 
 export interface ProdutoUpdate extends CamposFiscais {
@@ -149,6 +153,8 @@ export interface ProdutoUpdate extends CamposFiscais {
   estoque_minimo?: number;
   codigo_barras?: string;
   unidade?: string;
+  unidade_compra?: string;
+  quantidade_por_embalagem?: number;
   ativo?: number;
 }
 
@@ -184,8 +190,13 @@ export interface ItemXml {
   nome: string;
   codigo_barras: string;
   unidade: string;
+  unidade_xml?: string;
+  unidade_compra: string;
+  quantidade_por_embalagem: number;
   quantidade: number;
+  quantidade_xml: number;
   valor_unitario: number;
+  valor_unitario_xml?: number;
   ncm: string;
   cfop: string;
   produto_id: number | null;
@@ -208,7 +219,10 @@ export interface ItemConfirmarXml {
   nome: string;
   codigo_barras: string;
   unidade: string;
+  unidade_compra: string;
+  quantidade_por_embalagem: number;
   quantidade: number;
+  quantidade_xml?: number;
   preco_custo: number;
   preco_venda: number;
   atualizar_custo: boolean;

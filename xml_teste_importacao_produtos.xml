@@ -1,0 +1,297 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nfeProc xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00">
+  <NFe>
+    <infNFe Id="NFe35260512345678000195550010000012341000012345" versao="4.00">
+      <ide>
+        <cUF>35</cUF>
+        <cNF>00001234</cNF>
+        <natOp>Venda de mercadorias para teste</natOp>
+        <mod>55</mod>
+        <serie>1</serie>
+        <nNF>1234</nNF>
+        <dhEmi>2026-05-31T09:00:00-03:00</dhEmi>
+        <tpNF>1</tpNF>
+        <idDest>1</idDest>
+        <cMunFG>3550308</cMunFG>
+        <tpImp>1</tpImp>
+        <tpEmis>1</tpEmis>
+        <cDV>5</cDV>
+        <tpAmb>2</tpAmb>
+        <finNFe>1</finNFe>
+        <indFinal>0</indFinal>
+        <indPres>1</indPres>
+        <procEmi>0</procEmi>
+        <verProc>VendaFacil-Teste</verProc>
+      </ide>
+      <emit>
+        <CNPJ>12345678000195</CNPJ>
+        <xNome>Distribuidora Teste Bebidas e Conveniencia LTDA</xNome>
+        <xFant>Distribuidora Teste</xFant>
+        <enderEmit>
+          <xLgr>Rua dos Testes</xLgr>
+          <nro>100</nro>
+          <xBairro>Centro</xBairro>
+          <cMun>3550308</cMun>
+          <xMun>Sao Paulo</xMun>
+          <UF>SP</UF>
+          <CEP>01001000</CEP>
+          <cPais>1058</cPais>
+          <xPais>Brasil</xPais>
+        </enderEmit>
+        <IE>110042490114</IE>
+        <CRT>1</CRT>
+      </emit>
+      <dest>
+        <CNPJ>98765432000110</CNPJ>
+        <xNome>VendaFacil PDV - Loja Teste</xNome>
+        <enderDest>
+          <xLgr>Avenida da Loja</xLgr>
+          <nro>50</nro>
+          <xBairro>Comercio</xBairro>
+          <cMun>3550308</cMun>
+          <xMun>Sao Paulo</xMun>
+          <UF>SP</UF>
+          <CEP>01002000</CEP>
+          <cPais>1058</cPais>
+          <xPais>Brasil</xPais>
+        </enderDest>
+        <indIEDest>1</indIEDest>
+        <IE>110042490115</IE>
+      </dest>
+      <det nItem="1">
+        <prod>
+          <cProd>REF-COCA-2L</cProd>
+          <cEAN>7894900010015</cEAN>
+          <xProd>Refrigerante Coca-Cola 2L</xProd>
+          <NCM>22021000</NCM>
+          <CFOP>5102</CFOP>
+          <uCom>UN</uCom>
+          <qCom>12.0000</qCom>
+          <vUnCom>6.4900</vUnCom>
+          <vProd>77.88</vProd>
+          <cEANTrib>7894900010015</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>12.0000</qTrib>
+          <vUnTrib>6.4900</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMSSN102><orig>0</orig><CSOSN>102</CSOSN></ICMSSN102></ICMS>
+          <PIS><PISNT><CST>07</CST></PISNT></PIS>
+          <COFINS><COFINSNT><CST>07</CST></COFINSNT></COFINS>
+        </imposto>
+      </det>
+      <det nItem="2">
+        <prod>
+          <cProd>REF-GUAR-2L</cProd>
+          <cEAN>7891991010833</cEAN>
+          <xProd>Refrigerante Guarana Antarctica 2L</xProd>
+          <NCM>22021000</NCM>
+          <CFOP>5102</CFOP>
+          <uCom>UN</uCom>
+          <qCom>10.0000</qCom>
+          <vUnCom>5.9900</vUnCom>
+          <vProd>59.90</vProd>
+          <cEANTrib>7891991010833</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>10.0000</qTrib>
+          <vUnTrib>5.9900</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMSSN102><orig>0</orig><CSOSN>102</CSOSN></ICMSSN102></ICMS>
+          <PIS><PISNT><CST>07</CST></PISNT></PIS>
+          <COFINS><COFINSNT><CST>07</CST></COFINSNT></COFINS>
+        </imposto>
+      </det>
+      <det nItem="3">
+        <prod>
+          <cProd>REF-FANTA-LAR-2L</cProd>
+          <cEAN>7894900030013</cEAN>
+          <xProd>Refrigerante Fanta Laranja 2L</xProd>
+          <NCM>22021000</NCM>
+          <CFOP>5102</CFOP>
+          <uCom>UN</uCom>
+          <qCom>8.0000</qCom>
+          <vUnCom>5.5900</vUnCom>
+          <vProd>44.72</vProd>
+          <cEANTrib>7894900030013</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>8.0000</qTrib>
+          <vUnTrib>5.5900</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMSSN102><orig>0</orig><CSOSN>102</CSOSN></ICMSSN102></ICMS>
+          <PIS><PISNT><CST>07</CST></PISNT></PIS>
+          <COFINS><COFINSNT><CST>07</CST></COFINSNT></COFINS>
+        </imposto>
+      </det>
+      <det nItem="4">
+        <prod>
+          <cProd>REF-SPRITE-LATA</cProd>
+          <cEAN>7894900681000</cEAN>
+          <xProd>Refrigerante Sprite Lata 350ml</xProd>
+          <NCM>22021000</NCM>
+          <CFOP>5102</CFOP>
+          <uCom>UN</uCom>
+          <qCom>24.0000</qCom>
+          <vUnCom>2.4900</vUnCom>
+          <vProd>59.76</vProd>
+          <cEANTrib>7894900681000</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>24.0000</qTrib>
+          <vUnTrib>2.4900</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMSSN102><orig>0</orig><CSOSN>102</CSOSN></ICMSSN102></ICMS>
+          <PIS><PISNT><CST>07</CST></PISNT></PIS>
+          <COFINS><COFINSNT><CST>07</CST></COFINSNT></COFINS>
+        </imposto>
+      </det>
+      <det nItem="5">
+        <prod>
+          <cProd>AGUA-MIN-500</cProd>
+          <cEAN>7896005400028</cEAN>
+          <xProd>Agua Mineral Sem Gas 500ml</xProd>
+          <NCM>22011000</NCM>
+          <CFOP>5102</CFOP>
+          <uCom>UN</uCom>
+          <qCom>30.0000</qCom>
+          <vUnCom>1.1900</vUnCom>
+          <vProd>35.70</vProd>
+          <cEANTrib>7896005400028</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>30.0000</qTrib>
+          <vUnTrib>1.1900</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMSSN102><orig>0</orig><CSOSN>102</CSOSN></ICMSSN102></ICMS>
+          <PIS><PISNT><CST>07</CST></PISNT></PIS>
+          <COFINS><COFINSNT><CST>07</CST></COFINSNT></COFINS>
+        </imposto>
+      </det>
+      <det nItem="6">
+        <prod>
+          <cProd>SALG-BATATA-90</cProd>
+          <cEAN>7892840810003</cEAN>
+          <xProd>Salgadinho Batata Chips 90g</xProd>
+          <NCM>19059090</NCM>
+          <CFOP>5102</CFOP>
+          <uCom>UN</uCom>
+          <qCom>15.0000</qCom>
+          <vUnCom>4.2000</vUnCom>
+          <vProd>63.00</vProd>
+          <cEANTrib>7892840810003</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>15.0000</qTrib>
+          <vUnTrib>4.2000</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMSSN102><orig>0</orig><CSOSN>102</CSOSN></ICMSSN102></ICMS>
+          <PIS><PISNT><CST>07</CST></PISNT></PIS>
+          <COFINS><COFINSNT><CST>07</CST></COFINSNT></COFINS>
+        </imposto>
+      </det>
+      <det nItem="7">
+        <prod>
+          <cProd>BISC-RECH-130</cProd>
+          <cEAN>7891000053508</cEAN>
+          <xProd>Biscoito Recheado Chocolate 130g</xProd>
+          <NCM>19053100</NCM>
+          <CFOP>5102</CFOP>
+          <uCom>UN</uCom>
+          <qCom>20.0000</qCom>
+          <vUnCom>2.1500</vUnCom>
+          <vProd>43.00</vProd>
+          <cEANTrib>7891000053508</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>20.0000</qTrib>
+          <vUnTrib>2.1500</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMSSN102><orig>0</orig><CSOSN>102</CSOSN></ICMSSN102></ICMS>
+          <PIS><PISNT><CST>07</CST></PISNT></PIS>
+          <COFINS><COFINSNT><CST>07</CST></COFINSNT></COFINS>
+        </imposto>
+      </det>
+      <det nItem="8">
+        <prod>
+          <cProd>CHOC-BARRA-90</cProd>
+          <cEAN>7891234567895</cEAN>
+          <xProd>Chocolate Barra Ao Leite 90g</xProd>
+          <NCM>18063210</NCM>
+          <CFOP>5102</CFOP>
+          <uCom>UN</uCom>
+          <qCom>18.0000</qCom>
+          <vUnCom>3.7900</vUnCom>
+          <vProd>68.22</vProd>
+          <cEANTrib>7891234567895</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>18.0000</qTrib>
+          <vUnTrib>3.7900</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMSSN102><orig>0</orig><CSOSN>102</CSOSN></ICMSSN102></ICMS>
+          <PIS><PISNT><CST>07</CST></PISNT></PIS>
+          <COFINS><COFINSNT><CST>07</CST></COFINSNT></COFINS>
+        </imposto>
+      </det>
+      <total>
+        <ICMSTot>
+          <vBC>0.00</vBC>
+          <vICMS>0.00</vICMS>
+          <vICMSDeson>0.00</vICMSDeson>
+          <vFCPUFDest>0.00</vFCPUFDest>
+          <vICMSUFDest>0.00</vICMSUFDest>
+          <vICMSUFRemet>0.00</vICMSUFRemet>
+          <vFCP>0.00</vFCP>
+          <vBCST>0.00</vBCST>
+          <vST>0.00</vST>
+          <vFCPST>0.00</vFCPST>
+          <vFCPSTRet>0.00</vFCPSTRet>
+          <vProd>452.18</vProd>
+          <vFrete>0.00</vFrete>
+          <vSeg>0.00</vSeg>
+          <vDesc>0.00</vDesc>
+          <vII>0.00</vII>
+          <vIPI>0.00</vIPI>
+          <vIPIDevol>0.00</vIPIDevol>
+          <vPIS>0.00</vPIS>
+          <vCOFINS>0.00</vCOFINS>
+          <vOutro>0.00</vOutro>
+          <vNF>452.18</vNF>
+        </ICMSTot>
+      </total>
+      <transp>
+        <modFrete>9</modFrete>
+      </transp>
+      <pag>
+        <detPag>
+          <tPag>90</tPag>
+          <vPag>0.00</vPag>
+        </detPag>
+      </pag>
+      <infAdic>
+        <infCpl>XML criado apenas para teste de importacao de produtos no VendaFacil PDV.</infCpl>
+      </infAdic>
+    </infNFe>
+  </NFe>
+  <protNFe versao="4.00">
+    <infProt>
+      <tpAmb>2</tpAmb>
+      <verAplic>VendaFacil-Teste</verAplic>
+      <chNFe>35260512345678000195550010000012341000012345</chNFe>
+      <dhRecbto>2026-05-31T09:01:00-03:00</dhRecbto>
+      <nProt>135260000001234</nProt>
+      <digVal>TESTE=</digVal>
+      <cStat>100</cStat>
+      <xMotivo>Autorizado o uso da NF-e para teste</xMotivo>
+    </infProt>
+  </protNFe>
+</nfeProc>

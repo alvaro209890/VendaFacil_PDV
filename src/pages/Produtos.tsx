@@ -18,12 +18,18 @@ type ItemImport = ItemConfirmarXml & {
   acao: "atualizar" | "criar";
   estoque_atual: number;
   incluir: boolean;
+  valor_unitario_xml?: number;
 };
 
 const FISCAL_VAZIO: CamposFiscais = {
   ncm: "", cest: "", cfop: "5102", origem: "0", unidade_tributavel: "",
   cst_csosn: "102", cst_pis: "07", cst_cofins: "07",
 };
+
+const UNIDADES = ["UN", "KG", "G", "LT", "ML", "CX", "FD", "PCT", "SC"];
+const normUn = (v: string, fallback = "UN") => (v || fallback).trim().toUpperCase() || fallback;
+const fatorSeguro = (v: number | string | undefined) => Math.max(Number(v) || 1, 0.0001);
+const fmtQtd = (v: number) => Number(v || 0).toLocaleString("pt-BR", { maximumFractionDigits: 3 });
 
 export default function ProdutosPage() {
   const [produtos, setProdutos] = useState<Produto[]>([]);
@@ -42,6 +48,8 @@ export default function ProdutosPage() {
   const [estoqueMinimo, setEstoqueMinimo] = useState("5");
   const [codigoBarras, setCodigoBarras] = useState("");
   const [unidade, setUnidade] = useState("UN");
+  const [unidadeCompra, setUnidadeCompra] = useState("UN");
+  const [quantidadePorEmbalagem, setQuantidadePorEmbalagem] = useState("1");
   const [fiscal, setFiscal] = useState<CamposFiscais>({ ...FISCAL_VAZIO });
   const [mostrarFiscal, setMostrarFiscal] = useState(false);
 
@@ -65,8 +73,12 @@ export default function ProdutosPage() {
         nome: it.nome,
         codigo_barras: it.codigo_barras,
         unidade: it.unidade,
+        unidade_compra: it.unidade_compra || it.unidade_xml || it.unidade,
+        quantidade_por_embalagem: fatorSeguro(it.quantidade_por_embalagem),
         quantidade: it.quantidade,
+        quantidade_xml: it.quantidade_xml ?? it.quantidade,
         preco_custo: it.valor_unitario,
+        valor_unitario_xml: it.valor_unitario_xml ?? it.valor_unitario,
         preco_venda: it.preco_venda_atual ?? Number((it.valor_unitario * 1.3).toFixed(2)),
         atualizar_custo: true,
         ncm: it.ncm,
@@ -83,7 +95,23 @@ export default function ProdutosPage() {
   }
 
   const setItem = (i: number, campo: keyof ItemImport, valor: string | number | boolean) =>
-    setImportItens((arr) => arr.map((it, idx) => (idx === i ? { ...it, [campo]: valor } : it)));
+    setImportItens((arr) => arr.map((it, idx) => {
+      if (idx !== i) return it;
+      const next = { ...it, [campo]: valor };
+      if (campo === "quantidade_por_embalagem" || campo === "quantidade_xml") {
+        const fator = fatorSeguro(next.quantidade_por_embalagem);
+        const qtdXml = Number(next.quantidade_xml || 0);
+        next.quantidade_por_embalagem = fator;
+        next.quantidade = Number((qtdXml * fator).toFixed(4));
+        if (next.valor_unitario_xml) {
+          next.preco_custo = Number((next.valor_unitario_xml / fator).toFixed(4));
+        }
+      }
+      if (campo === "unidade" || campo === "unidade_compra") {
+        next[campo] = normUn(String(valor));
+      }
+      return next;
+    }));
 
   async function confirmarImportacao() {
     const sel = importItens.filter((it) => it.incluir && it.quantidade > 0);
@@ -99,7 +127,10 @@ export default function ProdutosPage() {
         nome: it.nome,
         codigo_barras: it.codigo_barras,
         unidade: it.unidade,
+        unidade_compra: it.unidade_compra,
+        quantidade_por_embalagem: it.quantidade_por_embalagem,
         quantidade: it.quantidade,
+        quantidade_xml: it.quantidade_xml,
         preco_custo: it.preco_custo,
         preco_venda: it.preco_venda,
         atualizar_custo: it.atualizar_custo,
@@ -119,13 +150,13 @@ export default function ProdutosPage() {
   }
 
   async function entradaRapida(p: Produto) {
-    const q = prompt(`Entrada de estoque — "${p.nome}"\nQuantidade a adicionar:`, "1");
+    const q = prompt(`Entrada de estoque — "${p.nome}"\nQuantidade a adicionar em ${p.unidade}:`, "1");
     if (q === null) return;
     const qtd = Number(q);
     if (!qtd || qtd <= 0) { setMsg({ tipo: "erro", texto: "Quantidade inválida." }); return; }
     try {
       await entradaEstoque(p.id, qtd);
-      setMsg({ tipo: "ok", texto: `+${qtd} em "${p.nome}".` });
+      setMsg({ tipo: "ok", texto: `+${fmtQtd(qtd)} ${p.unidade} em "${p.nome}".` });
       carregar();
     } catch (err) {
       setMsg({ tipo: "erro", texto: (err as Error).message });
@@ -163,6 +194,8 @@ export default function ProdutosPage() {
     setEstoqueMinimo("5");
     setCodigoBarras("");
     setUnidade("UN");
+    setUnidadeCompra("UN");
+    setQuantidadePorEmbalagem("1");
     setFiscal({ ...FISCAL_VAZIO });
     setMostrarFiscal(false);
     setEditando(null);
@@ -180,6 +213,8 @@ export default function ProdutosPage() {
     setEstoqueMinimo(String(p.estoque_minimo));
     setCodigoBarras(p.codigo_barras || "");
     setUnidade(p.unidade);
+    setUnidadeCompra(p.unidade_compra || p.unidade || "UN");
+    setQuantidadePorEmbalagem(String(p.quantidade_por_embalagem || 1));
     setFiscal({
       ncm: p.ncm || "", cest: p.cest || "", cfop: p.cfop || "5102",
       origem: p.origem || "0", unidade_tributavel: p.unidade_tributavel || "",
@@ -212,7 +247,9 @@ export default function ProdutosPage() {
       estoque: Number(estoque) || 0,
       estoque_minimo: Number(estoqueMinimo) || 0,
       codigo_barras: codigoBarras.trim(),
-      unidade: unidade.trim() || "UN",
+      unidade: normUn(unidade),
+      unidade_compra: normUn(unidadeCompra, unidade),
+      quantidade_por_embalagem: fatorSeguro(quantidadePorEmbalagem),
       ncm: (fiscal.ncm || "").trim(),
       cest: (fiscal.cest || "").trim(),
       cfop: (fiscal.cfop || "").trim(),
@@ -302,7 +339,7 @@ export default function ProdutosPage() {
                         <div className="min-w-0 flex-1">
                           <h3 className="text-white font-medium truncate">{p.nome}</h3>
                           <p className="text-slate-500 text-xs mt-0.5">
-                            {p.unidade} • estoque <span className={baixo ? "text-amber-400" : "text-slate-300"}>{p.estoque}{baixo ? " ⚠️" : ""}</span>
+                            estoque <span className={baixo ? "text-amber-400" : "text-slate-300"}>{fmtQtd(p.estoque)} {p.unidade}{baixo ? " ⚠️" : ""}</span>
                           </p>
                         </div>
                         {p.ativo ? (
@@ -361,12 +398,14 @@ export default function ProdutosPage() {
                       <tr key={p.id} className={`border-t border-slate-800 hover:bg-slate-800/50 ${!p.ativo ? "opacity-40" : ""}`}>
                         <td className="p-3 text-white">
                           <div className="font-medium truncate max-w-40">{p.nome}</div>
-                          <div className="text-slate-500 text-xs">{p.unidade}</div>
+                          <div className="text-slate-500 text-xs">
+                            {p.unidade_compra || p.unidade} x {fmtQtd(p.quantidade_por_embalagem || 1)} {p.unidade}
+                          </div>
                         </td>
                         <td className="p-3 text-slate-300">R$ {(p.preco_custo || 0).toFixed(2)}</td>
                         <td className="p-3 text-brand-400 font-semibold">R$ {(p.preco_venda || 0).toFixed(2)}</td>
                         <td className="p-3 hidden md:table-cell">
-                          <span className={baixo ? "text-amber-400 font-medium" : "text-slate-300"}>{p.estoque}{baixo && ` ⚠️`}</span>
+                          <span className={baixo ? "text-amber-400 font-medium" : "text-slate-300"}>{fmtQtd(p.estoque)} {p.unidade}{baixo && ` ⚠️`}</span>
                         </td>
                         <td className="p-3 hidden md:table-cell">
                           {p.ativo ? (
@@ -515,6 +554,30 @@ export default function ProdutosPage() {
             </div>
 
             {/* ── Dados fiscais (NFC-e) ── */}
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-slate-400 text-xs block mb-0.5">Unidade da compra</label>
+                <select
+                  value={unidadeCompra}
+                  onChange={(e) => setUnidadeCompra(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500"
+                >
+                  {UNIDADES.map((u) => <option key={u} value={u}>{u}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-slate-400 text-xs block mb-0.5">Qtd por compra</label>
+                <input
+                  type="number"
+                  value={quantidadePorEmbalagem}
+                  onChange={(e) => setQuantidadePorEmbalagem(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500"
+                  step="0.001"
+                  min="0.001"
+                />
+              </div>
+            </div>
+
             <div className="border border-slate-800 rounded-lg overflow-hidden">
               <button
                 type="button"
@@ -572,7 +635,7 @@ export default function ProdutosPage() {
       {/* ── Modal: Importar XML (NF-e) ── */}
       {importInfo && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 bg-black/80 backdrop-blur-sm">
-          <div className="w-full max-w-4xl max-h-[90vh] flex flex-col bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+          <div className="w-full max-w-6xl max-h-[90vh] flex flex-col bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
             <div className="flex items-center justify-between p-4 border-b border-slate-800">
               <div>
                 <h3 className="text-white font-black text-lg">📄 Importar XML — entrada de estoque</h3>
@@ -581,14 +644,18 @@ export default function ProdutosPage() {
               <button onClick={() => { setImportInfo(null); setImportItens([]); }} className="text-slate-400 hover:text-white text-2xl leading-none">×</button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-3">
+            <div className="flex-1 overflow-auto p-3">
               <table className="w-full text-sm">
                 <thead className="text-slate-500 text-xs uppercase text-left">
                   <tr>
                     <th className="p-2">Imp.</th>
                     <th className="p-2">Produto</th>
                     <th className="p-2">Ação</th>
-                    <th className="p-2 w-20">Qtd</th>
+                    <th className="p-2 w-24">Un. venda</th>
+                    <th className="p-2 w-24">Un. XML</th>
+                    <th className="p-2 w-24">Qtd XML</th>
+                    <th className="p-2 w-24">Qtd/emb.</th>
+                    <th className="p-2 w-24">Entra</th>
                     <th className="p-2 w-24">Custo R$</th>
                     <th className="p-2 w-24">Venda R$</th>
                   </tr>
@@ -598,7 +665,7 @@ export default function ProdutosPage() {
                     <tr key={i} className={`border-t border-slate-800 ${!it.incluir ? "opacity-40" : ""}`}>
                       <td className="p-2"><input type="checkbox" checked={it.incluir} onChange={(e) => setItem(i, "incluir", e.target.checked)} className="w-4 h-4 accent-brand-500" /></td>
                       <td className="p-2">
-                        <div className="text-white truncate max-w-48">{it.nome}</div>
+                        <input value={it.nome} onChange={(e) => setItem(i, "nome", e.target.value)} className="w-full min-w-52 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white" />
                         <div className="text-slate-500 text-2xs">{it.codigo_barras || "sem código"} · {it.unidade}</div>
                       </td>
                       <td className="p-2">
@@ -606,7 +673,19 @@ export default function ProdutosPage() {
                           ? <span className="text-emerald-400 text-xs">repor (tem {it.estoque_atual})</span>
                           : <span className="text-amber-400 text-xs">criar novo</span>}
                       </td>
-                      <td className="p-2"><input type="number" step="0.01" value={it.quantidade} onChange={(e) => setItem(i, "quantidade", Number(e.target.value))} className="w-16 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white" /></td>
+                      <td className="p-2">
+                        <select value={it.unidade} onChange={(e) => setItem(i, "unidade", e.target.value)} className="w-20 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white">
+                          {UNIDADES.map((u) => <option key={u} value={u}>{u}</option>)}
+                        </select>
+                      </td>
+                      <td className="p-2">
+                        <select value={it.unidade_compra} onChange={(e) => setItem(i, "unidade_compra", e.target.value)} className="w-20 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white">
+                          {UNIDADES.map((u) => <option key={u} value={u}>{u}</option>)}
+                        </select>
+                      </td>
+                      <td className="p-2"><input type="number" step="0.001" value={it.quantidade_xml} onChange={(e) => setItem(i, "quantidade_xml", Number(e.target.value))} className="w-20 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white" /></td>
+                      <td className="p-2"><input type="number" step="0.001" value={it.quantidade_por_embalagem} onChange={(e) => setItem(i, "quantidade_por_embalagem", Number(e.target.value))} className="w-20 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white" /></td>
+                      <td className="p-2"><input type="number" step="0.001" value={it.quantidade} onChange={(e) => setItem(i, "quantidade", Number(e.target.value))} className="w-20 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white" /></td>
                       <td className="p-2"><input type="number" step="0.01" value={it.preco_custo} onChange={(e) => setItem(i, "preco_custo", Number(e.target.value))} className="w-20 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white" /></td>
                       <td className="p-2">
                         {it.acao === "criar"
