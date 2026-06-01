@@ -1,3 +1,8 @@
+import os
+import sys
+import threading
+import time
+
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -23,6 +28,25 @@ from errors import configure_error_logging, register_error_handlers
 
 configure_error_logging()
 app = FastAPI(title="VendaFácil PDV", version="0.1.0")
+
+# ── Watchdog: encerra o processo quando a aba do navegador é fechada ──
+# Só ativo no .exe empacotado (sys.frozen). Em dev, o Uvicorn já cuida disso.
+_HEARTBEAT_TIMEOUT = 30   # segundos sem ping → encerra
+_HEARTBEAT_INTERVAL = 5   # frequência de verificação do watchdog
+_ultimo_heartbeat: float = time.monotonic()
+
+
+def _watchdog_loop() -> None:
+    """Thread daemon: mata o processo se não receber heartbeat por TIMEOUT segundos."""
+    while True:
+        time.sleep(_HEARTBEAT_INTERVAL)
+        if time.monotonic() - _ultimo_heartbeat > _HEARTBEAT_TIMEOUT:
+            os._exit(0)
+
+
+if getattr(sys, "frozen", False):
+    _t = threading.Thread(target=_watchdog_loop, daemon=True, name="heartbeat-watchdog")
+    _t.start()
 register_error_handlers(app)
 
 app.add_middleware(
@@ -78,6 +102,14 @@ async def _iniciar_servicos() -> None:
 @app.get("/health")
 async def health() -> dict:
     return {"status": "ok", "app": "vendafacil-pdv", "version": app.version}
+
+
+@app.post("/api/heartbeat", include_in_schema=False)
+async def heartbeat() -> dict:
+    """Sinal de vida do frontend. Sem este ping por 30s o processo encerra."""
+    global _ultimo_heartbeat
+    _ultimo_heartbeat = time.monotonic()
+    return {"ok": True}
 
 
 # ── Ativação / licença (controle central pelo Painel SaaS) ──
