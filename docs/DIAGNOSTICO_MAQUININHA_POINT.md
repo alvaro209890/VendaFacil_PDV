@@ -127,9 +127,10 @@ Mercado Pago -> terminal fisica/provisionamento, nao no PDV.
 
 - Backend migrado para Orders API.
 - Antes de cobrar, o backend tenta colocar a terminal em modo `PDV`.
-- PIX agora envia `default_type: qr`.
 - Credito envia `credit_card`.
 - Debito envia `debit_card`.
+- Desde a versao 1.0.12, PIX nao e enviado para a Point; fica no fluxo proprio
+  de QR Code do PDV.
 - A listagem de dispositivos usa `GET /terminals/v1/list`, que mostra o modo
   real da terminal.
 - Na versao 1.0.11, o backend envia `print_on_terminal: no_ticket` no payload da

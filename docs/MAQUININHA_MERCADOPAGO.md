@@ -1,6 +1,6 @@
 # Maquininha Mercado Pago Point no VendaFacil PDV
 
-Integracao para cobrar na maquininha fisica Mercado Pago Point usando a API
+Integracao para cobrar cartao de credito e debito na maquininha fisica Mercado Pago Point usando a API
 atual de **Orders**. O caixa dispara o valor no PDV, a Point busca a order na
 nuvem do Mercado Pago, o cliente paga no aparelho e o PDV acompanha o status.
 
@@ -67,17 +67,21 @@ NEWLAND_N950__N950NCC904676430
 PAX_A910__SMARTPOS1493550868
 ```
 
-## Formas de pagamento
+## Formas de pagamento na Point
 
 O PDV envia para `config.payment_method.default_type`:
 
 | Forma no PDV | Valor enviado |
 |---|---|
-| PIX | `qr` |
 | Debito | `debit_card` |
 | Credito | `credit_card` |
 
 O valor e enviado em reais como string decimal, por exemplo `"4.93"`.
+
+Desde a versao 1.0.12, a Point fica dedicada a cartao. O PIX nao e enviado para
+a maquininha: ele deve seguir pelo fluxo proprio de QR Code do PDV. Isso evita
+misturar a order da Point com o PIX e deixa o caixa mais previsivel para venda
+fiscal.
 
 ## Estados
 

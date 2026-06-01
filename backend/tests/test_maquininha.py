@@ -2,9 +2,11 @@ import sys
 from pathlib import Path
 from decimal import Decimal
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from mercadopago import MercadoPagoPoint, _friendly_msg, _state, _payment_status_front
+from mercadopago import MercadoPagoPoint, PointError, _friendly_msg, _state, _payment_status_front
 
 
 class FakePoint(MercadoPagoPoint):
@@ -24,20 +26,24 @@ class FakePoint(MercadoPagoPoint):
         return 200, {}
 
 
-def test_criar_cobranca_pix_usa_orders_api_com_qr():
+def test_criar_cobranca_pix_nao_usa_point():
     cli = FakePoint()
-    resp = cli.criar_cobranca("NEWLAND_TEST", Decimal("4.93"), "venda-teste", False, "pix")
+    with pytest.raises(PointError) as exc:
+        cli.criar_cobranca("NEWLAND_TEST", Decimal("4.93"), "venda-teste", False, "pix")
 
-    method, path, body, idempotency = cli.calls[0]
-    assert method == "POST"
-    assert path == "/v1/orders"
-    assert idempotency is True
-    assert body["type"] == "point"
-    assert body["config"]["point"]["terminal_id"] == "NEWLAND_TEST"
-    assert body["config"]["point"]["print_on_terminal"] == "no_ticket"
-    assert body["config"]["payment_method"]["default_type"] == "qr"
-    assert body["transactions"]["payments"][0]["amount"] == "4.93"
-    assert resp["id"] == "ORD123"
+    assert exc.value.status == 400
+    assert "credito/debito" in exc.value.mensagem
+    assert cli.calls == []
+
+
+def test_rota_maquininha_recusa_pix(client, auth):
+    resp = client.post(
+        "/api/maquininha/cobranca",
+        headers=auth,
+        json={"valor": 4.93, "forma": "pix"},
+    )
+    assert resp.status_code == 400
+    assert "credito/debito" in resp.json()["detail"]
 
 
 def test_criar_cobranca_credito_usa_payload_oficial_sem_ticket():
@@ -47,6 +53,21 @@ def test_criar_cobranca_credito_usa_payload_oficial_sem_ticket():
     _, _, body, _ = cli.calls[0]
     assert body["config"]["point"]["print_on_terminal"] == "no_ticket"
     assert body["config"]["payment_method"]["default_type"] == "credit_card"
+
+
+def test_criar_cobranca_debito_usa_debit_card():
+    cli = FakePoint()
+    cli.criar_cobranca("NEWLAND_TEST", Decimal("4.93"), "venda-teste", True, "debito")
+
+    method, path, body, idempotency = cli.calls[0]
+    assert method == "POST"
+    assert path == "/v1/orders"
+    assert idempotency is True
+    assert body["type"] == "point"
+    assert body["config"]["point"]["terminal_id"] == "NEWLAND_TEST"
+    assert body["config"]["point"]["print_on_terminal"] == "no_ticket"
+    assert body["config"]["payment_method"]["default_type"] == "debit_card"
+    assert body["transactions"]["payments"][0]["amount"] == "4.93"
 
 
 def test_erro_409_tem_mensagem_clara():

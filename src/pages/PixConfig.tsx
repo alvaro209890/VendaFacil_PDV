@@ -79,8 +79,7 @@ export default function PixConfigPage() {
           <Save size={18} /> {salvando ? "Salvando..." : "Salvar"}
         </button>
         <p className="text-slate-500 text-[11px] leading-snug">
-          Dica: se você usa a <b>maquininha</b> para PIX (QR na telinha do aparelho), nem precisa preencher aqui —
-          isto é só para o PIX com QR na tela do PDV.
+          O PIX fica separado da maquininha: preencha estes dados para gerar o QR Code na tela do PDV.
         </p>
       </form>
     </motion.div>

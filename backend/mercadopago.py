@@ -164,7 +164,7 @@ class ConfigMaquininhaInput(BaseModel):
 class CobrancaInput(BaseModel):
     valor: float = Field(gt=0, le=999999.99)
     venda_uuid: str | None = Field(default=None, max_length=64)
-    forma: str | None = Field(default=None, max_length=12)  # credito | debito | pix
+    forma: str | None = Field(default=None, max_length=12)  # credito | debito
 
 
 def _auth(request: Request) -> int:
@@ -228,12 +228,15 @@ def _cliente() -> MercadoPagoPoint:
 
 
 def _forma_para_default_type(forma: str | None) -> str:
-    f = (forma or "").lower()
-    if f == "pix":
-        return "qr"
+    f = (forma or "credito").lower()
     if f == "debito":
         return "debit_card"
-    return "credit_card"
+    if f == "credito":
+        return "credit_card"
+    raise PointError(
+        400,
+        "Maquininha configurada apenas para cartao de credito/debito. Para PIX, use o QR Code do PDV.",
+    )
 
 
 def _money(valor: Decimal) -> str:
@@ -355,14 +358,19 @@ async def diagnostico(request: Request) -> dict:
 @router.post("/cobranca")
 async def criar_cobranca(data: CobrancaInput, request: Request) -> dict:
     _auth(request)
+    referencia = data.venda_uuid or f"venda-{uuid.uuid4().hex[:8]}"
+    forma = (data.forma or "credito").lower()
+    if forma not in {"credito", "debito"}:
+        raise HTTPException(
+            status_code=400,
+            detail="Maquininha configurada apenas para cartao de credito/debito. Para PIX, use o QR Code do PDV.",
+        )
+
     cli = _cliente()
     cfg = db.get_config_maquininha()
     device_id = cfg.get("device_id") or ""
     if not device_id:
         raise HTTPException(status_code=400, detail="Device ID da maquininha nao configurado.")
-
-    referencia = data.venda_uuid or f"venda-{uuid.uuid4().hex[:8]}"
-    forma = (data.forma or "credito").lower()
     try:
         cli.configurar_modo_pdv(device_id)
         resp = cli.criar_cobranca(

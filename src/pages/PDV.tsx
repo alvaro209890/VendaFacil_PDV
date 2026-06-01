@@ -252,11 +252,10 @@ export default function PDV() {
     pararTimeoutMaquininha();
   }, [pararPollMaquininha, pararTimeoutMaquininha]);
 
-  // Cobrança pela maquininha (cartão OU PIX) só vale quando: habilitada, com
-  // dispositivo configurado E com internet. Sem isso, cartão = manual e PIX =
-  // QR estático na tela do PDV.
+  // Cobranca pela maquininha vale somente para cartao: credito ou debito.
+  // PIX fica no fluxo proprio do PDV, sem misturar com a Point.
   const podeCobrarMaquininha =
-    (pagamento === "debito" || pagamento === "credito" || pagamento === "pix") &&
+    (pagamento === "debito" || pagamento === "credito") &&
     maqHabilitada && maqDeviceOk && navigator.onLine;
 
   async function finalizarVenda() {
@@ -266,7 +265,7 @@ export default function PDV() {
       return;
     }
     if (podeCobrarMaquininha) {
-      await iniciarCobrancaMaquininha();   // cartão ou PIX na telinha da maquininha
+      await iniciarCobrancaMaquininha();   // cartao integrado na Point
       return;
     }
     if (pagamento === "pix") {
@@ -928,9 +927,9 @@ export default function PDV() {
                   <p className="text-white text-sm font-bold mb-1">
                     {maqModal.fase === "criando"
                       ? "Acionando a maquininha..."
-                      : pagamento === "pix"
-                        ? "Cliente paga o PIX na maquininha"
-                        : "Peça o cartão ao cliente"}
+                      : pagamento === "debito"
+                        ? "Peça o cartão no débito"
+                        : "Peça o cartão no crédito"}
                   </p>
                   <p className="text-slate-500 text-xs mb-8">
                     {ESTADO_MAQ[maqModal.estado || ""] || "Aguardando a maquininha..."}
