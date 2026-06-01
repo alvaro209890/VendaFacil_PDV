@@ -34,12 +34,26 @@ def _preparar_saida_sem_console() -> None:
         sys.stderr = _DEVNULL
 
 
+def _porta_em_uso(host: str, port: int) -> bool:
+    import socket
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.settimeout(1)
+        return s.connect_ex((host, port)) == 0
+
+
 def _abrir_navegador() -> None:
     webbrowser.open(f"http://{HOST}:{PORT}/")
 
 
 def main() -> None:
     _preparar_saida_sem_console()
+
+    # Se já existe uma instância rodando, apenas abre o navegador na existente
+    # e encerra — evita "duas abas" / conflito de porta.
+    if _porta_em_uso(HOST, PORT):
+        _abrir_navegador()
+        return
+
     if os.environ.get("VENDAFACIL_NO_BROWSER") != "1":
         threading.Timer(1.5, _abrir_navegador).start()
     print(f"VendaFácil PDV rodando em http://{HOST}:{PORT}/  (Ctrl+C para sair)")
