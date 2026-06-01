@@ -86,6 +86,8 @@ export default function PDV() {
   } | null>(null);
   const maqPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const maqTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Guarda o intentId ativo para cancelar no MP se o componente for desmontado.
+  const maqIntentIdRef = useRef<string | null>(null);
 
   const carregar = useCallback(async () => {
     try {
@@ -246,10 +248,16 @@ export default function PDV() {
     }
   }, []);
 
-  // Limpa o polling se a tela for desmontada.
+  // Ao desmontar (navegar para outra tela): para o poll E cancela na maquininha
+  // se houver cobrança pendente — evita que o pedido fique aberto no MP.
   useEffect(() => () => {
     pararPollMaquininha();
     pararTimeoutMaquininha();
+    const id = maqIntentIdRef.current;
+    if (id) {
+      cancelarCobrancaMaquininha(id).catch(() => undefined);
+      maqIntentIdRef.current = null;
+    }
   }, [pararPollMaquininha, pararTimeoutMaquininha]);
 
   // Cobranca pela maquininha vale somente para cartao: credito ou debito.
@@ -288,6 +296,7 @@ export default function PDV() {
       setMaqModal({ fase: "erro", erro: (err as Error).message });
       return;
     }
+    maqIntentIdRef.current = intentId;
     setMaqModal({ fase: "aguardando", intentId, estado: "OPEN" });
 
     // Poll do status até concluir/cancelar/dar erro.
@@ -295,6 +304,7 @@ export default function PDV() {
     pararTimeoutMaquininha();
     maqTimeoutRef.current = setTimeout(() => {
       pararPollMaquininha();
+      maqIntentIdRef.current = null;
       void cancelarCobrancaMaquininha(intentId).catch(() => undefined);
       setMaqModal({ fase: "erro", intentId, erro: ERRO_POINT_NAO_PUXOU });
     }, TIMEOUT_POINT_MS);
@@ -308,12 +318,14 @@ export default function PDV() {
         if (st.pago && st.payment_status === "approved") {
           pararPollMaquininha();
           pararTimeoutMaquininha();
+          maqIntentIdRef.current = null;
           const obs = st.payment_id ? `MP Point: ${st.payment_id}` : undefined;
           setMaqModal(null);
           await confirmarVenda(obs);
         } else if (["CANCELED", "ERROR", "ABANDONED"].includes(st.state || "")) {
           pararPollMaquininha();
           pararTimeoutMaquininha();
+          maqIntentIdRef.current = null;
           setMaqModal({ fase: "erro", intentId, erro: `Cobrança ${st.state?.toLowerCase()} na maquininha.` });
         }
       } catch {
@@ -327,7 +339,8 @@ export default function PDV() {
   async function cancelarCobrancaMaq() {
     pararPollMaquininha();
     pararTimeoutMaquininha();
-    const id = maqModal?.intentId;
+    const id = maqModal?.intentId ?? maqIntentIdRef.current;
+    maqIntentIdRef.current = null;
     setMaqModal(null);
     if (id) {
       try { await cancelarCobrancaMaquininha(id); } catch { /* já pode ter encerrado */ }
