@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import uuid
 import urllib.error
 import urllib.parse
@@ -19,6 +20,7 @@ from pydantic import BaseModel, Field
 
 from auth import _verificar_jwt, _agora
 from database import db
+from paths import DATA_DIR
 
 router = APIRouter()
 logger = logging.getLogger("vendafacil.maquininha")
@@ -26,12 +28,14 @@ logger = logging.getLogger("vendafacil.maquininha")
 _BASE = "https://api.mercadopago.com"
 _TIMEOUT = 30
 _SENSIVEIS = {"access_token"}
+_LOG_FILE = DATA_DIR / "logs" / "vendafacil.log"
 
 
 class PointError(Exception):
-    def __init__(self, status: int, mensagem: str):
+    def __init__(self, status: int, mensagem: str, detalhe: dict[str, Any] | None = None):
         self.status = status
         self.mensagem = mensagem
+        self.detalhe = detalhe or {}
         super().__init__(mensagem)
 
 
@@ -83,14 +87,14 @@ class MercadoPagoPoint:
     def _listar_dispositivos_legado(self) -> list[dict[str, Any]]:
         status, resp = self._req("GET", "/point/integration-api/devices")
         if status >= 400:
-            raise PointError(status, _msg(resp))
+            _raise_point_error(status, resp, "point_devices_legacy_list")
         return resp.get("devices", [])
 
     def configurar_modo_pdv(self, device_id: str) -> None:
         body = {"terminals": [{"id": device_id, "operating_mode": "PDV"}]}
         status, resp = self._req("PATCH", "/terminals/v1/setup", body)
         if status >= 400:
-            raise PointError(status, _msg(resp))
+            _raise_point_error(status, resp, "terminals_v1_setup")
         logger.info("point_operating_mode_pdv device_id=%s", device_id)
 
     def criar_cobranca(
@@ -113,7 +117,9 @@ class MercadoPagoPoint:
             "config": {
                 "point": {
                     "terminal_id": device_id,
-                    "print_on_terminal": "seller_ticket" if imprimir else "no_ticket",
+                    # Mantem o payload igual ao exemplo oficial do Mercado Pago
+                    # enquanto diagnosticamos terminals que ficam em "created".
+                    "print_on_terminal": "no_ticket",
                 },
                 "payment_method": {"default_type": default_type},
             },
@@ -128,21 +134,21 @@ class MercadoPagoPoint:
             resp.get("status"),
         )
         if status >= 400:
-            raise PointError(status, _msg(resp))
+            _raise_point_error(status, resp, "orders_create")
         return resp
 
     def consultar_cobranca(self, order_id: str) -> dict[str, Any]:
         safe_id = urllib.parse.quote(order_id, safe="")
         status, resp = self._req("GET", f"/v1/orders/{safe_id}")
         if status >= 400:
-            raise PointError(status, _msg(resp))
+            _raise_point_error(status, resp, "orders_get")
         return resp
 
     def cancelar_cobranca(self, order_id: str) -> dict[str, Any]:
         safe_id = urllib.parse.quote(order_id, safe="")
         status, resp = self._req("POST", f"/v1/orders/{safe_id}/cancel", idempotency=True)
         if status >= 400:
-            raise PointError(status, _msg(resp))
+            _raise_point_error(status, resp, "orders_cancel")
         return resp
 
 
@@ -187,9 +193,26 @@ def _msg(resp: dict[str, Any]) -> str:
     )
 
 
-def _safe(resp: dict[str, Any]) -> str:
+def _friendly_msg(status: int, resp: dict[str, Any]) -> str:
+    if status == 409:
+        return "Ja existe uma cobranca pendente na Point. Cancele, aguarde expirar ou tente novamente em instantes."
+    return _msg(resp)
+
+
+def _raise_point_error(status: int, resp: dict[str, Any], context: str) -> None:
+    if status in {400, 409, 412} or status >= 500:
+        logger.warning(
+            "mercadopago_error context=%s status=%s response=%s",
+            context,
+            status,
+            _safe(resp, limit=6000),
+        )
+    raise PointError(status, _friendly_msg(status, resp), resp)
+
+
+def _safe(resp: dict[str, Any], limit: int = 1000) -> str:
     try:
-        return json.dumps(resp, ensure_ascii=False)[:1000]
+        return json.dumps(resp, ensure_ascii=False, default=str)[:limit]
     except Exception:
         return repr(resp)
 
@@ -257,6 +280,17 @@ def _payment_type_front(order: dict[str, Any]) -> str | None:
     return payment.get("type") or method.get("default_type")
 
 
+def _ultimas_orders_log(limit: int = 5) -> list[str]:
+    if not _LOG_FILE.exists():
+        return []
+    try:
+        text = _LOG_FILE.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return []
+    ids = re.findall(r"order_id=(ORD[A-Z0-9]+)", text)
+    return list(dict.fromkeys(ids))[-limit:]
+
+
 @router.get("/config")
 async def obter_config(request: Request) -> dict:
     _auth(request)
@@ -282,6 +316,40 @@ async def listar_dispositivos(request: Request) -> dict:
         return {"dispositivos": cli.listar_dispositivos()}
     except PointError as e:
         raise HTTPException(status_code=e.status, detail=e.mensagem)
+
+
+@router.get("/diagnostico")
+async def diagnostico(request: Request) -> dict:
+    """Diagnostico operacional da Point configurada, sem criar cobranca."""
+    _auth(request)
+    cfg = db.get_config_maquininha()
+    device_id = cfg.get("device_id") or ""
+    cli = _cliente()
+    try:
+        dispositivos = cli.listar_dispositivos()
+    except PointError as e:
+        raise HTTPException(status_code=e.status, detail=e.mensagem)
+
+    terminal = next((d for d in dispositivos if d.get("id") == device_id), None)
+    ultimas_orders = _ultimas_orders_log()
+    ultima_order_bruta = None
+    if ultimas_orders:
+        try:
+            ultima_order_bruta = cli.consultar_cobranca(ultimas_orders[-1])
+        except PointError as e:
+            ultima_order_bruta = {"erro": e.mensagem, "status": e.status}
+
+    return {
+        "config": {
+            "habilitado": bool(cfg.get("habilitado")),
+            "device_id": device_id,
+            "access_token_preenchido": bool(cfg.get("access_token")),
+        },
+        "terminal": terminal,
+        "operating_mode": (terminal or {}).get("operating_mode"),
+        "ultimas_orders": ultimas_orders,
+        "ultima_order_bruta": ultima_order_bruta,
+    }
 
 
 @router.post("/cobranca")

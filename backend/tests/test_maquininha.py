@@ -4,7 +4,7 @@ from decimal import Decimal
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from mercadopago import MercadoPagoPoint, _state, _payment_status_front
+from mercadopago import MercadoPagoPoint, _friendly_msg, _state, _payment_status_front
 
 
 class FakePoint(MercadoPagoPoint):
@@ -38,6 +38,21 @@ def test_criar_cobranca_pix_usa_orders_api_com_qr():
     assert body["config"]["payment_method"]["default_type"] == "qr"
     assert body["transactions"]["payments"][0]["amount"] == "4.93"
     assert resp["id"] == "ORD123"
+
+
+def test_criar_cobranca_credito_usa_payload_oficial_sem_ticket():
+    cli = FakePoint()
+    cli.criar_cobranca("NEWLAND_TEST", Decimal("4.93"), "venda-teste", True, "credito")
+
+    _, _, body, _ = cli.calls[0]
+    assert body["config"]["point"]["print_on_terminal"] == "no_ticket"
+    assert body["config"]["payment_method"]["default_type"] == "credit_card"
+
+
+def test_erro_409_tem_mensagem_clara():
+    msg = _friendly_msg(409, {"message": "Conflict"})
+    assert "cobranca pendente" in msg.lower()
+    assert "point" in msg.lower()
 
 
 def test_state_orders_mapeia_para_frontend_legado():

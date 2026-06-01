@@ -34,6 +34,17 @@ A API antiga de `payment-intents` foi substituida. No teste real ela criava
 intencao com `payment_mode: card` mesmo quando o PDV tentava PIX, deixando a
 tela presa em "Enviando para a maquininha...".
 
+Desde a versao 1.0.11, o PDV tambem:
+
+- usa `print_on_terminal: "no_ticket"` para manter o payload igual ao exemplo
+  minimo oficial durante o diagnostico;
+- cancela automaticamente a order se ela ficar 45 segundos em `created`;
+- mostra uma mensagem clara quando a nuvem do Mercado Pago cria a order, mas a
+  Point nao puxa para a tela;
+- registra no log o corpo sanitizado de erros Mercado Pago `400`, `409`, `412`
+  e `5xx`;
+- traduz `409` para: existe uma cobranca pendente na Point.
+
 Referencia oficial: <https://www.mercadopago.com.br/developers/pt/docs/mp-point/migrate-payment-intent-to-orders>
 
 ## Configuracao no PDV
@@ -46,7 +57,7 @@ Tela **Maquininha**:
 | Access Token | Token de producao da conta Mercado Pago da loja |
 | Device ID | ID da Point encontrada na busca |
 | POS ID / Store ID | Opcionais |
-| Imprimir comprovante | Liga `seller_ticket`; desligado usa `no_ticket` |
+| Imprimir comprovante | Mantido por compatibilidade; no diagnostico atual o backend envia `no_ticket` |
 
 Depois de salvar o token, clique em **Buscar maquininhas da conta** e selecione
 a Point correta. O `device_id` tem formato parecido com:
@@ -109,3 +120,15 @@ Com a versao nova instalada, os erros tambem ficam em:
 ```
 
 Dados sensiveis como Access Token, CSC, senha e certificado sao mascarados.
+
+## Endpoint interno de diagnostico
+
+Use `GET /api/maquininha/diagnostico` com o token do PDV para ver, sem criar
+cobranca:
+
+- terminal configurado;
+- `operating_mode` atual;
+- ultimas orders encontradas no log;
+- status bruto da ultima order.
+
+Esse endpoint existe para suporte tecnico. Ele nao altera a conta Mercado Pago.

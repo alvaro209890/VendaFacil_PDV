@@ -812,6 +812,18 @@ export interface DispositivoPoint {
   operating_mode?: string;
 }
 
+export interface DiagnosticoMaquininha {
+  config: {
+    habilitado: boolean;
+    device_id: string;
+    access_token_preenchido: boolean;
+  };
+  terminal: DispositivoPoint | null;
+  operating_mode?: string;
+  ultimas_orders: string[];
+  ultima_order_bruta?: Record<string, unknown> | null;
+}
+
 export function getConfigMaquininha(): Promise<{ config: ConfigMaquininha }> {
   return request("/api/maquininha/config");
 }
@@ -822,6 +834,10 @@ export function salvarConfigMaquininha(data: ConfigMaquininha): Promise<{ config
 
 export function listarDispositivosMaquininha(): Promise<{ dispositivos: DispositivoPoint[] }> {
   return request("/api/maquininha/dispositivos");
+}
+
+export function diagnosticoMaquininha(): Promise<DiagnosticoMaquininha> {
+  return request("/api/maquininha/diagnostico");
 }
 
 export interface CobrancaMaquininha {
