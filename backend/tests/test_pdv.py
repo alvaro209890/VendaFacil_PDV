@@ -127,6 +127,52 @@ def test_relatorio_vendas(client, auth):
     assert d["faturamento"] > 0 and d["qtd_vendas"] > 0
 
 
+def test_relatorio_fiscal_segrega_st_monofasico_e_normal(client):
+    r_auth = client.post("/api/auth/registro", json={
+        "usuario": "fiscal-segregado@example.com", "nome": "Fiscal", "senha": "Loja@2026xy",
+    })
+    assert r_auth.status_code == 200, r_auth.text
+    auth = {"Authorization": "Bearer " + r_auth.json()["token"]}
+
+    st = _criar_produto(
+        client, auth, nome="Cerveja ST", preco_venda=10, estoque=10,
+        ncm="22030000", cfop="5405", cst_csosn="500", cst_pis="04", cst_cofins="06",
+    )
+    normal = _criar_produto(
+        client, auth, nome="Arroz Normal", preco_venda=8, estoque=10,
+        ncm="10063021", cfop="5102", cst_csosn="102", cst_pis="07", cst_cofins="07",
+    )
+    cofins = _criar_produto(
+        client, auth, nome="Produto Cofins Zero", preco_venda=5, estoque=10,
+        ncm="00000000", cfop="5102", cst_csosn="102", cst_pis="07", cst_cofins="06",
+    )
+
+    for produto in (st, normal, cofins):
+        resp = client.post("/api/vendas/checkout", json={
+            "itens": [{"produto_id": produto["id"], "quantidade": 1}],
+            "forma_pagamento": "dinheiro",
+        }, headers=auth)
+        assert resp.status_code == 201, resp.text
+
+    from datetime import date
+    hoje = date.today().isoformat()
+    r = client.get(f"/api/relatorios/fiscal?inicio={hoje}&fim={hoje}", headers=auth)
+    assert r.status_code == 200, r.text
+    d = r.json()
+
+    assert d["total_geral"] == 23
+    assert d["icms"]["substituicao_tributaria"] == 10
+    assert d["icms"]["tributado_normal"] == 13
+    assert d["pis_cofins"]["monofasico_st"] == 15
+    assert d["pis_cofins"]["tributado_normal"] == 8
+    assert d["receita_segregada"] == 15
+    assert d["receita_tributada_integral"] == 8
+    por_nome = {item["nome_produto"]: item for item in d["itens"]}
+    assert por_nome["Cerveja ST"]["icms_substituicao"] is True
+    assert por_nome["Produto Cofins Zero"]["pis_cofins_concentrado"] is True
+    assert por_nome["Arroz Normal"]["pis_cofins_concentrado"] is False
+
+
 def test_backup_exportar(client, auth):
     r = client.get("/api/backup/exportar", headers=auth)
     assert r.status_code == 200

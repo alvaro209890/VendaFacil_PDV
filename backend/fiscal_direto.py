@@ -114,6 +114,109 @@ def validar_itens(venda: dict) -> None:
         raise FiscalDiretoError("Produtos com dados fiscais incompletos: " + "; ".join(faltas[:8]))
 
 
+# ── Seleção de grupos de imposto (NFC-e/NF-e Simples Nacional) ────────────────
+# O grupo do XML muda conforme o CST/CSOSN. Emitir tudo como ICMSSN102/PISNT é
+# o erro clássico que rejeita ST na SEFAZ e atrapalha a apuração. Aqui cada
+# código vai para o grupo certo do leiaute 4.00.
+
+# CSOSN -> grupo ICMS do Simples Nacional
+_ICMS_SN_GRUPO = {
+    "101": "ICMSSN101",
+    "102": "ICMSSN102", "103": "ICMSSN102", "300": "ICMSSN102", "400": "ICMSSN102",
+    "500": "ICMSSN500",
+    "900": "ICMSSN900",
+}
+
+
+def _grupo_icms_sn(imposto, prod: dict) -> None:
+    """Monta <ICMS> com o grupo SN correto a partir do CSOSN do produto.
+
+    Cobre os códigos que uma mercearia no Simples realmente usa:
+    102/103/300/400 (tributação normal/isento/imune/não trib.), 500 (ICMS já
+    recolhido por substituição tributária — bebidas frias, cigarro), 101 (com
+    crédito) e 900 (outros). Os códigos de *substituto* 201/202/203 exigem base
+    e MVA da ST e não se aplicam ao revendedor — orientamos usar 500.
+    """
+    csosn = (str(prod.get("cst_csosn") or "102")).strip()
+    orig = str(prod.get("origem") or "0")
+    grupo = _ICMS_SN_GRUPO.get(csosn)
+    if grupo is None:
+        if csosn in {"201", "202", "203"}:
+            raise FiscalDiretoError(
+                f"CSOSN {csosn} é de contribuinte substituto (exige base/MVA da ST). "
+                "Para revenda de produto com ICMS já recolhido use CSOSN 500."
+            )
+        raise FiscalDiretoError(f"CSOSN {csosn} não suportado na emissão direta.")
+    icms = _tag(imposto, "ICMS")
+    sn = _tag(icms, grupo)
+    _tag(sn, "orig", orig)
+    _tag(sn, "CSOSN", csosn)
+    if grupo == "ICMSSN101":
+        # Permite crédito de ICMS no Simples: alíquota de crédito do produto.
+        p_cred = float(prod.get("aliquota_icms") or 0)
+        _tag(sn, "pCredSN", f"{p_cred:.4f}")
+        _tag(sn, "vCredICMSSN", "0.00")
+
+
+def _grupo_pis(imposto, prod: dict, base: float) -> float:
+    """Monta <PIS> conforme o CST e devolve o valor de PIS lançado (para o total).
+
+    CST 01/02 → PISAliq (tributado por alíquota). 04..09 → PISNT (não tributado:
+    monofásico=04, ST=05, alíquota zero=06, isenta=07, sem incidência=08,
+    suspensão=09). Demais (49..99) → PISOutr.
+    """
+    cst = (str(prod.get("cst_pis") or "07")).strip().zfill(2)
+    pis = _tag(imposto, "PIS")
+    if cst in {"01", "02"}:
+        aliq = float(prod.get("aliquota_pis") or 0)
+        valor = round(base * aliq / 100, 2)
+        g = _tag(pis, "PISAliq")
+        _tag(g, "CST", cst)
+        _tag(g, "vBC", f"{base:.2f}")
+        _tag(g, "pPIS", f"{aliq:.4f}")
+        _tag(g, "vPIS", f"{valor:.2f}")
+        return valor
+    if cst in {"04", "05", "06", "07", "08", "09"}:
+        g = _tag(pis, "PISNT")
+        _tag(g, "CST", cst)
+        return 0.0
+    aliq = float(prod.get("aliquota_pis") or 0)
+    valor = round(base * aliq / 100, 2)
+    g = _tag(pis, "PISOutr")
+    _tag(g, "CST", cst)
+    _tag(g, "vBC", f"{base:.2f}")
+    _tag(g, "pPIS", f"{aliq:.4f}")
+    _tag(g, "vPIS", f"{valor:.2f}")
+    return valor
+
+
+def _grupo_cofins(imposto, prod: dict, base: float) -> float:
+    """Igual a _grupo_pis, para a COFINS (CST/alíquota próprios do produto)."""
+    cst = (str(prod.get("cst_cofins") or "07")).strip().zfill(2)
+    cof = _tag(imposto, "COFINS")
+    if cst in {"01", "02"}:
+        aliq = float(prod.get("aliquota_cofins") or 0)
+        valor = round(base * aliq / 100, 2)
+        g = _tag(cof, "COFINSAliq")
+        _tag(g, "CST", cst)
+        _tag(g, "vBC", f"{base:.2f}")
+        _tag(g, "pCOFINS", f"{aliq:.4f}")
+        _tag(g, "vCOFINS", f"{valor:.2f}")
+        return valor
+    if cst in {"04", "05", "06", "07", "08", "09"}:
+        g = _tag(cof, "COFINSNT")
+        _tag(g, "CST", cst)
+        return 0.0
+    aliq = float(prod.get("aliquota_cofins") or 0)
+    valor = round(base * aliq / 100, 2)
+    g = _tag(cof, "COFINSOutr")
+    _tag(g, "CST", cst)
+    _tag(g, "vBC", f"{base:.2f}")
+    _tag(g, "pCOFINS", f"{aliq:.4f}")
+    _tag(g, "vCOFINS", f"{valor:.2f}")
+    return valor
+
+
 def montar_documento(venda: dict, config: dict, modelo: str = "65",
                      cpf_consumidor: str | None = None,
                      destinatario: dict | None = None,
@@ -196,6 +299,8 @@ def montar_documento(venda: dict, config: dict, modelo: str = "65",
             _tag(dest, "IE", so_digitos(destinatario.get("inscricao_estadual")))
 
     total_prod = 0.0
+    v_pis_total = 0.0
+    v_cofins_total = 0.0
     for idx, item in enumerate(venda.get("itens", []), 1):
         prod = db.get_produto(item["produto_id"]) or {}
         qtd = float(item["quantidade"])
@@ -222,25 +327,27 @@ def montar_documento(venda: dict, config: dict, modelo: str = "65",
         _tag(p, "vUnTrib", f"{val:.4f}")
         _tag(p, "indTot", "1")
         imp = _tag(det, "imposto")
-        icms = _tag(imp, "ICMS")
-        sn = _tag(icms, "ICMSSN102")
-        _tag(sn, "orig", prod.get("origem") or "0")
-        _tag(sn, "CSOSN", prod.get("cst_csosn") or "102")
-        pis = _tag(imp, "PIS")
-        pisnt = _tag(pis, "PISNT")
-        _tag(pisnt, "CST", prod.get("cst_pis") or "07")
-        cof = _tag(imp, "COFINS")
-        cofnt = _tag(cof, "COFINSNT")
-        _tag(cofnt, "CST", prod.get("cst_cofins") or "07")
+        _grupo_icms_sn(imp, prod)
+        v_pis_total += _grupo_pis(imp, prod, bruto)
+        v_cofins_total += _grupo_cofins(imp, prod, bruto)
 
     total = _tag(inf, "total")
     icmst = _tag(total, "ICMSTot")
+    # Simples Nacional (CRT 1/4): ICMS próprio não compõe os totais (vICMS=0).
+    # ST e monofásico (CSOSN 500 / CST PIS-COFINS 04..06) também não geram
+    # imposto a recolher na nota — é justamente o que evita a bitributação.
     for tag in ("vBC", "vICMS", "vICMSDeson", "vFCPUFDest", "vICMSUFDest",
                 "vICMSUFRemet", "vFCP", "vBCST", "vST", "vFCPST", "vFCPSTRet"):
         _tag(icmst, tag, "0.00")
     _tag(icmst, "vProd", f"{total_prod:.2f}")
-    for tag in ("vFrete", "vSeg", "vDesc", "vII", "vIPI", "vIPIDevol", "vPIS", "vCOFINS", "vOutro"):
+    _tag(icmst, "vFrete", "0.00")
+    _tag(icmst, "vSeg", "0.00")
+    _tag(icmst, "vDesc", "0.00")
+    for tag in ("vII", "vIPI", "vIPIDevol"):
         _tag(icmst, tag, "0.00")
+    _tag(icmst, "vPIS", f"{v_pis_total:.2f}")
+    _tag(icmst, "vCOFINS", f"{v_cofins_total:.2f}")
+    _tag(icmst, "vOutro", "0.00")
     _tag(icmst, "vNF", f"{float(venda.get('total') or total_prod):.2f}")
     transp = _tag(inf, "transp")
     _tag(transp, "modFrete", "9")

@@ -59,6 +59,35 @@ def test_monta_xml_nfce_65(client, auth):
     assert doc.qrcode_url and "cHashQRCode" in doc.qrcode_url
 
 
+def test_monta_xml_nfce_produto_st_e_monofasico_no_grupo_correto(client, auth):
+    produto = client.post("/api/produtos", headers=auth, json={
+        "nome": "Cerveja Fiscal", "preco_venda": 10, "estoque": 5,
+        "ncm": "22030000", "cfop": "5405", "cst_csosn": "500", "unidade": "UN",
+        "cst_pis": "04", "cst_cofins": "06",
+    }).json()["produto"]
+
+    doc = fiscal_direto.montar_documento(_venda(produto), _cfg(), "65", serie=1, numero=1)
+
+    assert "<ICMSSN500>" in doc.xml
+    assert "<ICMSSN102>" not in doc.xml
+    assert "<CSOSN>500</CSOSN>" in doc.xml
+    assert "<PISNT><CST>04</CST></PISNT>" in doc.xml
+    assert "<COFINSNT><CST>06</CST></COFINSNT>" in doc.xml
+    assert "<vPIS>0.00</vPIS>" in doc.xml
+    assert "<vCOFINS>0.00</vCOFINS>" in doc.xml
+
+
+def test_monta_xml_nfce_rejeita_csosn_de_substituto_para_revenda(client, auth):
+    produto = client.post("/api/produtos", headers=auth, json={
+        "nome": "Produto ST Errado", "preco_venda": 10, "estoque": 5,
+        "ncm": "22021000", "cfop": "5405", "cst_csosn": "201", "unidade": "UN",
+    }).json()["produto"]
+
+    import pytest
+    with pytest.raises(fiscal_direto.FiscalDiretoError, match="use CSOSN 500"):
+        fiscal_direto.montar_documento(_venda(produto), _cfg(), "65", serie=1, numero=1)
+
+
 def test_monta_xml_nfe_55_para_empresa(client, auth):
     produto = client.post("/api/produtos", headers=auth, json={
         "nome": "Arroz Fiscal", "preco_venda": 10, "estoque": 5,

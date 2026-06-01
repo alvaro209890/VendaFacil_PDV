@@ -116,6 +116,20 @@ async def relatorio_vendas(request: Request, inicio: str | None = None, fim: str
     return db.relatorio_vendas(user_id, inicio, fim)
 
 
+@app.get("/api/relatorios/fiscal")
+async def relatorio_fiscal(request: Request, inicio: str | None = None, fim: str | None = None) -> dict:
+    """Faturamento segregado por tratamento tributário (ICMS-ST / monofásico),
+    para a apuração do Simples Nacional (PGDAS-D) sem bitributação."""
+    user_id = _get_user_id(request)
+    from datetime import date
+    hoje = date.today().isoformat()
+    if not inicio:
+        inicio = hoje[:8] + "01"
+    if not fim:
+        fim = hoje
+    return db.relatorio_fiscal_segregado(user_id, inicio, fim)
+
+
 # ── Frontend embutido (serve o build do React na mesma origem) ──
 # Habilitado automaticamente quando a pasta 'dist' existe ao lado do app
 # (caso do .exe). Assim o sistema roda 100% local: abrir o navegador na

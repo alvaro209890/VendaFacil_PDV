@@ -531,6 +531,34 @@ export function relatorioVendas(inicio: string, fim: string): Promise<RelatorioV
   return request(`/api/relatorios/vendas?inicio=${encodeURIComponent(inicio)}&fim=${encodeURIComponent(fim)}`);
 }
 
+export interface RelatorioFiscalItem {
+  produto_id: number;
+  nome_produto: string;
+  ncm: string;
+  csosn: string;
+  cst_pis: string;
+  cst_cofins: string;
+  qtd: number;
+  total: number;
+  icms_substituicao: boolean;
+  pis_cofins_concentrado: boolean;
+}
+
+export interface RelatorioFiscal {
+  inicio: string;
+  fim: string;
+  total_geral: number;
+  icms: { substituicao_tributaria: number; tributado_normal: number };
+  pis_cofins: { monofasico_st: number; tributado_normal: number };
+  receita_segregada: number;
+  receita_tributada_integral: number;
+  itens: RelatorioFiscalItem[];
+}
+
+export function relatorioFiscal(inicio: string, fim: string): Promise<RelatorioFiscal> {
+  return request(`/api/relatorios/fiscal?inicio=${encodeURIComponent(inicio)}&fim=${encodeURIComponent(fim)}`);
+}
+
 // ── Caixa (abertura/fechamento) ──
 
 export interface CaixaResumo {

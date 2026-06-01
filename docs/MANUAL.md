@@ -126,6 +126,17 @@ Tela **Relatórios**: escolha o período (atalhos: hoje / 7 / 30 dias / mês) e 
 **faturamento, nº de vendas, ticket médio, lucro estimado**, vendas **por forma de
 pagamento**, **produtos mais vendidos** e **vendas por dia**.
 
+Na aba **Fiscal (Simples)** o sistema separa a receita do período para ajudar o
+contador no PGDAS-D:
+- **ICMS já recolhido por ST**: produtos cadastrados com **CSOSN 500**.
+- **PIS/COFINS monofásico, ST ou alíquota zero**: produtos cadastrados com
+  **CST 04, 05 ou 06** em PIS e/ou COFINS.
+- **Tributada integral**: produtos sem essas marcações.
+
+Essa segregação usa o cadastro fiscal atual de cada produto. Antes de fechar o
+mês, confira com o contador se NCM, CFOP, CSOSN, CST PIS e CST COFINS estão
+corretos para cada mercadoria.
+
 ## 12. Nota fiscal (NFC-e e NF-e)
 Opcional. O sistema emite **NFC-e (modelo 65)** — o cupom fiscal do consumidor — e
 **NF-e (modelo 55)** — a nota para outra empresa/cliente identificado. O fluxo

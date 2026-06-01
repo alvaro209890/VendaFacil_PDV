@@ -1187,6 +1187,94 @@ class Database:
             "top_produtos": [dict(r) for r in top],
         }
 
+    def relatorio_fiscal_segregado(self, user_id: int, inicio: str, fim: str) -> dict[str, Any]:
+        """Faturamento do período separado por tratamento tributário, para a
+        apuração do Simples Nacional (PGDAS-D).
+
+        O objetivo é evitar a bitributação: produtos com ICMS já recolhido por
+        Substituição Tributária (CSOSN 500) e com PIS/COFINS monofásico, ST ou
+        alíquota zero (CST 04/05/06) NÃO devem ser tributados de novo no DAS — devem ser
+        informados como receita "com substituição tributária / tributação
+        concentrada". Aqui somamos a receita de cada grupo a partir dos itens
+        vendidos, cruzando com a classificação fiscal atual do produto.
+        """
+        with self._lock:
+            linhas = self._conn.execute(
+                "SELECT i.produto_id, i.nome_produto, "
+                "       COALESCE(p.ncm,'') ncm, "
+                "       COALESCE(NULLIF(p.cst_csosn,''),'102') csosn, "
+                "       COALESCE(NULLIF(p.cst_pis,''),'07') cst_pis, "
+                "       COALESCE(NULLIF(p.cst_cofins,''),'07') cst_cofins, "
+                "       SUM(i.quantidade) qtd, SUM(i.subtotal) total "
+                "FROM itens_venda i JOIN vendas v ON v.id=i.venda_id "
+                "LEFT JOIN produtos p ON p.id=i.produto_id "
+                "WHERE v.user_id=? AND v.status='concluida' "
+                "AND date(v.criado_em, 'localtime') BETWEEN ? AND ? "
+                "GROUP BY i.produto_id, i.nome_produto, ncm, csosn, cst_pis, cst_cofins "
+                "ORDER BY total DESC",
+                (user_id, inicio, fim)
+            ).fetchall()
+
+        # CSOSN de ICMS já recolhido por ST (não tributar ICMS de novo no DAS).
+        ICMS_ST = {"500"}
+        # CST PIS/COFINS de tributação concentrada (monofásico), ST ou alíquota zero.
+        PC_CONCENTRADO = {"04", "05", "06"}
+
+        icms_st = icms_normal = 0.0
+        pc_concentrado = pc_normal = 0.0
+        receita_segregada = receita_normal = 0.0
+        total_geral = 0.0
+        itens: list[dict[str, Any]] = []
+        for r in linhas:
+            valor = round(r["total"] or 0.0, 2)
+            total_geral += valor
+            csosn = str(r["csosn"]).strip()
+            cst_pis = str(r["cst_pis"]).strip().zfill(2)
+            cst_cofins = str(r["cst_cofins"]).strip().zfill(2)
+            icms_recolhido = csosn in ICMS_ST
+            pc_recolhido = cst_pis in PC_CONCENTRADO or cst_cofins in PC_CONCENTRADO
+            if icms_recolhido:
+                icms_st += valor
+            else:
+                icms_normal += valor
+            if pc_recolhido:
+                pc_concentrado += valor
+            else:
+                pc_normal += valor
+            # Segregado no PGDAS-D = tem ICMS-ST e/ou PIS-COFINS concentrado.
+            if icms_recolhido or pc_recolhido:
+                receita_segregada += valor
+            else:
+                receita_normal += valor
+            itens.append({
+                "produto_id": r["produto_id"],
+                "nome_produto": r["nome_produto"],
+                "ncm": r["ncm"],
+                "csosn": csosn,
+                "cst_pis": cst_pis,
+                "cst_cofins": cst_cofins,
+                "qtd": round(r["qtd"] or 0.0, 3),
+                "total": valor,
+                "icms_substituicao": icms_recolhido,
+                "pis_cofins_concentrado": pc_recolhido,
+            })
+
+        return {
+            "inicio": inicio, "fim": fim,
+            "total_geral": round(total_geral, 2),
+            "icms": {
+                "substituicao_tributaria": round(icms_st, 2),
+                "tributado_normal": round(icms_normal, 2),
+            },
+            "pis_cofins": {
+                "monofasico_st": round(pc_concentrado, 2),
+                "tributado_normal": round(pc_normal, 2),
+            },
+            "receita_segregada": round(receita_segregada, 2),
+            "receita_tributada_integral": round(receita_normal, 2),
+            "itens": itens,
+        }
+
     def close(self) -> None:
         self._conn.close()
 

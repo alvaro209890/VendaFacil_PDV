@@ -40,6 +40,8 @@ falta é **negócio, distribuição e robustez de produção**, não funcionalid
 - [ ] **Testar a maquininha com hardware real** (Point física + conta Mercado
       Pago de produção). O fluxo está pronto no código, mas o happy-path só se
       confirma com aparelho.
+- [x] **Relatório Fiscal (Simples)** — separa receita com ICMS-ST/monofásico da
+      tributada integral para apoiar o PGDAS-D do contador.
 - [ ] **NFC-e de ponta a ponta**: o lojista precisa de certificado A1, CSC e
       credenciamento na SEFAZ do estado. Testar homologação → produção de
       verdade com pelo menos um estado-alvo (MT/GO já estão no código).
