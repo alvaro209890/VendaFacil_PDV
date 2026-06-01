@@ -19,8 +19,11 @@ from backup import router as backup_router
 from fiscal_config import router as fiscal_config_router
 from fiscal_router import router as fiscal_router, nfe_router
 from database import db
+from errors import configure_error_logging, register_error_handlers
 
+configure_error_logging()
 app = FastAPI(title="VendaFácil PDV", version="0.1.0")
+register_error_handlers(app)
 
 app.add_middleware(
     CORSMiddleware,

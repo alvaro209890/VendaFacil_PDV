@@ -1,10 +1,11 @@
 """Clientes — VendaFácil PDV"""
 
 from fastapi import APIRouter, HTTPException, Request
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from auth import _verificar_jwt, _agora
 from database import db
+from normalizers import normalize_cep, normalize_upper_uf
 
 router = APIRouter()
 
@@ -36,6 +37,16 @@ class ClienteCreate(BaseModel):
     uf: str = Field(default="", max_length=2)
     cep: str = Field(default="", max_length=9)
 
+    @field_validator("cep", mode="before")
+    @classmethod
+    def _normalizar_cep(cls, value):
+        return normalize_cep(value)
+
+    @field_validator("uf", mode="before")
+    @classmethod
+    def _normalizar_uf(cls, value):
+        return normalize_upper_uf(value)
+
 
 class ClienteUpdate(BaseModel):
     nome: str | None = Field(default=None, min_length=1, max_length=120)
@@ -53,6 +64,16 @@ class ClienteUpdate(BaseModel):
     codigo_municipio: str | None = Field(default=None, max_length=7)
     uf: str | None = Field(default=None, max_length=2)
     cep: str | None = Field(default=None, max_length=9)
+
+    @field_validator("cep", mode="before")
+    @classmethod
+    def _normalizar_cep(cls, value):
+        return normalize_cep(value)
+
+    @field_validator("uf", mode="before")
+    @classmethod
+    def _normalizar_uf(cls, value):
+        return normalize_upper_uf(value)
 
 
 @router.get("")
