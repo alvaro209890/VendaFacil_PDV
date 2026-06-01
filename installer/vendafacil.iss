@@ -17,7 +17,7 @@
 ; ============================================================================
 
 #define AppName "VendaFácil PDV"
-#define AppVersion "1.0.8"
+#define AppVersion "1.0.10"
 #define AppPublisher "SUA EMPRESA LTDA"          ; <-- troque pelo nome/CNPJ da sua empresa
 #define AppURL "https://seudominio.com.br"        ; <-- troque pelo seu site
 #define AppExe "VendaFacilPDV.exe"

@@ -9,6 +9,7 @@
 - [RECIBO.md](RECIBO.md) — impressão de recibo/cupom na térmica (e bloco fiscal da NFC-e).
 - [RESPONSAVEL_TECNICO.md](RESPONSAVEL_TECNICO.md) — grupo infRespTec/CSRT no XML (desligado por padrão; MT não exige).
 - [MAQUININHA_MERCADOPAGO.md](MAQUININHA_MERCADOPAGO.md) — cartão e PIX pela maquininha (Point).
+- [DIAGNOSTICO_MAQUININHA_POINT.md](DIAGNOSTICO_MAQUININHA_POINT.md) — diagnóstico do teste real neste PC e migração para Orders API.
 - [BACKUP.md](BACKUP.md) — backup local (manual + automático) e restauração.
 - Relatórios de vendas: ver [MANUAL.md › Relatórios](MANUAL.md#11-relatórios).
 
