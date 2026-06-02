@@ -1,77 +1,69 @@
-"""Maquininha Mercado Pago (Point) — cobrança no cartão pela máquina física.
+"""Maquininha Mercado Pago Point via Orders API.
 
-O caixa cria uma "intenção de pagamento" (payment intent) para um dispositivo
-Point já pareado à conta Mercado Pago da loja. A maquininha exibe o valor, o
-cliente passa o cartão (crédito/débito) e o PDV consulta o status até concluir.
-
-NÃO guardamos dados de cartão. Falamos só com a API do Mercado Pago usando o
-Access Token da conta da loja (cadastrado na config). Tudo exige internet —
-pagamento em cartão é online por natureza.
-
-Docs: https://www.mercadopago.com.br/developers/pt/docs/mp-point/integration-api
+O PDV cria uma order do tipo ``point`` para a terminal configurada. A Point
+precisa estar em modo PDV para puxar a order da nuvem do Mercado Pago.
 """
+from __future__ import annotations
+
 import json
+import logging
+import re
+import uuid
 import urllib.error
+import urllib.parse
 import urllib.request
-from typing import Optional
+from decimal import Decimal, ROUND_HALF_UP
+from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from auth import _verificar_jwt, _agora
 from database import db
+from paths import DATA_DIR
 
 router = APIRouter()
+logger = logging.getLogger("vendafacil.maquininha")
 
 _BASE = "https://api.mercadopago.com"
 _TIMEOUT = 30
-# Campos sensíveis que não voltam por inteiro para o frontend.
 _SENSIVEIS = {"access_token"}
+_LOG_FILE = DATA_DIR / "logs" / "vendafacil.log"
 
 
-def _auth(request: Request) -> int:
-    a = request.headers.get("Authorization", "")
-    payload = _verificar_jwt(a[7:]) if a.startswith("Bearer ") else None
-    if not payload:
-        raise HTTPException(status_code=401, detail="Token inválido ou expirado.")
-    return int(payload["sub"])
-
-
-def _mascarar(cfg: dict) -> dict:
-    out = dict(cfg)
-    for k in _SENSIVEIS:
-        if out.get(k):
-            out[k + "_preenchido"] = True
-            out[k] = ""
-    return out
-
-
-# ─────────────────────────── Cliente Point ───────────────────────────
 class PointError(Exception):
-    def __init__(self, status: int, mensagem: str):
+    def __init__(self, status: int, mensagem: str, detalhe: dict[str, Any] | None = None):
         self.status = status
         self.mensagem = mensagem
+        self.detalhe = detalhe or {}
         super().__init__(mensagem)
 
 
 class MercadoPagoPoint:
-    """Cliente mínimo da Integration API do Mercado Pago Point."""
+    """Cliente minimo da Mercado Pago Point Orders API."""
 
     def __init__(self, access_token: str):
         if not access_token:
-            raise PointError(503, "Access Token do Mercado Pago não configurado.")
+            raise PointError(503, "Access Token do Mercado Pago nao configurado.")
         self.token = access_token
 
-    def _req(self, method: str, path: str, body: Optional[dict] = None) -> tuple[int, dict]:
+    def _req(
+        self,
+        method: str,
+        path: str,
+        body: dict[str, Any] | None = None,
+        *,
+        idempotency: bool = False,
+    ) -> tuple[int, dict[str, Any]]:
         url = f"{_BASE}{path}"
         data = json.dumps(body).encode() if body is not None else None
-        req = urllib.request.Request(
-            url, data=data, method=method,
-            headers={
-                "Authorization": f"Bearer {self.token}",
-                "Content-Type": "application/json",
-            },
-        )
+        headers = {
+            "Authorization": f"Bearer {self.token}",
+            "Content-Type": "application/json",
+        }
+        if idempotency:
+            headers["X-Idempotency-Key"] = str(uuid.uuid4())
+        req = urllib.request.Request(url, data=data, method=method, headers=headers)
         try:
             with urllib.request.urlopen(req, timeout=_TIMEOUT) as r:
                 txt = r.read().decode() or "{}"
@@ -82,69 +74,84 @@ class MercadoPagoPoint:
             except Exception:
                 return e.code, {"message": str(e)}
         except urllib.error.URLError as e:
-            raise PointError(503, f"Sem conexão com o Mercado Pago: {e.reason}")
+            raise PointError(503, f"Sem conexao com o Mercado Pago: {e.reason}")
 
-    # Lista os dispositivos Point pareados à conta (para descobrir o device_id).
-    def listar_dispositivos(self) -> list[dict]:
+    def listar_dispositivos(self) -> list[dict[str, Any]]:
+        """Lista as terminais Point da conta usando a API atual de terminals."""
+        status, resp = self._req("GET", "/terminals/v1/list?limit=50&offset=0")
+        if status >= 400:
+            logger.warning("terminals_v1_list_failed status=%s resp=%s", status, _safe(resp))
+            return self._listar_dispositivos_legado()
+        return ((resp.get("data") or {}).get("terminals") or [])
+
+    def _listar_dispositivos_legado(self) -> list[dict[str, Any]]:
         status, resp = self._req("GET", "/point/integration-api/devices")
         if status >= 400:
-            raise PointError(status, _msg(resp))
+            _raise_point_error(status, resp, "point_devices_legacy_list")
         return resp.get("devices", [])
 
-    # Cria a intenção de pagamento. Para cartão, força o tipo (crédito/débito);
-    # para PIX, deixa o aparelho apresentar o QR (depende da Point suportar PIX).
-    def criar_cobranca(self, device_id: str, valor_centavos: int,
-                       referencia: str, imprimir: bool,
-                       payment: dict | None = None) -> dict:
+    def configurar_modo_pdv(self, device_id: str) -> None:
+        body = {"terminals": [{"id": device_id, "operating_mode": "PDV"}]}
+        status, resp = self._req("PATCH", "/terminals/v1/setup", body)
+        if status >= 400:
+            _raise_point_error(status, resp, "terminals_v1_setup")
+        logger.info("point_operating_mode_pdv device_id=%s", device_id)
+
+    def criar_cobranca(
+        self,
+        device_id: str,
+        valor: Decimal,
+        referencia: str,
+        imprimir: bool,
+        forma: str,
+    ) -> dict[str, Any]:
+        default_type = _forma_para_default_type(forma)
         body = {
-            "amount": valor_centavos,
-            "additional_info": {
-                "external_reference": referencia,
-                "print_on_terminal": imprimir,
+            "type": "point",
+            "external_reference": referencia,
+            "description": "VendaFacil PDV",
+            "expiration_time": "PT10M",
+            "transactions": {
+                "payments": [{"amount": _money(valor)}],
+            },
+            "config": {
+                "point": {
+                    "terminal_id": device_id,
+                    # Mantem o payload igual ao exemplo oficial do Mercado Pago
+                    # enquanto diagnosticamos terminals que ficam em "created".
+                    "print_on_terminal": "no_ticket",
+                },
+                "payment_method": {"default_type": default_type},
             },
         }
-        if payment:
-            body["payment"] = payment
-        status, resp = self._req(
-            "POST", f"/point/integration-api/devices/{device_id}/payment-intents", body
+        status, resp = self._req("POST", "/v1/orders", body, idempotency=True)
+        logger.info(
+            "point_order_create status=%s device_id=%s forma=%s order_id=%s order_status=%s",
+            status,
+            device_id,
+            forma,
+            resp.get("id"),
+            resp.get("status"),
         )
         if status >= 400:
-            raise PointError(status, _msg(resp))
+            _raise_point_error(status, resp, "orders_create")
         return resp
 
-    def consultar_cobranca(self, payment_intent_id: str) -> dict:
-        status, resp = self._req(
-            "GET", f"/point/integration-api/payment-intents/{payment_intent_id}"
-        )
+    def consultar_cobranca(self, order_id: str) -> dict[str, Any]:
+        safe_id = urllib.parse.quote(order_id, safe="")
+        status, resp = self._req("GET", f"/v1/orders/{safe_id}")
         if status >= 400:
-            raise PointError(status, _msg(resp))
+            _raise_point_error(status, resp, "orders_get")
         return resp
 
-    def cancelar_cobranca(self, device_id: str, payment_intent_id: str) -> dict:
-        status, resp = self._req(
-            "DELETE",
-            f"/point/integration-api/devices/{device_id}/payment-intents/{payment_intent_id}",
-        )
+    def cancelar_cobranca(self, order_id: str) -> dict[str, Any]:
+        safe_id = urllib.parse.quote(order_id, safe="")
+        status, resp = self._req("POST", f"/v1/orders/{safe_id}/cancel", idempotency=True)
         if status >= 400:
-            raise PointError(status, _msg(resp))
+            _raise_point_error(status, resp, "orders_cancel")
         return resp
 
 
-def _msg(resp: dict) -> str:
-    return resp.get("message") or resp.get("error") or "Erro na API do Mercado Pago."
-
-
-def _cliente() -> MercadoPagoPoint:
-    cfg = db.get_config_maquininha()
-    if not cfg.get("habilitado"):
-        raise HTTPException(status_code=503, detail="Maquininha não habilitada nas configurações.")
-    try:
-        return MercadoPagoPoint(cfg.get("access_token", ""))
-    except PointError as e:
-        raise HTTPException(status_code=e.status, detail=e.mensagem)
-
-
-# ─────────────────────────── Models ───────────────────────────
 class ConfigMaquininhaInput(BaseModel):
     habilitado: bool | None = None
     access_token: str | None = None
@@ -157,18 +164,136 @@ class ConfigMaquininhaInput(BaseModel):
 class CobrancaInput(BaseModel):
     valor: float = Field(gt=0, le=999999.99)
     venda_uuid: str | None = Field(default=None, max_length=64)
-    forma: str | None = Field(default=None, max_length=12)  # credito | debito | pix
+    forma: str | None = Field(default=None, max_length=12)  # credito | debito
 
 
-# Mapeia a forma do PDV para o tipo de pagamento do Mercado Pago Point.
-# PIX → None (o aparelho apresenta o QR; depende da Point suportar PIX).
-_FORMA_PARA_PAYMENT = {
-    "credito": {"type": "credit_card", "installments": 1},
-    "debito": {"type": "debit_card", "installments": 1},
-}
+def _auth(request: Request) -> int:
+    a = request.headers.get("Authorization", "")
+    payload = _verificar_jwt(a[7:]) if a.startswith("Bearer ") else None
+    if not payload:
+        raise HTTPException(status_code=401, detail="Token invalido ou expirado.")
+    return int(payload["sub"])
 
 
-# ─────────────────────────── Rotas: configuração ───────────────────────────
+def _mascarar(cfg: dict) -> dict:
+    out = dict(cfg)
+    for k in _SENSIVEIS:
+        if out.get(k):
+            out[k + "_preenchido"] = True
+            out[k] = ""
+    return out
+
+
+def _msg(resp: dict[str, Any]) -> str:
+    return (
+        resp.get("message")
+        or resp.get("error")
+        or resp.get("status_detail")
+        or "Erro na API do Mercado Pago."
+    )
+
+
+def _friendly_msg(status: int, resp: dict[str, Any]) -> str:
+    if status == 409:
+        return "Ja existe uma cobranca pendente na Point. Cancele, aguarde expirar ou tente novamente em instantes."
+    return _msg(resp)
+
+
+def _raise_point_error(status: int, resp: dict[str, Any], context: str) -> None:
+    if status in {400, 409, 412} or status >= 500:
+        logger.warning(
+            "mercadopago_error context=%s status=%s response=%s",
+            context,
+            status,
+            _safe(resp, limit=6000),
+        )
+    raise PointError(status, _friendly_msg(status, resp), resp)
+
+
+def _safe(resp: dict[str, Any], limit: int = 1000) -> str:
+    try:
+        return json.dumps(resp, ensure_ascii=False, default=str)[:limit]
+    except Exception:
+        return repr(resp)
+
+
+def _cliente() -> MercadoPagoPoint:
+    cfg = db.get_config_maquininha()
+    if not cfg.get("habilitado"):
+        raise HTTPException(status_code=503, detail="Maquininha nao habilitada nas configuracoes.")
+    try:
+        return MercadoPagoPoint(cfg.get("access_token", ""))
+    except PointError as e:
+        raise HTTPException(status_code=e.status, detail=e.mensagem)
+
+
+def _forma_para_default_type(forma: str | None) -> str:
+    f = (forma or "credito").lower()
+    if f == "debito":
+        return "debit_card"
+    if f == "credito":
+        return "credit_card"
+    raise PointError(
+        400,
+        "Maquininha configurada apenas para cartao de credito/debito. Para PIX, use o QR Code do PDV.",
+    )
+
+
+def _money(valor: Decimal) -> str:
+    return str(valor.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
+
+
+def _valor_decimal(valor: float) -> Decimal:
+    return Decimal(str(valor)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+
+def _payment(order: dict[str, Any]) -> dict[str, Any]:
+    payments = ((order.get("transactions") or {}).get("payments") or [])
+    return payments[0] if payments else {}
+
+
+def _state(order: dict[str, Any]) -> str:
+    status = (order.get("status") or "").lower()
+    status_detail = (order.get("status_detail") or "").lower()
+    payment_status = (_payment(order).get("status") or "").lower()
+
+    if status in {"processed", "paid"} or payment_status in {"approved", "processed", "accredited"}:
+        return "FINISHED"
+    if status in {"at_terminal", "on_terminal"} or status_detail in {"at_terminal", "on_terminal"}:
+        return "ON_TERMINAL"
+    if status in {"expired", "canceled", "cancelled"}:
+        return "CANCELED"
+    if status in {"failed", "error"}:
+        return "ERROR"
+    if status in {"processing", "action_required"}:
+        return "PROCESSING"
+    return "OPEN"
+
+
+def _payment_status_front(order: dict[str, Any]) -> str | None:
+    payment_status = (_payment(order).get("status") or "").lower()
+    if _state(order) == "FINISHED":
+        return "approved"
+    return payment_status or order.get("status")
+
+
+def _payment_type_front(order: dict[str, Any]) -> str | None:
+    payment = _payment(order)
+    method = (order.get("config") or {}).get("payment_method") or {}
+    return payment.get("type") or method.get("default_type")
+
+
+def _ultimas_orders_log(limit: int = 5) -> list[str]:
+    if not _LOG_FILE.exists():
+        return []
+    try:
+        text = _LOG_FILE.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return []
+    ids = re.findall(r"order_id=(ORD[A-Z0-9]+)", text)
+    return list(dict.fromkeys(ids))[-limit:]
+
+
 @router.get("/config")
 async def obter_config(request: Request) -> dict:
     _auth(request)
@@ -188,7 +313,6 @@ async def salvar_config(data: ConfigMaquininhaInput, request: Request) -> dict:
 
 @router.get("/dispositivos")
 async def listar_dispositivos(request: Request) -> dict:
-    """Lista as maquininhas pareadas à conta — use para descobrir o device_id."""
     _auth(request)
     cli = _cliente()
     try:
@@ -197,62 +321,101 @@ async def listar_dispositivos(request: Request) -> dict:
         raise HTTPException(status_code=e.status, detail=e.mensagem)
 
 
-# ─────────────────────────── Rotas: cobrança ───────────────────────────
+@router.get("/diagnostico")
+async def diagnostico(request: Request) -> dict:
+    """Diagnostico operacional da Point configurada, sem criar cobranca."""
+    _auth(request)
+    cfg = db.get_config_maquininha()
+    device_id = cfg.get("device_id") or ""
+    cli = _cliente()
+    try:
+        dispositivos = cli.listar_dispositivos()
+    except PointError as e:
+        raise HTTPException(status_code=e.status, detail=e.mensagem)
+
+    terminal = next((d for d in dispositivos if d.get("id") == device_id), None)
+    ultimas_orders = _ultimas_orders_log()
+    ultima_order_bruta = None
+    if ultimas_orders:
+        try:
+            ultima_order_bruta = cli.consultar_cobranca(ultimas_orders[-1])
+        except PointError as e:
+            ultima_order_bruta = {"erro": e.mensagem, "status": e.status}
+
+    return {
+        "config": {
+            "habilitado": bool(cfg.get("habilitado")),
+            "device_id": device_id,
+            "access_token_preenchido": bool(cfg.get("access_token")),
+        },
+        "terminal": terminal,
+        "operating_mode": (terminal or {}).get("operating_mode"),
+        "ultimas_orders": ultimas_orders,
+        "ultima_order_bruta": ultima_order_bruta,
+    }
+
+
 @router.post("/cobranca")
 async def criar_cobranca(data: CobrancaInput, request: Request) -> dict:
-    """Dispara a cobrança na maquininha. Retorna o id da intenção para consultar."""
     _auth(request)
-    cli = _cliente()  # valida habilitado + access_token
+    referencia = data.venda_uuid or f"venda-{uuid.uuid4().hex[:8]}"
+    forma = (data.forma or "credito").lower()
+    if forma not in {"credito", "debito"}:
+        raise HTTPException(
+            status_code=400,
+            detail="Maquininha configurada apenas para cartao de credito/debito. Para PIX, use o QR Code do PDV.",
+        )
+
+    cli = _cliente()
     cfg = db.get_config_maquininha()
     device_id = cfg.get("device_id") or ""
     if not device_id:
-        raise HTTPException(status_code=400, detail="device_id da maquininha não configurado.")
-    referencia = data.venda_uuid or "venda"
-    valor_centavos = int(round(data.valor * 100))
-    payment = _FORMA_PARA_PAYMENT.get((data.forma or "").lower())  # None p/ PIX
+        raise HTTPException(status_code=400, detail="Device ID da maquininha nao configurado.")
     try:
+        cli.configurar_modo_pdv(device_id)
         resp = cli.criar_cobranca(
-            device_id, valor_centavos, referencia,
-            bool(cfg.get("imprimir_comprovante", 1)), payment,
+            device_id,
+            _valor_decimal(data.valor),
+            referencia,
+            bool(cfg.get("imprimir_comprovante", 1)),
+            forma,
         )
     except PointError as e:
         raise HTTPException(status_code=e.status, detail=e.mensagem)
+
     return {
-        "payment_intent_id": resp.get("id"),
-        "state": resp.get("state"),
-        "device_id": resp.get("device_id", device_id),
+        "payment_intent_id": resp.get("id"),  # compatibilidade com o frontend
+        "state": _state(resp),
+        "device_id": (resp.get("config") or {}).get("point", {}).get("terminal_id", device_id),
     }
 
 
 @router.get("/cobranca/{payment_intent_id}")
 async def consultar_cobranca(payment_intent_id: str, request: Request) -> dict:
-    """Consulta o status da cobrança (poll a cada ~2s até finalizar)."""
     _auth(request)
     cli = _cliente()
     try:
         resp = cli.consultar_cobranca(payment_intent_id)
     except PointError as e:
         raise HTTPException(status_code=e.status, detail=e.mensagem)
-    pgto = resp.get("payment") or {}
+    pgto = _payment(resp)
+    state = _state(resp)
     return {
         "payment_intent_id": resp.get("id"),
-        "state": resp.get("state"),          # OPEN, ON_TERMINAL, PROCESSING, FINISHED, CANCELED...
-        "pago": resp.get("state") == "FINISHED",
+        "state": state,
+        "pago": state == "FINISHED",
         "payment_id": pgto.get("id"),
-        "payment_status": pgto.get("status"),
-        "payment_type": pgto.get("type"),     # credit_card | debit_card
+        "payment_status": _payment_status_front(resp),
+        "payment_type": _payment_type_front(resp),
     }
 
 
 @router.delete("/cobranca/{payment_intent_id}")
 async def cancelar_cobranca(payment_intent_id: str, request: Request) -> dict:
-    """Cancela uma cobrança ainda não concluída na maquininha."""
     _auth(request)
-    cfg = db.get_config_maquininha()
-    device_id = cfg.get("device_id") or ""
     cli = _cliente()
     try:
-        cli.cancelar_cobranca(device_id, payment_intent_id)
+        cli.cancelar_cobranca(payment_intent_id)
     except PointError as e:
         raise HTTPException(status_code=e.status, detail=e.mensagem)
     return {"cancelado": True}

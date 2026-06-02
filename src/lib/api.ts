@@ -26,19 +26,42 @@ async function request(path: string, options: RequestInit = {}) {
   if (token) headers["Authorization"] = `Bearer ${token}`;
 
   const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
-  const data = await res.json();
+  const data = await readJson(res);
 
   if (!res.ok) {
-    // Handle validation errors (array of messages)
-    const msg =
-      typeof data.detail === "string"
-        ? data.detail
-        : Array.isArray(data.detail?.erros)
-          ? data.detail.erros.join(" ")
-          : JSON.stringify(data.detail || "Erro na requisição");
-    throw new Error(msg);
+    throw new Error(errorMessageFromResponse(data, res.status));
   }
   return data;
+}
+
+async function readJson(res: Response) {
+  const text = await res.text();
+  if (!text) return {};
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { detail: text };
+  }
+}
+
+function errorMessageFromResponse(data: any, status?: number): string {
+  const detail = data?.detail ?? data;
+  const requestId = data?.request_id || detail?.request_id;
+  let msg = "";
+
+  if (typeof detail === "string") {
+    msg = detail;
+  } else if (Array.isArray(detail?.erros) && detail.erros.length) {
+    msg = detail.erros.join(" ");
+  } else if (typeof detail?.mensagem === "string") {
+    msg = detail.mensagem;
+  } else if (Array.isArray(detail)) {
+    msg = detail.map((item) => item?.msg || item?.mensagem || String(item)).join(" ");
+  } else {
+    msg = status === 422 ? "Revise os campos informados." : "Erro na requisição.";
+  }
+
+  return requestId ? `${msg} Código: ${requestId}` : msg;
 }
 
 // ── Ativação / Licença ──
@@ -238,8 +261,8 @@ export async function importarXmlPreview(file: File | Blob): Promise<PreviewXml>
     headers: token ? { Authorization: `Bearer ${token}` } : {},
     body: file,
   });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(typeof data.detail === "string" ? data.detail : "Não consegui ler o XML.");
+  const data = await readJson(res);
+  if (!res.ok) throw new Error(errorMessageFromResponse(data, res.status) || "Não consegui ler o XML.");
   return data;
 }
 
@@ -643,8 +666,8 @@ export async function restaurarBackup(file: File | Blob): Promise<{ ok: boolean 
     headers: token ? { Authorization: `Bearer ${token}` } : {},
     body: file,
   });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(typeof data.detail === "string" ? data.detail : "Falha ao restaurar.");
+  const data = await readJson(res);
+  if (!res.ok) throw new Error(errorMessageFromResponse(data, res.status) || "Falha ao restaurar.");
   return data;
 }
 
@@ -817,6 +840,18 @@ export interface DispositivoPoint {
   operating_mode?: string;
 }
 
+export interface DiagnosticoMaquininha {
+  config: {
+    habilitado: boolean;
+    device_id: string;
+    access_token_preenchido: boolean;
+  };
+  terminal: DispositivoPoint | null;
+  operating_mode?: string;
+  ultimas_orders: string[];
+  ultima_order_bruta?: Record<string, unknown> | null;
+}
+
 export function getConfigMaquininha(): Promise<{ config: ConfigMaquininha }> {
   return request("/api/maquininha/config");
 }
@@ -827,6 +862,10 @@ export function salvarConfigMaquininha(data: ConfigMaquininha): Promise<{ config
 
 export function listarDispositivosMaquininha(): Promise<{ dispositivos: DispositivoPoint[] }> {
   return request("/api/maquininha/dispositivos");
+}
+
+export function diagnosticoMaquininha(): Promise<DiagnosticoMaquininha> {
+  return request("/api/maquininha/diagnostico");
 }
 
 export interface CobrancaMaquininha {

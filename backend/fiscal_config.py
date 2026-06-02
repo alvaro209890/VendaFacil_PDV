@@ -1,9 +1,10 @@
 """Configuração fiscal do emitente (dados da loja + SEFAZ-MT direto)."""
 from fastapi import APIRouter, HTTPException, Request
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from auth import _verificar_jwt, _agora
 from database import db
+from normalizers import normalize_cep, normalize_upper_uf
 
 router = APIRouter()
 
@@ -56,6 +57,16 @@ class ConfigFiscalInput(BaseModel):
     resp_tec_fone: str | None = Field(default=None, max_length=14)
     resp_tec_csrt: str | None = Field(default=None, max_length=64)
     resp_tec_id_csrt: str | None = Field(default=None, max_length=10)
+
+    @field_validator("cep", mode="before")
+    @classmethod
+    def _normalizar_cep(cls, value):
+        return normalize_cep(value)
+
+    @field_validator("uf", mode="before")
+    @classmethod
+    def _normalizar_uf(cls, value):
+        return normalize_upper_uf(value)
 
 
 def _mascarar(cfg: dict) -> dict:

@@ -1,100 +1,138 @@
-# 💳 Maquininha Mercado Pago (Point) no VendaFácil PDV
+# Maquininha Mercado Pago Point no VendaFacil PDV
 
-Integração para cobrar **no cartão pela maquininha física** (crédito/débito)
-direto do PDV. O caixa dispara o valor, a máquina Point acende e pede o cartão,
-e o PDV acompanha o status até concluir. **Não armazenamos dados de cartão** —
-falamos apenas com a API do Mercado Pago usando o *Access Token* da loja.
+Integracao para cobrar cartao de credito e debito na maquininha fisica Mercado Pago Point usando a API
+atual de **Orders**. O caixa dispara o valor no PDV, a Point busca a order na
+nuvem do Mercado Pago, o cliente paga no aparelho e o PDV acompanha o status.
 
-> A maquininha **exige internet** (pagamento em cartão é online por natureza).
-> O resto do PDV continua funcionando offline; só a cobrança no cartão depende
-> de conexão no momento da venda.
+O PDV nao armazena dados de cartao. Ele guarda apenas o Access Token da conta da
+loja e o `device_id` da Point.
 
-## Pré-requisitos (no Mercado Pago)
+## Pre-requisitos
 
-1. Ter uma maquininha **Point** (Point Smart, Point Pro etc.) ativada na conta.
-2. Pegar o **Access Token** da loja: <https://www.mercadopago.com.br/developers>
-   → *Suas integrações* → aplicação → **Credenciais de produção** → `Access Token`.
-3. Pôr a maquininha em **modo PDV/Integração** pelo app/menu do dispositivo
-   (necessário para receber cobranças via API).
+1. A Point precisa estar ativada na mesma conta Mercado Pago do Access Token.
+2. Use o **Access Token de producao** da loja em:
+   <https://www.mercadopago.com.br/developers> -> Suas integracoes -> aplicacao
+   -> Credenciais de producao.
+3. A Point precisa estar com internet e em modo **PDV**.
 
-## Como configurar no PDV
+O sistema tenta colocar a terminal em modo PDV automaticamente antes de criar a
+cobranca, usando `PATCH /terminals/v1/setup`. Mesmo assim, quando a Point nao
+puxa a order, reinicie a maquininha e confirme no aparelho se ela saiu do modo
+manual/standalone.
 
-A configuração fica salva no banco local do PDV (`config_maquininha`). Use os
-endpoints abaixo (a tela de Configurações do PDV consome estes mesmos).
+## API usada
 
-| Campo                  | Descrição                                                        |
-|------------------------|------------------------------------------------------------------|
-| `habilitado`           | Liga/desliga a cobrança por maquininha.                          |
-| `access_token`         | Access Token da conta Mercado Pago da loja (sensível).           |
-| `device_id`            | Id do dispositivo Point (ex.: `PAX_A910__SMARTPOS...`).          |
-| `store_id` / `pos_id`  | Opcionais (loja/caixa no Mercado Pago).                          |
-| `imprimir_comprovante` | Se a maquininha imprime o comprovante ao final (`true`/`false`). |
+Desde a versao 1.0.10, o VendaFacil usa:
 
-Descubra o `device_id` chamando `GET /api/maquininha/dispositivos` depois de
-salvar o `access_token` — ele lista as maquininhas pareadas à conta.
+- `GET /terminals/v1/list` para listar maquininhas e conferir `operating_mode`.
+- `PATCH /terminals/v1/setup` para colocar o terminal em modo `PDV`.
+- `POST /v1/orders` para criar a cobranca.
+- `GET /v1/orders/{id}` para consultar o status.
+- `POST /v1/orders/{id}/cancel` para cancelar.
 
-## API (base `/api/maquininha`, exige JWT do PDV)
+A API antiga de `payment-intents` foi substituida. No teste real ela criava
+intencao com `payment_mode: card` mesmo quando o PDV tentava PIX, deixando a
+tela presa em "Enviando para a maquininha...".
 
-| Método  | Rota                         | Função                                                |
-|---------|------------------------------|-------------------------------------------------------|
-| `GET`   | `/config`                    | Lê a config (o `access_token` volta mascarado).       |
-| `PUT`   | `/config`                    | Salva a config.                                       |
-| `GET`   | `/dispositivos`              | Lista as maquininhas pareadas (para achar o `device_id`). |
-| `POST`  | `/cobranca`                  | Dispara a cobrança. Body: `{"valor": 10.50, "venda_uuid": "..."}`. |
-| `GET`   | `/cobranca/{id}`             | Consulta o status (faça *poll* a cada ~2s).           |
-| `DELETE`| `/cobranca/{id}`             | Cancela uma cobrança ainda não concluída.             |
+Desde a versao 1.0.11, o PDV tambem:
 
-### Fluxo de uma venda no cartão
+- usa `print_on_terminal: "no_ticket"` para manter o payload igual ao exemplo
+  minimo oficial durante o diagnostico;
+- cancela automaticamente a order se ela ficar 45 segundos em `created`;
+- mostra uma mensagem clara quando a nuvem do Mercado Pago cria a order, mas a
+  Point nao puxa para a tela;
+- registra no log o corpo sanitizado de erros Mercado Pago `400`, `409`, `412`
+  e `5xx`;
+- traduz `409` para: existe uma cobranca pendente na Point.
 
+Referencia oficial: <https://www.mercadopago.com.br/developers/pt/docs/mp-point/migrate-payment-intent-to-orders>
+
+## Configuracao no PDV
+
+Tela **Maquininha**:
+
+| Campo | O que preencher |
+|---|---|
+| Cobrança por maquininha habilitada | Ligado |
+| Access Token | Token de producao da conta Mercado Pago da loja |
+| Device ID | ID da Point encontrada na busca |
+| POS ID / Store ID | Opcionais |
+| Imprimir comprovante | Mantido por compatibilidade; no diagnostico atual o backend envia `no_ticket` |
+
+Depois de salvar o token, clique em **Buscar maquininhas da conta** e selecione
+a Point correta. O `device_id` tem formato parecido com:
+
+```text
+NEWLAND_N950__N950NCC904676430
+PAX_A910__SMARTPOS1493550868
 ```
-1. POST /api/maquininha/cobranca  { "valor": 49.90, "venda_uuid": "<uuid-da-venda>" }
-   → { "payment_intent_id": "abc123", "state": "OPEN" }
 
-2. (poll) GET /api/maquininha/cobranca/abc123
-   → state: OPEN → ON_TERMINAL → PROCESSING → FINISHED
-   → ao finalizar: { "pago": true, "payment_status": "approved", "payment_type": "credit_card" }
+## Formas de pagamento na Point
 
-3. Se o cliente desistir: DELETE /api/maquininha/cobranca/abc123
+O PDV envia para `config.payment_method.default_type`:
+
+| Forma no PDV | Valor enviado |
+|---|---|
+| Debito | `debit_card` |
+| Credito | `credit_card` |
+
+O valor e enviado em reais como string decimal, por exemplo `"4.93"`.
+
+Desde a versao 1.0.12, a Point fica dedicada a cartao. O PIX nao e enviado para
+a maquininha: ele deve seguir pelo fluxo proprio de QR Code do PDV. Isso evita
+misturar a order da Point com o PIX e deixa o caixa mais previsivel para venda
+fiscal.
+
+## Estados
+
+O backend traduz os estados da Orders API para o formato que o PDV ja usa:
+
+| Orders API | PDV |
+|---|---|
+| `created` | `OPEN` |
+| `at_terminal` / `on_terminal` | `ON_TERMINAL` |
+| `processing` | `PROCESSING` |
+| `processed` / pagamento aprovado | `FINISHED` |
+| `expired` / `canceled` | `CANCELED` |
+| `failed` | `ERROR` |
+
+Considere pago somente quando o backend devolver:
+
+```json
+{
+  "pago": true,
+  "payment_status": "approved"
+}
 ```
 
-Estados possíveis de `state`: `OPEN`, `ON_TERMINAL`, `PROCESSING`, `FINISHED`,
-`CANCELED`, `ERROR`, `ABANDONED`. Considere pago somente quando
-`state == "FINISHED"` **e** `payment_status == "approved"`.
+## Diagnostico rapido
 
-## Valores
+Se a tela ficar presa em **Enviando para a maquininha...**:
 
-O `valor` é enviado em reais (ex.: `49.90`); internamente convertemos para
-**centavos** (`4990`), como a API do Mercado Pago exige.
+1. Abra **Maquininha** e clique em **Buscar maquininhas da conta**.
+2. Confirme se a Point fisica em uso e a mesma selecionada no `Device ID`.
+3. Reinicie a Point.
+4. Confirme se a Point esta em modo **PDV** e conectada a internet.
+5. Gere uma cobranca pequena de teste.
+6. Se a order ficar `created` ate expirar, a nuvem do Mercado Pago aceitou a
+   cobranca, mas a Point nao puxou a order.
 
-## Segurança
+Com a versao nova instalada, os erros tambem ficam em:
 
-- O `access_token` nunca é devolvido pelo `GET /config` (vem em branco, com o
-  flag `access_token_preenchido: true`). Trate-o como segredo.
-- A cobrança roda na conta Mercado Pago da própria loja — o VendaFácil não
-  intermedeia o dinheiro nem vê dados de cartão.
+```text
+%LOCALAPPDATA%\VendaFacilPDV\dados\logs\vendafacil.log
+```
 
-## Comportamento à prova de offline (no PDV)
+Dados sensiveis como Access Token, CSC, senha e certificado sao mascarados.
 
-A cobrança integrada é tratada como **conveniência só-online** — nunca como
-dependência da venda. No checkout (`PDV.tsx`):
+## Endpoint interno de diagnostico
 
-- O fluxo integrado só dispara quando **Débito/Crédito + maquininha habilitada +
-  `device_id` configurado + `navigator.onLine`**. Caso contrário, a venda segue
-  como **cartão manual** (o caixa passa no aparelho e o sistema só registra).
-- Se a cobrança falhar ou cair a conexão durante o *poll*, o modal oferece
-  **"Registrar cartão manual"** — a venda **nunca trava**.
-- A venda é gravada **localmente primeiro** (SQLite) e sincroniza depois. Quando
-  o pagamento é aprovado pela Point, o `payment_id` do Mercado Pago é anexado à
-  observação da venda (`MP Point: <id>`) para conciliação.
+Use `GET /api/maquininha/diagnostico` com o token do PDV para ver, sem criar
+cobranca:
 
-> Importante: o PDV fala com a maquininha **pela nuvem do Mercado Pago**
-> (`PDV → internet → MP → aparelho`), não por uma conexão direta de wifi local.
-> Os dois precisam de internet. Pagamento em cartão é autorizado online por
-> natureza — não existe cartão 100% offline; sem internet, venda no cartão é
-> sempre **manual** (ou use dinheiro/PIX/fiado).
+- terminal configurado;
+- `operating_mode` atual;
+- ultimas orders encontradas no log;
+- status bruto da ultima order.
 
-## Observações sobre o Painel SaaS / Supabase
-
-A maquininha é **100% do lado do PDV**. As vendas no cartão chegam ao Painel SaaS
-pela sincronização normal (como `forma_pagamento` = `credito`/`debito`), então
-**o schema do Supabase não muda** por causa desta funcionalidade.
+Esse endpoint existe para suporte tecnico. Ele nao altera a conta Mercado Pago.

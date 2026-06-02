@@ -191,3 +191,20 @@ def test_pix_config_e_qrcode(client, auth):
     assert client.get("/api/pix/chave", headers=auth).json()["configurada"] is True
     r = client.post("/api/pix/qrcode", headers=auth, json={"valor": 12.5})
     assert r.status_code == 200 and r.json()["payload"] and r.json()["qr_base64"]
+
+
+def test_config_fiscal_normaliza_cep_com_ponto(client, auth):
+    r = client.put("/api/fiscal/config", headers=auth, json={"cep": "78.643-000", "uf": "mt"})
+    assert r.status_code == 200, r.text
+    cfg = r.json()["config"]
+    assert cfg["cep"] == "78643-000"
+    assert cfg["uf"] == "MT"
+
+
+def test_erro_validacao_tem_mensagem_amigavel(client, auth):
+    r = client.put("/api/fiscal/config", headers=auth, json={"cep": "1234567890"})
+    assert r.status_code == 422
+    detail = r.json()["detail"]
+    assert detail["codigo"] == "validacao"
+    assert detail["request_id"]
+    assert detail["erros"] == ["CEP deve ter no máximo 9 caracteres. Use 78643-000 ou apenas os 8 números."]

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate, NavLink, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import PrivateRoute from "./components/PrivateRoute";
@@ -221,7 +222,20 @@ function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
+/** Envia heartbeat para o backend a cada 10s.
+ *  Quando a aba é fechada os pings param e o processo .exe se encerra após 30s. */
+function useHeartbeat() {
+  useEffect(() => {
+    const ping = () =>
+      fetch("/api/heartbeat", { method: "POST" }).catch(() => {/* offline é ok */});
+    ping(); // imediato ao montar
+    const id = setInterval(ping, 10_000);
+    return () => clearInterval(id);
+  }, []);
+}
+
 export default function App() {
+  useHeartbeat();
   return (
     <BrowserRouter>
       <GateAtivacao>

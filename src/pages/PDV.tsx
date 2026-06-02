@@ -41,6 +41,9 @@ const ESTADO_MAQ: Record<string, string> = {
   PROCESSING: "Processando o pagamento...",
   FINISHED: "Pagamento aprovado!",
 };
+const TIMEOUT_POINT_MS = 45_000;
+const ERRO_POINT_NAO_PUXOU =
+  "A cobrança foi criada no Mercado Pago, mas a Point não puxou para a tela. Reinicie a maquininha, pressione Atualizar/botão verde nela e tente novamente.";
 
 const fmtQtd = (v: number) => Number(v || 0).toLocaleString("pt-BR", { maximumFractionDigits: 3 });
 const passoQtd = (unidade?: string) => ["KG", "G", "LT", "ML"].includes((unidade || "").toUpperCase()) ? 0.1 : 1;
@@ -82,6 +85,9 @@ export default function PDV() {
     erro?: string;
   } | null>(null);
   const maqPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const maqTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Guarda o intentId ativo para cancelar no MP se o componente for desmontado.
+  const maqIntentIdRef = useRef<string | null>(null);
 
   const carregar = useCallback(async () => {
     try {
@@ -235,14 +241,29 @@ export default function PDV() {
     }
   }, []);
 
-  // Limpa o polling se a tela for desmontada.
-  useEffect(() => pararPollMaquininha, [pararPollMaquininha]);
+  const pararTimeoutMaquininha = useCallback(() => {
+    if (maqTimeoutRef.current) {
+      clearTimeout(maqTimeoutRef.current);
+      maqTimeoutRef.current = null;
+    }
+  }, []);
 
-  // Cobrança pela maquininha (cartão OU PIX) só vale quando: habilitada, com
-  // dispositivo configurado E com internet. Sem isso, cartão = manual e PIX =
-  // QR estático na tela do PDV.
+  // Ao desmontar (navegar para outra tela): para o poll E cancela na maquininha
+  // se houver cobrança pendente — evita que o pedido fique aberto no MP.
+  useEffect(() => () => {
+    pararPollMaquininha();
+    pararTimeoutMaquininha();
+    const id = maqIntentIdRef.current;
+    if (id) {
+      cancelarCobrancaMaquininha(id).catch(() => undefined);
+      maqIntentIdRef.current = null;
+    }
+  }, [pararPollMaquininha, pararTimeoutMaquininha]);
+
+  // Cobranca pela maquininha vale somente para cartao: credito ou debito.
+  // PIX fica no fluxo proprio do PDV, sem misturar com a Point.
   const podeCobrarMaquininha =
-    (pagamento === "debito" || pagamento === "credito" || pagamento === "pix") &&
+    (pagamento === "debito" || pagamento === "credito") &&
     maqHabilitada && maqDeviceOk && navigator.onLine;
 
   async function finalizarVenda() {
@@ -252,7 +273,7 @@ export default function PDV() {
       return;
     }
     if (podeCobrarMaquininha) {
-      await iniciarCobrancaMaquininha();   // cartão ou PIX na telinha da maquininha
+      await iniciarCobrancaMaquininha();   // cartao integrado na Point
       return;
     }
     if (pagamento === "pix") {
@@ -275,21 +296,36 @@ export default function PDV() {
       setMaqModal({ fase: "erro", erro: (err as Error).message });
       return;
     }
+    maqIntentIdRef.current = intentId;
     setMaqModal({ fase: "aguardando", intentId, estado: "OPEN" });
 
     // Poll do status até concluir/cancelar/dar erro.
     pararPollMaquininha();
+    pararTimeoutMaquininha();
+    maqTimeoutRef.current = setTimeout(() => {
+      pararPollMaquininha();
+      maqIntentIdRef.current = null;
+      void cancelarCobrancaMaquininha(intentId).catch(() => undefined);
+      setMaqModal({ fase: "erro", intentId, erro: ERRO_POINT_NAO_PUXOU });
+    }, TIMEOUT_POINT_MS);
     maqPollRef.current = setInterval(async () => {
       try {
         const st = await consultarCobrancaMaquininha(intentId);
         setMaqModal((m) => (m ? { ...m, estado: st.state } : m));
+        if (st.state && st.state !== "OPEN") {
+          pararTimeoutMaquininha();
+        }
         if (st.pago && st.payment_status === "approved") {
           pararPollMaquininha();
+          pararTimeoutMaquininha();
+          maqIntentIdRef.current = null;
           const obs = st.payment_id ? `MP Point: ${st.payment_id}` : undefined;
           setMaqModal(null);
           await confirmarVenda(obs);
         } else if (["CANCELED", "ERROR", "ABANDONED"].includes(st.state || "")) {
           pararPollMaquininha();
+          pararTimeoutMaquininha();
+          maqIntentIdRef.current = null;
           setMaqModal({ fase: "erro", intentId, erro: `Cobrança ${st.state?.toLowerCase()} na maquininha.` });
         }
       } catch {
@@ -302,7 +338,9 @@ export default function PDV() {
 
   async function cancelarCobrancaMaq() {
     pararPollMaquininha();
-    const id = maqModal?.intentId;
+    pararTimeoutMaquininha();
+    const id = maqModal?.intentId ?? maqIntentIdRef.current;
+    maqIntentIdRef.current = null;
     setMaqModal(null);
     if (id) {
       try { await cancelarCobrancaMaquininha(id); } catch { /* já pode ter encerrado */ }
@@ -312,6 +350,7 @@ export default function PDV() {
   // Fallback: registra a venda como cartão manual (caixa passou no aparelho).
   async function registrarCartaoManual() {
     pararPollMaquininha();
+    pararTimeoutMaquininha();
     setMaqModal(null);
     await confirmarVenda("Cartão manual (sem cobrança integrada)");
   }
@@ -901,9 +940,9 @@ export default function PDV() {
                   <p className="text-white text-sm font-bold mb-1">
                     {maqModal.fase === "criando"
                       ? "Acionando a maquininha..."
-                      : pagamento === "pix"
-                        ? "Cliente paga o PIX na maquininha"
-                        : "Peça o cartão ao cliente"}
+                      : pagamento === "debito"
+                        ? "Peça o cartão no débito"
+                        : "Peça o cartão no crédito"}
                   </p>
                   <p className="text-slate-500 text-xs mb-8">
                     {ESTADO_MAQ[maqModal.estado || ""] || "Aguardando a maquininha..."}
