@@ -45,6 +45,11 @@ falta é **negócio, distribuição e robustez de produção**, não funcionalid
 - [ ] **NFC-e de ponta a ponta**: o lojista precisa de certificado A1, CSC e
       credenciamento na SEFAZ do estado. Testar homologação → produção de
       verdade com pelo menos um estado-alvo (MT/GO já estão no código).
+- [x] **Vínculo do pagamento eletrônico (MT)** — NFC-e de cartão/PIX monta o
+      grupo `<card>` (tpIntegra/CNPJ/tBand/cAut) com os dados da maquininha
+      Mercado Pago. Obrigatório p/ mercearia (CNAE 4712-1) desde 01/07/2024.
+      Falta só informar o **CNPJ da credenciadora** em Maquininha → Vínculo
+      fiscal. Ver [`VINCULO_PAGAMENTO_MT.md`](VINCULO_PAGAMENTO_MT.md).
 
 ## 🟡 Recomendado (qualidade e operação)
 

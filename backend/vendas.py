@@ -1,5 +1,7 @@
 """Vendas / Checkout — VendaFácil PDV"""
 
+import json
+
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
@@ -16,6 +18,19 @@ class ItemVenda(BaseModel):
     quantidade: float = Field(gt=0)
 
 
+class PagamentoEletronico(BaseModel):
+    """Vínculo do pagamento eletrônico p/ a NFC-e (Portaria 262/2023-MT).
+
+    Preenchido pelo PDV a partir da resposta da maquininha (campo
+    ``pagamento_fiscal`` de GET /maquininha/cobranca/{id})."""
+    tipo_integracao: str | None = Field(default=None, max_length=1)   # 1 integrado | 2 não
+    adquirente_cnpj: str | None = Field(default=None, max_length=18)
+    bandeira: str | None = Field(default=None, max_length=20)         # tBand ou id MP
+    autorizacao: str | None = Field(default=None, max_length=40)      # cAut
+    payment_id: str | None = Field(default=None, max_length=40)
+    terminal: str | None = Field(default=None, max_length=60)
+
+
 class CheckoutRequest(BaseModel):
     itens: list[ItemVenda]
     desconto: float = Field(default=0, ge=0)
@@ -24,6 +39,7 @@ class CheckoutRequest(BaseModel):
     cliente_id: int | None = None
     cpf_consumidor: str | None = Field(default=None, max_length=14)
     emitir_nota: bool = False
+    pagamento: PagamentoEletronico | None = None
 
 
 # ── Rotas ──
@@ -92,6 +108,12 @@ async def checkout(data: CheckoutRequest, request: Request):
                 detail=f"Erro ao baixar estoque de '{item['nome_produto']}'.",
             )
 
+    pagamento_detalhe = None
+    if data.pagamento is not None:
+        pagamento_detalhe = json.dumps(
+            data.pagamento.model_dump(exclude_none=True), ensure_ascii=False
+        )
+
     venda = db.create_venda(
         user_id=user_id,
         cliente_id=data.cliente_id,
@@ -101,6 +123,7 @@ async def checkout(data: CheckoutRequest, request: Request):
         observacao=data.observacao,
         itens=itens_processados,
         agora=agora,
+        pagamento_detalhe=pagamento_detalhe,
     )
 
     # Registra a saída de estoque de cada item (histórico de movimentações).

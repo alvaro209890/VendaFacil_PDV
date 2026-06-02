@@ -19,7 +19,7 @@ import {
   getConfigMaquininha, criarCobrancaMaquininha, consultarCobrancaMaquininha,
   cancelarCobrancaMaquininha, getConfigFiscal,
 } from "../lib/api";
-import type { Produto, DashboardData, PixQrCodeResponse, Cliente } from "../lib/api";
+import type { Produto, DashboardData, PixQrCodeResponse, Cliente, PagamentoEletronico } from "../lib/api";
 import { imprimirRecibo, getLarguraRecibo, setLarguraRecibo } from "../lib/recibo";
 import type { ReciboData } from "../lib/recibo";
 import Mascote from "../components/Mascote";
@@ -88,6 +88,8 @@ export default function PDV() {
   const maqTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Guarda o intentId ativo para cancelar no MP se o componente for desmontado.
   const maqIntentIdRef = useRef<string | null>(null);
+  // Vínculo do pagamento eletrônico da última cobrança aprovada (p/ a NFC-e).
+  const maqPagamentoRef = useRef<PagamentoEletronico | null>(null);
 
   const carregar = useCallback(async () => {
     try {
@@ -319,6 +321,7 @@ export default function PDV() {
           pararPollMaquininha();
           pararTimeoutMaquininha();
           maqIntentIdRef.current = null;
+          maqPagamentoRef.current = st.pagamento_fiscal ?? null;
           const obs = st.payment_id ? `MP Point: ${st.payment_id}` : undefined;
           setMaqModal(null);
           await confirmarVenda(obs);
@@ -373,6 +376,8 @@ export default function PDV() {
       : "";
     const observacao = [obsExtra, obsPagamento].filter(Boolean).join(" | ");
     try {
+      const pagamentoFiscal = maqPagamentoRef.current ?? undefined;
+      maqPagamentoRef.current = null;  // consome — não vaza p/ a próxima venda
       const resp = await checkout({
         itens: carrinho.map((i) => ({ produto_id: i.id, quantidade: i.qtd })),
         desconto,
@@ -381,6 +386,7 @@ export default function PDV() {
         cliente_id: pagamento === "fiado" ? Number(clienteFiado) : undefined,
         emitir_nota: emitirNota,
         cpf_consumidor: emitirNota ? cpfConsumidor : undefined,
+        pagamento: pagamentoFiscal,
       });
       // Monta o recibo antes de limpar o carrinho.
       const recibo: ReciboData = {

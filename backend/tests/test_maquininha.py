@@ -6,7 +6,11 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from mercadopago import MercadoPagoPoint, PointError, _friendly_msg, _state, _payment_status_front
+from mercadopago import (
+    MercadoPagoPoint, PointError, _friendly_msg, _state, _payment_status_front,
+    dados_fiscais_pagamento,
+)
+from database import db
 
 
 class FakePoint(MercadoPagoPoint):
@@ -86,3 +90,44 @@ def test_state_orders_mapeia_para_frontend_legado():
     order = {"status": "processed", "transactions": {"payments": [{"status": "processed"}]}}
     assert _state(order) == "FINISHED"
     assert _payment_status_front(order) == "approved"
+
+
+def test_dados_fiscais_extrai_autorizacao_e_bandeira():
+    db.salvar_config_maquininha({"adquirente_cnpj": "10573521000191"}, "agora")
+    order = {
+        "config": {"point": {"terminal_id": "PAX_A910"}},
+        "transactions": {"payments": [{
+            "id": 99887766,
+            "payment_method": {"id": "master", "authorization_code": "654321"},
+        }]},
+    }
+    dados = dados_fiscais_pagamento(order)  # cli=None: usa só o payload da order
+    assert dados["tipo_integracao"] == "1"
+    assert dados["adquirente_cnpj"] == "10573521000191"
+    assert dados["bandeira"] == "master"
+    assert dados["autorizacao"] == "654321"
+    assert dados["payment_id"] == "99887766"
+    assert dados["terminal"] == "PAX_A910"
+
+
+def test_checkout_grava_vinculo_pagamento_na_venda(client, auth):
+    prod = client.post("/api/produtos", headers=auth, json={
+        "nome": "Item Vinculo", "preco_venda": 10, "estoque": 5,
+        "ncm": "22021000", "cfop": "5102", "cst_csosn": "102", "unidade": "UN",
+    }).json()["produto"]
+    r = client.post("/api/vendas/checkout", headers=auth, json={
+        "itens": [{"produto_id": prod["id"], "quantidade": 1}],
+        "forma_pagamento": "credito",
+        "pagamento": {
+            "tipo_integracao": "1", "adquirente_cnpj": "10573521000191",
+            "bandeira": "visa", "autorizacao": "ABC123",
+        },
+    })
+    assert r.status_code == 201
+    venda_id = r.json()["venda"]["id"]
+    venda = db.get_venda(venda_id)
+    assert venda["pagamento_detalhe"]
+    import json as _json
+    pd = _json.loads(venda["pagamento_detalhe"])
+    assert pd["autorizacao"] == "ABC123"
+    assert pd["adquirente_cnpj"] == "10573521000191"

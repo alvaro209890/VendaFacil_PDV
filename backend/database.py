@@ -151,6 +151,10 @@ class Database:
             )
         if "uuid" not in cols:
             self._conn.execute("ALTER TABLE vendas ADD COLUMN uuid TEXT")
+        if "pagamento_detalhe" not in cols:
+            # JSON com o vínculo do pagamento eletrônico (cartão/PIX integrado):
+            # tipo_integracao, adquirente_cnpj, bandeira, autorizacao (cAut), etc.
+            self._conn.execute("ALTER TABLE vendas ADD COLUMN pagamento_detalhe TEXT")
 
         # Campos fiscais nos produtos (NFC-e)
         pcols = {r["name"] for r in self._conn.execute("PRAGMA table_info(produtos)")}
@@ -274,6 +278,7 @@ class Database:
                 store_id TEXT DEFAULT '',
                 pos_id TEXT DEFAULT '',
                 imprimir_comprovante INTEGER NOT NULL DEFAULT 1,
+                adquirente_cnpj TEXT DEFAULT '',
                 atualizado_em TEXT
             );
 
@@ -351,6 +356,11 @@ class Database:
         for col, ddl in fiscal_cols.items():
             if col not in fcols:
                 self._conn.execute(f"ALTER TABLE config_fiscal ADD COLUMN {col} {ddl}")
+
+        mcols = {r["name"] for r in self._conn.execute("PRAGMA table_info(config_maquininha)")}
+        if "adquirente_cnpj" not in mcols:
+            # CNPJ da credenciadora (Mercado Pago) p/ o grupo <card> da NFC-e.
+            self._conn.execute("ALTER TABLE config_maquininha ADD COLUMN adquirente_cnpj TEXT DEFAULT ''")
 
         ncols = {r["name"] for r in self._conn.execute("PRAGMA table_info(notas_fiscais)")}
         nota_cols = {
@@ -431,13 +441,13 @@ class Database:
             ).fetchone()
             if not row:
                 return {"habilitado": 0, "provedor": "mercadopago",
-                        "imprimir_comprovante": 1}
+                        "imprimir_comprovante": 1, "adquirente_cnpj": ""}
             return dict(row)
 
     def salvar_config_maquininha(self, campos: dict, agora: str) -> dict[str, Any]:
         permitidos = {
             "habilitado", "provedor", "access_token", "device_id",
-            "store_id", "pos_id", "imprimir_comprovante",
+            "store_id", "pos_id", "imprimir_comprovante", "adquirente_cnpj",
         }
         dados = {k: v for k, v in campos.items() if k in permitidos and v is not None}
         with self._lock, self._conn:
@@ -868,12 +878,12 @@ class Database:
     def create_venda(self, user_id: int, cliente_id: int | None,
                      total: float, desconto: float,
                      forma_pagamento: str, observacao: str, itens: list[dict],
-                     agora: str) -> dict[str, Any] | None:
+                     agora: str, pagamento_detalhe: str | None = None) -> dict[str, Any] | None:
         with self._lock, self._conn:
             cursor = self._conn.execute(
-                """INSERT INTO vendas (user_id, cliente_id, total, desconto, forma_pagamento, status, observacao, criado_em)
-                   VALUES (?, ?, ?, ?, ?, 'concluida', ?, ?)""",
-                (user_id, cliente_id, total, desconto, forma_pagamento, observacao, agora),
+                """INSERT INTO vendas (user_id, cliente_id, total, desconto, forma_pagamento, status, observacao, criado_em, pagamento_detalhe)
+                   VALUES (?, ?, ?, ?, ?, 'concluida', ?, ?, ?)""",
+                (user_id, cliente_id, total, desconto, forma_pagamento, observacao, agora, pagamento_detalhe),
             )
             venda_id = cursor.lastrowid
             for item in itens:

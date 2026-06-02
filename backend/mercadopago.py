@@ -151,6 +151,16 @@ class MercadoPagoPoint:
             _raise_point_error(status, resp, "orders_cancel")
         return resp
 
+    def consultar_pagamento(self, payment_id: str) -> dict[str, Any]:
+        """Detalhe do pagamento (Payments API) — traz authorization_code/bandeira
+        que a Orders API nem sempre devolve. Melhor-esforço: não levanta erro."""
+        safe_id = urllib.parse.quote(str(payment_id), safe="")
+        status, resp = self._req("GET", f"/v1/payments/{safe_id}")
+        if status >= 400:
+            logger.info("payment_get_failed status=%s payment_id=%s", status, payment_id)
+            return {}
+        return resp
+
 
 class ConfigMaquininhaInput(BaseModel):
     habilitado: bool | None = None
@@ -283,6 +293,58 @@ def _payment_type_front(order: dict[str, Any]) -> str | None:
     return payment.get("type") or method.get("default_type")
 
 
+def _autorizacao(pay: dict[str, Any]) -> str | None:
+    """Procura o código de autorização (cAut) em locais conhecidos do payload."""
+    for caminho in (
+        ("authorization_code",),
+        ("payment_method", "authorization_code"),
+        ("transaction_details", "authorization_code"),
+        ("point_of_interaction", "transaction_data", "authorization_code"),
+    ):
+        cur: Any = pay
+        for chave in caminho:
+            cur = cur.get(chave) if isinstance(cur, dict) else None
+            if cur is None:
+                break
+        if cur:
+            return str(cur)
+    return None
+
+
+def _bandeira(pay: dict[str, Any]) -> str | None:
+    """Bandeira do cartão (ex.: master, visa, elo). Normalizada no fiscal_direto."""
+    return (
+        (pay.get("payment_method") or {}).get("id")
+        or pay.get("payment_method_id")
+        or ((pay.get("payment_method") or {}).get("card") or {}).get("brand")
+    )
+
+
+def dados_fiscais_pagamento(order: dict[str, Any], cli: "MercadoPagoPoint | None" = None) -> dict[str, Any]:
+    """Monta o vínculo do pagamento eletrônico (Portaria 262/2023-MT) a partir da
+    order da Point: tipo_integracao, CNPJ da credenciadora, bandeira (tBand) e
+    autorização (cAut). Best-effort — consulta a Payments API só p/ achar o cAut."""
+    pay = _payment(order)
+    cAut = _autorizacao(pay)
+    bandeira = _bandeira(pay)
+    payment_id = pay.get("id")
+    if (not cAut or not bandeira) and payment_id and cli is not None:
+        det = cli.consultar_pagamento(payment_id)
+        if det:
+            cAut = cAut or _autorizacao(det)
+            bandeira = bandeira or _bandeira(det)
+    cfg = db.get_config_maquininha()
+    terminal = (order.get("config") or {}).get("point", {}).get("terminal_id")
+    return {
+        "tipo_integracao": "1",  # cobrança disparada e conciliada pelo PDV
+        "adquirente_cnpj": cfg.get("adquirente_cnpj") or "",
+        "bandeira": bandeira,
+        "autorizacao": cAut,
+        "payment_id": str(payment_id) if payment_id else None,
+        "terminal": terminal,
+    }
+
+
 def _ultimas_orders_log(limit: int = 5) -> list[str]:
     if not _LOG_FILE.exists():
         return []
@@ -400,7 +462,7 @@ async def consultar_cobranca(payment_intent_id: str, request: Request) -> dict:
         raise HTTPException(status_code=e.status, detail=e.mensagem)
     pgto = _payment(resp)
     state = _state(resp)
-    return {
+    out = {
         "payment_intent_id": resp.get("id"),
         "state": state,
         "pago": state == "FINISHED",
@@ -408,6 +470,10 @@ async def consultar_cobranca(payment_intent_id: str, request: Request) -> dict:
         "payment_status": _payment_status_front(resp),
         "payment_type": _payment_type_front(resp),
     }
+    if state == "FINISHED":
+        # Vínculo do pagamento eletrônico p/ a NFC-e (Portaria 262/2023-MT).
+        out["pagamento_fiscal"] = dados_fiscais_pagamento(resp, cli)
+    return out
 
 
 @router.delete("/cobranca/{payment_intent_id}")

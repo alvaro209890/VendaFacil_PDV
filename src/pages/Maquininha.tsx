@@ -186,6 +186,25 @@ export default function MaquininhaPage() {
           </p>
         </fieldset>
 
+        <fieldset className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3">
+          <legend className="text-slate-300 text-xs font-bold uppercase px-2">Vínculo fiscal do pagamento (NFC-e)</legend>
+          <div>
+            <label className={lbl}>CNPJ da credenciadora (Mercado Pago)</label>
+            <input
+              className={inputCls}
+              value={cfg.adquirente_cnpj || ""}
+              onChange={(e) => set("adquirente_cnpj", e.target.value)}
+              placeholder="00.000.000/0000-00"
+            />
+            <p className="text-slate-500 text-[11px] mt-1 leading-snug">
+              Em MT, a NFC-e de cartão/PIX precisa do <b>vínculo do pagamento</b> (Portaria 262/2023).
+              O sistema preenche bandeira e autorização automaticamente; informe aqui o
+              <b> CNPJ da credenciadora</b> do Mercado Pago — confirme com seu contador ou na fatura
+              de recebíveis. Sem ele, a nota sai como <b>pagamento não integrado</b>.
+            </p>
+          </div>
+        </fieldset>
+
         <button disabled={salvando} className="w-full md:w-auto px-6 py-2.5 bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white font-bold rounded-lg flex items-center justify-center gap-2">
           <Save size={18} /> {salvando ? "Salvando..." : "Salvar configuração"}
         </button>

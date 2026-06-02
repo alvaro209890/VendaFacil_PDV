@@ -86,6 +86,81 @@ def _tag(parent, name: str, text=None):
     return el
 
 
+# ── Pagamento (grupo <pag>/<detPag>/<card>) ───────────────────────────────────
+# Mapa tPag (forma interna → código NFC-e/NF-e, tabela do layout 4.00).
+_TPAG = {"dinheiro": "01", "credito": "03", "debito": "04", "pix": "17"}
+
+# Bandeira → tBand (tabela YA06). Aceita o id de bandeira do Mercado Pago
+# (master, visa, elo...) ou o próprio código numérico já pronto.
+_TBAND = {
+    "visa": "01", "master": "02", "mastercard": "02", "amex": "03",
+    "american express": "03", "sorocred": "04", "diners": "05",
+    "diners club": "05", "elo": "06", "hipercard": "07", "hiper": "07",
+    "aura": "08", "cabal": "09",
+}
+_TBAND_CODIGOS = {"01", "02", "03", "04", "05", "06", "07", "08", "09",
+                  "10", "11", "12", "13", "99"}
+
+
+def _tband(bandeira) -> str | None:
+    """Normaliza a bandeira para o código tBand. Desconhecida vira 99 (Outros)."""
+    if not bandeira:
+        return None
+    b = str(bandeira).strip().lower()
+    if b in _TBAND_CODIGOS:
+        return b
+    return _TBAND.get(b, "99")
+
+
+def _pagamento_detalhe(venda: dict) -> dict:
+    """Lê os dados do pagamento eletrônico gravados na venda (JSON ou dict)."""
+    raw = venda.get("pagamento_detalhe")
+    if isinstance(raw, dict):
+        return raw
+    if isinstance(raw, str) and raw.strip():
+        try:
+            return json.loads(raw)
+        except (ValueError, TypeError):
+            return {}
+    return {}
+
+
+def _grupo_pagamento(inf, venda: dict, valor: float) -> None:
+    """Monta <pag>/<detPag> e, p/ cartão/PIX integrado, o grupo <card>.
+
+    Vínculo do pagamento eletrônico — obrigatório em MT (Decreto 599/2023 e
+    Portaria SEFAZ 262/2023) para CNAEs de varejo (inclui mercearia 4712-1).
+    Com a transação integrada (tpIntegra=1) o layout exige CNPJ da credenciadora
+    e cAut (código de autorização) — sem eles a SEFAZ rejeita (392). Quando os
+    dados não vêm completos, declara-se não integrado (tpIntegra=2).
+    """
+    pag = _tag(inf, "pag")
+    detp = _tag(pag, "detPag")
+    forma = (venda.get("forma_pagamento") or "").lower()
+    _tag(detp, "tPag", _TPAG.get(forma, "99"))
+    _tag(detp, "vPag", f"{valor:.2f}")
+
+    pd = _pagamento_detalhe(venda)
+    eletronico = forma in {"credito", "debito"} or (
+        forma == "pix" and pd.get("tipo_integracao")
+    )
+    if not eletronico:
+        return
+
+    cnpj = so_digitos(pd.get("adquirente_cnpj"))
+    cAut = str(pd.get("autorizacao") or "").strip()
+    card = _tag(detp, "card")
+    if pd.get("tipo_integracao") == "1" and cnpj and cAut:
+        _tag(card, "tpIntegra", "1")
+        _tag(card, "CNPJ", cnpj)
+        tband = _tband(pd.get("bandeira"))
+        if tband:
+            _tag(card, "tBand", tband)
+        _tag(card, "cAut", cAut)
+    else:
+        _tag(card, "tpIntegra", "2")
+
+
 def _validar_emitente(config: dict) -> None:
     obrig = ("cnpj", "inscricao_estadual", "regime_tributario", "codigo_municipio",
              "municipio", "uf", "logradouro", "numero", "bairro", "cep")
@@ -351,10 +426,7 @@ def montar_documento(venda: dict, config: dict, modelo: str = "65",
     _tag(icmst, "vNF", f"{float(venda.get('total') or total_prod):.2f}")
     transp = _tag(inf, "transp")
     _tag(transp, "modFrete", "9")
-    pag = _tag(inf, "pag")
-    detp = _tag(pag, "detPag")
-    _tag(detp, "tPag", {"dinheiro": "01", "credito": "03", "debito": "04", "pix": "17"}.get(venda.get("forma_pagamento"), "99"))
-    _tag(detp, "vPag", f"{float(venda.get('total') or total_prod):.2f}")
+    _grupo_pagamento(inf, venda, float(venda.get("total") or total_prod))
 
     _anexar_resp_tec(inf, config, chave)
 

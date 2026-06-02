@@ -489,6 +489,15 @@ export interface Venda {
   itens?: ItemVendaProcessado[];
 }
 
+export interface PagamentoEletronico {
+  tipo_integracao?: string;   // 1 integrado | 2 não integrado
+  adquirente_cnpj?: string;
+  bandeira?: string;          // tBand ou id da bandeira do Mercado Pago
+  autorizacao?: string;       // cAut
+  payment_id?: string;
+  terminal?: string;
+}
+
 export interface CheckoutInput {
   itens: ItemVenda[];
   desconto?: number;
@@ -497,6 +506,7 @@ export interface CheckoutInput {
   cliente_id?: number | null;
   cpf_consumidor?: string | null;
   emitir_nota?: boolean;
+  pagamento?: PagamentoEletronico;
 }
 
 export function checkout(data: CheckoutInput): Promise<{ 
@@ -829,6 +839,7 @@ export interface ConfigMaquininha {
   store_id?: string;
   pos_id?: string;
   imprimir_comprovante?: number;
+  adquirente_cnpj?: string;
   access_token_preenchido?: boolean;
 }
 
@@ -881,6 +892,7 @@ export interface CobrancaStatus {
   payment_id?: string;
   payment_status?: string;
   payment_type?: string;  // credit_card | debit_card
+  pagamento_fiscal?: PagamentoEletronico;  // vínculo p/ a NFC-e (Portaria 262/2023-MT)
 }
 
 export function criarCobrancaMaquininha(valor: number, venda_uuid?: string, forma?: string): Promise<CobrancaMaquininha> {

@@ -59,6 +59,65 @@ def test_monta_xml_nfce_65(client, auth):
     assert doc.qrcode_url and "cHashQRCode" in doc.qrcode_url
 
 
+def _venda_cartao(produto, pagamento):
+    v = _venda(produto)
+    v["forma_pagamento"] = "credito"
+    v["pagamento_detalhe"] = pagamento
+    return v
+
+
+def test_pag_dinheiro_nao_tem_grupo_card(client, auth):
+    produto = client.post("/api/produtos", headers=auth, json={
+        "nome": "Pao Frances", "preco_venda": 10, "estoque": 5,
+        "ncm": "19059090", "cfop": "5102", "cst_csosn": "102", "unidade": "UN",
+    }).json()["produto"]
+    doc = fiscal_direto.montar_documento(_venda(produto), _cfg(), "65", serie=1, numero=1)
+    assert "<tPag>01</tPag>" in doc.xml
+    assert "<card>" not in doc.xml
+
+
+def test_pag_cartao_integrado_emite_card_tpintegra1(client, auth):
+    produto = client.post("/api/produtos", headers=auth, json={
+        "nome": "Leite Card", "preco_venda": 10, "estoque": 5,
+        "ncm": "04012010", "cfop": "5102", "cst_csosn": "102", "unidade": "UN",
+    }).json()["produto"]
+    import json as _json
+    pagamento = _json.dumps({
+        "tipo_integracao": "1", "adquirente_cnpj": "10573521000191",
+        "bandeira": "master", "autorizacao": "123456",
+    })
+    doc = fiscal_direto.montar_documento(_venda_cartao(produto, pagamento), _cfg(), "65", serie=1, numero=1)
+    assert "<tPag>03</tPag>" in doc.xml
+    assert "<card><tpIntegra>1</tpIntegra>" in doc.xml
+    assert "<CNPJ>10573521000191</CNPJ>" in doc.xml
+    assert "<tBand>02</tBand>" in doc.xml          # master → 02
+    assert "<cAut>123456</cAut>" in doc.xml
+
+
+def test_pag_cartao_sem_dados_cai_para_nao_integrado(client, auth):
+    produto = client.post("/api/produtos", headers=auth, json={
+        "nome": "Cafe Manual", "preco_venda": 10, "estoque": 5,
+        "ncm": "09011110", "cfop": "5102", "cst_csosn": "102", "unidade": "UN",
+    }).json()["produto"]
+    # cartão manual: sem CNPJ/cAut → tpIntegra=2 (evita rejeição 392)
+    doc = fiscal_direto.montar_documento(_venda_cartao(produto, None), _cfg(), "65", serie=1, numero=1)
+    assert "<card><tpIntegra>2</tpIntegra></card>" in doc.xml
+    assert "<cAut>" not in doc.xml
+
+
+def test_pag_cartao_integrado_incompleto_nao_usa_tpintegra1(client, auth):
+    produto = client.post("/api/produtos", headers=auth, json={
+        "nome": "Acucar Sem CNPJ", "preco_venda": 10, "estoque": 5,
+        "ncm": "17019900", "cfop": "5102", "cst_csosn": "102", "unidade": "UN",
+    }).json()["produto"]
+    import json as _json
+    # tem autorização mas falta o CNPJ da credenciadora → não pode tpIntegra=1
+    pagamento = _json.dumps({"tipo_integracao": "1", "autorizacao": "999", "bandeira": "visa"})
+    doc = fiscal_direto.montar_documento(_venda_cartao(produto, pagamento), _cfg(), "65", serie=1, numero=1)
+    assert "<tpIntegra>2</tpIntegra>" in doc.xml
+    assert "<cAut>" not in doc.xml
+
+
 def test_monta_xml_nfce_produto_st_e_monofasico_no_grupo_correto(client, auth):
     produto = client.post("/api/produtos", headers=auth, json={
         "nome": "Cerveja Fiscal", "preco_venda": 10, "estoque": 5,

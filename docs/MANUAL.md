@@ -169,6 +169,13 @@ disponível apenas como legado.
 > Notas que ficarem em **"processando"** são reconsultadas automaticamente em
 > segundo plano até a SEFAZ dar o resultado.
 
+### Pagamento em cartão/PIX e a nota (MT)
+Em Mato Grosso, a NFC-e de **cartão/PIX** precisa levar os dados da transação
+(vínculo do pagamento — Portaria 262/2023). Quando a cobrança é feita pela
+**maquininha Mercado Pago**, o sistema preenche isso sozinho; você só informa
+**uma vez** o **CNPJ da credenciadora** em **Maquininha → Vínculo fiscal**.
+Detalhes e quem é obrigado: [`VINCULO_PAGAMENTO_MT.md`](VINCULO_PAGAMENTO_MT.md).
+
 ## 13. Backup
 Tela **Backup**:
 - **Baixar backup agora**: salva um arquivo `.db` — guarde fora do PC (pen
