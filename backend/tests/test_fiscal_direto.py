@@ -105,6 +105,25 @@ def test_pag_cartao_sem_dados_cai_para_nao_integrado(client, auth):
     assert "<cAut>" not in doc.xml
 
 
+def test_pag_pix_integrado_usa_card_sem_tband(client, auth):
+    produto = client.post("/api/produtos", headers=auth, json={
+        "nome": "Suco Pix", "preco_venda": 10, "estoque": 5,
+        "ncm": "20098990", "cfop": "5102", "cst_csosn": "102", "unidade": "UN",
+    }).json()["produto"]
+    import json as _json
+    v = _venda(produto)
+    v["forma_pagamento"] = "pix"
+    v["pagamento_detalhe"] = _json.dumps({
+        "tipo_integracao": "1", "adquirente_cnpj": "10573521000191",
+        "autorizacao": "E10573521202406011200abc",  # endToEndId
+    })
+    doc = fiscal_direto.montar_documento(v, _cfg(), "65", serie=1, numero=1)
+    assert "<tPag>17</tPag>" in doc.xml
+    assert "<card><tpIntegra>1</tpIntegra>" in doc.xml
+    assert "<cAut>E10573521202406011200abc</cAut>" in doc.xml
+    assert "<tBand>" not in doc.xml          # PIX não tem bandeira de cartão
+
+
 def test_pag_cartao_integrado_incompleto_nao_usa_tpintegra1(client, auth):
     produto = client.post("/api/produtos", headers=auth, json={
         "nome": "Acucar Sem CNPJ", "preco_venda": 10, "estoque": 5,

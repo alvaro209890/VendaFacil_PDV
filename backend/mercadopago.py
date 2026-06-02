@@ -169,12 +169,14 @@ class ConfigMaquininhaInput(BaseModel):
     store_id: str | None = Field(default=None, max_length=60)
     pos_id: str | None = Field(default=None, max_length=60)
     imprimir_comprovante: bool | None = None
+    adquirente_cnpj: str | None = Field(default=None, max_length=18)
+    pix_integrado: bool | None = None
 
 
 class CobrancaInput(BaseModel):
     valor: float = Field(gt=0, le=999999.99)
     venda_uuid: str | None = Field(default=None, max_length=64)
-    forma: str | None = Field(default=None, max_length=12)  # credito | debito
+    forma: str | None = Field(default=None, max_length=12)  # credito | debito | pix
 
 
 def _auth(request: Request) -> int:
@@ -243,10 +245,9 @@ def _forma_para_default_type(forma: str | None) -> str:
         return "debit_card"
     if f == "credito":
         return "credit_card"
-    raise PointError(
-        400,
-        "Maquininha configurada apenas para cartao de credito/debito. Para PIX, use o QR Code do PDV.",
-    )
+    if f == "pix":
+        return "pix"
+    raise PointError(400, "Forma de pagamento nao suportada pela maquininha.")
 
 
 def _money(valor: Decimal) -> str:
@@ -294,12 +295,16 @@ def _payment_type_front(order: dict[str, Any]) -> str | None:
 
 
 def _autorizacao(pay: dict[str, Any]) -> str | None:
-    """Procura o código de autorização (cAut) em locais conhecidos do payload."""
+    """Procura o cAut: autorização do cartão ou, no PIX, o endToEndId."""
     for caminho in (
         ("authorization_code",),
         ("payment_method", "authorization_code"),
         ("transaction_details", "authorization_code"),
         ("point_of_interaction", "transaction_data", "authorization_code"),
+        # PIX: endToEndId identifica a transação (vínculo exigido pela SEFAZ).
+        ("point_of_interaction", "transaction_data", "e2e_id"),
+        ("point_of_interaction", "transaction_data", "end_to_end_id"),
+        ("transaction_details", "transaction_id"),
     ):
         cur: Any = pay
         for chave in caminho:
@@ -366,7 +371,7 @@ async def obter_config(request: Request) -> dict:
 async def salvar_config(data: ConfigMaquininhaInput, request: Request) -> dict:
     _auth(request)
     campos = data.model_dump(exclude_none=True)
-    for b in ("habilitado", "imprimir_comprovante"):
+    for b in ("habilitado", "imprimir_comprovante", "pix_integrado"):
         if b in campos:
             campos[b] = 1 if campos[b] else 0
     cfg = db.salvar_config_maquininha(campos, _agora())
@@ -422,14 +427,19 @@ async def criar_cobranca(data: CobrancaInput, request: Request) -> dict:
     _auth(request)
     referencia = data.venda_uuid or f"venda-{uuid.uuid4().hex[:8]}"
     forma = (data.forma or "credito").lower()
-    if forma not in {"credito", "debito"}:
+    cfg = db.get_config_maquininha()
+    if forma == "pix" and not cfg.get("pix_integrado"):
         raise HTTPException(
             status_code=400,
-            detail="Maquininha configurada apenas para cartao de credito/debito. Para PIX, use o QR Code do PDV.",
+            detail="PIX pela maquininha esta desligado. Ligue em Maquininha ou use o QR do PDV.",
+        )
+    if forma not in {"credito", "debito", "pix"}:
+        raise HTTPException(
+            status_code=400,
+            detail="Forma de pagamento nao suportada pela maquininha.",
         )
 
     cli = _cliente()
-    cfg = db.get_config_maquininha()
     device_id = cfg.get("device_id") or ""
     if not device_id:
         raise HTTPException(status_code=400, detail="Device ID da maquininha nao configurado.")

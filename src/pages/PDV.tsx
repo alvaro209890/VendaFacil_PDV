@@ -37,7 +37,7 @@ const PAGAMENTOS = [
 // Estados da cobrança Point → texto amigável exibido no modal.
 const ESTADO_MAQ: Record<string, string> = {
   OPEN: "Enviando para a maquininha...",
-  ON_TERMINAL: "Aguardando o cartão na maquininha...",
+  ON_TERMINAL: "Aguardando o pagamento na maquininha...",
   PROCESSING: "Processando o pagamento...",
   FINISHED: "Pagamento aprovado!",
 };
@@ -78,6 +78,7 @@ export default function PDV() {
   // Maquininha (Mercado Pago Point) — cobrança integrada, só quando online.
   const [maqHabilitada, setMaqHabilitada] = useState(false);
   const [maqDeviceOk, setMaqDeviceOk] = useState(false);
+  const [maqPixIntegrado, setMaqPixIntegrado] = useState(false);
   const [maqModal, setMaqModal] = useState<{
     fase: "criando" | "aguardando" | "erro";
     intentId?: string;
@@ -105,6 +106,7 @@ export default function PDV() {
       const { config } = await getConfigMaquininha();
       setMaqHabilitada(!!config.habilitado);
       setMaqDeviceOk(!!config.device_id);
+      setMaqPixIntegrado(!!config.pix_integrado);
     } catch {
       setMaqHabilitada(false);
     }
@@ -262,11 +264,14 @@ export default function PDV() {
     }
   }, [pararPollMaquininha, pararTimeoutMaquininha]);
 
-  // Cobranca pela maquininha vale somente para cartao: credito ou debito.
-  // PIX fica no fluxo proprio do PDV, sem misturar com a Point.
+  // Cobranca pela maquininha: cartao (credito/debito) sempre que a Point estiver
+  // ligada; PIX só quando "PIX integrado" estiver habilitado na config (senão o
+  // PIX cai no QR estático do PDV, sem vínculo fiscal).
   const podeCobrarMaquininha =
-    (pagamento === "debito" || pagamento === "credito") &&
-    maqHabilitada && maqDeviceOk && navigator.onLine;
+    maqHabilitada && maqDeviceOk && navigator.onLine && (
+      pagamento === "debito" || pagamento === "credito" ||
+      (pagamento === "pix" && maqPixIntegrado)
+    );
 
   async function finalizarVenda() {
     if (carrinho.length === 0) return;

@@ -279,6 +279,7 @@ class Database:
                 pos_id TEXT DEFAULT '',
                 imprimir_comprovante INTEGER NOT NULL DEFAULT 1,
                 adquirente_cnpj TEXT DEFAULT '',
+                pix_integrado INTEGER NOT NULL DEFAULT 0,
                 atualizado_em TEXT
             );
 
@@ -361,6 +362,9 @@ class Database:
         if "adquirente_cnpj" not in mcols:
             # CNPJ da credenciadora (Mercado Pago) p/ o grupo <card> da NFC-e.
             self._conn.execute("ALTER TABLE config_maquininha ADD COLUMN adquirente_cnpj TEXT DEFAULT ''")
+        if "pix_integrado" not in mcols:
+            # Cobrar PIX pela Point (transação integrada, com endToEndId p/ a NFC-e).
+            self._conn.execute("ALTER TABLE config_maquininha ADD COLUMN pix_integrado INTEGER NOT NULL DEFAULT 0")
 
         ncols = {r["name"] for r in self._conn.execute("PRAGMA table_info(notas_fiscais)")}
         nota_cols = {
@@ -448,6 +452,7 @@ class Database:
         permitidos = {
             "habilitado", "provedor", "access_token", "device_id",
             "store_id", "pos_id", "imprimir_comprovante", "adquirente_cnpj",
+            "pix_integrado",
         }
         dados = {k: v for k, v in campos.items() if k in permitidos and v is not None}
         with self._lock, self._conn:

@@ -63,12 +63,21 @@ Tela **Maquininha → Vínculo fiscal do pagamento**:
 
 Bandeira e autorização são preenchidas **automaticamente** pela maquininha.
 
+## PIX
+
+- **PIX pela Point (integrado)**: ligue **Maquininha → "Cobrar PIX pela
+  maquininha"**. O PIX é cobrado na telinha da Point e o sistema usa o
+  **endToEndId** como `cAut` no grupo `<card>` (`tpIntegra=1`). Depende de a
+  Point suportar PIX — **valide em homologação**.
+- **PIX via QR estático no PDV** (sem maquininha, chave configurada em PIX): não
+  é transação integrada → sai como `tpIntegra=2`.
+
 ## Limitações conhecidas
 
-- **PIX via QR estático no PDV** (sem maquininha) não é pagamento integrado →
-  sai como `tpIntegra=2`. Para PIX integrado, use a Point quando ela suportar.
 - O caminho legado **Focus NFe** não monta o grupo `<card>` (use o emissor
   **SEFAZ-MT direto**, que é o padrão).
+- O **CNPJ da credenciadora** é configurado uma vez (não vem da API do Mercado
+  Pago); confirme o número correto com o contador / fatura de recebíveis.
 
 > Não substitui orientação contábil. Confirme CNAE, regime e o CNPJ da
 > credenciadora com o contador da loja.

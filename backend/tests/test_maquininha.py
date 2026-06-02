@@ -30,24 +30,24 @@ class FakePoint(MercadoPagoPoint):
         return 200, {}
 
 
-def test_criar_cobranca_pix_nao_usa_point():
+def test_criar_cobranca_pix_usa_default_type_pix():
     cli = FakePoint()
-    with pytest.raises(PointError) as exc:
-        cli.criar_cobranca("NEWLAND_TEST", Decimal("4.93"), "venda-teste", False, "pix")
+    cli.criar_cobranca("NEWLAND_TEST", Decimal("4.93"), "venda-teste", False, "pix")
 
-    assert exc.value.status == 400
-    assert "credito/debito" in exc.value.mensagem
-    assert cli.calls == []
+    _, _, body, _ = cli.calls[0]
+    assert body["config"]["payment_method"]["default_type"] == "pix"
 
 
-def test_rota_maquininha_recusa_pix(client, auth):
+def test_rota_maquininha_recusa_pix_quando_desligado(client, auth):
+    # PIX integrado desligado (padrão) → rota recusa e manda usar o QR do PDV.
+    db.salvar_config_maquininha({"habilitado": 1, "pix_integrado": 0}, "agora")
     resp = client.post(
         "/api/maquininha/cobranca",
         headers=auth,
         json={"valor": 4.93, "forma": "pix"},
     )
     assert resp.status_code == 400
-    assert "credito/debito" in resp.json()["detail"]
+    assert "PIX pela maquininha" in resp.json()["detail"]
 
 
 def test_criar_cobranca_credito_usa_payload_oficial_sem_ticket():
@@ -108,6 +108,20 @@ def test_dados_fiscais_extrai_autorizacao_e_bandeira():
     assert dados["autorizacao"] == "654321"
     assert dados["payment_id"] == "99887766"
     assert dados["terminal"] == "PAX_A910"
+
+
+def test_dados_fiscais_pix_usa_endtoend_id_como_cAut():
+    db.salvar_config_maquininha({"adquirente_cnpj": "10573521000191"}, "agora")
+    order = {
+        "transactions": {"payments": [{
+            "id": 111222,
+            "payment_method": {"type": "pix"},
+            "point_of_interaction": {"transaction_data": {"e2e_id": "E105735212024X"}},
+        }]},
+    }
+    dados = dados_fiscais_pagamento(order)
+    assert dados["autorizacao"] == "E105735212024X"
+    assert dados["bandeira"] in (None, "pix")  # PIX não tem bandeira de cartão
 
 
 def test_checkout_grava_vinculo_pagamento_na_venda(client, auth):

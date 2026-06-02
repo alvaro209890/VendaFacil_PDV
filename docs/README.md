@@ -8,6 +8,9 @@
 - [CAIXA.md](CAIXA.md) — abertura/fechamento de caixa, sangria e suprimento.
 - [RECIBO.md](RECIBO.md) — impressão de recibo/cupom na térmica (e bloco fiscal da NFC-e).
 - [FISCAL_SIMPLES.md](FISCAL_SIMPLES.md) — CSOSN/CST por produto, XML fiscal e relatório para PGDAS-D.
+- [VINCULO_PAGAMENTO_MT.md](VINCULO_PAGAMENTO_MT.md) — vínculo do pagamento eletrônico (cartão/PIX) na NFC-e — obrigatório em MT (Portaria 262/2023).
+- [TESTE_FISCAL_WINDOWS.md](TESTE_FISCAL_WINDOWS.md) — roteiro de teste fiscal de ponta a ponta no Windows (A1/CSC/CNPJ, homologação→produção, cartão e PIX).
+- [INTEGRACAO_STONE_TEF.md](INTEGRACAO_STONE_TEF.md) — como integrar Stone/outras maquininhas via TEF, esforço e estimativa de valor.
 - [RESPONSAVEL_TECNICO.md](RESPONSAVEL_TECNICO.md) — grupo infRespTec/CSRT no XML (desligado por padrão; MT não exige).
 - [MAQUININHA_MERCADOPAGO.md](MAQUININHA_MERCADOPAGO.md) — cartão e PIX pela maquininha (Point).
 - [DIAGNOSTICO_MAQUININHA_POINT.md](DIAGNOSTICO_MAQUININHA_POINT.md) — diagnóstico do teste real neste PC e migração para Orders API.

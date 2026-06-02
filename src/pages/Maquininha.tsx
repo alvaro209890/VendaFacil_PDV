@@ -181,6 +181,17 @@ export default function MaquininhaPage() {
             <span className="text-slate-300 text-sm">Imprimir comprovante na maquininha</span>
           </label>
 
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input type="checkbox" checked={!!cfg.pix_integrado} onChange={(e) => set("pix_integrado", e.target.checked ? 1 : 0)} className="w-5 h-5 accent-brand-500" />
+            <div>
+              <span className="text-slate-300 text-sm">Cobrar PIX pela maquininha (Point)</span>
+              <p className="text-slate-500 text-[11px] leading-snug">
+                Liga o PIX na telinha da Point (transação integrada, com vínculo na NFC-e).
+                Desligado, o PIX usa o QR estático do PDV (não integrado). Depende de a Point suportar PIX.
+              </p>
+            </div>
+          </label>
+
           <p className="text-slate-500 text-[11px] leading-snug">
             A maquininha precisa estar ativada na conta e em <b>modo PDV/Integração</b> (configurado uma vez no menu do próprio aparelho). A cobrança no cartão exige internet.
           </p>

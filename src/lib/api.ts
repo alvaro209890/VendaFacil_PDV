@@ -840,6 +840,7 @@ export interface ConfigMaquininha {
   pos_id?: string;
   imprimir_comprovante?: number;
   adquirente_cnpj?: string;
+  pix_integrado?: number;
   access_token_preenchido?: boolean;
 }
 
