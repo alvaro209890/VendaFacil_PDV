@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { BarChart3, TrendingUp, Receipt, DollarSign, Trophy, ShieldCheck, FileText } from "lucide-react";
-import { relatorioVendas, relatorioFiscal } from "../lib/api";
+import { BarChart3, TrendingUp, Receipt, DollarSign, Trophy, ShieldCheck, FileText, Download } from "lucide-react";
+import { relatorioVendas, relatorioFiscal, exportarXmlsZip } from "../lib/api";
 import type { RelatorioVendas, RelatorioFiscal } from "../lib/api";
 
 const moeda = (v: number) => `R$ ${(v || 0).toFixed(2)}`;
@@ -18,6 +18,19 @@ export default function RelatoriosPage() {
   const [fiscal, setFiscal] = useState<RelatorioFiscal | null>(null);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState("");
+  const [exportando, setExportando] = useState(false);
+
+  async function exportarXmls() {
+    setExportando(true);
+    setErro("");
+    try {
+      await exportarXmlsZip(inicio, fim);
+    } catch (e) {
+      setErro((e as Error).message);
+    } finally {
+      setExportando(false);
+    }
+  }
 
   const carregar = useCallback(async () => {
     setLoading(true); setErro("");
@@ -147,6 +160,14 @@ export default function RelatoriosPage() {
               impostos de novo no DAS.
             </p>
           </div>
+
+          <button
+            onClick={() => void exportarXmls()}
+            disabled={exportando}
+            className="mb-3 w-full md:w-auto px-4 py-2 bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white text-sm font-bold rounded-lg flex items-center justify-center gap-2"
+          >
+            <Download size={16} /> {exportando ? "Gerando ZIP..." : "Exportar XMLs do período (ZIP) p/ o contador"}
+          </button>
 
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
             {card(<DollarSign size={14} />, "Faturamento total", moeda(fiscal.total_geral), "text-emerald-400")}

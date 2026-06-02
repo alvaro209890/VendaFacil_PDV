@@ -568,6 +568,24 @@ class Database:
             )
         return self.get_nota(nota_id)
 
+    def notas_para_export(self, user_id: int, inicio: str | None = None,
+                          fim: str | None = None) -> list[dict[str, Any]]:
+        """Notas com XML (autorizadas/canceladas) do período, p/ entregar ao contador."""
+        q = ("SELECT id, modelo, numero, serie, chave, status, criado_em, "
+             "xml_autorizado, xml_assinado FROM notas_fiscais "
+             "WHERE user_id = ? AND status IN ('autorizada','cancelada')")
+        params: list = [user_id]
+        if inicio and fim:
+            q += " AND date(criado_em, 'localtime') BETWEEN ? AND ?"
+            params += [inicio, fim]
+        elif inicio:
+            q += " AND date(criado_em, 'localtime') >= ?"
+            params.append(inicio)
+        q += " ORDER BY criado_em"
+        with self._lock:
+            rows = self._conn.execute(q, params).fetchall()
+            return [dict(r) for r in rows]
+
     def notas_pendentes(self, limite: int = 50) -> list[dict[str, Any]]:
         with self._lock:
             rows = self._conn.execute(

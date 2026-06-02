@@ -814,6 +814,42 @@ export function cancelarNfce(notaId: number, justificativa: string): Promise<{ n
   });
 }
 
+// Baixa um arquivo de um endpoint autenticado (XML/ZIP) disparando o download.
+async function baixarArquivo(path: string, nomePadrao: string): Promise<void> {
+  const token = getToken();
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) {
+    let msg = "Erro ao baixar arquivo.";
+    try { msg = (await res.json()).detail || msg; } catch { /* corpo não-JSON */ }
+    throw new Error(msg);
+  }
+  const blob = await res.blob();
+  const cd = res.headers.get("Content-Disposition") || "";
+  const m = cd.match(/filename="?([^"]+)"?/);
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = m ? m[1] : nomePadrao;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+export function baixarXmlNota(notaId: number): Promise<void> {
+  return baixarArquivo(`/api/fiscal/nfce/nota/${notaId}/xml`, `NFCe-${notaId}.xml`);
+}
+
+export function exportarXmlsZip(inicio?: string, fim?: string): Promise<void> {
+  const qs = new URLSearchParams();
+  if (inicio) qs.set("inicio", inicio);
+  if (fim) qs.set("fim", fim);
+  const q = qs.toString();
+  return baixarArquivo(`/api/fiscal/nfce/export/xml${q ? `?${q}` : ""}`, "xmls-nfce.zip");
+}
+
 export function getNfeDaVenda(vendaId: number): Promise<{ nota: NotaFiscal | null }> {
   return request(`/api/fiscal/nfe/venda/${vendaId}`);
 }

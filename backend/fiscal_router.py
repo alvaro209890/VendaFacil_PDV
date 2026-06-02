@@ -1,5 +1,9 @@
 """Rotas de emissão de NFC-e."""
+import io
+import zipfile
+
 from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
 import fiscal
@@ -58,6 +62,45 @@ async def cancelar(nota_id: int, data: CancelarInput, request: Request) -> dict:
         return {"nota": fiscal.cancelar_nfce(nota_id, data.justificativa)}
     except fiscal.FiscalError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/nota/{nota_id}/xml")
+async def baixar_xml(nota_id: int, request: Request) -> Response:
+    """Baixa o XML autorizado de uma nota (para guardar/entregar ao contador)."""
+    user_id = _user(request)
+    nota = db.get_nota(nota_id)
+    if not nota or nota.get("user_id") != user_id:
+        raise HTTPException(status_code=404, detail="Nota não encontrada.")
+    xml = nota.get("xml_autorizado") or nota.get("xml_assinado")
+    if not xml:
+        raise HTTPException(status_code=404, detail="XML ainda não disponível (nota não autorizada).")
+    nome = f"NFCe-{nota.get('chave') or nota_id}.xml"
+    return Response(content=xml, media_type="application/xml",
+                    headers={"Content-Disposition": f'attachment; filename="{nome}"'})
+
+
+@router.get("/export/xml")
+async def exportar_xmls(request: Request, inicio: str | None = None, fim: str | None = None) -> Response:
+    """Exporta em ZIP os XMLs (autorizados/cancelados) do período — para o contador."""
+    user_id = _user(request)
+    notas = db.notas_para_export(user_id, inicio, fim)
+    buf = io.BytesIO()
+    incluidas = 0
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
+        for n in notas:
+            xml = n.get("xml_autorizado") or n.get("xml_assinado")
+            if not xml:
+                continue
+            ident = n.get("chave") or f"{n.get('modelo','65')}-{n['id']}"
+            sufixo = "-cancelada" if n.get("status") == "cancelada" else ""
+            z.writestr(f"{ident}{sufixo}.xml", xml)
+            incluidas += 1
+    if incluidas == 0:
+        raise HTTPException(status_code=404, detail="Nenhum XML autorizado no período.")
+    buf.seek(0)
+    nome = f"xmls-nfce-{inicio or 'tudo'}_a_{fim or 'hoje'}.zip"
+    return Response(content=buf.getvalue(), media_type="application/zip",
+                    headers={"Content-Disposition": f'attachment; filename="{nome}"'})
 
 
 class EmitirNfeInput(BaseModel):

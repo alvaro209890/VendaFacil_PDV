@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { FileText, ExternalLink, RefreshCw } from "lucide-react";
-import { listarVendas, obterVenda, getNotaDaVenda, emitirNfce, consultarNfce, listarClientes, getNfeDaVenda, emitirNfe, consultarNfe } from "../lib/api";
+import { FileText, ExternalLink, RefreshCw, Download } from "lucide-react";
+import { listarVendas, obterVenda, getNotaDaVenda, emitirNfce, consultarNfce, listarClientes, getNfeDaVenda, emitirNfe, consultarNfe, baixarXmlNota } from "../lib/api";
 import type { Cliente } from "../lib/api";
 import type { Venda, NotaFiscal } from "../lib/api";
 
@@ -297,6 +297,14 @@ export default function VendasPage() {
                       >
                         XML
                       </a>
+                    )}
+                    {!nota.xml_url && nota.status === "autorizada" && (
+                      <button
+                        onClick={() => baixarXmlNota(nota.id).catch((e) => alert((e as Error).message))}
+                        className="flex-1 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-[10px] font-bold rounded flex items-center justify-center gap-1"
+                      >
+                        <Download size={12} /> Baixar XML
+                      </button>
                     )}
                   </div>
 

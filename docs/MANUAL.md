@@ -176,6 +176,12 @@ Em Mato Grosso, a NFC-e de **cartão/PIX** precisa levar os dados da transação
 **uma vez** o **CNPJ da credenciadora** em **Maquininha → Vínculo fiscal**.
 Detalhes e quem é obrigado: [`VINCULO_PAGAMENTO_MT.md`](VINCULO_PAGAMENTO_MT.md).
 
+### Entregar os XMLs ao contador
+O sistema **guarda o XML** de cada nota. Para o contador: em **Relatórios →
+Fiscal (Simples)**, escolha o período e clique **"Exportar XMLs do período
+(ZIP)"**; para uma nota só, **Vendas → abrir → "Baixar XML"**. O contador é quem
+**apura e declara** (a loja só emite). Veja [`CONTADOR.md`](CONTADOR.md).
+
 ## 13. Backup
 Tela **Backup**:
 - **Baixar backup agora**: salva um arquivo `.db` — guarde fora do PC (pen

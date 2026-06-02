@@ -219,6 +219,35 @@ def test_resp_tec_com_csrt_inclui_hash(client, auth):
     assert f"<hashCSRT>{esperado}</hashCSRT>" in doc.xml
 
 
+def test_export_xml_por_nota_e_zip(client, auth):
+    import io as _io, zipfile as _zip
+    # cria uma nota autorizada com XML diretamente no banco
+    db.criar_nota({
+        "venda_id": 99001, "user_id": 1, "ref": "exp-65-1", "modelo": "65",
+        "numero": 1, "serie": 1, "ambiente": "homologacao", "status": "autorizada",
+        "chave": "51000112345678000195650010000000011000000015",
+        "xml_autorizado": "<nfeProc>EXPORT-OK</nfeProc>",
+        "criado_em": "2030-01-10T10:00:00", "atualizado_em": "2030-01-10T10:00:00",
+    })
+    nota = db.get_nota_por_venda(99001, "65")
+
+    # download por nota
+    r = client.get(f"/api/fiscal/nfce/nota/{nota['id']}/xml", headers=auth)
+    assert r.status_code == 200
+    assert "EXPORT-OK" in r.text
+    assert "attachment" in r.headers.get("content-disposition", "")
+
+    # export ZIP do período
+    z = client.get("/api/fiscal/nfce/export/xml?inicio=2030-01-01&fim=2030-01-31", headers=auth)
+    assert z.status_code == 200
+    zf = _zip.ZipFile(_io.BytesIO(z.content))
+    assert any("EXPORT-OK" in zf.read(n).decode() for n in zf.namelist())
+
+    # período sem notas → 404
+    vazio = client.get("/api/fiscal/nfce/export/xml?inicio=2031-01-01&fim=2031-01-31", headers=auth)
+    assert vazio.status_code == 404
+
+
 def test_numeracao_separada_nfce_nfe():
     db.salvar_config_fiscal({"serie_nfce": 7, "proximo_numero_nfce": 11, "serie_nfe": 3, "proximo_numero_nfe": 21}, "agora")
     assert db.consumir_numero_fiscal("65") == (7, 11)

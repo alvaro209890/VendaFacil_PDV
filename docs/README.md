@@ -8,6 +8,7 @@
 - [CAIXA.md](CAIXA.md) — abertura/fechamento de caixa, sangria e suprimento.
 - [RECIBO.md](RECIBO.md) — impressão de recibo/cupom na térmica (e bloco fiscal da NFC-e).
 - [FISCAL_SIMPLES.md](FISCAL_SIMPLES.md) — CSOSN/CST por produto, XML fiscal e relatório para PGDAS-D.
+- [CONTADOR.md](CONTADOR.md) — fluxo com o contador: quem emite, o que entregar (export de XMLs em ZIP) e o que ele configura.
 - [VINCULO_PAGAMENTO_MT.md](VINCULO_PAGAMENTO_MT.md) — vínculo do pagamento eletrônico (cartão/PIX) na NFC-e — obrigatório em MT (Portaria 262/2023).
 - [TESTE_FISCAL_WINDOWS.md](TESTE_FISCAL_WINDOWS.md) — roteiro de teste fiscal de ponta a ponta no Windows (A1/CSC/CNPJ, homologação→produção, cartão e PIX).
 - [INTEGRACAO_STONE_TEF.md](INTEGRACAO_STONE_TEF.md) — como integrar Stone/outras maquininhas via TEF, esforço e estimativa de valor.
