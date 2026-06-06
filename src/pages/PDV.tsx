@@ -411,9 +411,10 @@ export default function PDV() {
         troco: pagamento === "dinheiro" ? trocoDinheiro : undefined,
         vendaId: resp.venda?.id,
         data: resp.venda?.criado_em,
-        nota: resp.nota && resp.nota.status === "autorizada" ? {
+        nota: resp.nota && (resp.nota.status === "autorizada" || resp.nota.status === "contingencia") ? {
           numero: resp.nota.numero, serie: resp.nota.serie, chave: resp.nota.chave,
           protocolo: resp.nota.protocolo, qrcode_base64: resp.nota.qrcode_base64,
+          status: resp.nota.status, cpf: cpfConsumidor || undefined,
         } : null,
       };
       setUltimaVenda(recibo);

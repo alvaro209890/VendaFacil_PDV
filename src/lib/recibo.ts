@@ -18,6 +18,8 @@ export interface ReciboNota {
   chave?: string | null;
   protocolo?: string | null;
   qrcode_base64?: string | null;
+  status?: string | null;   // "autorizada" | "contingencia" | ...
+  cpf?: string | null;      // CPF/CNPJ do consumidor, se informado
 }
 
 export interface ReciboData {
@@ -69,21 +71,32 @@ function montarHtml(d: ReciboData, larguraMm: number): string {
        <div class="ln"><span>Troco</span><span>${moeda(d.troco || 0)}</span></div>`
     : "";
 
-  // Bloco fiscal (NFC-e autorizada): nº/série, chave, protocolo e QR de consulta.
+  // Bloco fiscal (DANFE NFC-e): identificação, consumidor, chave, protocolo, QR
+  // de consulta e tributos (Lei 12.741). Em contingência, avisa que a autorização
+  // ainda será transmitida automaticamente à SEFAZ.
+  const temNota = !!(d.nota && d.nota.chave);
+  const contingencia = d.nota?.status === "contingencia";
   let fiscal = "";
-  if (d.nota && d.nota.chave) {
-    const chave = esc(d.nota.chave).replace(/(.{4})/g, "$1 ").trim();
+  if (temNota && d.nota) {
+    const chave = esc(d.nota.chave!).replace(/(.{4})/g, "$1 ").trim();
     const qr = d.nota.qrcode_base64
       ? `<div class="c" style="margin-top:4px"><img src="data:image/png;base64,${d.nota.qrcode_base64}" style="width:${larguraMm === 58 ? 40 : 50}mm;height:auto" /></div>`
       : "";
+    const consumidor = d.nota.cpf
+      ? `<div class="c">CONSUMIDOR: ${esc(d.nota.cpf)}</div>`
+      : `<div class="c">CONSUMIDOR NAO IDENTIFICADO</div>`;
     fiscal = `<hr>
-      <div class="c b">DOCUMENTO FISCAL — NFC-e</div>
-      <div class="c">NFC-e nº ${d.nota.numero ?? "-"} série ${d.nota.serie ?? "-"}</div>
+      <div class="c b">DANFE NFC-e — Documento Auxiliar da NFC-e</div>
+      ${contingencia ? `<div class="c b">EMITIDA EM CONTINGENCIA OFFLINE</div>` : ""}
+      <div class="c">NFC-e no ${d.nota.numero ?? "-"} serie ${d.nota.serie ?? "-"}</div>
+      ${consumidor}
       ${d.nota.protocolo ? `<div class="c">Protocolo: ${esc(String(d.nota.protocolo))}</div>` : ""}
       <div class="c" style="font-size:.85em;margin-top:2px">Chave de acesso</div>
       <div class="c" style="font-size:.8em;word-break:break-all">${chave}</div>
       ${qr}
-      <div class="c" style="font-size:.8em;margin-top:2px">Consulte pela chave de acesso em<br>portal da SEFAZ do seu estado</div>`;
+      <div class="c" style="font-size:.8em;margin-top:2px">Consulte pela chave de acesso em<br>www.sefaz.mt.gov.br/nfce/consultanfce</div>
+      ${contingencia ? `<div class="c" style="font-size:.8em;margin-top:2px">Aguardando autorizacao da SEFAZ (transmissao automatica).</div>` : ""}
+      <div class="c" style="font-size:.8em;margin-top:2px">Tributos aprox. (Lei 12.741/2012) conforme tabela IBPT.</div>`;
   }
 
   return `<!doctype html><html><head><meta charset="utf-8"><title>Recibo</title>
@@ -106,7 +119,7 @@ function montarHtml(d: ReciboData, larguraMm: number): string {
   <div class="c b big">${esc(d.loja.nome || "VendaFácil PDV")}</div>
   ${cnpj}${end}
   <hr>
-  <div class="c b">CUPOM NÃO FISCAL</div>
+  ${temNota ? "" : '<div class="c b">CUPOM NÃO FISCAL</div>'}
   <div class="ln"><span>${dt}</span><span>${d.vendaId ? "#" + d.vendaId : ""}</span></div>
   <hr>
   ${linhas}

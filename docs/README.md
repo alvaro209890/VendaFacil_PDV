@@ -11,6 +11,7 @@
 - [CONTADOR.md](CONTADOR.md) — fluxo com o contador: quem emite, o que entregar (export de XMLs em ZIP) e o que ele configura.
 - [VINCULO_PAGAMENTO_MT.md](VINCULO_PAGAMENTO_MT.md) — vínculo do pagamento eletrônico (cartão/PIX) na NFC-e — obrigatório em MT (Portaria 262/2023).
 - [TESTE_FISCAL_WINDOWS.md](TESTE_FISCAL_WINDOWS.md) — roteiro de teste fiscal de ponta a ponta no Windows (A1/CSC/CNPJ, homologação→produção, cartão e PIX).
+- [CONTINGENCIA_OFFLINE.md](CONTINGENCIA_OFFLINE.md) — contingência offline da NFC-e (tpEmis=9) e correções fiscais (QR Code 2.00, assinatura C14N, desconto, cNF, Lei 12.741) + checklist de homologação.
 - [INTEGRACAO_STONE_TEF.md](INTEGRACAO_STONE_TEF.md) — como integrar Stone/outras maquininhas via TEF, esforço e estimativa de valor.
 - [RESPONSAVEL_TECNICO.md](RESPONSAVEL_TECNICO.md) — grupo infRespTec/CSRT no XML (desligado por padrão; MT não exige).
 - [MAQUININHA_MERCADOPAGO.md](MAQUININHA_MERCADOPAGO.md) — cartão e PIX pela maquininha (Point).

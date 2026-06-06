@@ -67,8 +67,9 @@ Sem esses campos a emissão é bloqueada com a mensagem de "dados fiscais incomp
 
 ## 5. Roteiro de testes (em **Homologação**)
 
-> Em homologação o XML sai com o nome fantasia "NF-E EMITIDA EM AMBIENTE DE
-> HOMOLOGACAO - SEM VALOR FISCAL". É o esperado.
+> Em homologação, quando há **destinatário** (CPF/CNPJ informado), o XML sai com o
+> nome "NF-E EMITIDA EM AMBIENTE DE HOMOLOGACAO - SEM VALOR FISCAL". É o esperado
+> (a SEFAZ exige — Rejeição 706).
 
 ### Teste A — NFC-e em **dinheiro**
 1. PDV → adicione o produto → forma **Dinheiro** → marque **Emitir nota** → **Finalizar**.
@@ -107,7 +108,21 @@ Sem esses campos a emissão é bloqueada com a mensagem de "dados fiscais incomp
 1. Em **Vendas**, abra uma nota autorizada → **Cancelar** com justificativa (≥15 caracteres).
 2. ✅ Esperado: evento de cancelamento **registrado** (cStat 135).
 
-### Teste E — Contingência / reconsulta
+### Teste E — Contingência offline (caixa sem internet)
+1. **Desligue a internet** da máquina (Wi-Fi/cabo).
+2. PDV → produto → **Dinheiro** → **Emitir nota** → **Finalizar**.
+3. ✅ Esperado: a venda conclui e o **DANFE imprime com "EMITIDA EM CONTINGENCIA
+   OFFLINE"** (chave + QR). Em **Vendas** a nota fica **`contingência`**.
+4. **Religue a internet** e aguarde ~1 min (o loop transmite sozinho).
+5. ✅ Esperado: a nota vira **`autorizada`** (cStat 100) com protocolo, sem perder
+   o número fiscal.
+
+### Teste F — NFC-e com **desconto**
+1. PDV → adicione 2 itens → informe um **desconto** → **Emitir nota** → **Finalizar**.
+2. ✅ Esperado: nota **autorizada**. Abra o XML e confira os totais fechando:
+   `vProd − vDesc = vNF` (sem **Rejeição 528/610**), com `vDesc` rateado nos itens.
+
+### Teste G — Processando / reconsulta
 1. Se uma nota ficar **"processando"**, aguarde — o sistema **reconsulta sozinho**
    em segundo plano até a SEFAZ responder. Confira que ela conclui.
 
@@ -130,7 +145,10 @@ Só depois de A–D passarem em homologação:
 - [ ] B (cartão) autorizada **com `<tpIntegra>1</tpIntegra>` e `cAut` preenchido**
 - [ ] C (PIX) — conforme suporte da Point
 - [ ] D (cancelamento) registrado
-- [ ] E (reconsulta) conclui sozinha
+- [ ] E (contingência offline) imprime o DANFE e autoriza ao voltar a internet
+- [ ] F (desconto) autorizada com `vProd − vDesc = vNF`
+- [ ] G (reconsulta) conclui sozinha
+- [ ] QR Code do DANFE abre a consulta no portal NFC-e MT
 - [ ] Produção: 1 nota real autorizada e consultável
 
 ## 8. Se algo falhar — onde olhar

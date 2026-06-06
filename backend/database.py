@@ -589,7 +589,7 @@ class Database:
     def notas_pendentes(self, limite: int = 50) -> list[dict[str, Any]]:
         with self._lock:
             rows = self._conn.execute(
-                "SELECT * FROM notas_fiscais WHERE status IN ('pendente','processando') "
+                "SELECT * FROM notas_fiscais WHERE status IN ('pendente','processando','contingencia') "
                 "ORDER BY id LIMIT ?", (limite,)
             ).fetchall()
             return [dict(r) for r in rows]

@@ -9,6 +9,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+import secrets
 import tempfile
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
@@ -52,6 +53,8 @@ class DocumentoMontado:
     xml: str
     payload: dict
     qrcode_url: str | None = None
+    dh_emi: str | None = None
+    v_nf: float | None = None
 
 
 def so_digitos(s: str | None) -> str:
@@ -70,11 +73,25 @@ def dv_chave(chave43: str) -> str:
     return "0" if dv >= 10 else str(dv)
 
 
-def chave_acesso(config: dict, modelo: str, serie: int, numero: int, tp_emis: str = "1") -> str:
+def gerar_cnf(numero: int) -> str:
+    """Código numérico (cNF) aleatório de 8 dígitos, diferente do nNF.
+
+    O MOC da NF-e exige cNF aleatório e proíbe que ele seja igual ao número da
+    nota (nNF) — usar o próprio número é rejeitado pela SEFAZ e enfraquece o
+    controle anti-fraude embutido na chave de acesso."""
+    proibido = f"{numero % 100000000:08d}"
+    while True:
+        cod = f"{secrets.randbelow(100000000):08d}"
+        if cod != proibido:
+            return cod
+
+
+def chave_acesso(config: dict, modelo: str, serie: int, numero: int,
+                 tp_emis: str = "1", cnf: str | None = None) -> str:
     dt = datetime.now(timezone(timedelta(hours=-4)))
     cnpj = so_digitos(config.get("cnpj")).zfill(14)
     ano_mes = dt.strftime("%y%m")
-    cod = str(numero).zfill(8)[-8:]
+    cod = cnf or gerar_cnf(numero)
     base = f"{C_UF_MT}{ano_mes}{cnpj}{modelo}{serie:03d}{numero:09d}{tp_emis}{cod}"
     return base + dv_chave(base)
 
@@ -292,11 +309,34 @@ def _grupo_cofins(imposto, prod: dict, base: float) -> float:
     return valor
 
 
+def _ratear(total: float, valores: list[float]) -> list[float]:
+    """Rateia ``total`` proporcionalmente a ``valores`` (2 casas). A última
+    parcela absorve a sobra de arredondamento para a soma fechar exatamente —
+    é o que faz o desconto do cabeçalho bater com o somatório dos itens (senão
+    a SEFAZ rejeita o total)."""
+    soma = round(sum(valores), 2)
+    if total <= 0 or soma <= 0:
+        return [0.0 for _ in valores]
+    partes: list[float] = []
+    acumulado = 0.0
+    for i, v in enumerate(valores):
+        if i == len(valores) - 1:
+            partes.append(round(total - acumulado, 2))
+        else:
+            parte = round(total * v / soma, 2)
+            acumulado = round(acumulado + parte, 2)
+            partes.append(parte)
+    return partes
+
+
 def montar_documento(venda: dict, config: dict, modelo: str = "65",
                      cpf_consumidor: str | None = None,
                      destinatario: dict | None = None,
-                     serie: int | None = None, numero: int | None = None) -> DocumentoMontado:
+                     serie: int | None = None, numero: int | None = None,
+                     tp_emis: str = "1", dh_cont: str | None = None,
+                     just_cont: str | None = None) -> DocumentoMontado:
     modelo = str(modelo)
+    tp_emis = str(tp_emis)
     _validar_emitente(config)
     validar_itens(venda)
     if modelo == "55" and not destinatario:
@@ -306,7 +346,8 @@ def montar_documento(venda: dict, config: dict, modelo: str = "65",
     numero = int(numero or (config.get("proximo_numero_nfe") if modelo == "55" else config.get("proximo_numero_nfce")) or 1)
     ambiente = config.get("ambiente") or "homologacao"
     tp_amb = "1" if ambiente == "producao" else "2"
-    chave = chave_acesso(config, modelo, serie, numero)
+    dh_emi = agora_mt()
+    chave = chave_acesso(config, modelo, serie, numero, tp_emis)
     inf_id = "NFe" + chave
 
     nfe = ET.Element(f"{{{NFE_NS}}}NFe")
@@ -320,12 +361,12 @@ def montar_documento(venda: dict, config: dict, modelo: str = "65",
     _tag(ide, "mod", modelo)
     _tag(ide, "serie", serie)
     _tag(ide, "nNF", numero)
-    _tag(ide, "dhEmi", agora_mt())
+    _tag(ide, "dhEmi", dh_emi)
     _tag(ide, "tpNF", "1")
     _tag(ide, "idDest", "1")
     _tag(ide, "cMunFG", so_digitos(config.get("codigo_municipio")))
     _tag(ide, "tpImp", "4" if modelo == "65" else "1")
-    _tag(ide, "tpEmis", "1")
+    _tag(ide, "tpEmis", tp_emis)
     _tag(ide, "cDV", chave[-1])
     _tag(ide, "tpAmb", tp_amb)
     _tag(ide, "finNFe", "1")
@@ -333,6 +374,14 @@ def montar_documento(venda: dict, config: dict, modelo: str = "65",
     _tag(ide, "indPres", "1")
     _tag(ide, "procEmi", "0")
     _tag(ide, "verProc", "VendaFacilPDV")
+    if tp_emis == "9":
+        # Contingência offline: data/hora de entrada em contingência + justificativa
+        # (15 a 256 caracteres). Vêm depois de verProc no leiaute 4.00.
+        _tag(ide, "dhCont", dh_cont or dh_emi)
+        just = (just_cont or "").strip()
+        if len(just) < 15:
+            just = "Sem comunicacao com a SEFAZ no momento da venda"
+        _tag(ide, "xJust", just[:256])
 
     emit = _tag(inf, "emit")
     _tag(emit, "CNPJ", so_digitos(config.get("cnpj")))
@@ -357,7 +406,11 @@ def montar_documento(venda: dict, config: dict, modelo: str = "65",
     if modelo == "55" or dest_doc:
         dest = _tag(inf, "dest")
         _tag(dest, "CNPJ" if len(dest_doc) == 14 else "CPF", dest_doc)
-        _tag(dest, "xNome", (destinatario or {}).get("nome") or "CONSUMIDOR")
+        # Em homologação a SEFAZ exige este nome no destinatário (Rejeição 706).
+        nome_dest = (destinatario or {}).get("nome") or "CONSUMIDOR"
+        if tp_amb == "2":
+            nome_dest = "NF-E EMITIDA EM AMBIENTE DE HOMOLOGACAO - SEM VALOR FISCAL"
+        _tag(dest, "xNome", nome_dest)
         if modelo == "55":
             de = _tag(dest, "enderDest")
             _tag(de, "xLgr", destinatario.get("logradouro"))
@@ -373,15 +426,20 @@ def montar_documento(venda: dict, config: dict, modelo: str = "65",
         if modelo == "55" and (destinatario or {}).get("inscricao_estadual"):
             _tag(dest, "IE", so_digitos(destinatario.get("inscricao_estadual")))
 
-    total_prod = 0.0
+    itens = venda.get("itens", [])
+    brutos = [round(float(it["quantidade"]) * float(it["preco_unitario"]), 2) for it in itens]
+    total_prod = round(sum(brutos), 2)
+    desconto = round(float(venda.get("desconto") or 0), 2)
+    if desconto > total_prod:           # nunca descontar mais do que o valor dos produtos
+        desconto = total_prod
+    descontos = _ratear(desconto, brutos)
+
     v_pis_total = 0.0
     v_cofins_total = 0.0
-    for idx, item in enumerate(venda.get("itens", []), 1):
+    for idx, (item, bruto, vdesc) in enumerate(zip(itens, brutos, descontos), 1):
         prod = db.get_produto(item["produto_id"]) or {}
         qtd = float(item["quantidade"])
         val = float(item["preco_unitario"])
-        bruto = round(qtd * val, 2)
-        total_prod += bruto
         det = _tag(inf, "det")
         det.set("nItem", str(idx))
         p = _tag(det, "prod")
@@ -400,11 +458,15 @@ def montar_documento(venda: dict, config: dict, modelo: str = "65",
         _tag(p, "uTrib", (prod.get("unidade_tributavel") or prod.get("unidade") or "UN").upper())
         _tag(p, "qTrib", f"{qtd:.4f}")
         _tag(p, "vUnTrib", f"{val:.4f}")
+        if vdesc > 0:
+            _tag(p, "vDesc", f"{vdesc:.2f}")
         _tag(p, "indTot", "1")
+        # Base de PIS/COFINS líquida do desconto rateado (relevante p/ CST tributado).
+        base_trib = round(bruto - vdesc, 2)
         imp = _tag(det, "imposto")
         _grupo_icms_sn(imp, prod)
-        v_pis_total += _grupo_pis(imp, prod, bruto)
-        v_cofins_total += _grupo_cofins(imp, prod, bruto)
+        v_pis_total += _grupo_pis(imp, prod, base_trib)
+        v_cofins_total += _grupo_cofins(imp, prod, base_trib)
 
     total = _tag(inf, "total")
     icmst = _tag(total, "ICMSTot")
@@ -414,32 +476,43 @@ def montar_documento(venda: dict, config: dict, modelo: str = "65",
     for tag in ("vBC", "vICMS", "vICMSDeson", "vFCPUFDest", "vICMSUFDest",
                 "vICMSUFRemet", "vFCP", "vBCST", "vST", "vFCPST", "vFCPSTRet"):
         _tag(icmst, tag, "0.00")
+    v_nf = round(total_prod - desconto, 2)
     _tag(icmst, "vProd", f"{total_prod:.2f}")
     _tag(icmst, "vFrete", "0.00")
     _tag(icmst, "vSeg", "0.00")
-    _tag(icmst, "vDesc", "0.00")
+    _tag(icmst, "vDesc", f"{desconto:.2f}")
     for tag in ("vII", "vIPI", "vIPIDevol"):
         _tag(icmst, tag, "0.00")
     _tag(icmst, "vPIS", f"{v_pis_total:.2f}")
     _tag(icmst, "vCOFINS", f"{v_cofins_total:.2f}")
     _tag(icmst, "vOutro", "0.00")
-    _tag(icmst, "vNF", f"{float(venda.get('total') or total_prod):.2f}")
+    _tag(icmst, "vNF", f"{v_nf:.2f}")
     transp = _tag(inf, "transp")
     _tag(transp, "modFrete", "9")
-    _grupo_pagamento(inf, venda, float(venda.get("total") or total_prod))
+    _grupo_pagamento(inf, venda, v_nf)
+
+    # Lei 12.741/2012 — informação dos tributos no documento ao consumidor.
+    infad = _tag(inf, "infAdic")
+    _tag(infad, "infCpl",
+         "Lei 12.741/2012 - Valor aproximado dos tributos conforme tabela IBPT. "
+         "Documento emitido por optante pelo Simples Nacional.")
 
     _anexar_resp_tec(inf, config, chave)
 
     qrcode_url = None
-    if modelo == "65":
+    if modelo == "65" and tp_emis != "9":
+        # Online: QR Code 2.00 (não usa DigestValue). Em contingência (tpEmis=9) o
+        # QR é gerado após a assinatura, em inserir_qrcode_offline().
         infsupl = _tag(nfe, "infNFeSupl")
         qrcode_url = gerar_qrcode_url(chave, config, ambiente)
         _tag(infsupl, "qrCode", qrcode_url)
         _tag(infsupl, "urlChave", URL_QR_NFCE[ambiente])
 
     xml = ET.tostring(nfe, encoding="utf-8", xml_declaration=True).decode("utf-8")
-    payload = {"modelo": modelo, "chave": chave, "ambiente": ambiente, "serie": serie, "numero": numero}
-    return DocumentoMontado(chave=chave, xml=xml, payload=payload, qrcode_url=qrcode_url)
+    payload = {"modelo": modelo, "chave": chave, "ambiente": ambiente,
+               "serie": serie, "numero": numero, "tp_emis": tp_emis}
+    return DocumentoMontado(chave=chave, xml=xml, payload=payload,
+                            qrcode_url=qrcode_url, dh_emi=dh_emi, v_nf=v_nf)
 
 
 def _hash_csrt(csrt: str, chave: str) -> str:
@@ -472,13 +545,52 @@ def _anexar_resp_tec(inf, config: dict, chave: str) -> None:
         _tag(rt, "hashCSRT", _hash_csrt(csrt, chave))
 
 
-def gerar_qrcode_url(chave: str, config: dict, ambiente: str) -> str:
+def gerar_qrcode_url(chave: str, config: dict, ambiente: str, *,
+                     tp_emis: str = "1", dh_emi: str | None = None,
+                     v_nf: float | None = None, v_icms: str = "0.00",
+                     dig_val: str | None = None) -> str:
+    """URL do QR Code da NFC-e no padrão **QR Code 2.00** (campos separados por ``|``).
+
+    - Online (tpEmis≠9):  ``p=chave|2|tpAmb|idCSC|hash``.
+    - Contingência (tpEmis=9): inclui dhEmi (hex), vNF, vICMS e o DigestValue da
+      assinatura (hex): ``p=chave|2|tpAmb|dhEmiHex|vNF|vICMS|digValHex|idCSC|hash``.
+
+    ``hash = SHA-1(conteúdo + CSC)`` em hexadecimal maiúsculo.
+    """
     id_csc = str(config.get("csc_id") or "").strip()
     csc = str(config.get("csc") or "").strip()
     tp_amb = "1" if ambiente == "producao" else "2"
-    params = f"chNFe={chave}&nVersao=100&tpAmb={tp_amb}&cDest=&dhEmi=&vNF=&vICMS=&digVal=&cIdToken={id_csc}"
-    h = hashlib.sha1((params + csc).encode("utf-8")).hexdigest().upper()
-    return f"{URL_QR_NFCE[ambiente]}?p={params}&cHashQRCode={h}"
+    if str(tp_emis) == "9":
+        dh_hex = (dh_emi or "").encode("utf-8").hex()
+        try:
+            dig_hex = base64.b64decode(dig_val).hex() if dig_val else ""
+        except Exception:
+            dig_hex = ""
+        conteudo = f"{chave}|2|{tp_amb}|{dh_hex}|{float(v_nf or 0):.2f}|{v_icms}|{dig_hex}|{id_csc}"
+    else:
+        conteudo = f"{chave}|2|{tp_amb}|{id_csc}"
+    h = hashlib.sha1((conteudo + csc).encode("utf-8")).hexdigest().upper()
+    return f"{URL_QR_NFCE[ambiente]}?p={conteudo}|{h}"
+
+
+def inserir_qrcode_offline(xml_assinado: str, config: dict, chave: str,
+                           dh_emi: str, v_nf: float, ambiente: str) -> tuple[str, str]:
+    """Para a NFC-e em contingência: lê o DigestValue da assinatura, monta o QR
+    Code 2.00 offline e insere ``<infNFeSupl>`` logo após ``<infNFe>`` (antes da
+    Signature). A assinatura cobre apenas ``infNFe``, então acrescentar o grupo
+    suplementar como irmão não a invalida."""
+    from lxml import etree
+    root = etree.fromstring(xml_assinado.encode("utf-8"))
+    dig_el = root.find(".//{http://www.w3.org/2000/09/xmldsig#}DigestValue")
+    dig_val = dig_el.text if dig_el is not None else None
+    qr = gerar_qrcode_url(chave, config, ambiente, tp_emis="9", dh_emi=dh_emi,
+                          v_nf=v_nf, v_icms="0.00", dig_val=dig_val)
+    infnfe = root.find(f"{{{NFE_NS}}}infNFe")
+    infsupl = etree.Element(f"{{{NFE_NS}}}infNFeSupl")
+    etree.SubElement(infsupl, f"{{{NFE_NS}}}qrCode").text = qr
+    etree.SubElement(infsupl, f"{{{NFE_NS}}}urlChave").text = URL_QR_NFCE[ambiente]
+    infnfe.addnext(infsupl)
+    return etree.tostring(root, encoding="utf-8", xml_declaration=True).decode("utf-8"), qr
 
 
 def assinar_xml(xml: str, config: dict) -> str:
@@ -506,9 +618,14 @@ def assinar_xml(xml: str, config: dict) -> str:
         def check_deprecated_methods(self):
             return
 
-    signed = NFeXMLSigner(method=methods.enveloped, digest_algorithm="sha1", signature_algorithm="rsa-sha1").sign(
-        root, key=key_pem, cert=cert_pem, reference_uri=ref
-    )
+    # A NF-e/NFC-e exige C14N **não-exclusiva** (REC-xml-c14n-20010315) tanto no
+    # CanonicalizationMethod quanto no Transform da Reference. O padrão do signxml
+    # é a C14N exclusiva (xml-exc-c14n#), que a SEFAZ rejeita (Rejeição 297).
+    c14n_nfe = "http://www.w3.org/TR/2001/REC-xml-c14n-20010315"
+    signed = NFeXMLSigner(
+        method=methods.enveloped, digest_algorithm="sha1",
+        signature_algorithm="rsa-sha1", c14n_algorithm=c14n_nfe,
+    ).sign(root, key=key_pem, cert=cert_pem, reference_uri=ref)
     return etree.tostring(signed, encoding="utf-8", xml_declaration=True).decode("utf-8")
 
 
@@ -762,13 +879,50 @@ def cancelar_documento(nota: dict, config: dict, justificativa: str) -> dict:
 def preparar_e_tentar_transmitir(venda: dict, config: dict, modelo: str = "65",
                                  cpf_consumidor: str | None = None,
                                  destinatario: dict | None = None) -> dict:
+    """Monta, assina e tenta transmitir. Trata a queda de internet sem perder o
+    número fiscal nem deixar a venda sem nota:
+
+    - **Sem conexão** (NFC-e): emite em **contingência offline** (tpEmis=9), com
+      QR Code offline, para imprimir o DANFE na hora e transmitir depois
+      (``contingencia=True``).
+    - **Sem resposta** após enviar (ex.: timeout de leitura): grava como
+      ``pendente=True`` para o loop **consultar** pela chave (não retransmite, p/
+      não duplicar — pode ter sido autorizada).
+    """
     _validar_certificado(config, modelo)
+    try:
+        import requests
+        sem_conexao = (requests.exceptions.ConnectionError, requests.exceptions.ConnectTimeout)
+    except Exception:
+        sem_conexao = (OSError,)
+
     serie, numero = db.consumir_numero_fiscal(modelo)
     doc = montar_documento(venda, config, modelo, cpf_consumidor, destinatario, serie, numero)
     xml_assinado = assinar_xml(doc.xml, config)
-    retorno = transmitir_autorizacao(modelo, xml_assinado, config)
-    return {
+    base = {
         "serie": serie, "numero": numero, "chave": doc.chave, "xml_assinado": xml_assinado,
         "payload": json.dumps(doc.payload, ensure_ascii=False), "qrcode_url": doc.qrcode_url,
-        "retorno": retorno,
     }
+    try:
+        base["retorno"] = transmitir_autorizacao(modelo, xml_assinado, config)
+        return base
+    except FiscalDiretoError:
+        raise
+    except sem_conexao:
+        if modelo == "65":
+            dh_cont = agora_mt()
+            doc9 = montar_documento(venda, config, modelo, cpf_consumidor, destinatario,
+                                    serie, numero, tp_emis="9", dh_cont=dh_cont)
+            xml9 = assinar_xml(doc9.xml, config)
+            ambiente = config.get("ambiente") or "homologacao"
+            xml9, qr9 = inserir_qrcode_offline(xml9, config, doc9.chave, doc9.dh_emi, doc9.v_nf, ambiente)
+            return {
+                "serie": serie, "numero": numero, "chave": doc9.chave, "xml_assinado": xml9,
+                "payload": json.dumps(doc9.payload, ensure_ascii=False), "qrcode_url": qr9,
+                "contingencia": True,
+            }
+        base["pendente"] = True       # NF-e (55) não usa contingência offline: deixa pendente
+        return base
+    except Exception:
+        base["pendente"] = True       # enviou mas não obteve resposta → consultar depois
+        return base

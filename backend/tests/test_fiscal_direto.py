@@ -56,7 +56,8 @@ def test_monta_xml_nfce_65(client, auth):
     doc = fiscal_direto.montar_documento(_venda(produto), _cfg(), "65", cpf_consumidor="12345678909", serie=1, numero=1)
     assert "<mod>65</mod>" in doc.xml
     assert doc.chave.startswith("51")
-    assert doc.qrcode_url and "cHashQRCode" in doc.qrcode_url
+    # QR Code 2.00 (pipe-delimitado), não o formato 1.00 antigo.
+    assert doc.qrcode_url and f"?p={doc.chave}|2|" in doc.qrcode_url
 
 
 def _venda_cartao(produto, pagamento):
@@ -301,6 +302,10 @@ def test_assina_xml_com_a1_pkcs12_sintetico():
 
     assert "<ds:Signature" in assinado or "<Signature" in assinado
     assert "rsa-sha1" in assinado
+    # NF-e exige C14N não-exclusiva (REC-xml-c14n-20010315); o default do signxml
+    # (xml-exc-c14n#) seria rejeitado pela SEFAZ.
+    assert "REC-xml-c14n-20010315" in assinado
+    assert "xml-exc-c14n" not in assinado
 
 
 def test_normaliza_retorno_sefaz_autorizado_com_xml_proc():
@@ -363,3 +368,132 @@ def test_normaliza_retorno_evento_cancelado():
 
     assert dados["status"] == "cancelada"
     assert dados["protocolo"] == "151000000000009"
+
+
+def test_desconto_rateado_fecha_total(client, auth):
+    p1 = client.post("/api/produtos", headers=auth, json={
+        "nome": "Item A", "preco_venda": 10, "estoque": 9,
+        "ncm": "22021000", "cfop": "5102", "cst_csosn": "102", "unidade": "UN"}).json()["produto"]
+    p2 = client.post("/api/produtos", headers=auth, json={
+        "nome": "Item B", "preco_venda": 5, "estoque": 9,
+        "ncm": "22021000", "cfop": "5102", "cst_csosn": "102", "unidade": "UN"}).json()["produto"]
+    venda = {
+        "id": 1, "total": 12.0, "desconto": 3.0, "forma_pagamento": "dinheiro",
+        "itens": [
+            {"produto_id": p1["id"], "nome_produto": "Item A", "quantidade": 1, "preco_unitario": 10, "subtotal": 10},
+            {"produto_id": p2["id"], "nome_produto": "Item B", "quantidade": 1, "preco_unitario": 5, "subtotal": 5},
+        ],
+    }
+    doc = fiscal_direto.montar_documento(venda, _cfg(), "65", serie=1, numero=1)
+    # Totais fecham: vProd 15,00 − vDesc 3,00 = vNF 12,00 (senão a SEFAZ rejeita).
+    assert "<vProd>15.00</vProd>" in doc.xml
+    assert "<vDesc>3.00</vDesc>" in doc.xml          # total (ICMSTot)
+    assert "<vNF>12.00</vNF>" in doc.xml
+    assert "<vPag>12.00</vPag>" in doc.xml
+    # Rateio por item: 2,00 no item de R$10 e 1,00 no de R$5 (soma = desconto).
+    assert "<vDesc>2.00</vDesc>" in doc.xml
+    assert "<vDesc>1.00</vDesc>" in doc.xml
+
+
+def test_qrcode_online_padrao_2(client, auth):
+    produto = client.post("/api/produtos", headers=auth, json={
+        "nome": "QR Online", "preco_venda": 10, "estoque": 5,
+        "ncm": "22021000", "cfop": "5102", "cst_csosn": "102", "unidade": "UN"}).json()["produto"]
+    url = fiscal_direto.montar_documento(_venda(produto), _cfg(), "65", serie=1, numero=1).qrcode_url
+    assert "?p=" in url
+    assert "&" not in url                 # QR Code 2.00 usa "|", nunca "&"
+    assert "nVersao=100" not in url and "cDest=" not in url and "digVal=" not in url
+    campos = url.split("?p=", 1)[1].split("|")
+    assert campos[1] == "2"               # versão do QR Code
+    assert campos[2] == "2"               # tpAmb = homologação
+    assert campos[3] == "000001"          # idCSC
+    assert len(campos[4]) == 40 and campos[4].isalnum()   # SHA-1 hex
+
+
+def test_cnf_aleatorio_diferente_do_nnf(client, auth):
+    produto = client.post("/api/produtos", headers=auth, json={
+        "nome": "cNF aleatorio", "preco_venda": 10, "estoque": 5,
+        "ncm": "22021000", "cfop": "5102", "cst_csosn": "102", "unidade": "UN"}).json()["produto"]
+    doc = fiscal_direto.montar_documento(_venda(produto), _cfg(), "65", serie=1, numero=1)
+    cnf = doc.chave[35:43]
+    assert cnf != "00000001"              # nNF=1 → cNF não pode ser igual (MOC)
+    assert len(cnf) == 8 and cnf.isdigit()
+
+
+def test_contingencia_offline_tpemis9_sem_supl(client, auth):
+    produto = client.post("/api/produtos", headers=auth, json={
+        "nome": "Contingencia", "preco_venda": 10, "estoque": 5,
+        "ncm": "22021000", "cfop": "5102", "cst_csosn": "102", "unidade": "UN"}).json()["produto"]
+    doc = fiscal_direto.montar_documento(_venda(produto), _cfg(), "65", serie=1, numero=1,
+                                         tp_emis="9", dh_cont="2026-06-05T12:00:00-04:00")
+    assert "<tpEmis>9</tpEmis>" in doc.xml
+    assert "<dhCont>" in doc.xml and "<xJust>" in doc.xml
+    assert "infNFeSupl" not in doc.xml    # o QR offline é inserido após a assinatura
+    assert doc.chave[34] == "9"           # posição do tpEmis dentro da chave de acesso
+
+
+def test_inserir_qrcode_offline_insere_supl_e_qr_offline():
+    import pytest
+    pytest.importorskip("lxml")
+    chave = "51000112345678000195650010000000011000000015"
+    xml_assinado = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<NFe xmlns="http://www.portalfiscal.inf.br/nfe">'
+        f'<infNFe Id="NFe{chave}" versao="4.00"><ide><cUF>51</cUF></ide></infNFe>'
+        '<Signature xmlns="http://www.w3.org/2000/09/xmldsig#"><SignedInfo>'
+        '<Reference><DigestValue>YWJjZGVm</DigestValue></Reference>'
+        '</SignedInfo></Signature></NFe>'
+    )
+    xml_final, qr = fiscal_direto.inserir_qrcode_offline(
+        xml_assinado, _cfg(), chave, "2026-06-05T12:00:00-04:00", 10.0, "homologacao")
+    # Grupo suplementar entra na ordem correta: infNFe, infNFeSupl, Signature.
+    from xml.etree import ElementTree as ET
+    filhos = [el.tag.split("}")[-1] for el in ET.fromstring(xml_final.encode("utf-8"))]
+    assert filhos == ["infNFe", "infNFeSupl", "Signature"]
+    # QR offline: chave|2|tpAmb|dhEmiHex|vNF|vICMS|digValHex|idCSC|hash
+    p = qr.split("?p=", 1)[1].split("|")
+    assert p[0] == chave and p[1] == "2" and p[2] == "2"
+    assert p[3] == "2026-06-05T12:00:00-04:00".encode("utf-8").hex()
+    assert p[4] == "10.00" and p[5] == "0.00"
+    assert p[6] == base64.b64decode("YWJjZGVm").hex()   # DigestValue em hexadecimal
+    assert p[7] == "000001" and len(p[8]) == 40
+
+
+def test_contingencia_assina_e_insere_qr_offline(client, auth):
+    import pytest
+    pytest.importorskip("cryptography")
+    pytest.importorskip("signxml")
+    pytest.importorskip("lxml")
+    from cryptography import x509
+    from cryptography.hazmat.primitives import hashes
+    from cryptography.hazmat.primitives.asymmetric import rsa
+    from cryptography.hazmat.primitives.serialization import BestAvailableEncryption, pkcs12
+    from cryptography.x509.oid import NameOID
+
+    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "TESTE A1")])
+    cert = (
+        x509.CertificateBuilder().subject_name(name).issuer_name(name)
+        .public_key(key.public_key()).serial_number(x509.random_serial_number())
+        .not_valid_before(datetime.now(timezone.utc) - timedelta(days=1))
+        .not_valid_after(datetime.now(timezone.utc) + timedelta(days=30))
+        .sign(key, hashes.SHA256())
+    )
+    pfx = pkcs12.serialize_key_and_certificates(b"t", key, cert, None, BestAvailableEncryption(b"1234"))
+    cfg = {**_cfg(), "certificado_a1_b64": base64.b64encode(pfx).decode(), "certificado_senha": "1234"}
+
+    produto = client.post("/api/produtos", headers=auth, json={
+        "nome": "Conting Full", "preco_venda": 10, "estoque": 5,
+        "ncm": "22021000", "cfop": "5102", "cst_csosn": "102", "unidade": "UN"}).json()["produto"]
+    doc = fiscal_direto.montar_documento(_venda(produto), cfg, "65", serie=1, numero=1,
+                                         tp_emis="9", dh_cont="2026-06-05T12:00:00-04:00")
+    assinado = fiscal_direto.assinar_xml(doc.xml, cfg)
+    xml_final, qr = fiscal_direto.inserir_qrcode_offline(
+        assinado, cfg, doc.chave, doc.dh_emi, doc.v_nf, "homologacao")
+
+    from xml.etree import ElementTree as ET
+    filhos = [el.tag.split("}")[-1] for el in ET.fromstring(xml_final.encode("utf-8"))]
+    assert filhos == ["infNFe", "infNFeSupl", "Signature"]   # ordem exigida pelo XSD
+    campos = qr.split("?p=", 1)[1].split("|")
+    assert len(campos) == 9 and campos[1] == "2"             # QR offline 2.00: 9 campos
+    assert campos[6]                                          # digVal(hex) veio da assinatura real

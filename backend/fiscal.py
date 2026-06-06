@@ -255,19 +255,27 @@ def emitir_nfce(venda_id: int, user_id: int, cpf: str | None = None) -> dict:
         try:
             r = fiscal_direto.preparar_e_tentar_transmitir(venda, config, "65", cpf_consumidor=cpf)
             agora = _agora()
+            comum = {
+                "venda_id": venda_id, "user_id": user_id, "ref": f"v{venda_id}-65-{r['numero']}",
+                "modelo": "65", "numero": r["numero"], "serie": r["serie"],
+                "ambiente": config.get("ambiente"), "chave": r["chave"],
+                "qrcode_url": r.get("qrcode_url"), "payload": r["payload"],
+                "xml_assinado": r["xml_assinado"], "criado_em": agora, "atualizado_em": agora,
+            }
+            if r.get("contingencia"):
+                return db.criar_nota({**comum, "status": "contingencia", "tipo_emissao": "9",
+                    "mensagem": "NFC-e emitida em contingência offline; será transmitida "
+                                "automaticamente quando a internet voltar."})
+            if r.get("pendente"):
+                return db.criar_nota({**comum, "status": "processando", "tipo_emissao": "1",
+                    "mensagem": "Transmissão sem resposta da SEFAZ; será consultada automaticamente."})
             retorno = r.get("retorno") or {}
             sefaz = fiscal_direto.normalizar_retorno_sefaz(
                 retorno.get("texto"), r["xml_assinado"], retorno.get("status_code")
             )
-            dados = {
-                "venda_id": venda_id, "user_id": user_id, "ref": f"v{venda_id}-65-{r['numero']}",
-                "modelo": "65", "numero": r["numero"], "serie": r["serie"],
-                "ambiente": config.get("ambiente"), "status": sefaz.get("status") or "processando",
-                "chave": r["chave"], "qrcode_url": r.get("qrcode_url"),
-                "payload": r["payload"], "xml_assinado": r["xml_assinado"],
+            dados = {**comum, "status": sefaz.get("status") or "processando", "tipo_emissao": "1",
                 "mensagem": sefaz.get("mensagem") or f"Transmitido para SEFAZ-MT ({retorno.get('status_code')}). Consulte o status.",
                 "recibo": sefaz.get("recibo") or retorno.get("texto", "")[:4000],
-                "criado_em": agora, "atualizado_em": agora,
             }
             for campo in ("protocolo", "xml_autorizado", "motivo_rejeicao"):
                 if campo in sefaz:
@@ -450,7 +458,15 @@ def _processar_pendentes_direto(config: dict) -> int:
         if not chave:
             continue
         try:
-            retorno = fiscal_direto.consultar_chave(nota.get("modelo") or "65", chave, config)
+            if nota.get("status") == "contingencia":
+                # Emitida offline e ainda não enviada → transmite o XML já assinado.
+                if not nota.get("xml_assinado"):
+                    continue
+                retorno = fiscal_direto.transmitir_autorizacao(
+                    nota.get("modelo") or "65", nota["xml_assinado"], config)
+            else:
+                # Já transmitida (sem resposta) → consulta pela chave, sem reenviar.
+                retorno = fiscal_direto.consultar_chave(nota.get("modelo") or "65", chave, config)
             sefaz = fiscal_direto.normalizar_retorno_sefaz(
                 retorno.get("texto"), nota.get("xml_assinado"), retorno.get("status_code")
             )

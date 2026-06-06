@@ -33,13 +33,24 @@ nível, então funciona com a maioria das térmicas via driver.
 
 ## Quando a venda emite NFC-e
 
-Se a venda for com **"emitir nota"** e a NFC-e for **autorizada**, o recibo
-térmico inclui automaticamente um **bloco fiscal**: número/série, **chave de
-acesso**, protocolo e o **QR Code** de consulta da NFC-e. Nesse caso o cupom
-deixa de ter o aviso "não é fiscal" — ele é o comprovante da nota.
+Se a venda for com **"emitir nota"** e a NFC-e for **autorizada** (ou emitida em
+**contingência offline**), o recibo deixa de ser "não fiscal" e vira o
+**DANFE NFC-e** — Documento Auxiliar da NFC-e — com:
 
-> Observação: o layout do cupom fiscal traz os elementos essenciais (emitente,
-> itens, total, chave e QR). Valide com a SEFAZ do seu estado antes de usar em
-> produção; em homologação dá para conferir tudo.
+- título **"DANFE NFC-e"** (sem o aviso "não fiscal");
+- identificação do **consumidor** (CPF/CNPJ, ou "CONSUMIDOR NAO IDENTIFICADO");
+- número/série, **chave de acesso**, **protocolo** e o **QR Code** de consulta;
+- a URL de consulta (`www.sefaz.mt.gov.br/nfce/consultanfce`);
+- a informação de tributos (**Lei 12.741/2012**, IBPT).
 
-Para configurar a emissão de NFC-e, use a tela **Fiscal** (gateway Focus NFe).
+Em **contingência offline** o cupom sai com o aviso **"EMITIDA EM CONTINGENCIA
+OFFLINE"** e "aguardando autorização da SEFAZ" — a transmissão acontece
+automaticamente quando a internet volta (ver
+[`CONTINGENCIA_OFFLINE.md`](CONTINGENCIA_OFFLINE.md)).
+
+> Observação: o DANFE traz os elementos essenciais (emitente, consumidor, itens,
+> total, chave, protocolo e QR). **Valide com a SEFAZ-MT em homologação** antes de
+> usar em produção.
+
+Para configurar a emissão de NFC-e, use a tela **Fiscal** (fluxo **SEFAZ-MT
+direto**, padrão; o gateway Focus NFe permanece só como legado).
