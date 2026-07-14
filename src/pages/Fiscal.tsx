@@ -156,15 +156,28 @@ export default function FiscalPage() {
               <label className={lbl}>Senha do certificado {cfg.certificado_senha_preenchido && <span className="text-emerald-400">(salva)</span>}</label>
               <input className={inputCls} type="password" value={cfg.certificado_senha || ""} onChange={(e) => set("certificado_senha", e.target.value)} placeholder={cfg.certificado_senha_preenchido ? "preencha só para alterar" : "senha do A1"} />
             </div>
-            <div><label className={lbl}>CSC (idCSC) {cfg.csc_preenchido && <span className="text-emerald-400">(salvo)</span>}</label><input className={inputCls} type="password" value={cfg.csc || ""} onChange={(e) => set("csc", e.target.value)} /></div>
-            <div><label className={lbl}>ID do CSC (Token)</label><input className={inputCls} value={cfg.csc_id || ""} onChange={(e) => set("csc_id", e.target.value)} placeholder="ex.: 000001" /></div>
+            <div>
+              <label className={lbl}>Versão do QR Code (NFC-e)</label>
+              <select className={inputCls} value={cfg.qrcode_versao || "2"} onChange={(e) => set("qrcode_versao", e.target.value)}>
+                <option value="2">2.0 — padrão (usa CSC)</option>
+                <option value="3">3.0 — NT 2025.001 (sem CSC)</option>
+              </select>
+            </div>
+            <div>
+              <label className={lbl}>% tributos aprox. (IBPT — Lei 12.741)</label>
+              <input type="number" step="0.01" min={0} max={60} className={inputCls} value={cfg.ibpt_percentual ?? 0} onChange={(e) => set("ibpt_percentual", Number(e.target.value))} placeholder="0 = não informar" />
+            </div>
+            {(cfg.qrcode_versao || "2") === "2" && (<>
+              <div><label className={lbl}>CSC (idCSC) {cfg.csc_preenchido && <span className="text-emerald-400">(salvo)</span>}</label><input className={inputCls} type="password" value={cfg.csc || ""} onChange={(e) => set("csc", e.target.value)} /></div>
+              <div><label className={lbl}>ID do CSC (Token)</label><input className={inputCls} value={cfg.csc_id || ""} onChange={(e) => set("csc_id", e.target.value)} placeholder="ex.: 000001" /></div>
+            </>)}
             <div><label className={lbl}>Série NFC-e</label><input type="number" className={inputCls} value={cfg.serie_nfce ?? 1} onChange={(e) => set("serie_nfce", Number(e.target.value))} /></div>
             <div><label className={lbl}>Próx. NFC-e</label><input type="number" className={inputCls} value={cfg.proximo_numero_nfce ?? 1} onChange={(e) => set("proximo_numero_nfce", Number(e.target.value))} /></div>
             <div><label className={lbl}>Série NF-e</label><input type="number" className={inputCls} value={cfg.serie_nfe ?? 1} onChange={(e) => set("serie_nfe", Number(e.target.value))} /></div>
             <div><label className={lbl}>Próx. NF-e</label><input type="number" className={inputCls} value={cfg.proximo_numero_nfe ?? 1} onChange={(e) => set("proximo_numero_nfe", Number(e.target.value))} /></div>
           </div>
           <p className="text-slate-500 text-[11px] leading-snug">
-            Use o certificado A1 da própria mercearia e o CSC/idCSC liberado pela SEFAZ-MT. Comece em <b>Homologação</b> para testar; só mude para <b>Produção</b> depois de validar com o contador e autorizar notas reais.
+            Use o certificado A1 da própria mercearia e o CSC/idCSC liberado pela SEFAZ-MT. Comece em <b>Homologação</b> para testar; só mude para <b>Produção</b> depois de validar com o contador e autorizar notas reais. O QR Code 2.0 é o aceito em produção na SEFAZ-MT; o 3.0 (NT 2025.001) dispensa o CSC e assina o QR com o próprio A1 — ative só depois de validar em homologação. O “% tributos aprox.” vem da tabela IBPT do seu CNAE (peça ao contador) e imprime o valor da Lei 12.741/2012 no cupom.
           </p>
         </fieldset>
 

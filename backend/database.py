@@ -353,6 +353,12 @@ class Database:
             "resp_tec_fone": "TEXT DEFAULT ''",
             "resp_tec_csrt": "TEXT DEFAULT ''",
             "resp_tec_id_csrt": "TEXT DEFAULT ''",
+            # Versão do QR Code da NFC-e: 2 (padrão, com CSC) ou 3 (NT 2025.001,
+            # assinatura digital, sem CSC). MT aceita a 2.0 em produção.
+            "qrcode_versao": "TEXT DEFAULT '2'",
+            # Percentual aproximado dos tributos (tabela IBPT) p/ Lei 12.741/2012;
+            # 0 = não informar valor (mantém só a referência ao IBPT no cupom).
+            "ibpt_percentual": "REAL DEFAULT 0",
         }
         for col, ddl in fiscal_cols.items():
             if col not in fcols:
@@ -423,6 +429,7 @@ class Database:
             "serie_nfce", "proximo_numero_nfce", "serie_nfe", "proximo_numero_nfe",
             "resp_tec_habilitado", "resp_tec_cnpj", "resp_tec_contato",
             "resp_tec_email", "resp_tec_fone", "resp_tec_csrt", "resp_tec_id_csrt",
+            "qrcode_versao", "ibpt_percentual",
         }
         dados = {k: v for k, v in campos.items() if k in permitidos and v is not None}
         with self._lock, self._conn:
@@ -581,6 +588,9 @@ class Database:
         elif inicio:
             q += " AND date(criado_em, 'localtime') >= ?"
             params.append(inicio)
+        elif fim:
+            q += " AND date(criado_em, 'localtime') <= ?"
+            params.append(fim)
         q += " ORDER BY criado_em"
         with self._lock:
             rows = self._conn.execute(q, params).fetchall()

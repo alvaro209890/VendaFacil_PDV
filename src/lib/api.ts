@@ -745,6 +745,10 @@ export interface ConfigFiscal {
   proximo_numero_nfce?: number;
   serie_nfe?: number;
   proximo_numero_nfe?: number;
+  // QR Code da NFC-e: "2" (padrão, com CSC) ou "3" (NT 2025.001, sem CSC).
+  qrcode_versao?: string;
+  // % aproximado dos tributos (tabela IBPT) p/ a Lei 12.741/2012; 0 = não informa.
+  ibpt_percentual?: number;
   // Responsável Técnico (infRespTec) — opcional, desligado por padrão.
   resp_tec_habilitado?: number;
   resp_tec_cnpj?: string;

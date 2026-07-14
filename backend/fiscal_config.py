@@ -49,6 +49,10 @@ class ConfigFiscalInput(BaseModel):
     proximo_numero_nfce: int | None = Field(default=None, ge=1)
     serie_nfe: int | None = Field(default=None, ge=1)
     proximo_numero_nfe: int | None = Field(default=None, ge=1)
+    # QR Code da NFC-e: "2" (padrão, com CSC) ou "3" (NT 2025.001, sem CSC).
+    qrcode_versao: str | None = Field(default=None, max_length=1, pattern="^[23]$")
+    # % aproximado dos tributos (IBPT) p/ informar o valor da Lei 12.741/2012.
+    ibpt_percentual: float | None = Field(default=None, ge=0, le=60)
     # Responsável Técnico (infRespTec) — opcional, desligado por padrão.
     resp_tec_habilitado: bool | None = None
     resp_tec_cnpj: str | None = Field(default=None, max_length=18)

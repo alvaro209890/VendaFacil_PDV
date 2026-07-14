@@ -21,9 +21,12 @@ não era gravada) e o operador via um erro. Agora:
 1. Tenta a emissão **normal** (tpEmis=1) direto na SEFAZ-MT.
 2. **Sem conexão** (erro de conexão/timeout de conexão) → a NFC-e é reemitida em
    **contingência offline (tpEmis=9)**: chave com `tpEmis=9`, grupos `dhCont` +
-   `xJust`, assinada e com **QR Code offline** (inclui `dhEmi`, `vNF`, `vICMS` e o
-   `DigestValue` da assinatura). A nota é gravada com status **`contingencia`** e o
-   **DANFE NFC-e é impresso na hora** (válido para o consumidor).
+   `xJust`, assinada e com **QR Code offline** no formato oficial do QR 2.0
+   (`chave|2|tpAmb|DIA|vNF|digValHex|idCSC|hash` — só o **dia** da emissão, sem
+   vICMS; `digValHex` é o texto Base64 do `DigestValue` em hexadecimal). A nota
+   é gravada com status **`contingencia`** e o **DANFE NFC-e é impresso na hora,
+   em DUAS vias e com o QR Code** (via do consumidor + via do estabelecimento),
+   com o texto "EMITIDA EM CONTINGÊNCIA — Pendente de autorização".
 3. Quando a internet volta, o **loop em segundo plano** (`fiscal._loop`,
    a cada 45 s) **transmite** o XML já assinado e atualiza para `autorizada`.
 4. **Enviou mas não obteve resposta** (ex.: timeout de leitura): a nota fica
@@ -34,12 +37,18 @@ Pontos importantes:
 
 - O **número fiscal nunca se perde**: é reservado uma vez e reaproveitado entre a
   tentativa online e a contingência (muda só o `tpEmis`, logo a chave/`cDV`).
+- **Reemitir a venda não duplica a nota**: `contingencia` conta como nota viva
+  na deduplicação de `emitir_nfce`/`emitir_nfe`.
+- **Duplicidade no reenvio (cStat 539)**: se a transmissão anterior tinha
+  chegado à SEFAZ, o loop **consulta pela chave** e grava a situação real (antes
+  marcava `rejeitada` uma nota que na verdade estava autorizada).
 - A venda **nunca quebra** por causa da nota (o checkout já trata erro de nota).
 - **NF-e modelo 55** não usa contingência offline deste tipo: sem conexão ela
   fica `processando` para reenvio/consulta.
 - Prazo legal: o DANFE de contingência é entregue ao consumidor na hora e a nota
   deve ser **transmitida em até 24 h** — o que o loop faz automaticamente assim
-  que houver internet.
+  que houver internet (autorização após o prazo volta cStat 150, também tratada
+  como autorizada).
 
 Arquivos: `montar_documento(tp_emis=...)`, `inserir_qrcode_offline()`,
 `preparar_e_tentar_transmitir()` (em `fiscal_direto.py`), tratamento de
@@ -52,7 +61,7 @@ Arquivos: `montar_documento(tp_emis=...)`, `inserir_qrcode_offline()`,
 
 | # | O que era | O que ficou |
 |---|-----------|-------------|
-| 1 | **QR Code** misturava o layout antigo (v1.00: `cDest/dhEmi/vNF/vICMS/digVal`) dentro do wrapper `p=`, com `&` e `nVersao=100`. | **QR Code 2.00** correto: `p=chave\|2\|tpAmb\|idCSC\|hash` (online) e `chave\|2\|tpAmb\|dhEmiHex\|vNF\|vICMS\|digValHex\|idCSC\|hash` (offline). `hash = SHA-1(conteúdo + CSC)`. |
+| 1 | **QR Code** misturava o layout antigo (v1.00: `cDest/dhEmi/vNF/vICMS/digVal`) dentro do wrapper `p=`, com `&` e `nVersao=100`. | **QR Code 2.00** correto: `p=chave\|2\|tpAmb\|idCSC\|hash` (online) e `chave\|2\|tpAmb\|DIA\|vNF\|digValHex\|idCSC\|hash` (offline — revisado em 2026-07: só o dia da emissão, sem vICMS, digVal = texto Base64 em hex, idCSC sem zeros). `hash = SHA-1(conteúdo + CSC)`. QR 3.0 (NT 2025.001) disponível como opção — ver [`LEGISLACAO_FISCAL_MT.md`](LEGISLACAO_FISCAL_MT.md). |
 | 2 | **Assinatura** com C14N **exclusiva** (padrão do `signxml`). | C14N **não-exclusiva** (`REC-xml-c14n-20010315`) no `CanonicalizationMethod` e no `Transform` — exigência da NF-e (evita Rejeição 297). |
 | 3 | **Desconto** ignorado: `vDesc=0` com `vNF=total` → total não fechava (Rejeição 528/610). | Desconto **rateado por item** (`prod/vDesc`) + `ICMSTot/vDesc`; `vNF = vProd − vDesc`. |
 | 4 | Sem internet: número queimado, sem nota, com erro. | **Contingência offline** (seção 1). |

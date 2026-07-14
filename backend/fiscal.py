@@ -117,9 +117,11 @@ def _qr_base64(texto: str) -> str:
 
 
 def anexar_qrcode(nota: dict | None) -> dict | None:
-    """Acrescenta `qrcode_base64` à nota autorizada (para imprimir o cupom
-    fiscal na térmica). Não persiste — é só para a resposta."""
-    if not nota or nota.get("status") != "autorizada" or not nota.get("qrcode_url"):
+    """Acrescenta `qrcode_base64` à nota autorizada OU em contingência (o DANFE
+    NFC-e offline TEM que sair impresso com o QR Code — sem ele o cupom de
+    contingência é inválido). Não persiste — é só para a resposta."""
+    if not nota or nota.get("status") not in ("autorizada", "contingencia") \
+            or not nota.get("qrcode_url"):
         return nota
     try:
         nota = dict(nota)
@@ -246,7 +248,10 @@ def emitir_nfce(venda_id: int, user_id: int, cpf: str | None = None) -> dict:
     if not venda:
         raise FiscalError("Venda não encontrada.")
     existente = db.get_nota_por_venda(venda_id, "65")
-    if existente and existente["status"] in ("autorizada", "processando", "pendente"):
+    # "contingencia" também é nota viva: emitir de novo geraria um SEGUNDO
+    # documento fiscal para a mesma venda (a nota offline ainda vai ser
+    # transmitida pelo loop automático).
+    if existente and existente["status"] in ("autorizada", "processando", "pendente", "contingencia"):
         return existente
 
     config = db.get_config_fiscal()
@@ -344,6 +349,33 @@ def consultar_nfce(nota_id: int) -> dict:
     return db.atualizar_nota(nota_id, dados, _agora())
 
 
+# Prazo de cancelamento em MT, contado da autorização: NFC-e 30 minutos
+# (Ajuste SINIEF 07/18, vigente na SEFAZ-MT desde 03/06/2019) e NF-e 2 horas.
+# Aplicamos 5 min de tolerância p/ diferença de relógio — depois disso a SEFAZ
+# rejeitaria de qualquer forma (cStat 501), então avisamos com o caminho certo.
+_PRAZO_CANCELAMENTO_MIN = {"65": 30, "55": 120}
+_TOLERANCIA_MIN = 5
+
+
+def _verificar_prazo_cancelamento(nota: dict) -> None:
+    limite = _PRAZO_CANCELAMENTO_MIN.get(str(nota.get("modelo") or "65"), 30)
+    try:
+        criado = datetime.fromisoformat(str(nota.get("criado_em")))
+    except (TypeError, ValueError):
+        return
+    if criado.tzinfo is None:
+        criado = criado.replace(tzinfo=timezone.utc)
+    idade_min = (datetime.now(timezone.utc) - criado).total_seconds() / 60
+    if idade_min > limite + _TOLERANCIA_MIN:
+        doc = "NFC-e" if str(nota.get("modelo") or "65") == "65" else "NF-e"
+        prazo = "30 minutos" if doc == "NFC-e" else "2 horas"
+        raise FiscalError(
+            f"Prazo de cancelamento expirado: em MT a {doc} só pode ser cancelada em até "
+            f"{prazo} após a autorização (Ajuste SINIEF 07/18). Fora do prazo, peça o "
+            "cancelamento extemporâneo no portal da SEFAZ-MT (até o 5º dia útil do mês "
+            "seguinte — Portarias 160/2021 e 177/2021) ou fale com o contador.")
+
+
 def cancelar_nfce(nota_id: int, justificativa: str) -> dict:
     if len(justificativa) < 15:
         raise FiscalError("A justificativa de cancelamento deve ter ao menos 15 caracteres.")
@@ -352,6 +384,7 @@ def cancelar_nfce(nota_id: int, justificativa: str) -> dict:
         raise FiscalError("Nota não encontrada.")
     if nota["status"] != "autorizada":
         raise FiscalError("Só é possível cancelar uma nota autorizada.")
+    _verificar_prazo_cancelamento(nota)
     config = db.get_config_fiscal()
     if (config.get("provedor_fiscal") or "sefaz_mt_direto") == "sefaz_mt_direto":
         try:
@@ -382,7 +415,7 @@ def emitir_nfe(venda_id: int, user_id: int, cliente_id: int) -> dict:
     if not cliente:
         raise FiscalError("Cliente não encontrado.")
     existente = db.get_nota_por_venda(venda_id, "55")
-    if existente and existente["status"] in ("autorizada", "processando", "pendente"):
+    if existente and existente["status"] in ("autorizada", "processando", "pendente", "contingencia"):
         return existente
     obrig = ("documento", "logradouro", "numero", "bairro", "municipio", "codigo_municipio", "uf", "cep")
     faltando = [c for c in obrig if not str(cliente.get(c) or "").strip()]
@@ -470,6 +503,14 @@ def _processar_pendentes_direto(config: dict) -> int:
             sefaz = fiscal_direto.normalizar_retorno_sefaz(
                 retorno.get("texto"), nota.get("xml_assinado"), retorno.get("status_code")
             )
+            if sefaz.get("cstat") == "539" or "uplicidade" in (sefaz.get("mensagem") or ""):
+                # Duplicidade no reenvio da contingência = a transmissão anterior
+                # chegou na SEFAZ. A situação REAL vem da consulta pela chave —
+                # marcar rejeitada aqui deixaria uma nota autorizada como morta.
+                retorno = fiscal_direto.consultar_chave(nota.get("modelo") or "65", chave, config)
+                sefaz = fiscal_direto.normalizar_retorno_sefaz(
+                    retorno.get("texto"), nota.get("xml_assinado"), retorno.get("status_code")
+                )
             dados = {
                 "status": sefaz.get("status") or nota.get("status") or "processando",
                 "mensagem": sefaz.get("mensagem") or nota.get("mensagem"),

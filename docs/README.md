@@ -10,6 +10,7 @@
 - [FISCAL_SIMPLES.md](FISCAL_SIMPLES.md) — CSOSN/CST por produto, XML fiscal e relatório para PGDAS-D.
 - [CONTADOR.md](CONTADOR.md) — fluxo com o contador: quem emite, o que entregar (export de XMLs em ZIP) e o que ele configura.
 - [VINCULO_PAGAMENTO_MT.md](VINCULO_PAGAMENTO_MT.md) — vínculo do pagamento eletrônico (cartão/PIX) na NFC-e — obrigatório em MT (Portaria 262/2023).
+- [**LEGISLACAO_FISCAL_MT.md**](LEGISLACAO_FISCAL_MT.md) — revisão de legislação 2026-07: webservices/QR oficiais de MT, prazos de cancelamento (30 min/2 h), contingência, tPag (PIX 17/20, fiado), limites da NFC-e, CRT/Reforma Tributária (IBS/CBS 2027) e Lei 12.741.
 - [TESTE_FISCAL_WINDOWS.md](TESTE_FISCAL_WINDOWS.md) — roteiro de teste fiscal de ponta a ponta no Windows (A1/CSC/CNPJ, homologação→produção, cartão e PIX).
 - [CONTINGENCIA_OFFLINE.md](CONTINGENCIA_OFFLINE.md) — contingência offline da NFC-e (tpEmis=9) e correções fiscais (QR Code 2.00, assinatura C14N, desconto, cNF, Lei 12.741) + checklist de homologação.
 - [INTEGRACAO_STONE_TEF.md](INTEGRACAO_STONE_TEF.md) — como integrar Stone/outras maquininhas via TEF, esforço e estimativa de valor.

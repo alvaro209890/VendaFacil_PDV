@@ -93,20 +93,33 @@ async def checkout(data: CheckoutRequest, request: Request):
     if erros:
         raise HTTPException(status_code=400, detail={"erros": erros})
 
+    if data.desconto > round(subtotal_total, 2):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Desconto (R$ {data.desconto:.2f}) maior que o subtotal da venda "
+                   f"(R$ {subtotal_total:.2f}).",
+        )
+
     total = round(subtotal_total - data.desconto, 2)
     if total < 0:
         total = 0
 
     agora = _agora()
 
-    # Baixar estoque e criar venda em transação implícita do DB singleton
+    # Baixa o estoque item a item; se algum falhar (venda concorrente no meio),
+    # devolve o que já foi baixado — senão a venda não criada deixaria o
+    # estoque menor para sempre.
+    baixados: list[dict] = []
     for item in itens_processados:
         ok = db.baixar_estoque(item["produto_id"], item["quantidade"])
         if not ok:
+            for feito in baixados:
+                db.entrada_estoque(feito["produto_id"], user_id, feito["quantidade"], agora)
             raise HTTPException(
                 status_code=409,
                 detail=f"Erro ao baixar estoque de '{item['nome_produto']}'.",
             )
+        baixados.append(item)
 
     pagamento_detalhe = None
     if data.pagamento is not None:

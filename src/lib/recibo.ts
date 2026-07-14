@@ -87,7 +87,7 @@ function montarHtml(d: ReciboData, larguraMm: number): string {
       : `<div class="c">CONSUMIDOR NAO IDENTIFICADO</div>`;
     fiscal = `<hr>
       <div class="c b">DANFE NFC-e — Documento Auxiliar da NFC-e</div>
-      ${contingencia ? `<div class="c b">EMITIDA EM CONTINGENCIA OFFLINE</div>` : ""}
+      ${contingencia ? `<div class="c b">EMITIDA EM CONTINGENCIA</div><div class="c b">Pendente de autorizacao</div>` : ""}
       <div class="c">NFC-e no ${d.nota.numero ?? "-"} serie ${d.nota.serie ?? "-"}</div>
       ${consumidor}
       ${d.nota.protocolo ? `<div class="c">Protocolo: ${esc(String(d.nota.protocolo))}</div>` : ""}
@@ -95,9 +95,38 @@ function montarHtml(d: ReciboData, larguraMm: number): string {
       <div class="c" style="font-size:.8em;word-break:break-all">${chave}</div>
       ${qr}
       <div class="c" style="font-size:.8em;margin-top:2px">Consulte pela chave de acesso em<br>www.sefaz.mt.gov.br/nfce/consultanfce</div>
-      ${contingencia ? `<div class="c" style="font-size:.8em;margin-top:2px">Aguardando autorizacao da SEFAZ (transmissao automatica).</div>` : ""}
+      ${contingencia ? `<div class="c" style="font-size:.8em;margin-top:2px">Transmissao automatica a SEFAZ em ate 24h (quando a internet voltar).</div>` : ""}
       <div class="c" style="font-size:.8em;margin-top:2px">Tributos aprox. (Lei 12.741/2012) conforme tabela IBPT.</div>`;
   }
+
+  const corpo = (via: string) => `
+  ${via ? `<div class="c b" style="font-size:.85em">${via}</div>` : ""}
+  <div class="c b big">${esc(d.loja.nome || "VendaFácil PDV")}</div>
+  ${cnpj}${end}
+  <hr>
+  ${temNota ? "" : '<div class="c b">CUPOM NÃO FISCAL</div>'}
+  <div class="ln"><span>${dt}</span><span>${d.vendaId ? "#" + d.vendaId : ""}</span></div>
+  <hr>
+  ${linhas}
+  <hr>
+  <div class="ln"><span>Subtotal</span><span>${moeda(d.subtotal)}</span></div>
+  ${desc}
+  <div class="ln tot"><span>TOTAL</span><span>R$ ${moeda(d.total)}</span></div>
+  <div class="ln"><span>Pagamento</span><span>${FORMA_LABEL[d.forma] || d.forma}</span></div>
+  ${dinheiro}
+  ${fiscal}
+  <hr>
+  <div class="rod">Obrigado pela preferência!</div>
+  ${d.nota && d.nota.chave ? "" : '<div class="rod" style="font-size:.85em">*Este documento não é fiscal*</div>'}`;
+
+  // Contingência offline: os Padrões Técnicos da NFC-e mandam imprimir o DANFE
+  // em DUAS vias — uma para o consumidor, outra fica no estabelecimento até a
+  // autorização ser obtida.
+  const conteudo = contingencia
+    ? corpo("VIA DO CONSUMIDOR") +
+      '<div class="corte">--------- corte aqui ---------</div>' +
+      corpo("VIA DO ESTABELECIMENTO (guardar)")
+    : corpo("");
 
   return `<!doctype html><html><head><meta charset="utf-8"><title>Recibo</title>
 <style>
@@ -115,25 +144,8 @@ function montarHtml(d: ReciboData, larguraMm: number): string {
   .item .ln span:first-child { color: #000; }
   .tot { font-weight: bold; font-size: 1.25em; }
   .rod { text-align: center; margin-top: 6px; }
-</style></head><body>
-  <div class="c b big">${esc(d.loja.nome || "VendaFácil PDV")}</div>
-  ${cnpj}${end}
-  <hr>
-  ${temNota ? "" : '<div class="c b">CUPOM NÃO FISCAL</div>'}
-  <div class="ln"><span>${dt}</span><span>${d.vendaId ? "#" + d.vendaId : ""}</span></div>
-  <hr>
-  ${linhas}
-  <hr>
-  <div class="ln"><span>Subtotal</span><span>${moeda(d.subtotal)}</span></div>
-  ${desc}
-  <div class="ln tot"><span>TOTAL</span><span>R$ ${moeda(d.total)}</span></div>
-  <div class="ln"><span>Pagamento</span><span>${FORMA_LABEL[d.forma] || d.forma}</span></div>
-  ${dinheiro}
-  ${fiscal}
-  <hr>
-  <div class="rod">Obrigado pela preferência!</div>
-  ${d.nota && d.nota.chave ? "" : '<div class="rod" style="font-size:.85em">*Este documento não é fiscal*</div>'}
-</body></html>`;
+  .corte { text-align: center; margin: 8px 0; font-size: .8em; }
+</style></head><body>${conteudo}</body></html>`;
 }
 
 /** Monta o cupom e dispara a impressão num iframe oculto. */
