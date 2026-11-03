@@ -3,8 +3,6 @@
 import io
 import os
 import base64
-import struct
-from typing import Optional
 
 import qrcode
 from fastapi import APIRouter, HTTPException, Request

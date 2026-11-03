@@ -5,7 +5,7 @@ import json
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
-from auth import _verificar_jwt, _agora
+from auth import _agora
 from database import db
 from produtos import _get_user_id
 

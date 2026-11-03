@@ -44,19 +44,27 @@ async function readJson(res: Response) {
   }
 }
 
-function errorMessageFromResponse(data: any, status?: number): string {
-  const detail = data?.detail ?? data;
-  const requestId = data?.request_id || detail?.request_id;
-  let msg = "";
+function errorMessageFromResponse(data: unknown, status?: number): string {
+  const obj = typeof data === "object" && data !== null ? (data as Record<string, unknown>) : null;
+  const detail = obj?.detail ?? data;
+  const detailObj = typeof detail === "object" && detail !== null ? (detail as Record<string, unknown>) : null;
+  const requestId = (obj?.request_id as string | undefined) || (detailObj?.request_id as string | undefined);
+  let msg: string;
 
   if (typeof detail === "string") {
     msg = detail;
-  } else if (Array.isArray(detail?.erros) && detail.erros.length) {
-    msg = detail.erros.join(" ");
-  } else if (typeof detail?.mensagem === "string") {
-    msg = detail.mensagem;
+  } else if (Array.isArray(detailObj?.erros) && detailObj.erros.length) {
+    msg = (detailObj.erros as unknown[]).join(" ");
+  } else if (typeof detailObj?.mensagem === "string") {
+    msg = String(detailObj.mensagem);
   } else if (Array.isArray(detail)) {
-    msg = detail.map((item) => item?.msg || item?.mensagem || String(item)).join(" ");
+    msg = detail.map((item) => {
+      if (typeof item === "object" && item !== null) {
+        const it = item as Record<string, unknown>;
+        return it.msg || it.mensagem || String(item);
+      }
+      return String(item);
+    }).join(" ");
   } else {
     msg = status === 422 ? "Revise os campos informados." : "Erro na requisição.";
   }

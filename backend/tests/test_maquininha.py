@@ -2,12 +2,10 @@ import sys
 from pathlib import Path
 from decimal import Decimal
 
-import pytest
-
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from mercadopago import (
-    MercadoPagoPoint, PointError, _friendly_msg, _state, _payment_status_front,
+    MercadoPagoPoint, _friendly_msg, _state, _payment_status_front,
     dados_fiscais_pagamento,
 )
 from database import db
