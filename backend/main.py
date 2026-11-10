@@ -49,9 +49,22 @@ if getattr(sys, "frozen", False):
     _t.start()
 register_error_handlers(app)
 
+def _origens_pdv() -> list[str]:
+    porta = os.environ.get("VENDAFACIL_PORT", "3020")
+    origens = [
+        f"http://127.0.0.1:{porta}",
+        f"http://localhost:{porta}",
+        "http://127.0.0.1:5173",
+        "http://localhost:5173",
+    ]
+    extra = os.environ.get("VENDAFACIL_CORS_ORIGINS", "")
+    origens.extend(item.strip() for item in extra.split(",") if item.strip())
+    return origens
+
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_origens_pdv(),
     allow_methods=["*"],
     allow_headers=["*"],
 )
