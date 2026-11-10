@@ -18,6 +18,10 @@ class _SomaDinheiro:
     def finalize(self):
         return moeda(self.total)
 
+class EstoqueConcorrente(ValueError):
+    """O estoque mudou ou uma baixa foi recusada dentro da transação."""
+
+
 DB_DIR = DATA_DIR
 DB_PATH = DB_DIR / "vendafacil.db"
 
@@ -926,6 +930,81 @@ class Database:
                 params = (venda_id, user_id)
             row = self._conn.execute(q, params).fetchone()
         return dict(row) if row else None
+
+    def checkout_atomico(self, user_id: int, cliente_id: int | None,
+                         total: float, desconto: float, forma_pagamento: str,
+                         observacao: str, itens: list[dict], agora: str,
+                         pagamento_detalhe: str | None = None) -> dict[str, Any]:
+        """Estoque, venda, histórico e fiado pertencem ao mesmo COMMIT.
+
+        Não chamar métodos que abrem ``with self._conn`` aqui: esses contextos
+        aninhados poderiam antecipar o commit. BEGIN IMMEDIATE também serializa
+        escritores de outras conexões/processos, não só o RLock desta instância.
+        Os preços são o snapshot calculado pelo checkout autenticado.
+        """
+        with self._lock, self._conn:
+            self._conn.execute("BEGIN IMMEDIATE")
+            if not itens:
+                raise ValueError("Adicione pelo menos um item à venda.")
+            if forma_pagamento == "fiado" and not cliente_id:
+                raise ValueError("Selecione um cliente para venda fiada.")
+            if cliente_id is not None:
+                cliente = self.get_cliente(cliente_id, user_id)
+                if not cliente or not cliente["ativo"]:
+                    raise ValueError("Cliente não encontrado ou desativado.")
+            quantidades = {}
+            produtos = {}
+            for item in itens:
+                quantidade = decimal(item["quantidade"])
+                if quantidade <= 0:
+                    raise ValueError("Quantidade deve ser maior que zero.")
+                pid = item["produto_id"]
+                produto = self.get_produto(pid, user_id)
+                if not produto or not produto["ativo"]:
+                    raise ValueError("Produto não encontrado ou desativado.")
+                produtos[pid] = produto
+                quantidades[pid] = quantidades.get(pid, decimal(0)) + quantidade
+            for pid, quantidade in quantidades.items():
+                estoque = decimal(produtos[pid]["estoque"])
+                if quantidade > estoque:
+                    raise EstoqueConcorrente(f"Estoque insuficiente de '{produtos[pid]['nome']}'.")
+                baixa = self._conn.execute(
+                    "UPDATE produtos SET estoque = ?, atualizado_em = ? WHERE id = ? AND user_id = ?",
+                    (float(estoque - quantidade), agora, pid, user_id),
+                )
+                if baixa.rowcount != 1:
+                    raise EstoqueConcorrente("Não foi possível baixar o estoque. Tente novamente.")
+            cur = self._conn.execute(
+                "INSERT INTO vendas (user_id, cliente_id, total, desconto, forma_pagamento, "
+                "status, observacao, criado_em, pagamento_detalhe) "
+                "VALUES (?, ?, ?, ?, ?, 'concluida', ?, ?, ?)",
+                (user_id, cliente_id, moeda(total), moeda(desconto), forma_pagamento,
+                 observacao, agora, pagamento_detalhe),
+            )
+            venda_id = cur.lastrowid
+            for item in itens:
+                self._conn.execute(
+                    "INSERT INTO itens_venda (venda_id, produto_id, nome_produto, quantidade, "
+                    "preco_unitario, subtotal) VALUES (?, ?, ?, ?, ?, ?)",
+                    (venda_id, item["produto_id"], item["nome_produto"], item["quantidade"],
+                     item["preco_unitario"], moeda(item["subtotal"])),
+                )
+                self._conn.execute(
+                    "INSERT INTO movimentacoes_estoque (user_id, produto_id, tipo, quantidade, "
+                    "custo_unitario, origem, documento, observacao, criado_em) "
+                    "VALUES (?, ?, 'saida', ?, NULL, 'venda', ?, ?, ?)",
+                    (user_id, item["produto_id"], item["quantidade"], str(venda_id),
+                     item["nome_produto"], agora),
+                )
+            if forma_pagamento == "fiado":
+                self._conn.execute(
+                    "INSERT INTO contas_receber (user_id, venda_id, cliente_id, valor_total, "
+                    "valor_pendente, data_vencimento, status, observacao, criado_em, atualizado_em) "
+                    "VALUES (?, ?, ?, ?, ?, NULL, 'pendente', ?, ?, ?)",
+                    (user_id, venda_id, cliente_id, moeda(total), moeda(total),
+                     f"Venda #{venda_id} — {len(itens)} item(ns)", agora, agora),
+                )
+            return self.get_venda(venda_id)
 
     def create_venda(self, user_id: int, cliente_id: int | None,
                      total: float, desconto: float,

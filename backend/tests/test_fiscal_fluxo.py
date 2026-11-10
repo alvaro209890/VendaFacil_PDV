@@ -93,25 +93,27 @@ def test_checkout_recusa_desconto_maior_que_subtotal(client, auth):
     assert "Desconto" in r.text
 
 
-def test_checkout_devolve_estoque_se_baixa_falhar_no_meio(client, auth, monkeypatch):
+def test_checkout_devolve_estoque_se_baixa_falhar_no_meio(client, auth):
     p1 = client.post("/api/produtos", headers=auth, json={
         "nome": "Estorno A", "preco_venda": 5, "estoque": 10}).json()["produto"]
     p2 = client.post("/api/produtos", headers=auth, json={
         "nome": "Estorno B", "preco_venda": 5, "estoque": 10}).json()["produto"]
 
-    original = db.baixar_estoque
-
-    def falha_no_segundo(produto_id, quantidade):
-        if produto_id == p2["id"]:
-            return False          # simula corrida: outro caixa levou o estoque
-        return original(produto_id, quantidade)
-
-    monkeypatch.setattr(db, "baixar_estoque", falha_no_segundo)
-    r = client.post("/api/vendas/checkout", headers=auth, json={
-        "itens": [{"produto_id": p1["id"], "quantidade": 3},
-                  {"produto_id": p2["id"], "quantidade": 3}],
-        "forma_pagamento": "dinheiro",
-    })
+    # Falha real no SQL, não no método antigo que commitava cada baixa.
+    with db._conn:
+        db._conn.execute(
+            f"CREATE TRIGGER falha_estoque BEFORE UPDATE OF estoque ON produtos "
+            f"WHEN OLD.id = {int(p2['id'])} BEGIN SELECT RAISE(IGNORE); END"
+        )
+    try:
+        r = client.post("/api/vendas/checkout", headers=auth, json={
+            "itens": [{"produto_id": p1["id"], "quantidade": 3},
+                      {"produto_id": p2["id"], "quantidade": 3}],
+            "forma_pagamento": "dinheiro",
+        })
+    finally:
+        with db._conn:
+            db._conn.execute("DROP TRIGGER falha_estoque")
     assert r.status_code == 409
     # o que já tinha sido baixado do produto A voltou
     assert db.get_produto(p1["id"])["estoque"] == 10

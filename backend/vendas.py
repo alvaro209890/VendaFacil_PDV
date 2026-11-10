@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from auth import _agora
-from database import db
+from database import db, EstoqueConcorrente
 from dinheiro import decimal, moeda, multiplicar, somar
 from produtos import _get_user_id
 
@@ -108,20 +108,6 @@ async def checkout(data: CheckoutRequest, request: Request):
 
     agora = _agora()
 
-    # Baixa o estoque item a item; se algum falhar (venda concorrente no meio),
-    # devolve o que já foi baixado — senão a venda não criada deixaria o
-    # estoque menor para sempre.
-    baixados: list[dict] = []
-    for item in itens_processados:
-        ok = db.baixar_estoque(item["produto_id"], item["quantidade"])
-        if not ok:
-            for feito in baixados:
-                db.entrada_estoque(feito["produto_id"], user_id, feito["quantidade"], agora)
-            raise HTTPException(
-                status_code=409,
-                detail=f"Erro ao baixar estoque de '{item['nome_produto']}'.",
-            )
-        baixados.append(item)
 
     pagamento_detalhe = None
     if data.pagamento is not None:
@@ -129,38 +115,23 @@ async def checkout(data: CheckoutRequest, request: Request):
             data.pagamento.model_dump(exclude_none=True), ensure_ascii=False
         )
 
-    venda = db.create_venda(
-        user_id=user_id,
-        cliente_id=data.cliente_id,
-        total=total,
-        desconto=desconto,
-        forma_pagamento=data.forma_pagamento,
-        observacao=data.observacao,
-        itens=itens_processados,
-        agora=agora,
-        pagamento_detalhe=pagamento_detalhe,
-    )
-
-    # Registra a saída de estoque de cada item (histórico de movimentações).
-    if venda:
-        for item in itens_processados:
-            db.registrar_movimentacao(
-                user_id, item["produto_id"], "saida", item["quantidade"], agora,
-                custo_unitario=None, origem="venda", documento=str(venda["id"]),
-                observacao=item["nome_produto"],
-            )
-
-    # Se for venda fiada, cria conta a receber automaticamente
-    if data.forma_pagamento == "fiado" and venda:
-        db.create_conta_receber(
+    try:
+        venda = db.checkout_atomico(
             user_id=user_id,
             cliente_id=data.cliente_id,
-            venda_id=venda["id"],
-            valor_total=total,
-            data_vencimento=None,
-            observacao=f"Venda #{venda['id']} — {len(itens_processados)} item(ns)",
+            total=total,
+            desconto=desconto,
+            forma_pagamento=data.forma_pagamento,
+            observacao=data.observacao,
+            itens=itens_processados,
             agora=agora,
+            pagamento_detalhe=pagamento_detalhe,
         )
+    except EstoqueConcorrente as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
 
     # Emissão de nota fiscal se solicitado
     nota = None

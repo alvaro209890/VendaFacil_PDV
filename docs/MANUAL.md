@@ -52,6 +52,11 @@ maiores restos, sem parcela negativa nem desconto maior que o item. O total da
 nota deve coincidir com o da venda. Isso não substitui o aceite em homologação
 com os dados e o certificado da própria loja.
 
+**Gravação da venda:** estoque, itens, histórico e conta de fiado são gravados
+juntos em uma única transação local. Falha em qualquer etapa desfaz todas essas
+alterações. A emissão fiscal acontece depois dessa gravação: se a nota falhar,
+a venda permanece registrada e o erro fiscal é apresentado para tratamento.
+
 1. Na tela **PDV / Vender**, busque o produto por **nome** ou **código de
    barras** (pode usar leitor — bipou, entrou no carrinho).
 2. Ajuste a **quantidade** com + / − no carrinho.

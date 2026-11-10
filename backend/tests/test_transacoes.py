@@ -56,3 +56,36 @@ def test_p7_abre_copia_legada_sem_perder_dados(loja, tmp_path, monkeypatch):
         assert outra._conn.execute('PRAGMA foreign_keys').fetchone()[0] == 1
     finally:
         outra.close()
+
+
+@pytest.fixture
+def checkout_local(loja, monkeypatch):
+    from fastapi.testclient import TestClient
+    from main import app
+    from auth import _gerar_jwt, _token_user
+    import vendas
+    local, user, agora = loja
+    monkeypatch.setattr(vendas, 'db', local)
+    produto = local.create_produto(user, 'Transação', 1, 2, 5, 0, '', 'UN', agora)
+    cliente = local.create_cliente(user, 'Cliente', '', '', '', '', agora)
+    usuario = local.get_user_by_usuario('transacao')
+    headers = {'Authorization': 'Bearer ' + _gerar_jwt(_token_user(usuario))}
+    api = TestClient(app, raise_server_exceptions=False)
+    yield api, local, user, produto, cliente, headers
+    api.close()
+
+
+@pytest.mark.parametrize('tabela', ['vendas', 'movimentacoes_estoque', 'contas_receber'])
+def test_v01_v03_checkout_rollback_em_qualquer_etapa(checkout_local, tabela):
+    api, local, user, produto, cliente, headers = checkout_local
+    with local._conn:
+        local._conn.execute(f"CREATE TRIGGER falha BEFORE INSERT ON {tabela} BEGIN SELECT RAISE(ABORT, 'falha_injetada'); END")
+    resposta = api.post('/api/vendas/checkout', headers=headers, json={
+        'itens': [{'produto_id': produto['id'], 'quantidade': 1}],
+        'forma_pagamento': 'fiado', 'cliente_id': cliente['id'],
+    })
+    assert resposta.status_code == 500
+    assert local.get_produto(produto['id'])['estoque'] == 5
+    assert not local.list_vendas(user)
+    assert not local.list_contas_receber(user)
+    assert local._conn.execute('SELECT COUNT(*) FROM movimentacoes_estoque').fetchone()[0] == 0
