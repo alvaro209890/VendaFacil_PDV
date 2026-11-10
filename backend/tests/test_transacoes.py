@@ -89,3 +89,117 @@ def test_v01_v03_checkout_rollback_em_qualquer_etapa(checkout_local, tabela):
     assert not local.list_vendas(user)
     assert not local.list_contas_receber(user)
     assert local._conn.execute('SELECT COUNT(*) FROM movimentacoes_estoque').fetchone()[0] == 0
+
+
+@pytest.mark.parametrize('quantidade', [0, -1])
+def test_v12_quantidade_invalida_retorna_400(checkout_local, quantidade):
+    api, local, user, produto, _, headers = checkout_local
+    resposta = api.post('/api/vendas/checkout', headers=headers, json={
+        'itens': [{'produto_id': produto['id'], 'quantidade': quantidade}],
+    })
+    assert resposta.status_code == 400
+    assert local.get_produto(produto['id'])['estoque'] == 5
+    assert not local.list_vendas(user)
+
+
+@pytest.mark.parametrize('campo', ['quantidade', 'desconto'])
+def test_v16_infinito_recusado_sem_erro_500(checkout_local, campo):
+    import json
+    api, local, user, produto, _, headers = checkout_local
+    corpo = {'itens': [{'produto_id': produto['id'], 'quantidade': 1}], 'desconto': 0}
+    if campo == 'quantidade':
+        corpo['itens'][0]['quantidade'] = float('inf')
+    else:
+        corpo['desconto'] = float('inf')
+    resposta = api.post('/api/vendas/checkout', headers={**headers, 'Content-Type': 'application/json'}, content=json.dumps(corpo))
+    assert resposta.status_code == 422
+    assert local.get_produto(produto['id'])['estoque'] == 5
+    assert not local.list_vendas(user)
+
+
+@pytest.mark.parametrize('tipo', ['inativo', 'inexistente'])
+def test_v12_produto_invalido_400(checkout_local, tipo):
+    api, local, user, produto, _, headers = checkout_local
+    pid = produto['id']
+    if tipo == 'inativo':
+        local.update_produto(pid, user, ativo=0)
+    else:
+        pid = 999999
+    resposta = api.post('/api/vendas/checkout', headers=headers, json={'itens': [{'produto_id': pid, 'quantidade': 1}]})
+    assert resposta.status_code == 400
+    assert not local.list_vendas(user)
+
+
+def test_v05_fracionado_e_itens_duplicados_nao_negativam(checkout_local):
+    api, local, user, produto, _, headers = checkout_local
+    local.update_produto(produto['id'], user, estoque=.3)
+    invalida = api.post('/api/vendas/checkout', headers=headers, json={
+        'itens': [{'produto_id': produto['id'], 'quantidade': .2}] * 2,
+    })
+    assert invalida.status_code == 409
+    assert local.get_produto(produto['id'])['estoque'] == .3
+    for quantidade in [.1, .2]:
+        resposta = api.post('/api/vendas/checkout', headers=headers, json={
+            'itens': [{'produto_id': produto['id'], 'quantidade': quantidade}],
+        })
+        assert resposta.status_code == 201, resposta.text
+    assert local.get_produto(produto['id'])['estoque'] == 0
+
+
+def test_v04_api_concorrente_ultimo_item(checkout_local):
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Barrier
+    api, local, user, produto, _, headers = checkout_local
+    for _ in range(5):
+        local.update_produto(produto['id'], user, estoque=1)
+        antes = len(local.list_vendas(user))
+        barreira = Barrier(2)
+        def vender():
+            barreira.wait(timeout=10)
+            return api.post('/api/vendas/checkout', headers=headers, json={
+                'itens': [{'produto_id': produto['id'], 'quantidade': 1}],
+            }).status_code
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            respostas = list(pool.map(lambda _: vender(), range(2)))
+        assert sorted(respostas) in ([201, 400], [201, 409])
+        assert local.get_produto(produto['id'])['estoque'] == 0
+        assert len(local.list_vendas(user)) == antes + 1
+
+
+def test_v04_duas_conexoes_begin_immediate(checkout_local):
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Barrier
+    _, local, user, produto, _, _ = checkout_local
+    local.update_produto(produto['id'], user, estoque=1)
+    outra = database.Database()
+    barreira = Barrier(2)
+    def vender(conn):
+        barreira.wait(timeout=10)
+        try:
+            conn.checkout_atomico(user, None, 2, 0, 'dinheiro', '', [{
+                'produto_id': produto['id'], 'nome_produto': produto['nome'],
+                'quantidade': 1, 'preco_unitario': 2, 'subtotal': 2,
+            }], _agora())
+            return True
+        except database.EstoqueConcorrente:
+            return False
+    try:
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            respostas = list(pool.map(vender, [local, outra]))
+        assert sorted(respostas) == [False, True]
+        assert local.get_produto(produto['id'])['estoque'] == 0
+        assert len(local.list_vendas(user)) == 1
+    finally:
+        outra.close()
+
+
+def test_v13_venda_nao_visivel_a_outro_usuario(checkout_local):
+    from auth import _gerar_jwt, _token_user
+    api, local, user, produto, _, headers = checkout_local
+    venda = api.post('/api/vendas/checkout', headers=headers, json={
+        'itens': [{'produto_id': produto['id'], 'quantidade': 1}],
+    }).json()['venda']
+    outro = local.create_user('outro', 'Outro', 'hash_de_fixture', _agora())
+    alheio = {'Authorization': 'Bearer ' + _gerar_jwt(_token_user(outro))}
+    assert api.get(f"/api/vendas/{venda['id']}", headers=alheio).status_code == 404
+    assert api.get('/api/vendas', headers=alheio).json()['vendas'] == []

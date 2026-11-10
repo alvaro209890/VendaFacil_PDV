@@ -16,7 +16,7 @@ router = APIRouter()
 
 class ItemVenda(BaseModel):
     produto_id: int
-    quantidade: float = Field(gt=0)
+    quantidade: float = Field(allow_inf_nan=False)
 
 
 class PagamentoEletronico(BaseModel):
@@ -34,7 +34,7 @@ class PagamentoEletronico(BaseModel):
 
 class CheckoutRequest(BaseModel):
     itens: list[ItemVenda]
-    desconto: float = Field(default=0, ge=0)
+    desconto: float = Field(default=0, ge=0, allow_inf_nan=False)
     forma_pagamento: str = Field(default="dinheiro", max_length=30)
     observacao: str = Field(default="", max_length=200)
     cliente_id: int | None = None
@@ -66,6 +66,9 @@ async def checkout(data: CheckoutRequest, request: Request):
     erros = []
 
     for item in data.itens:
+        if item.quantidade <= 0:
+            erros.append("Quantidade deve ser maior que zero.")
+            continue
         produto = db.get_produto(item.produto_id, user_id)
         if not produto:
             erros.append(f"Produto ID {item.produto_id} não encontrado.")
