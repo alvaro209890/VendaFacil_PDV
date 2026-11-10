@@ -1357,8 +1357,14 @@ class Database:
             ).fetchone()
             if not row:
                 return None
-            novo_pendente = moeda(decimal(row["valor_pendente"]) - decimal(moeda(valor)))
-            if novo_pendente <= 0:
+            pago = decimal(moeda(valor))
+            pendente = decimal(row["valor_pendente"])
+            if pago <= 0:
+                raise ValueError("Valor deve ser maior que zero.")
+            if pago > pendente:
+                raise ValueError("Pagamento maior que o pendente.")
+            novo_pendente = moeda(pendente - pago)
+            if novo_pendente == 0:
                 self._conn.execute(
                     "UPDATE contas_receber SET valor_pendente = 0, status = 'pago', atualizado_em = ? WHERE id = ?",
                     (agora, conta_id),
@@ -1373,7 +1379,7 @@ class Database:
                 "VALUES (?, ?, ?, ?, ?)",
                 (user_id, conta_id, moeda(valor), (forma or "dinheiro").strip() or "dinheiro", agora),
             )
-            return self.get_conta_receber(conta_id)
+            return self.get_conta_receber(conta_id, user_id)
 
     def cancelar_conta_receber(self, conta_id: int, user_id: int, agora: str) -> bool:
         with self._lock, self._conn:

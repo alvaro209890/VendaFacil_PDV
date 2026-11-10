@@ -28,7 +28,7 @@ class ContaReceberCreate(BaseModel):
 
 
 class PagamentoConta(BaseModel):
-    valor: float = Field(gt=0)
+    valor: float = Field(allow_inf_nan=False)
     forma: str = Field(default="dinheiro", max_length=20)
 
 
@@ -62,7 +62,12 @@ async def criar(data: ContaReceberCreate, request: Request):
 async def pagar(conta_id: int, data: PagamentoConta, request: Request):
     user_id = _get_user_id(request)
     agora = _agora()
-    conta = db.pagar_conta_receber(conta_id, user_id, data.valor, agora, data.forma)
+    if data.valor <= 0:
+        raise HTTPException(status_code=400, detail="Valor deve ser maior que zero.")
+    try:
+        conta = db.pagar_conta_receber(conta_id, user_id, data.valor, agora, data.forma)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     if not conta:
         raise HTTPException(status_code=404, detail="Conta não encontrada.")
     return {"conta": conta}
