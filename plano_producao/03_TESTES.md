@@ -45,21 +45,23 @@ Ao fechar: preencha **Onde** (`arquivo::função`) e **Commit**. Teste novo que 
 
 | ID | O que prova | Status | Onde | Commit |
 |---|---|---|---|---|
-| V01 | Exceção injetada ao gravar a venda → estoque intacto, nenhuma venda | ⬜ | | |
-| V02 | Exceção injetada ao gravar a movimentação → nada gravado | ⬜ | | |
-| V03 | Exceção injetada ao criar a conta a receber (fiado) → nada gravado | ⬜ | | |
-| V04 | Duas requisições simultâneas no último item: uma vende, a outra é recusada; estoque termina em 0 | ⬜ | | |
-| V05 | Estoque nunca fica negativo, inclusive com quantidade fracionada | ⬜ | | |
-| V06 | Processo morto no meio do checkout (subprocesso) → banco íntegro e sem venda pela metade | ⬜ | | |
+| V01 | Exceção injetada ao gravar a venda → estoque intacto, nenhuma venda | ✅ | `backend/tests/test_transacoes.py::test_v01_v03_checkout_rollback_em_qualquer_etapa` | 68fcc88 |
+| V02 | Exceção injetada ao gravar a movimentação → nada gravado | ✅ | `backend/tests/test_transacoes.py::test_v01_v03_checkout_rollback_em_qualquer_etapa` | 68fcc88 |
+| V03 | Exceção injetada ao criar a conta a receber (fiado) → nada gravado | ✅ | `backend/tests/test_transacoes.py::test_v01_v03_checkout_rollback_em_qualquer_etapa` | 68fcc88 |
+| V04 | Duas requisições simultâneas no último item: uma vende, a outra é recusada; estoque termina em 0 | ✅ | `backend/tests/test_transacoes.py::test_v04_api_concorrente_ultimo_item + test_v04_duas_conexoes_begin_immediate` | 79e5ccf |
+| V05 | Estoque nunca fica negativo, inclusive com quantidade fracionada | ✅ | `backend/tests/test_transacoes.py::test_v05_fracionado_e_itens_duplicados_nao_negativam` | 79e5ccf |
+| V06 | Processo morto no meio do checkout (subprocesso) → banco íntegro e sem venda pela metade | 🟥 RED histórico4≠5; GREEN atual em revisão | `backend/tests/test_transacoes.py::test_v06_processo_morto_no_meio_do_checkout` | — |
 | V07 | Cancelar venda devolve o estoque e grava a movimentação | ⬜ | | |
 | V08 | Cancelar venda fiada estorna a conta a receber; com baixa já feita, comportamento definido e testado | ⬜ | | |
 | V09 | Cancelar venda com NFC-e autorizada e não cancelada → recusado com orientação | ⬜ | | |
 | V10 | Cancelar duas vezes → segunda recusada; estoque não duplica | ⬜ | | |
 | V11 | Venda cancelada sai do resumo do caixa, do dashboard e dos relatórios | ⬜ | | |
-| V12 | Produto inativo, inexistente, quantidade 0 ou negativa → 400 | ⬜ | | |
+| V12 | Produto inativo, inexistente, quantidade 0 ou negativa → 400 | ✅ | `backend/tests/test_transacoes.py::test_v12_quantidade_invalida_retorna_400 + test_v12_produto_invalido_400` | 79e5ccf |
 | V13 | Venda de um usuário não é visível nem cancelável por outro | ⬜ | | |
 
-| V15 | PRAGMAs explícitos init/reconexão, FK recusa referência inexistente, cópia legada válida preserva dados | 🟥 RED guardado; GREEN em revisão | `backend/tests/test_transacoes.py::test_p7_pragmas_iniciais_e_reconexao` e outros2 testes P7 | — |
+| V15 | PRAGMAs explícitos init/reconexão, FK recusa referência inexistente, cópia legada válida preserva dados | ✅ | `backend/tests/test_transacoes.py` (3 testes P7) | a4f8e69 |
+
+| V16 | Quantidade/desconto infinitos recusados antes de calcular, sem500 nem escrita | ✅ | `backend/tests/test_transacoes.py::test_v16_infinito_recusado_sem_erro_500` | 79e5ccf |
 
 ## C — Caixa e fiado (Fase 2)
 

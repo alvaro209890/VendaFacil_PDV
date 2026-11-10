@@ -12,7 +12,7 @@ Status: ⬜ aberta · 🟨 em andamento · ✅ corrigida (commit + teste) · ➖
 | P4 | 🟠 | `database.py:824-866` | Caixa soma vendas por janela de tempo, sem `sessao_id`; venda é aceita sem caixa aberto | Garantir que sessões não se misturam; aviso de caixa fechado (ver D4) | 2 | ⬜ confirmada no código | `evidencias/F0_AUDITORIA.md` (não corrigida) |
 | P5 | 🟠 | `auth.py:123-179`, `main.py:54` | Login local sem limite de tentativas; `/registro` aberto em modo local com CORS `*`; senha mínima 4; token de 30 dias | Limite de tentativas; fechar `/registro` após o 1º usuário; CORS restrito | 3 | ⬜ confirmada no código | `evidencias/F0_AUDITORIA.md` (não corrigida) |
 | P6 | 🟠 | `main.py` | `/docs` e `/openapi.json` expostos no `.exe` | Desligar quando empacotado (`sys.frozen`) | 3 | ⬜ confirmada no código | `evidencias/F0_AUDITORIA.md` (não corrigida) |
-| P7 | 🟠 | `database.py:15-18` | Conexão única + `RLock`, WAL; `foreign_keys=0`; `busy_timeout=5000` e `synchronous=2` já existem por padrão (medido na Fase 0) | Definir os PRAGMAs e provar com teste de concorrência | 1 | ⬜ confirmada parcialmente | `evidencias/F0_sondagem.txt`: FK desativada; timeout/synchronous presentes por padrão |
+| P7 | 🟠 | `database.py:15-18` | Conexão única + `RLock`, WAL; `foreign_keys=0`; `busy_timeout=5000` e `synchronous=2` já existem por padrão (medido na Fase 0) | Definir os PRAGMAs e provar com teste de concorrência | 1 | ✅ corrigida | a4f8e69 · V15 / PRAGMAs e cópia legada válidos |
 | P8 | 🟠 | `backup.py:44-58`, `:114-121`; `database.py:1353` | Loop de backup engole exceção sem log; sem `integrity_check`; restauração aceita qualquer `.db` que abra | `integrity_check`, validação de schema, log, modo consulta com banco corrompido | 5 | ⬜ confirmada no código | `evidencias/F0_AUDITORIA.md` (não corrigida) |
 | P9 | 🟠 | `backend/tests/` | Sem XSD, sem validação de schema, sem marker `homologacao`, sem `pytest.ini` | Fase 4, bloco A e C | 4 | ⬜ confirmada no código | `evidencias/F0_AUDITORIA.md` (não corrigida) |
 | P10 | 🟠 | `src/pages/PDV.tsx` | Carrinho só em memória (F5 perde a venda); atalhos só F2/F4 | Persistir carrinho; revisar teclado | 3 | ⬜ confirmada no código | `evidencias/F0_AUDITORIA.md` (não corrigida) |
@@ -49,6 +49,8 @@ Status: ⬜ aberta · 🟨 em andamento · ✅ corrigida (commit + teste) · ➖
 | P40 | 🟠 | `package-lock.json` | npm audit: 21 vulnerabilidades (2 runtime, react-router) | Atualizar dependências compatíveis e validar build/lint/audit | 3 | ⬜ confirmada na auditoria | `evidencias/F0_AUDITORIA.md`; prova automatizada em S12 |
 | P41 | 🟠 | `painel/main.py:168; auth painel` | Setup inicial concorrente permite dois admins; senha trocada não revoga tokens; atualização aceita senha fraca | Bootstrap atômico, validação de senha e versão de credencial | 3 | ⬜ confirmada na auditoria | `evidencias/F0_AUDITORIA.md`; prova automatizada em S13 |
 | P42 | 🟠 | `fiscal_router.py:33–64,110–131` | Leitura, consulta e cancelamento de nota de outro usuário | Validar owner antes de qualquer leitura ou transmissão | 3 | ⬜ confirmada na auditoria | `evidencias/F0_AUDITORIA.md`; prova automatizada em S14 |
+
+| P43 | 🟠 | `vendas.py:18,36` | Infinity em quantidade/desconto passava pelo modelo e gerava500 no cálculo Decimal | Recusar números não finitos na validação; V16 | 1 | ✅ corrigida | 79e5ccf · V16 guardas finitas, suíte117 |
 
 ## Auditoria por conta própria (além das pistas)
 

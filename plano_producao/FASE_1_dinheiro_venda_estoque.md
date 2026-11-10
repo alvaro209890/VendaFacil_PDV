@@ -16,10 +16,10 @@ P3 → P7 → P1 → P2. Todas passam por `backend/database.py`, que é **serial
 - [x] F1.2 (P3) Trocar o cálculo do checkout (`vendas.py`) para o módulo de dinheiro. O schema continua `REAL`; o que muda é a conta — 52bb220 · test_checkout_dinheiro_half_up RED→GREEN; backend84/painel7; revisão deleg_6065d70c aprovada
 - [x] F1.3 (P3) Trocar o cálculo do resumo de caixa, do fiado e dos relatórios para o módulo de dinheiro. Teste D05 — d798762 · test_dinheiro_db.py: 8 testes; suíte92/7; revisão deleg_5f3d7323 aprovada
 - [x] F1.4 (P3) Trocar os totais e o rateio de desconto do XML fiscal (`fiscal_direto.py`, `_ratear`) para o módulo de dinheiro. Testes D03 e D04. Os 49 testes fiscais existentes continuam verdes — 2a9b689 · test_dinheiro_fiscal.py:9 verdes; suíte101/7 + fiscais49; revisão deleg_4caf6711 aprovada
-- [~] F1.5 (P7) Definir `busy_timeout`, `foreign_keys=ON` e `synchronous` na abertura da conexão (`database.py:15` e `:1339`). Conferir que `foreign_keys` não quebra dado existente (rodar contra uma cópia de banco com dados)
-- [ ] F1.6 (P1) Criar em `database.py` a função única de checkout: valida estoque, baixa, grava venda, itens, movimentações e conta a receber **numa transação** (`BEGIN IMMEDIATE`). `vendas.py` passa a chamá-la. Testes V01, V02, V03
-- [ ] F1.7 (P1) Concorrência e limites: testes V04, V05, V12, V13
-- [ ] F1.8 (P1) Queda no meio: teste V06 com subprocesso morto durante o checkout
+- [x] F1.5 (P7) Definir `busy_timeout`, `foreign_keys=ON` e `synchronous` na abertura da conexão (`database.py:15` e `:1339`). Conferir que `foreign_keys` não quebra dado existente (rodar contra uma cópia de banco com dados) — a4f8e69 · test_transacoes.py:3 verdes; suíte104/7; revisão deleg_a0b41841 aprovada
+- [x] F1.6 (P1) Criar em `database.py` a função única de checkout: valida estoque, baixa, grava venda, itens, movimentações e conta a receber **numa transação** (`BEGIN IMMEDIATE`). `vendas.py` passa a chamá-la. Testes V01, V02, V03 — 68fcc88 · V01–V03 rollback SQL; suíte107/7; revisão deleg_97847eb4 aprovada
+- [x] F1.7 (P1) Concorrência e limites: testes V04, V05, V12 e leitura de V13 (cancelamento de V13 é validado em F1.9, após existir a rota) — 79e5ccf · V04/V05/V12/leituraV13, suíte117/7; revisão deleg_8bd64d0d aprovada
+- [~] F1.8 (P1) Queda no meio: teste V06 com subprocesso morto durante o checkout
 - [ ] F1.9 (P2) Backend do cancelamento: `POST /api/vendas/{id}/cancelar` com motivo; numa transação: status `cancelada`, devolve estoque com movimentação, estorna a conta a receber. Testes V07, V08, V10. Venda fiada com baixa já feita segue a decisão D8
 - [ ] F1.10 (P2) Cancelamento × fiscal: recusar se houver NFC-e autorizada e não cancelada (V09); conferir o que `fiscal.cancelar_nfce` faz hoje com o estoque e alinhar (cancelar a nota não devolve estoque sozinho; quem devolve é o cancelamento da venda)
 - [ ] F1.11 (P2) Venda cancelada fora do caixa, do dashboard e dos relatórios (V11). Tela: botão e confirmação em `src/pages/Vendas.tsx`, com atalho de teclado
@@ -29,6 +29,8 @@ P3 → P7 → P1 → P2. Todas passam por `backend/database.py`, que é **serial
 ## Complementos da auditoria
 
 - [ ] F1.14 P23: validar referências de cliente/categoria e propriedade no checkout; V14
+
+- [ ] F1.15 (P43) Conferir guarda de números finitos em checkout; V16 (correção iniciada dentro dos limites de F1.7)
 
 ## Portão de saída
 
