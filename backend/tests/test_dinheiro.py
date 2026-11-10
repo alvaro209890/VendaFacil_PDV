@@ -24,3 +24,17 @@ def test_dinheiro_recusa_nao_finito(valor):
     from dinheiro import decimal
     with pytest.raises(ValueError, match='finito'):
         decimal(valor)
+
+def test_checkout_dinheiro_half_up(client, auth):
+    produto = client.post('/api/produtos', headers=auth, json={
+        'nome': 'Meio centavo', 'preco_venda': 2.675, 'estoque': 10,
+    }).json()['produto']
+    resposta = client.post('/api/vendas/checkout', headers=auth, json={
+        'itens': [{'produto_id': produto['id'], 'quantidade': 1}],
+        'desconto': 0.005,
+    })
+    assert resposta.status_code == 201, resposta.text
+    dados = resposta.json()
+    assert dados['itens'][0]['subtotal'] == 2.68
+    assert dados['venda']['desconto'] == 0.01
+    assert dados['venda']['total'] == 2.67

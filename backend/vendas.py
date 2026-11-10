@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 
 from auth import _agora
 from database import db
+from dinheiro import decimal, moeda, multiplicar, somar
 from produtos import _get_user_id
 
 router = APIRouter()
@@ -60,7 +61,8 @@ async def checkout(data: CheckoutRequest, request: Request):
 
     # Validar e calcular
     itens_processados = []
-    subtotal_total = 0.0
+    subtotal_total = somar([])
+    desconto = moeda(data.desconto)
     erros = []
 
     for item in data.itens:
@@ -79,7 +81,7 @@ async def checkout(data: CheckoutRequest, request: Request):
             continue
 
         preco = produto["preco_venda"] if produto["preco_venda"] > 0 else produto["preco_custo"]
-        subtotal = round(item.quantidade * preco, 2)
+        subtotal = multiplicar(item.quantidade, preco)
         subtotal_total += subtotal
 
         itens_processados.append({
@@ -87,20 +89,20 @@ async def checkout(data: CheckoutRequest, request: Request):
             "nome_produto": produto["nome"],
             "quantidade": item.quantidade,
             "preco_unitario": preco,
-            "subtotal": subtotal,
+            "subtotal": moeda(subtotal),
         })
 
     if erros:
         raise HTTPException(status_code=400, detail={"erros": erros})
 
-    if data.desconto > round(subtotal_total, 2):
+    if decimal(desconto) > subtotal_total:
         raise HTTPException(
             status_code=400,
-            detail=f"Desconto (R$ {data.desconto:.2f}) maior que o subtotal da venda "
+            detail=f"Desconto (R$ {desconto:.2f}) maior que o subtotal da venda "
                    f"(R$ {subtotal_total:.2f}).",
         )
 
-    total = round(subtotal_total - data.desconto, 2)
+    total = moeda(subtotal_total - decimal(desconto))
     if total < 0:
         total = 0
 
@@ -131,7 +133,7 @@ async def checkout(data: CheckoutRequest, request: Request):
         user_id=user_id,
         cliente_id=data.cliente_id,
         total=total,
-        desconto=data.desconto,
+        desconto=desconto,
         forma_pagamento=data.forma_pagamento,
         observacao=data.observacao,
         itens=itens_processados,
