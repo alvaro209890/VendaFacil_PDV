@@ -32,6 +32,13 @@ def _fator(valor: float | None) -> float:
     return v if v > 0 else 1
 
 
+def _ean(valor: str | None) -> str:
+    limpo = (valor or "").strip()
+    if limpo.upper().replace(" ", "") in ("SEMGTIN", ""):
+        return ""
+    return limpo
+
+
 # ── Models ──
 
 class FiscalMixin(BaseModel):
@@ -133,6 +140,9 @@ async def obter(produto_id: int, request: Request):
 async def criar(data: ProdutoCreate, request: Request):
     user_id = _get_user_id(request)
     agora = _agora()
+    codigo = _ean(data.codigo_barras)
+    if codigo and db.get_produto_by_codigo(user_id, codigo):
+        raise HTTPException(status_code=409, detail="Já existe produto com este código de barras.")
     p = db.create_produto(
         user_id=user_id,
         nome=data.nome,
@@ -141,7 +151,7 @@ async def criar(data: ProdutoCreate, request: Request):
         preco_venda=data.preco_venda,
         estoque=data.estoque,
         estoque_minimo=data.estoque_minimo,
-        codigo_barras=data.codigo_barras,
+        codigo_barras=codigo,
         unidade=_norm_unidade(data.unidade),
         unidade_compra=_norm_unidade(data.unidade_compra, data.unidade),
         quantidade_por_embalagem=_fator(data.quantidade_por_embalagem),
@@ -194,7 +204,15 @@ async def importar_xml_preview(request: Request):
         unidade_xml = _norm_unidade(it["unidade"])
         unidade_estoque = _norm_unidade(match.get("unidade") if match else unidade_xml)
         unidade_compra = _norm_unidade(match.get("unidade_compra") if match else unidade_xml, unidade_xml)
-        fator = _fator(match.get("quantidade_por_embalagem") if match else 1)
+        fator_cadastro = _fator(match.get("quantidade_por_embalagem") if match else 1)
+        if not match or unidade_xml == unidade_estoque:
+            fator = 1
+        elif unidade_xml == unidade_compra and unidade_compra != unidade_estoque:
+            fator = fator_cadastro
+        elif fator_cadastro > 1 and unidade_compra == unidade_estoque:
+            fator = fator_cadastro
+        else:
+            fator = 1
         quantidade_xml = it["quantidade"]
         quantidade_estoque = round(quantidade_xml * fator, 4)
         custo_unitario = round((it["valor_unitario"] / fator) if fator else it["valor_unitario"], 4)
@@ -207,7 +225,7 @@ async def importar_xml_preview(request: Request):
             "quantidade": quantidade_estoque,
             "valor_unitario_xml": it["valor_unitario"],
             "valor_unitario": custo_unitario,
-            "quantidade_por_embalagem": fator,
+            "quantidade_por_embalagem": fator_cadastro if match else 1,
             "produto_id": match["id"] if match else None,
             "produto_nome": match["nome"] if match else None,
             "estoque_atual": match["estoque"] if match else 0,
@@ -233,20 +251,18 @@ async def importar_xml_confirmar(data: ConfirmarImportacao, request: Request):
         raise HTTPException(status_code=409, detail="NF-e já importada.")
     criados = atualizados = 0
     for it in data.itens:
-        if it.produto_id:
-            if not db.get_produto(it.produto_id, user_id):
+        codigo = _ean(it.codigo_barras)
+        produto_id = it.produto_id
+        if not produto_id and codigo:
+            existente = db.get_produto_by_codigo(user_id, codigo)
+            produto_id = existente["id"] if existente else None
+        if produto_id:
+            if not db.get_produto(produto_id, user_id):
                 continue
-            db.update_produto(
-                it.produto_id, user_id,
-                unidade=_norm_unidade(it.unidade),
-                unidade_compra=_norm_unidade(it.unidade_compra, it.unidade),
-                quantidade_por_embalagem=_fator(it.quantidade_por_embalagem),
-                atualizado_em=agora,
-            )
             novo_custo = it.preco_custo if (it.atualizar_custo and it.preco_custo > 0) else None
-            db.entrada_estoque(it.produto_id, user_id, it.quantidade, agora, novo_custo)
+            db.entrada_estoque(produto_id, user_id, it.quantidade, agora, novo_custo)
             db.registrar_movimentacao(
-                user_id, it.produto_id, "entrada", it.quantidade, agora,
+                user_id, produto_id, "entrada", it.quantidade, agora,
                 custo_unitario=it.preco_custo, origem="xml", documento=doc,
                 observacao=f"{it.nome} ({it.quantidade_xml or it.quantidade} {it.unidade_compra or it.unidade})",
             )
@@ -256,7 +272,7 @@ async def importar_xml_confirmar(data: ConfirmarImportacao, request: Request):
                 user_id=user_id, nome=it.nome, categoria_id=None,
                 preco_custo=it.preco_custo, preco_venda=it.preco_venda,
                 estoque=it.quantidade, estoque_minimo=5,
-                codigo_barras=it.codigo_barras, unidade=_norm_unidade(it.unidade), agora=agora,
+                codigo_barras=codigo, unidade=_norm_unidade(it.unidade), agora=agora,
                 unidade_compra=_norm_unidade(it.unidade_compra, it.unidade),
                 quantidade_por_embalagem=_fator(it.quantidade_por_embalagem),
             )
