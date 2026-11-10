@@ -180,6 +180,8 @@ class Database:
             # JSON com o vínculo do pagamento eletrônico (cartão/PIX integrado):
             # tipo_integracao, adquirente_cnpj, bandeira, autorizacao (cAut), etc.
             self._conn.execute("ALTER TABLE vendas ADD COLUMN pagamento_detalhe TEXT")
+        if "sessao_id" not in cols:
+            self._conn.execute("ALTER TABLE vendas ADD COLUMN sessao_id INTEGER")
 
         # Campos fiscais nos produtos (NFC-e)
         pcols = {r["name"] for r in self._conn.execute("PRAGMA table_info(produtos)")}
@@ -918,15 +920,18 @@ class Database:
             if fim:
                 vrows = self._conn.execute(
                     "SELECT forma_pagamento, COUNT(*) qtd, COALESCE(SOMA_DINHEIRO(total),0) total "
-                    "FROM vendas WHERE user_id = ? AND status = 'concluida' "
-                    "AND criado_em >= ? AND criado_em <= ? GROUP BY forma_pagamento",
-                    (user_id, ini, fim),
+                    "FROM vendas WHERE user_id = ? AND status = 'concluida' AND ("
+                    "sessao_id = ? OR (sessao_id IS NULL AND criado_em >= ? AND criado_em <= ?)) "
+                    "GROUP BY forma_pagamento",
+                    (user_id, sessao["id"], ini, fim),
                 ).fetchall()
             else:
                 vrows = self._conn.execute(
                     "SELECT forma_pagamento, COUNT(*) qtd, COALESCE(SOMA_DINHEIRO(total),0) total "
-                    "FROM vendas WHERE user_id = ? AND status = 'concluida' "
-                    "AND criado_em >= ? GROUP BY forma_pagamento", (user_id, ini),
+                    "FROM vendas WHERE user_id = ? AND status = 'concluida' AND ("
+                    "sessao_id = ? OR (sessao_id IS NULL AND criado_em >= ?)) "
+                    "GROUP BY forma_pagamento",
+                    (user_id, sessao["id"], ini),
                 ).fetchall()
             mrows = self._conn.execute(
                 "SELECT tipo, COALESCE(SOMA_DINHEIRO(valor),0) total, COUNT(*) qtd "
@@ -1039,12 +1044,17 @@ class Database:
                 )
                 if baixa.rowcount != 1:
                     raise EstoqueConcorrente("Não foi possível baixar o estoque. Tente novamente.")
+            aberta = self._conn.execute(
+                "SELECT id FROM caixa_sessoes WHERE user_id = ? AND fechado_em IS NULL "
+                "ORDER BY id DESC LIMIT 1",
+                (user_id,),
+            ).fetchone()
             cur = self._conn.execute(
                 "INSERT INTO vendas (user_id, cliente_id, total, desconto, forma_pagamento, "
-                "status, observacao, criado_em, pagamento_detalhe) "
-                "VALUES (?, ?, ?, ?, ?, 'concluida', ?, ?, ?)",
+                "status, observacao, criado_em, pagamento_detalhe, sessao_id) "
+                "VALUES (?, ?, ?, ?, ?, 'concluida', ?, ?, ?, ?)",
                 (user_id, cliente_id, moeda(total), moeda(desconto), forma_pagamento,
-                 observacao, agora, pagamento_detalhe),
+                 observacao, agora, pagamento_detalhe, aberta["id"] if aberta else None),
             )
             venda_id = cur.lastrowid
             for item in itens:
