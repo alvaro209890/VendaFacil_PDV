@@ -424,7 +424,12 @@ async def diagnostico(request: Request) -> dict:
 
 @router.post("/cobranca")
 async def criar_cobranca(data: CobrancaInput, request: Request) -> dict:
-    _auth(request)
+    user_id = _auth(request)
+    if db.cobranca_aprovada_sem_venda(user_id):
+        raise HTTPException(
+            status_code=409,
+            detail="Há uma cobrança aprovada sem venda. Conclua essa venda antes de cobrar de novo.",
+        )
     referencia = data.venda_uuid or f"venda-{uuid.uuid4().hex[:8]}"
     forma = (data.forma or "credito").lower()
     cfg = db.get_config_maquininha()
@@ -481,8 +486,14 @@ async def consultar_cobranca(payment_intent_id: str, request: Request) -> dict:
         "payment_type": _payment_type_front(resp),
     }
     if state == "FINISHED":
-        # Vínculo do pagamento eletrônico p/ a NFC-e (Portaria 262/2023-MT).
-        out["pagamento_fiscal"] = dados_fiscais_pagamento(resp, cli)
+        pagamento = dados_fiscais_pagamento(resp, cli)
+        out["pagamento_fiscal"] = pagamento
+        from auth import _agora
+        db.salvar_cobranca_aprovada(
+            _auth(request), str(resp.get("id") or payment_intent_id),
+            str(pgto.get("id") or ""), float(pgto.get("amount") or 0),
+            str(out.get("payment_type") or ""), json.dumps(pagamento, ensure_ascii=False), _agora(),
+        )
     return out
 
 

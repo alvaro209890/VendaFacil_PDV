@@ -3,6 +3,7 @@
 import json
 
 from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from auth import _agora
@@ -53,6 +54,14 @@ async def checkout(data: CheckoutRequest, request: Request):
     licenca = conta_mod.status(online=False)
     if licenca.get("bloqueado"):
         raise HTTPException(status_code=403, detail=licenca.get("motivo") or "Licença suspensa.")
+    payment_id = data.pagamento.payment_id if data.pagamento and data.pagamento.payment_id else None
+    if payment_id:
+        venda_id = db.venda_da_cobranca(user_id, payment_id)
+        if venda_id:
+            venda = db.get_venda_completa(venda_id, user_id)
+            return JSONResponse(status_code=200, content={
+                "venda": venda, "itens": venda.get("itens") if venda else [], "reusada": True,
+            })
 
     if not data.itens:
         raise HTTPException(status_code=400, detail="Adicione pelo menos um item à venda.")
@@ -138,6 +147,9 @@ async def checkout(data: CheckoutRequest, request: Request):
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    if payment_id and venda:
+        db.vincular_cobranca_venda(user_id, payment_id, venda["id"])
 
 
     # Emissão de nota fiscal se solicitado

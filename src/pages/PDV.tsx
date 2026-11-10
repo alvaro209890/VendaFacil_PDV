@@ -400,7 +400,6 @@ export default function PDV() {
     const observacao = [obsExtra, obsPagamento].filter(Boolean).join(" | ");
     try {
       const pagamentoFiscal = maqPagamentoRef.current ?? undefined;
-      maqPagamentoRef.current = null;  // consome — não vaza p/ a próxima venda
       const resp = await checkout({
         itens: carrinho.map((i) => ({ produto_id: i.id, quantidade: i.qtd })),
         desconto,
@@ -439,6 +438,7 @@ export default function PDV() {
       if (imprimirAuto) imprimirRecibo(recibo, largura);
 
       setMsg({ tipo: "ok", texto: `Venda finalizada! Total: R$ ${total.toFixed(2)}${emitirNota ? " (Nota emitida)" : ""}` });
+      maqPagamentoRef.current = null;
       setCarrinho([]);
       setDesconto(0);
       setPagamento("dinheiro");

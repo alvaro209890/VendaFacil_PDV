@@ -199,6 +199,15 @@ class Database:
             "documento TEXT NOT NULL DEFAULT '', criado_em TEXT NOT NULL, "
             "UNIQUE(user_id, chave))"
         )
+        self._conn.execute(
+            "CREATE TABLE IF NOT EXISTS cobrancas_maquininha ("
+            "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+            "user_id INTEGER NOT NULL, order_id TEXT NOT NULL, "
+            "payment_id TEXT NOT NULL, valor REAL NOT NULL DEFAULT 0, "
+            "forma TEXT NOT NULL DEFAULT '', status TEXT NOT NULL, "
+            "venda_id INTEGER, comprovante TEXT NOT NULL DEFAULT '', "
+            "criado_em TEXT NOT NULL, UNIQUE(user_id, payment_id))"
+        )
 
         # Campos fiscais nos produtos (NFC-e)
         pcols = {r["name"] for r in self._conn.execute("PRAGMA table_info(produtos)")}
@@ -898,6 +907,45 @@ class Database:
             self._conn.execute(
                 "INSERT INTO notas_entrada (user_id, chave, documento, criado_em) VALUES (?, ?, ?, ?)",
                 (user_id, chave, documento, agora),
+            )
+
+    def cobranca_aprovada_sem_venda(self, user_id: int) -> dict[str, Any] | None:
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT * FROM cobrancas_maquininha WHERE user_id = ? AND status = 'approved' "
+                "AND venda_id IS NULL ORDER BY id DESC LIMIT 1",
+                (user_id,),
+            ).fetchone()
+        return dict(row) if row else None
+
+    def salvar_cobranca_aprovada(self, user_id: int, order_id: str, payment_id: str,
+                                 valor: float, forma: str, comprovante: str, agora: str) -> None:
+        with self._lock, self._conn:
+            self._conn.execute(
+                "INSERT INTO cobrancas_maquininha "
+                "(user_id, order_id, payment_id, valor, forma, status, comprovante, criado_em) "
+                "VALUES (?, ?, ?, ?, ?, 'approved', ?, ?) "
+                "ON CONFLICT(user_id, payment_id) DO UPDATE SET "
+                "order_id = excluded.order_id, comprovante = excluded.comprovante "
+                "WHERE cobrancas_maquininha.venda_id IS NULL",
+                (user_id, order_id, payment_id, moeda(valor), forma, comprovante, agora),
+            )
+
+    def venda_da_cobranca(self, user_id: int, payment_id: str) -> int | None:
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT venda_id FROM cobrancas_maquininha "
+                "WHERE user_id = ? AND payment_id = ? AND venda_id IS NOT NULL",
+                (user_id, payment_id),
+            ).fetchone()
+        return int(row["venda_id"]) if row else None
+
+    def vincular_cobranca_venda(self, user_id: int, payment_id: str, venda_id: int) -> None:
+        with self._lock, self._conn:
+            self._conn.execute(
+                "UPDATE cobrancas_maquininha SET venda_id = ? "
+                "WHERE user_id = ? AND payment_id = ? AND venda_id IS NULL",
+                (venda_id, user_id, payment_id),
             )
 
     def list_movimentacoes(self, user_id: int, produto_id: int | None = None,
