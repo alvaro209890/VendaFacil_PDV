@@ -50,6 +50,45 @@ def test_v10_cancelamento_concorrente_uma_devolucao(checkout_local):
     assert local._conn.execute("SELECT COUNT(*) FROM movimentacoes_estoque WHERE origem = 'cancelamento_venda'").fetchone()[0] == 1
 
 
+def test_v11_cancelada_sai_dos_totais(checkout_local):
+    from auth import _agora
+    api, local, user, produto, _, headers = checkout_local
+    local.abrir_caixa(user, 0, _agora())
+    venda = api.post('/api/vendas/checkout', headers=headers, json={
+        'itens': [{'produto_id': produto['id'], 'quantidade': 1}],
+    }).json()['venda']
+    antes = local.get_dashboard(user)
+    assert antes['vendas_hoje_qtd'] == 1
+    assert antes['vendas_total'] == 2
+    assert api.post(f"/api/vendas/{venda['id']}/cancelar", headers=headers,
+                    json={'motivo': 'Venda lançada por engano'}).status_code == 200
+    caixa = local.resumo_caixa(local.get_caixa_aberto(user))
+    assert caixa['vendas_qtd'] == 0
+    assert caixa['vendas_total'] == 0
+    assert caixa['dinheiro_esperado'] == 0
+    painel = local.get_dashboard(user)
+    assert painel['vendas_hoje_qtd'] == 0
+    assert painel['vendas_hoje_total'] == 0
+    assert painel['vendas_total'] == 0
+    assert venda['id'] not in {v['id'] for v in painel['ultimas_vendas']}
+    relatorio = local.relatorio_vendas(user, '2000-01-01', '2100-01-01')
+    assert relatorio['qtd_vendas'] == 0
+    assert relatorio['faturamento'] == 0
+
+
+def test_v11_tela_confirma_cancelamento_com_atalho():
+    from pathlib import Path
+    raiz = Path(__file__).resolve().parents[2]
+    tela = (raiz / 'src/pages/Vendas.tsx').read_text(encoding='utf-8')
+    api = (raiz / 'src/lib/api.ts').read_text(encoding='utf-8')
+    assert 'function cancelarVenda' in api
+    assert '/api/vendas/${id}/cancelar' in api
+    assert 'cancelarVenda' in tela
+    assert 'F9' in tela
+    assert 'motivo' in tela
+    assert "status !== 'concluida'" in tela or 'status === "cancelada"' in tela
+
+
 @pytest.mark.parametrize('tabela,evento', [
     ('vendas', 'UPDATE'), ('contas_receber', 'UPDATE'), ('movimentacoes_estoque', 'INSERT'),
 ])

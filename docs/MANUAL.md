@@ -63,7 +63,9 @@ tentativas não devolvem o estoque duas vezes. Se o fiado já teve recebimento,
 recusa: o recebimento precisa ser estornado antes (D8). Não confunda cancelamento
 de venda com evento de cancelamento de nota fiscal. A reserva da nota é gravada
 antes da transmissão: cancelar a venda durante a rede é recusado, e cancelar só
-a nota não devolve estoque. O botão na tela ainda passa por F1.11.
+a nota não devolve estoque. Na tela de vendas, o botão **Cancelar venda (F9)** pede o
+motivo antes de estornar. O histórico continua mostrando a venda cancelada, mas
+ela sai do total do dia, do caixa, do dashboard e dos relatórios.
 
 1. Na tela **PDV / Vender**, busque o produto por **nome** ou **código de
    barras** (pode usar leitor — bipou, entrou no carrinho).

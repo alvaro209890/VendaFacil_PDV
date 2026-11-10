@@ -1367,17 +1367,17 @@ class Database:
             ).fetchone()[0]
 
             vendas_hoje = self._conn.execute(
-                "SELECT COUNT(*), COALESCE(SOMA_DINHEIRO(total), 0) FROM vendas WHERE user_id = ? AND date(criado_em, 'localtime') = ?",
+                "SELECT COUNT(*), COALESCE(SOMA_DINHEIRO(total), 0) FROM vendas WHERE user_id = ? AND status = 'concluida' AND date(criado_em, 'localtime') = ?",
                 (user_id, hoje),
             ).fetchone()
 
             total_vendas = self._conn.execute(
-                "SELECT COALESCE(SOMA_DINHEIRO(total), 0) FROM vendas WHERE user_id = ?",
+                "SELECT COALESCE(SOMA_DINHEIRO(total), 0) FROM vendas WHERE user_id = ? AND status = 'concluida'",
                 (user_id,),
             ).fetchone()[0]
 
             ultimas_vendas_rows = self._conn.execute(
-                "SELECT id, total, forma_pagamento, criado_em FROM vendas WHERE user_id = ? ORDER BY criado_em DESC LIMIT 5",
+                "SELECT id, total, forma_pagamento, criado_em FROM vendas WHERE user_id = ? AND status = 'concluida' ORDER BY criado_em DESC LIMIT 5",
                 (user_id,),
             ).fetchall()
 

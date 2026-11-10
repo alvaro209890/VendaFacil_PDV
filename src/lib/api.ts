@@ -537,6 +537,13 @@ export function obterVenda(id: number): Promise<{ venda: Venda }> {
   return request(`/api/vendas/${id}`);
 }
 
+export function cancelarVenda(id: number, motivo: string): Promise<{ venda: Venda }> {
+  return request(`/api/vendas/${id}/cancelar`, {
+    method: "POST",
+    body: JSON.stringify({ motivo }),
+  });
+}
+
 // ── Dashboard ──
 
 export interface DashboardData {

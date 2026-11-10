@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { FileText, ExternalLink, RefreshCw, Download } from "lucide-react";
-import { listarVendas, obterVenda, getNotaDaVenda, emitirNfce, consultarNfce, listarClientes, getNfeDaVenda, emitirNfe, consultarNfe, baixarXmlNota } from "../lib/api";
+import { listarVendas, obterVenda, cancelarVenda, getNotaDaVenda, emitirNfce, consultarNfce, listarClientes, getNfeDaVenda, emitirNfe, consultarNfe, baixarXmlNota } from "../lib/api";
 import type { Cliente } from "../lib/api";
 import type { Venda, NotaFiscal } from "../lib/api";
 
@@ -14,6 +14,9 @@ export default function VendasPage() {
   const [clienteNfe, setClienteNfe] = useState<number | "">("");
   const [emitindo, setEmitindo] = useState(false);
   const [cpf, setCpf] = useState("");
+  const [motivo, setMotivo] = useState("");
+  const [confirmandoCancelamento, setConfirmandoCancelamento] = useState(false);
+  const [cancelando, setCancelando] = useState(false);
 
   const carregar = useCallback(async () => {
     try {
@@ -42,6 +45,8 @@ export default function VendasPage() {
       setNfe(resNfe.nota);
       setCpf("");
       setClienteNfe("");
+      setMotivo("");
+      setConfirmandoCancelamento(false);
     } catch {
       // silent
     }
@@ -87,12 +92,44 @@ export default function VendasPage() {
   }
 
   const totalHoje = vendas
+    .filter((v) => v.status === "concluida" || v.status === undefined)
     .filter((v) => {
       const hoje = new Date().toLocaleDateString("pt-BR");
       const dataVenda = new Date(v.criado_em).toLocaleDateString("pt-BR");
       return dataVenda === hoje;
     })
     .reduce((s, v) => s + v.total, 0);
+
+  async function handleCancelar() {
+    if (!detalhe || detalhe.status !== "concluida") return;
+    const texto = motivo.trim();
+    if (texto.length < 3) {
+      alert("Informe um motivo com pelo menos 3 caracteres.");
+      return;
+    }
+    setCancelando(true);
+    try {
+      const { venda } = await cancelarVenda(detalhe.id, texto);
+      setDetalhe(venda);
+      setConfirmandoCancelamento(false);
+      setMotivo("");
+      await carregar();
+    } catch (err) {
+      alert((err as Error).message);
+    } finally {
+      setCancelando(false);
+    }
+  }
+
+  useEffect(() => {
+    function noAtalho(evento: KeyboardEvent) {
+      if (evento.key !== "F9" || !detalhe || detalhe.status !== "concluida") return;
+      evento.preventDefault();
+      setConfirmandoCancelamento(true);
+    }
+    window.addEventListener("keydown", noAtalho);
+    return () => window.removeEventListener("keydown", noAtalho);
+  }, [detalhe]);
 
   if (loading) {
     return (
@@ -230,6 +267,41 @@ export default function VendasPage() {
               <span className="text-white">Total</span>
               <span className="text-brand-400">R$ {detalhe.total.toFixed(2)}</span>
             </div>
+
+            {detalhe.status === "cancelada" ? (
+              <p className="mb-4 rounded border border-red-400/30 bg-red-400/10 p-2 text-xs text-red-300">
+                Venda cancelada. O estoque já foi devolvido.
+              </p>
+            ) : detalhe.status === "concluida" && (
+              <div className="mb-4 rounded border border-slate-700 p-2">
+                {!confirmandoCancelamento ? (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmandoCancelamento(true)}
+                    className="w-full rounded bg-red-700 py-2 text-xs font-bold text-white"
+                  >
+                    Cancelar venda (F9)
+                  </button>
+                ) : (
+                  <div className="space-y-2">
+                    <input
+                      value={motivo}
+                      onChange={(e) => setMotivo(e.target.value)}
+                      placeholder="Motivo do cancelamento"
+                      className="w-full rounded border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs text-white"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleCancelar}
+                      disabled={cancelando}
+                      className="w-full rounded bg-red-700 py-2 text-xs font-bold text-white disabled:opacity-50"
+                    >
+                      {cancelando ? "Cancelando..." : "Confirmar cancelamento"}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Parte Fiscal */}
             <div className="pt-4 border-t border-slate-800">
