@@ -542,6 +542,68 @@ class Database:
         """Reserva o próximo número/série de NFC-e de forma atômica."""
         return self.consumir_numero_fiscal("65")
 
+    def reservar_nota_fiscal(self, venda_id: int, user_id: int, modelo: str,
+                             ambiente: str | None, agora: str) -> tuple[dict[str, Any], bool]:
+        """Grava a nota como processando antes de qualquer transmissão.
+
+        A inserção e a numeração compartilham a mesma transação e revalidam a
+        venda. Outra conexão que cancele durante a rede já encontra esta linha.
+        """
+        modelo = "55" if str(modelo) == "55" else "65"
+        with self._lock, self._conn:
+            self._conn.execute("BEGIN IMMEDIATE")
+            venda = self._conn.execute(
+                "SELECT status FROM vendas WHERE id = ? AND user_id = ?",
+                (venda_id, user_id),
+            ).fetchone()
+            if not venda:
+                raise ValueError("Venda não encontrada.")
+            if venda["status"] != "concluida":
+                raise ValueError("Venda cancelada ou não concluída; emissão fiscal não permitida.")
+            existente = self._conn.execute(
+                "SELECT * FROM notas_fiscais WHERE venda_id = ? AND modelo = ? "
+                "AND status IN ('autorizada','pendente','processando','contingencia') "
+                "ORDER BY id DESC LIMIT 1",
+                (venda_id, modelo),
+            ).fetchone()
+            if existente:
+                return dict(existente), False
+            if modelo == "55":
+                row = self._conn.execute(
+                    "SELECT serie_nfe AS serie, proximo_numero_nfe AS proximo "
+                    "FROM config_fiscal WHERE id = 1"
+                ).fetchone()
+            else:
+                row = self._conn.execute(
+                    "SELECT serie_nfce AS serie, proximo_numero_nfce AS proximo "
+                    "FROM config_fiscal WHERE id = 1"
+                ).fetchone()
+            serie = int(row["serie"] or 1) if row else 1
+            numero = int(row["proximo"] or 1) if row else 1
+            if row and modelo == "55":
+                self._conn.execute(
+                    "UPDATE config_fiscal SET proximo_numero_nfe = ? WHERE id = 1",
+                    (numero + 1,),
+                )
+            elif row:
+                self._conn.execute(
+                    "UPDATE config_fiscal SET proximo_numero_nfce = ? WHERE id = 1",
+                    (numero + 1,),
+                )
+            cur = self._conn.execute(
+                "INSERT INTO notas_fiscais (venda_id, user_id, ref, modelo, numero, serie, "
+                "ambiente, status, tipo_emissao, mensagem, criado_em, atualizado_em) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, 'processando', '1', ?, ?, ?)",
+                (venda_id, user_id, f"v{venda_id}-{modelo}-{numero}", modelo, numero, serie,
+                 ambiente or "homologacao",
+                 "Transmissão em andamento; resolva o documento fiscal antes de cancelar a venda.",
+                 agora, agora),
+            )
+            criada = self._conn.execute(
+                "SELECT * FROM notas_fiscais WHERE id = ?", (cur.lastrowid,)
+            ).fetchone()
+            return dict(criada), True
+
     # ── Fiscal: notas ──
     def criar_nota(self, dados: dict) -> dict[str, Any]:
         cols = ("venda_id", "user_id", "ref", "modelo", "numero", "serie", "ambiente",
@@ -1022,6 +1084,14 @@ class Database:
                 return None
             if venda["status"] != "concluida":
                 raise ValueError("Venda já cancelada ou não concluída.")
+            nota_ativa = self._conn.execute(
+                "SELECT id FROM notas_fiscais WHERE venda_id = ? "
+                "AND status IN ('autorizada','pendente','processando','contingencia') LIMIT 1",
+                (venda_id,),
+            ).fetchone()
+            if nota_ativa:
+                raise ValueError("Resolva o documento fiscal antes de cancelar a venda: "
+                                 "cancele a nota autorizada ou consulte a nota ainda pendente.")
             contas = self._conn.execute(
                 "SELECT valor_total, valor_pendente, status FROM contas_receber "
                 "WHERE venda_id = ? AND user_id = ?", (venda_id, user_id),

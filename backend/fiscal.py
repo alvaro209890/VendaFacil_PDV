@@ -243,10 +243,81 @@ def _validar_config(config: dict) -> None:
         raise FiscalError(f"Configuração fiscal incompleta: {', '.join(faltando)}.")
 
 
+def _concluir_reserva(nota_id: int, resultado: dict, config: dict,
+                      extra: dict | None = None) -> dict:
+    """Atualiza a reserva já gravada; nunca cria uma segunda nota."""
+    agora = _agora()
+    dados = {
+        "numero": resultado["numero"],
+        "serie": resultado["serie"],
+        "ambiente": config.get("ambiente") or "homologacao",
+        "chave": resultado["chave"],
+        "qrcode_url": resultado.get("qrcode_url"),
+        "payload": resultado["payload"],
+        "xml_assinado": resultado["xml_assinado"],
+        "tipo_emissao": "9" if resultado.get("contingencia") else "1",
+    }
+    if resultado.get("contingencia"):
+        dados.update({
+            "status": "contingencia",
+            "mensagem": "NFC-e emitida em contingência offline; será transmitida "
+                        "automaticamente quando a internet voltar.",
+        })
+    elif resultado.get("pendente"):
+        dados.update({
+            "status": "processando",
+            "mensagem": "Transmissão sem resposta da SEFAZ; será consultada automaticamente.",
+        })
+    else:
+        retorno = resultado.get("retorno") or {}
+        sefaz = fiscal_direto.normalizar_retorno_sefaz(
+            retorno.get("texto"), resultado["xml_assinado"], retorno.get("status_code")
+        )
+        dados.update({
+            "status": sefaz.get("status") or "processando",
+            "mensagem": sefaz.get("mensagem") or (
+                f"Transmitido para SEFAZ-MT ({retorno.get('status_code')}). Consulte o status."
+            ),
+            "recibo": sefaz.get("recibo") or retorno.get("texto", "")[:4000],
+        })
+        for campo in ("protocolo", "xml_autorizado", "motivo_rejeicao"):
+            if campo in sefaz:
+                dados[campo] = sefaz[campo]
+    if extra:
+        dados.update(extra)
+    return db.atualizar_nota(nota_id, dados, agora)
+
+
+def _transmitir_reserva(nota: dict, venda: dict, config: dict, modelo: str,
+                        extra: dict | None = None, **preparo) -> dict:
+    try:
+        resultado = fiscal_direto.preparar_e_tentar_transmitir(
+            venda, config, modelo, serie=nota["serie"], numero=nota["numero"], **preparo)
+    except fiscal_direto.FiscalDiretoError as exc:
+        atual = db.get_nota(nota["id"]) or {}
+        if not atual.get("chave") and not atual.get("xml_assinado"):
+            db.atualizar_nota(nota["id"], {
+                "status": "rejeitada", "motivo_rejeicao": str(exc), "mensagem": str(exc),
+            }, _agora())
+        raise FiscalError(str(exc)) from exc
+    return _concluir_reserva(nota["id"], resultado, config, extra)
+
+
+def _reservar_ou_reutilizar(venda_id: int, user_id: int, modelo: str, config: dict) -> tuple[dict, bool]:
+    try:
+        return db.reservar_nota_fiscal(
+            venda_id, user_id, modelo, config.get("ambiente"), _agora()
+        )
+    except ValueError as exc:
+        raise FiscalError(str(exc)) from exc
+
+
 def emitir_nfce(venda_id: int, user_id: int, cpf: str | None = None) -> dict:
     venda = db.get_venda_completa(venda_id, user_id)
     if not venda:
         raise FiscalError("Venda não encontrada.")
+    if venda.get("status") != "concluida":
+        raise FiscalError("Venda cancelada ou não concluída; emissão fiscal não permitida.")
     existente = db.get_nota_por_venda(venda_id, "65")
     # "contingencia" também é nota viva: emitir de novo geraria um SEGUNDO
     # documento fiscal para a mesma venda (a nota offline ainda vai ser
@@ -257,37 +328,10 @@ def emitir_nfce(venda_id: int, user_id: int, cpf: str | None = None) -> dict:
     config = db.get_config_fiscal()
     _validar_config(config)
     if (config.get("provedor_fiscal") or "sefaz_mt_direto") == "sefaz_mt_direto":
-        try:
-            r = fiscal_direto.preparar_e_tentar_transmitir(venda, config, "65", cpf_consumidor=cpf)
-            agora = _agora()
-            comum = {
-                "venda_id": venda_id, "user_id": user_id, "ref": f"v{venda_id}-65-{r['numero']}",
-                "modelo": "65", "numero": r["numero"], "serie": r["serie"],
-                "ambiente": config.get("ambiente"), "chave": r["chave"],
-                "qrcode_url": r.get("qrcode_url"), "payload": r["payload"],
-                "xml_assinado": r["xml_assinado"], "criado_em": agora, "atualizado_em": agora,
-            }
-            if r.get("contingencia"):
-                return db.criar_nota({**comum, "status": "contingencia", "tipo_emissao": "9",
-                    "mensagem": "NFC-e emitida em contingência offline; será transmitida "
-                                "automaticamente quando a internet voltar."})
-            if r.get("pendente"):
-                return db.criar_nota({**comum, "status": "processando", "tipo_emissao": "1",
-                    "mensagem": "Transmissão sem resposta da SEFAZ; será consultada automaticamente."})
-            retorno = r.get("retorno") or {}
-            sefaz = fiscal_direto.normalizar_retorno_sefaz(
-                retorno.get("texto"), r["xml_assinado"], retorno.get("status_code")
-            )
-            dados = {**comum, "status": sefaz.get("status") or "processando", "tipo_emissao": "1",
-                "mensagem": sefaz.get("mensagem") or f"Transmitido para SEFAZ-MT ({retorno.get('status_code')}). Consulte o status.",
-                "recibo": sefaz.get("recibo") or retorno.get("texto", "")[:4000],
-            }
-            for campo in ("protocolo", "xml_autorizado", "motivo_rejeicao"):
-                if campo in sefaz:
-                    dados[campo] = sefaz[campo]
-            return db.criar_nota(dados)
-        except fiscal_direto.FiscalDiretoError as e:
-            raise FiscalError(str(e))
+        nota, criada = _reservar_ou_reutilizar(venda_id, user_id, "65", config)
+        if not criada:
+            return nota
+        return _transmitir_reserva(nota, venda, config, "65", cpf_consumidor=cpf)
     gw = _gateway(config)
 
     serie, numero = db.consumir_numero_nfce()
@@ -411,6 +455,8 @@ def emitir_nfe(venda_id: int, user_id: int, cliente_id: int) -> dict:
     venda = db.get_venda_completa(venda_id, user_id)
     if not venda:
         raise FiscalError("Venda não encontrada.")
+    if venda.get("status") != "concluida":
+        raise FiscalError("Venda cancelada ou não concluída; emissão fiscal não permitida.")
     cliente = db.get_cliente(cliente_id, user_id)
     if not cliente:
         raise FiscalError("Cliente não encontrado.")
@@ -425,29 +471,14 @@ def emitir_nfe(venda_id: int, user_id: int, cliente_id: int) -> dict:
     _validar_config(config)
     if (config.get("provedor_fiscal") or "sefaz_mt_direto") != "sefaz_mt_direto":
         raise FiscalError("NF-e modelo 55 direta exige provedor fiscal SEFAZ-MT direto.")
-    try:
-        r = fiscal_direto.preparar_e_tentar_transmitir(venda, config, "55", destinatario=dict(cliente))
-        agora = _agora()
-        retorno = r.get("retorno") or {}
-        sefaz = fiscal_direto.normalizar_retorno_sefaz(
-            retorno.get("texto"), r["xml_assinado"], retorno.get("status_code")
-        )
-        dados = {
-            "venda_id": venda_id, "user_id": user_id, "ref": f"v{venda_id}-55-{r['numero']}",
-            "modelo": "55", "numero": r["numero"], "serie": r["serie"],
-            "ambiente": config.get("ambiente"), "status": sefaz.get("status") or "processando",
-            "chave": r["chave"], "payload": r["payload"], "xml_assinado": r["xml_assinado"],
-            "mensagem": sefaz.get("mensagem") or f"Transmitido para SEFAZ-MT ({retorno.get('status_code')}). Consulte o status.",
-            "recibo": sefaz.get("recibo") or retorno.get("texto", "")[:4000],
-            "destinatario_snapshot": json.dumps(dict(cliente), ensure_ascii=False),
-            "criado_em": agora, "atualizado_em": agora,
-        }
-        for campo in ("protocolo", "xml_autorizado", "motivo_rejeicao"):
-            if campo in sefaz:
-                dados[campo] = sefaz[campo]
-        return db.criar_nota(dados)
-    except fiscal_direto.FiscalDiretoError as e:
-        raise FiscalError(str(e))
+    nota, criada = _reservar_ou_reutilizar(venda_id, user_id, "55", config)
+    if not criada:
+        return nota
+    return _transmitir_reserva(
+        nota, venda, config, "55",
+        extra={"destinatario_snapshot": json.dumps(dict(cliente), ensure_ascii=False)},
+        destinatario=dict(cliente),
+    )
 
 
 def processar_pendentes() -> int:

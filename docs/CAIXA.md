@@ -39,5 +39,6 @@ conta de fiado em uma única transação. Repetição ou corrida não duplica a 
 Se houve recebimento parcial/total, recusa e orienta estornar o recebimento antes
 (decisão D8); não devolve dinheiro silenciosamente. Falha SQL desfaz todo o estorno.
 
-A conferência fiscal e a exclusão dos totais de caixa/relatórios são portões
-separados do plano (F1.10/F1.11). Esta API isolada não constitui aprovação de produção.
+A conferência fiscal bloqueia o estorno enquanto existir nota autorizada, pendente,
+em processamento ou em contingência. A reserva é gravada antes da transmissão.
+A exclusão dos totais de caixa/relatórios e o botão da tela seguem no F1.11.

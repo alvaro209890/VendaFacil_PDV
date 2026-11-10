@@ -1074,7 +1074,9 @@ def cancelar_documento(nota: dict, config: dict, justificativa: str) -> dict:
 
 def preparar_e_tentar_transmitir(venda: dict, config: dict, modelo: str = "65",
                                  cpf_consumidor: str | None = None,
-                                 destinatario: dict | None = None) -> dict:
+                                 destinatario: dict | None = None,
+                                 serie: int | None = None,
+                                 numero: int | None = None) -> dict:
     """Monta, assina e tenta transmitir. Trata a queda de internet sem perder o
     número fiscal nem deixar a venda sem nota:
 
@@ -1096,7 +1098,10 @@ def preparar_e_tentar_transmitir(venda: dict, config: dict, modelo: str = "65",
     except Exception:
         sem_conexao = (OSError,)
 
-    serie, numero = db.consumir_numero_fiscal(modelo)
+    if serie is None or numero is None:
+        serie, numero = db.consumir_numero_fiscal(modelo)
+    else:
+        serie, numero = int(serie), int(numero)
     doc = montar_documento(venda, config, modelo, cpf_consumidor, destinatario, serie, numero)
     xml_assinado = assinar_xml(doc.xml, config)
     base = {

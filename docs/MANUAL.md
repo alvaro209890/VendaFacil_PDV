@@ -61,8 +61,9 @@ a venda permanece registrada e o erro fiscal é apresentado para tratamento.
 caracteres, registra data/motivo e devolve estoque e fiado numa transação. Duas
 tentativas não devolvem o estoque duas vezes. Se o fiado já teve recebimento,
 recusa: o recebimento precisa ser estornado antes (D8). Não confunda cancelamento
-de venda com evento de cancelamento de nota fiscal. A integração fiscal e o botão
-na tela ainda passam pelos itens F1.10/F1.11 do plano de produção.
+de venda com evento de cancelamento de nota fiscal. A reserva da nota é gravada
+antes da transmissão: cancelar a venda durante a rede é recusado, e cancelar só
+a nota não devolve estoque. O botão na tela ainda passa por F1.11.
 
 1. Na tela **PDV / Vender**, busque o produto por **nome** ou **código de
    barras** (pode usar leitor — bipou, entrou no carrinho).
