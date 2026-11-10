@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 
 from auth import _verificar_jwt, _agora
 from database import db
+from dinheiro import decimal
 
 router = APIRouter()
 
@@ -22,7 +23,7 @@ class AbrirInput(BaseModel):
 
 class MovimentoInput(BaseModel):
     tipo: str  # sangria | suprimento
-    valor: float = Field(gt=0)
+    valor: float = Field(allow_inf_nan=False)
     motivo: str = Field(default="", max_length=200)
 
 
@@ -57,6 +58,12 @@ async def movimento(data: MovimentoInput, request: Request) -> dict:
     sessao = db.get_caixa_aberto(user_id)
     if not sessao:
         raise HTTPException(status_code=409, detail="Nenhum caixa aberto.")
+    if data.valor <= 0:
+        raise HTTPException(status_code=400, detail="Valor deve ser maior que zero.")
+    if data.tipo == "sangria":
+        esperado = decimal(db.resumo_caixa(sessao)["dinheiro_esperado"])
+        if decimal(data.valor) > esperado:
+            raise HTTPException(status_code=409, detail="Sangria maior que o dinheiro na gaveta.")
     db.registrar_movimento_caixa(sessao["id"], user_id, data.tipo, data.valor, data.motivo, _agora())
     return {"resumo": db.resumo_caixa(sessao)}
 
