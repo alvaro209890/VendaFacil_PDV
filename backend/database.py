@@ -1200,12 +1200,15 @@ class Database:
         sets = ", ".join(f"{k} = ?" for k in fields)
         vals = list(fields.values())
         with self._lock, self._conn:
-            self._conn.execute(
+            cursor = self._conn.execute(
                 f"UPDATE categorias SET {sets} WHERE id = ? AND user_id = ?",
                 vals + [categoria_id, user_id],
             )
+            if cursor.rowcount != 1:
+                return None
             row = self._conn.execute(
-                "SELECT * FROM categorias WHERE id = ?", (categoria_id,)
+                "SELECT * FROM categorias WHERE id = ? AND user_id = ?",
+                (categoria_id, user_id),
             ).fetchone()
             return dict(row) if row else None
 
