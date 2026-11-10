@@ -1,0 +1,87 @@
+C:\GIS\VendaFacil_PDV\backend\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient as TestClient  # noqa
+INFO: HTTP Request: POST http://testserver/api/auth/registro "HTTP/1.1 200 OK"
+INFO: HTTP Request: POST http://testserver/api/produtos "HTTP/1.1 201 Created"
+INFO: HTTP Request: POST http://testserver/api/vendas/checkout "HTTP/1.1 201 Created"
+ERROR: unhandled_error request_id=b081d2a845cd method=POST path=/api/vendas/checkout
+Traceback (most recent call last):
+  File "C:\GIS\VendaFacil_PDV\backend\.venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\GIS\VendaFacil_PDV\backend\.venv\Lib\site-packages\fastapi\telemetry\_asgi.py", line 151, in __call__
+    await self.app(scope, receive, send)
+  File "C:\GIS\VendaFacil_PDV\backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 203, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\GIS/VendaFacil_PDV/backend\main.py", line 65, in normalize_leading_slashes
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\GIS\VendaFacil_PDV\backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 179, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "C:\GIS\VendaFacil_PDV\backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "C:\GIS\VendaFacil_PDV\backend\.venv\Lib\site-packages\starlette\middleware\cors.py", line 91, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "C:\GIS\VendaFacil_PDV\backend\.venv\Lib\site-packages\starlette\middleware\cors.py", line 149, in simple_response
+    await self.app(scope, receive, send)
+  File "C:\GIS\VendaFacil_PDV\backend\.venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\GIS\VendaFacil_PDV\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\GIS\VendaFacil_PDV\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\GIS\VendaFacil_PDV\backend\.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\GIS\VendaFacil_PDV\backend\.venv\Lib\site-packages\starlette\routing.py", line 683, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\GIS\VendaFacil_PDV\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2811, in app
+    await route.handle(scope, receive, send)
+  File "C:\GIS\VendaFacil_PDV\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1839, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "C:\GIS\VendaFacil_PDV\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2894, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "C:\GIS\VendaFacil_PDV\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1865, in _handle_selected
+    await original_route.handle(scope, receive, send)
+  File "C:\GIS\VendaFacil_PDV\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1328, in handle
+    await effective_context.app(scope, receive, send)
+  File "C:\GIS\VendaFacil_PDV\backend\.venv\Lib\site-packages\fastapi\routing.py", line 166, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\GIS\VendaFacil_PDV\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\GIS\VendaFacil_PDV\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\GIS\VendaFacil_PDV\backend\.venv\Lib\site-packages\fastapi\routing.py", line 152, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\GIS\VendaFacil_PDV\backend\.venv\Lib\site-packages\fastapi\routing.py", line 745, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\GIS\VendaFacil_PDV\backend\.venv\Lib\site-packages\fastapi\routing.py", line 372, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\GIS/VendaFacil_PDV/backend\vendas.py", line 130, in checkout
+    venda = db.create_venda(
+            ^^^^^^^^^^^^^^^^
+  File "C:\GIS/VendaFacil_PDV/backend\database.py", line 916, in create_venda
+    cursor = self._conn.execute(
+             ^^^^^^^^^^^^^^^^^^^
+sqlite3.IntegrityError: falha_injetada_f0
+INFO: HTTP Request: POST http://testserver/api/vendas/checkout "HTTP/1.1 500 Internal Server Error"
+{
+  "P3_meio_centavo": {
+    "obtido": 2.67,
+    "esperado": 2.68
+  },
+  "P7_pragmas": {
+    "journal_mode": "wal",
+    "foreign_keys": 0,
+    "synchronous": 2,
+    "busy_timeout": 5000
+  },
+  "P1_excecao_venda": {
+    "http": 500,
+    "estoque_antes": 9.0,
+    "estoque_depois": 8.0
+  },
+  "P2_rota_cancelamento": false,
+  "P20_status_servico_rota": []
+}
