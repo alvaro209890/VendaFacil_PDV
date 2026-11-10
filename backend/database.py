@@ -189,6 +189,9 @@ class Database:
             "valor REAL NOT NULL, forma TEXT NOT NULL DEFAULT 'dinheiro', "
             "criado_em TEXT NOT NULL)"
         )
+        pfiado = {r["name"] for r in self._conn.execute("PRAGMA table_info(pagamentos_fiado)")}
+        if "sessao_id" not in pfiado:
+            self._conn.execute("ALTER TABLE pagamentos_fiado ADD COLUMN sessao_id INTEGER")
 
         # Campos fiscais nos produtos (NFC-e)
         pcols = {r["name"] for r in self._conn.execute("PRAGMA table_info(produtos)")}
@@ -945,6 +948,11 @@ class Database:
                 "FROM caixa_movimentos WHERE sessao_id = ? GROUP BY tipo",
                 (sessao["id"],),
             ).fetchall()
+            recebido = self._conn.execute(
+                "SELECT COALESCE(SOMA_DINHEIRO(valor),0) total FROM pagamentos_fiado "
+                "WHERE user_id = ? AND sessao_id = ? AND lower(trim(forma)) = 'dinheiro'",
+                (user_id, sessao["id"]),
+            ).fetchone()["total"]
 
         por_forma = {r["forma_pagamento"]: {"qtd": r["qtd"], "total": r["total"]} for r in vrows}
         vendas_total = somar(v["total"] for v in por_forma.values())
@@ -953,7 +961,7 @@ class Database:
         mov = {r["tipo"]: r["total"] for r in mrows}
         suprimentos = mov.get("suprimento", 0.0)
         sangrias = mov.get("sangria", 0.0)
-        esperado = somar([sessao["valor_abertura"], dinheiro, suprimentos]) - decimal(sangrias)
+        esperado = somar([sessao["valor_abertura"], dinheiro, suprimentos, recebido]) - decimal(sangrias)
         return {
             "vendas_qtd": vendas_qtd,
             "vendas_total": moeda(vendas_total),
@@ -961,6 +969,7 @@ class Database:
             "vendas_dinheiro": moeda(dinheiro),
             "suprimentos": moeda(suprimentos),
             "sangrias": moeda(sangrias),
+            "recebimentos_fiado": moeda(recebido),
             "valor_abertura": moeda(sessao["valor_abertura"]),
             "dinheiro_esperado": moeda(esperado),
         }
@@ -1374,10 +1383,19 @@ class Database:
                     "UPDATE contas_receber SET valor_pendente = ?, status = 'parcial', atualizado_em = ? WHERE id = ?",
                     (novo_pendente, agora, conta_id),
                 )
+            forma_limpa = (forma or "dinheiro").strip() or "dinheiro"
+            sessao_id = None
+            if forma_limpa.casefold() == "dinheiro":
+                aberta = self._conn.execute(
+                    "SELECT id FROM caixa_sessoes WHERE user_id = ? AND fechado_em IS NULL "
+                    "ORDER BY id DESC LIMIT 1",
+                    (user_id,),
+                ).fetchone()
+                sessao_id = aberta["id"] if aberta else None
             self._conn.execute(
-                "INSERT INTO pagamentos_fiado (user_id, conta_id, valor, forma, criado_em) "
-                "VALUES (?, ?, ?, ?, ?)",
-                (user_id, conta_id, moeda(valor), (forma or "dinheiro").strip() or "dinheiro", agora),
+                "INSERT INTO pagamentos_fiado (user_id, conta_id, valor, forma, criado_em, sessao_id) "
+                "VALUES (?, ?, ?, ?, ?, ?)",
+                (user_id, conta_id, moeda(valor), forma_limpa, agora, sessao_id),
             )
             return self.get_conta_receber(conta_id, user_id)
 
