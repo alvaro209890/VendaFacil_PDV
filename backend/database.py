@@ -182,6 +182,13 @@ class Database:
             self._conn.execute("ALTER TABLE vendas ADD COLUMN pagamento_detalhe TEXT")
         if "sessao_id" not in cols:
             self._conn.execute("ALTER TABLE vendas ADD COLUMN sessao_id INTEGER")
+        self._conn.execute(
+            "CREATE TABLE IF NOT EXISTS pagamentos_fiado ("
+            "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+            "user_id INTEGER NOT NULL, conta_id INTEGER NOT NULL, "
+            "valor REAL NOT NULL, forma TEXT NOT NULL DEFAULT 'dinheiro', "
+            "criado_em TEXT NOT NULL)"
+        )
 
         # Campos fiscais nos produtos (NFC-e)
         pcols = {r["name"] for r in self._conn.execute("PRAGMA table_info(produtos)")}
@@ -1317,7 +1324,16 @@ class Database:
                 q += " AND cr.user_id = ?"
                 params = (conta_id, user_id)
             row = self._conn.execute(q, params).fetchone()
-        return dict(row) if row else None
+            if not row:
+                return None
+            resultado = dict(row)
+            pagamentos = self._conn.execute(
+                "SELECT id, user_id, conta_id, valor, forma, criado_em "
+                "FROM pagamentos_fiado WHERE conta_id = ? ORDER BY id",
+                (conta_id,),
+            ).fetchall()
+            resultado["pagamentos"] = [dict(p) for p in pagamentos]
+            return resultado
 
     def create_conta_receber(self, user_id: int, cliente_id: int | None, venda_id: int | None,
                               valor_total: float, data_vencimento: str | None,
@@ -1332,7 +1348,8 @@ class Database:
             )
             return self.get_conta_receber(cursor.lastrowid)
 
-    def pagar_conta_receber(self, conta_id: int, user_id: int, valor: float, agora: str) -> dict[str, Any] | None:
+    def pagar_conta_receber(self, conta_id: int, user_id: int, valor: float, agora: str,
+                             forma: str = "dinheiro") -> dict[str, Any] | None:
         with self._lock, self._conn:
             row = self._conn.execute(
                 "SELECT * FROM contas_receber WHERE id = ? AND user_id = ?",
@@ -1351,6 +1368,11 @@ class Database:
                     "UPDATE contas_receber SET valor_pendente = ?, status = 'parcial', atualizado_em = ? WHERE id = ?",
                     (novo_pendente, agora, conta_id),
                 )
+            self._conn.execute(
+                "INSERT INTO pagamentos_fiado (user_id, conta_id, valor, forma, criado_em) "
+                "VALUES (?, ?, ?, ?, ?)",
+                (user_id, conta_id, moeda(valor), (forma or "dinheiro").strip() or "dinheiro", agora),
+            )
             return self.get_conta_receber(conta_id)
 
     def cancelar_conta_receber(self, conta_id: int, user_id: int, agora: str) -> bool:
