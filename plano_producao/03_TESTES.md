@@ -10,7 +10,7 @@ Ao fechar: preencha **Onde** (`arquivo::função`) e **Commit**. Teste novo que 
 
 | ID | O que prova | Status | Onde | Commit |
 |---|---|---|---|---|
-| V14 | P23: Validar todas as referências e retornos por usuário | ⬜ | | |
+| V14 | P23: Validar todas as referências e retornos por usuário | ✅ | `backend/tests/test_referencias.py` | c7e3991 |
 | I06 | P24: Importação atômica/idempotente e validar GTIN/modelo/embalagem | ⬜ | | |
 | S09 | P25: Nunca registrar corpo bruto; sanitizar erros e exceções | ⬜ | | |
 | S10 | P26: Preservar segredo omitido/vazio; remoção precisa ser explícita | ⬜ | | |
@@ -40,6 +40,7 @@ Ao fechar: preencha **Onde** (`arquivo::função`) e **Commit**. Teste novo que 
 | D03 | Total da venda = Σ `vProd` − `vDesc` = `vNF` = Σ `vPag` no XML da NFC-e | ✅ | `backend/tests/test_dinheiro_fiscal.py::test_d03_xml_bate_com_checkout_no_meio_centavo` | 2a9b689 |
 | D04 | Rateio de desconto fecha no centavo com 3, 7 e 13 itens | ✅ | `backend/tests/test_dinheiro_fiscal.py::test_d04_rateio_sem_residuo_negativo` | 2a9b689 |
 | D05 | Resumo de caixa com 200 vendas de centavos quebrados bate com a soma exata | ✅ | `backend/tests/test_dinheiro_db.py::test_d05_resumo_200_vendas_exato` | d798762 |
+| D06 | D3 caracterizada: preço de venda 0 cobra o custo; preço positivo não muda | ✅ | `backend/tests/test_cancelamento.py::test_d3_preco_zero_vende_pelo_custo` | 997dd69 |
 
 ## V — Venda, estoque e cancelamento (Fase 1)
 
@@ -50,14 +51,14 @@ Ao fechar: preencha **Onde** (`arquivo::função`) e **Commit**. Teste novo que 
 | V03 | Exceção injetada ao criar a conta a receber (fiado) → nada gravado | ✅ | `backend/tests/test_transacoes.py::test_v01_v03_checkout_rollback_em_qualquer_etapa` | 68fcc88 |
 | V04 | Duas requisições simultâneas no último item: uma vende, a outra é recusada; estoque termina em 0 | ✅ | `backend/tests/test_transacoes.py::test_v04_api_concorrente_ultimo_item + test_v04_duas_conexoes_begin_immediate` | 79e5ccf |
 | V05 | Estoque nunca fica negativo, inclusive com quantidade fracionada | ✅ | `backend/tests/test_transacoes.py::test_v05_fracionado_e_itens_duplicados_nao_negativam` | 79e5ccf |
-| V06 | Processo morto no meio do checkout (subprocesso) → banco íntegro e sem venda pela metade | 🟥 RED histórico4≠5; GREEN atual em revisão | `backend/tests/test_transacoes.py::test_v06_processo_morto_no_meio_do_checkout` | — |
-| V07 | Cancelar venda devolve o estoque e grava a movimentação | ⬜ | | |
-| V08 | Cancelar venda fiada estorna a conta a receber; com baixa já feita, comportamento definido e testado | ⬜ | | |
-| V09 | Cancelar venda com NFC-e autorizada e não cancelada → recusado com orientação | ⬜ | | |
-| V10 | Cancelar duas vezes → segunda recusada; estoque não duplica | ⬜ | | |
-| V11 | Venda cancelada sai do resumo do caixa, do dashboard e dos relatórios | ⬜ | | |
+| V06 | Processo morto no meio do checkout (subprocesso) → banco íntegro e sem venda pela metade | ✅ | `backend/tests/test_transacoes.py::test_v06_processo_morto_no_meio_do_checkout` | 15c7fb9 |
+| V07 | Cancelar venda devolve o estoque e grava a movimentação | ✅ | `backend/tests/test_cancelamento.py::test_v07_v10_cancelar_devolve_estoque_uma_vez` | 4a7ff3e |
+| V08 | Cancelar venda fiada estorna a conta a receber; com baixa já feita, comportamento definido e testado | ✅ | `backend/tests/test_cancelamento.py::test_v08_fiado_estorno_ou_recusa_recebido` | 4a7ff3e |
+| V09 | Cancelar venda com NFC-e autorizada e não cancelada → recusado com orientação | ✅ | `backend/tests/test_cancelamento_fiscal.py` | 197dcee |
+| V10 | Dois cancelamentos simultâneos da mesma venda → estoque devolvido só uma vez | ✅ | `backend/tests/test_cancelamento.py::test_v10_cancelamento_concorrente_uma_devolucao` | 4a7ff3e |
+| V11 | Venda cancelada sai do resumo do caixa, do dashboard e dos relatórios | ✅ | `backend/tests/test_cancelamento.py::test_v11_cancelada_sai_dos_totais` | fd35f52 |
 | V12 | Produto inativo, inexistente, quantidade 0 ou negativa → 400 | ✅ | `backend/tests/test_transacoes.py::test_v12_quantidade_invalida_retorna_400 + test_v12_produto_invalido_400` | 79e5ccf |
-| V13 | Venda de um usuário não é visível nem cancelável por outro | ⬜ | | |
+| V13 | Venda de um usuário não é visível nem cancelável por outro | ✅ | `backend/tests/test_cancelamento.py::test_v13_cancelamento_alheio_404 + test_transacoes.py::test_v13_venda_nao_visivel_a_outro_usuario` | 4a7ff3e |
 
 | V15 | PRAGMAs explícitos init/reconexão, FK recusa referência inexistente, cópia legada válida preserva dados | ✅ | `backend/tests/test_transacoes.py` (3 testes P7) | a4f8e69 |
 

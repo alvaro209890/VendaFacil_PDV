@@ -1,0 +1,136 @@
+FFFFFFFFF                                                                [100%]
+================================== FAILURES ===================================
+__________ test_v09_nota_ativa_impede_cancelar_venda[autorizada-65] ___________
+backend\tests\test_cancelamento_fiscal.py:33: in test_v09_nota_ativa_impede_cancelar_venda
+    assert resposta.status_code == 409
+E   assert 200 == 409
+E    +  where 200 = <Response [200 OK]>.status_code
+---------------------------- Captured stderr call -----------------------------
+INFO: HTTP Request: POST http://testserver/api/vendas/checkout "HTTP/1.1 201 Created"
+INFO: HTTP Request: POST http://testserver/api/vendas/1/cancelar "HTTP/1.1 200 OK"
+------------------------------ Captured log call ------------------------------
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/api/vendas/checkout "HTTP/1.1 201 Created"
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/api/vendas/1/cancelar "HTTP/1.1 200 OK"
+__________ test_v09_nota_ativa_impede_cancelar_venda[autorizada-55] ___________
+backend\tests\test_cancelamento_fiscal.py:33: in test_v09_nota_ativa_impede_cancelar_venda
+    assert resposta.status_code == 409
+E   assert 200 == 409
+E    +  where 200 = <Response [200 OK]>.status_code
+---------------------------- Captured stderr call -----------------------------
+INFO: HTTP Request: POST http://testserver/api/vendas/checkout "HTTP/1.1 201 Created"
+INFO: HTTP Request: POST http://testserver/api/vendas/1/cancelar "HTTP/1.1 200 OK"
+------------------------------ Captured log call ------------------------------
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/api/vendas/checkout "HTTP/1.1 201 Created"
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/api/vendas/1/cancelar "HTTP/1.1 200 OK"
+___________ test_v09_nota_ativa_impede_cancelar_venda[pendente-65] ____________
+backend\tests\test_cancelamento_fiscal.py:33: in test_v09_nota_ativa_impede_cancelar_venda
+    assert resposta.status_code == 409
+E   assert 200 == 409
+E    +  where 200 = <Response [200 OK]>.status_code
+---------------------------- Captured stderr call -----------------------------
+INFO: HTTP Request: POST http://testserver/api/vendas/checkout "HTTP/1.1 201 Created"
+INFO: HTTP Request: POST http://testserver/api/vendas/1/cancelar "HTTP/1.1 200 OK"
+------------------------------ Captured log call ------------------------------
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/api/vendas/checkout "HTTP/1.1 201 Created"
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/api/vendas/1/cancelar "HTTP/1.1 200 OK"
+___________ test_v09_nota_ativa_impede_cancelar_venda[pendente-55] ____________
+backend\tests\test_cancelamento_fiscal.py:33: in test_v09_nota_ativa_impede_cancelar_venda
+    assert resposta.status_code == 409
+E   assert 200 == 409
+E    +  where 200 = <Response [200 OK]>.status_code
+---------------------------- Captured stderr call -----------------------------
+INFO: HTTP Request: POST http://testserver/api/vendas/checkout "HTTP/1.1 201 Created"
+INFO: HTTP Request: POST http://testserver/api/vendas/1/cancelar "HTTP/1.1 200 OK"
+------------------------------ Captured log call ------------------------------
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/api/vendas/checkout "HTTP/1.1 201 Created"
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/api/vendas/1/cancelar "HTTP/1.1 200 OK"
+__________ test_v09_nota_ativa_impede_cancelar_venda[processando-65] __________
+backend\tests\test_cancelamento_fiscal.py:33: in test_v09_nota_ativa_impede_cancelar_venda
+    assert resposta.status_code == 409
+E   assert 200 == 409
+E    +  where 200 = <Response [200 OK]>.status_code
+---------------------------- Captured stderr call -----------------------------
+INFO: HTTP Request: POST http://testserver/api/vendas/checkout "HTTP/1.1 201 Created"
+INFO: HTTP Request: POST http://testserver/api/vendas/1/cancelar "HTTP/1.1 200 OK"
+------------------------------ Captured log call ------------------------------
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/api/vendas/checkout "HTTP/1.1 201 Created"
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/api/vendas/1/cancelar "HTTP/1.1 200 OK"
+__________ test_v09_nota_ativa_impede_cancelar_venda[processando-55] __________
+backend\tests\test_cancelamento_fiscal.py:33: in test_v09_nota_ativa_impede_cancelar_venda
+    assert resposta.status_code == 409
+E   assert 200 == 409
+E    +  where 200 = <Response [200 OK]>.status_code
+---------------------------- Captured stderr call -----------------------------
+INFO: HTTP Request: POST http://testserver/api/vendas/checkout "HTTP/1.1 201 Created"
+INFO: HTTP Request: POST http://testserver/api/vendas/1/cancelar "HTTP/1.1 200 OK"
+------------------------------ Captured log call ------------------------------
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/api/vendas/checkout "HTTP/1.1 201 Created"
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/api/vendas/1/cancelar "HTTP/1.1 200 OK"
+_________ test_v09_nota_ativa_impede_cancelar_venda[contingencia-65] __________
+backend\tests\test_cancelamento_fiscal.py:33: in test_v09_nota_ativa_impede_cancelar_venda
+    assert resposta.status_code == 409
+E   assert 200 == 409
+E    +  where 200 = <Response [200 OK]>.status_code
+---------------------------- Captured stderr call -----------------------------
+INFO: HTTP Request: POST http://testserver/api/vendas/checkout "HTTP/1.1 201 Created"
+INFO: HTTP Request: POST http://testserver/api/vendas/1/cancelar "HTTP/1.1 200 OK"
+------------------------------ Captured log call ------------------------------
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/api/vendas/checkout "HTTP/1.1 201 Created"
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/api/vendas/1/cancelar "HTTP/1.1 200 OK"
+_________ test_v09_nota_ativa_impede_cancelar_venda[contingencia-55] __________
+backend\tests\test_cancelamento_fiscal.py:33: in test_v09_nota_ativa_impede_cancelar_venda
+    assert resposta.status_code == 409
+E   assert 200 == 409
+E    +  where 200 = <Response [200 OK]>.status_code
+---------------------------- Captured stderr call -----------------------------
+INFO: HTTP Request: POST http://testserver/api/vendas/checkout "HTTP/1.1 201 Created"
+INFO: HTTP Request: POST http://testserver/api/vendas/1/cancelar "HTTP/1.1 200 OK"
+------------------------------ Captured log call ------------------------------
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/api/vendas/checkout "HTTP/1.1 201 Created"
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/api/vendas/1/cancelar "HTTP/1.1 200 OK"
+____________________ test_v09_nao_olha_apenas_ultima_nota _____________________
+backend\tests\test_cancelamento_fiscal.py:46: in test_v09_nao_olha_apenas_ultima_nota
+    assert resposta.status_code == 409
+E   assert 200 == 409
+E    +  where 200 = <Response [200 OK]>.status_code
+---------------------------- Captured stderr call -----------------------------
+INFO: HTTP Request: POST http://testserver/api/vendas/checkout "HTTP/1.1 201 Created"
+INFO: HTTP Request: POST http://testserver/api/vendas/1/cancelar "HTTP/1.1 200 OK"
+------------------------------ Captured log call ------------------------------
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/api/vendas/checkout "HTTP/1.1 201 Created"
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/api/vendas/1/cancelar "HTTP/1.1 200 OK"
+============================== warnings summary ===============================
+backend\.venv\Lib\site-packages\fastapi\testclient.py:1
+  C:\GIS\VendaFacil_PDV\backend\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+backend\main.py:92
+  C:\GIS\VendaFacil_PDV\backend\main.py:92: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("startup")
+
+backend\.venv\Lib\site-packages\fastapi\applications.py:4723
+  C:\GIS\VendaFacil_PDV\backend\.venv\Lib\site-packages\fastapi\applications.py:4723: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED backend/tests/test_cancelamento_fiscal.py::test_v09_nota_ativa_impede_cancelar_venda[autorizada-65]
+FAILED backend/tests/test_cancelamento_fiscal.py::test_v09_nota_ativa_impede_cancelar_venda[autorizada-55]
+FAILED backend/tests/test_cancelamento_fiscal.py::test_v09_nota_ativa_impede_cancelar_venda[pendente-65]
+FAILED backend/tests/test_cancelamento_fiscal.py::test_v09_nota_ativa_impede_cancelar_venda[pendente-55]
+FAILED backend/tests/test_cancelamento_fiscal.py::test_v09_nota_ativa_impede_cancelar_venda[processando-65]
+FAILED backend/tests/test_cancelamento_fiscal.py::test_v09_nota_ativa_impede_cancelar_venda[processando-55]
+FAILED backend/tests/test_cancelamento_fiscal.py::test_v09_nota_ativa_impede_cancelar_venda[contingencia-65]
+FAILED backend/tests/test_cancelamento_fiscal.py::test_v09_nota_ativa_impede_cancelar_venda[contingencia-55]
+FAILED backend/tests/test_cancelamento_fiscal.py::test_v09_nao_olha_apenas_ultima_nota
+9 failed, 3 warnings in 4.67s
