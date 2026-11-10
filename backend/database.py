@@ -3,6 +3,20 @@ import threading
 from typing import Any
 
 from paths import DATA_DIR
+from dinheiro import decimal, moeda, somar
+
+
+class _SomaDinheiro:
+    """Agregado SQLite: soma decimal sem drift intermediário de REAL."""
+    def __init__(self):
+        self.total = decimal(0)
+
+    def step(self, valor):
+        if valor is not None:
+            self.total += decimal(valor)
+
+    def finalize(self):
+        return moeda(self.total)
 
 DB_DIR = DATA_DIR
 DB_PATH = DB_DIR / "vendafacil.db"
@@ -14,6 +28,7 @@ class Database:
         DB_DIR.mkdir(parents=True, exist_ok=True)
         self._conn = sqlite3.connect(str(DB_PATH), check_same_thread=False)
         self._conn.row_factory = sqlite3.Row
+        self._conn.create_aggregate("SOMA_DINHEIRO", 1, _SomaDinheiro)
         with self._conn:
             self._conn.execute("PRAGMA journal_mode = WAL")
         self._init_schema()
@@ -806,7 +821,7 @@ class Database:
         with self._lock, self._conn:
             cur = self._conn.execute(
                 "INSERT INTO caixa_sessoes (user_id, valor_abertura, aberto_em, criado_em) "
-                "VALUES (?,?,?,?)", (user_id, valor_abertura, agora, agora),
+                "VALUES (?,?,?,?)", (user_id, moeda(valor_abertura), agora, agora),
             )
             row = self._conn.execute(
                 "SELECT * FROM caixa_sessoes WHERE id = ?", (cur.lastrowid,)
@@ -818,7 +833,7 @@ class Database:
         with self._lock, self._conn:
             self._conn.execute(
                 "INSERT INTO caixa_movimentos (sessao_id, user_id, tipo, valor, motivo, criado_em) "
-                "VALUES (?,?,?,?,?,?)", (sessao_id, user_id, tipo, valor, motivo, agora),
+                "VALUES (?,?,?,?,?,?)", (sessao_id, user_id, tipo, moeda(valor), motivo, agora),
             )
 
     def resumo_caixa(self, sessao: dict) -> dict[str, Any]:
@@ -830,40 +845,40 @@ class Database:
         with self._lock:
             if fim:
                 vrows = self._conn.execute(
-                    "SELECT forma_pagamento, COUNT(*) qtd, COALESCE(SUM(total),0) total "
+                    "SELECT forma_pagamento, COUNT(*) qtd, COALESCE(SOMA_DINHEIRO(total),0) total "
                     "FROM vendas WHERE user_id = ? AND status = 'concluida' "
                     "AND criado_em >= ? AND criado_em <= ? GROUP BY forma_pagamento",
                     (user_id, ini, fim),
                 ).fetchall()
             else:
                 vrows = self._conn.execute(
-                    "SELECT forma_pagamento, COUNT(*) qtd, COALESCE(SUM(total),0) total "
+                    "SELECT forma_pagamento, COUNT(*) qtd, COALESCE(SOMA_DINHEIRO(total),0) total "
                     "FROM vendas WHERE user_id = ? AND status = 'concluida' "
                     "AND criado_em >= ? GROUP BY forma_pagamento", (user_id, ini),
                 ).fetchall()
             mrows = self._conn.execute(
-                "SELECT tipo, COALESCE(SUM(valor),0) total, COUNT(*) qtd "
+                "SELECT tipo, COALESCE(SOMA_DINHEIRO(valor),0) total, COUNT(*) qtd "
                 "FROM caixa_movimentos WHERE sessao_id = ? GROUP BY tipo",
                 (sessao["id"],),
             ).fetchall()
 
         por_forma = {r["forma_pagamento"]: {"qtd": r["qtd"], "total": r["total"]} for r in vrows}
-        vendas_total = sum(v["total"] for v in por_forma.values())
+        vendas_total = somar(v["total"] for v in por_forma.values())
         vendas_qtd = sum(v["qtd"] for v in por_forma.values())
         dinheiro = por_forma.get("dinheiro", {}).get("total", 0.0)
         mov = {r["tipo"]: r["total"] for r in mrows}
         suprimentos = mov.get("suprimento", 0.0)
         sangrias = mov.get("sangria", 0.0)
-        esperado = sessao["valor_abertura"] + dinheiro + suprimentos - sangrias
+        esperado = somar([sessao["valor_abertura"], dinheiro, suprimentos]) - decimal(sangrias)
         return {
             "vendas_qtd": vendas_qtd,
-            "vendas_total": round(vendas_total, 2),
+            "vendas_total": moeda(vendas_total),
             "por_forma": por_forma,
-            "vendas_dinheiro": round(dinheiro, 2),
-            "suprimentos": round(suprimentos, 2),
-            "sangrias": round(sangrias, 2),
-            "valor_abertura": round(sessao["valor_abertura"], 2),
-            "dinheiro_esperado": round(esperado, 2),
+            "vendas_dinheiro": moeda(dinheiro),
+            "suprimentos": moeda(suprimentos),
+            "sangrias": moeda(sangrias),
+            "valor_abertura": moeda(sessao["valor_abertura"]),
+            "dinheiro_esperado": moeda(esperado),
         }
 
     def fechar_caixa(self, sessao_id: int, valor_fechamento: float, esperado: float,
@@ -872,7 +887,8 @@ class Database:
             self._conn.execute(
                 "UPDATE caixa_sessoes SET fechado_em = ?, valor_fechamento = ?, "
                 "valor_esperado = ?, diferenca = ?, observacao = ? WHERE id = ?",
-                (agora, valor_fechamento, esperado, round(valor_fechamento - esperado, 2),
+                (agora, moeda(valor_fechamento), moeda(esperado),
+                 moeda(decimal(moeda(valor_fechamento)) - decimal(moeda(esperado))),
                  observacao, sessao_id),
             )
             row = self._conn.execute(
@@ -916,7 +932,7 @@ class Database:
             cursor = self._conn.execute(
                 """INSERT INTO vendas (user_id, cliente_id, total, desconto, forma_pagamento, status, observacao, criado_em, pagamento_detalhe)
                    VALUES (?, ?, ?, ?, ?, 'concluida', ?, ?, ?)""",
-                (user_id, cliente_id, total, desconto, forma_pagamento, observacao, agora, pagamento_detalhe),
+                (user_id, cliente_id, moeda(total), moeda(desconto), forma_pagamento, observacao, agora, pagamento_detalhe),
             )
             venda_id = cursor.lastrowid
             for item in itens:
@@ -924,7 +940,7 @@ class Database:
                     """INSERT INTO itens_venda (venda_id, produto_id, nome_produto, quantidade, preco_unitario, subtotal)
                        VALUES (?, ?, ?, ?, ?, ?)""",
                     (venda_id, item["produto_id"], item["nome_produto"],
-                     item["quantidade"], item["preco_unitario"], item["subtotal"]),
+                     item["quantidade"], item["preco_unitario"], moeda(item["subtotal"])),
                 )
             return self.get_venda(venda_id)
 
@@ -1088,7 +1104,7 @@ class Database:
                 """INSERT INTO contas_receber (user_id, venda_id, cliente_id, valor_total,
                    valor_pendente, data_vencimento, status, observacao, criado_em, atualizado_em)
                    VALUES (?, ?, ?, ?, ?, ?, 'pendente', ?, ?, ?)""",
-                (user_id, venda_id, cliente_id, valor_total, valor_total,
+                (user_id, venda_id, cliente_id, moeda(valor_total), moeda(valor_total),
                  data_vencimento, observacao, agora, agora),
             )
             return self.get_conta_receber(cursor.lastrowid)
@@ -1101,7 +1117,7 @@ class Database:
             ).fetchone()
             if not row:
                 return None
-            novo_pendente = round(row["valor_pendente"] - valor, 2)
+            novo_pendente = moeda(decimal(row["valor_pendente"]) - decimal(moeda(valor)))
             if novo_pendente <= 0:
                 self._conn.execute(
                     "UPDATE contas_receber SET valor_pendente = 0, status = 'pago', atualizado_em = ? WHERE id = ?",
@@ -1141,12 +1157,12 @@ class Database:
             ).fetchone()[0]
 
             vendas_hoje = self._conn.execute(
-                "SELECT COUNT(*), COALESCE(SUM(total), 0) FROM vendas WHERE user_id = ? AND date(criado_em, 'localtime') = ?",
+                "SELECT COUNT(*), COALESCE(SOMA_DINHEIRO(total), 0) FROM vendas WHERE user_id = ? AND date(criado_em, 'localtime') = ?",
                 (user_id, hoje),
             ).fetchone()
 
             total_vendas = self._conn.execute(
-                "SELECT COALESCE(SUM(total), 0) FROM vendas WHERE user_id = ?",
+                "SELECT COALESCE(SOMA_DINHEIRO(total), 0) FROM vendas WHERE user_id = ?",
                 (user_id,),
             ).fetchone()[0]
 
@@ -1162,7 +1178,7 @@ class Database:
 
             # Novos indicadores
             contas_pendentes = self._conn.execute(
-                "SELECT COUNT(*), COALESCE(SUM(valor_pendente), 0) FROM contas_receber "
+                "SELECT COUNT(*), COALESCE(SOMA_DINHEIRO(valor_pendente), 0) FROM contas_receber "
                 "WHERE user_id = ? AND status IN ('pendente', 'parcial')",
                 (user_id,),
             ).fetchone()
@@ -1185,46 +1201,47 @@ class Database:
         YYYY-MM-DD), consistente com o filtro do Dashboard (date(criado_em))."""
         with self._lock:
             resumo = self._conn.execute(
-                "SELECT COUNT(*) qtd, COALESCE(SUM(total),0) total, COALESCE(SUM(desconto),0) desconto "
+                "SELECT COUNT(*) qtd, COALESCE(SOMA_DINHEIRO(total),0) total, COALESCE(SOMA_DINHEIRO(desconto),0) desconto "
                 "FROM vendas WHERE user_id=? AND status='concluida' "
                 "AND date(criado_em, 'localtime') BETWEEN ? AND ?", (user_id, inicio, fim)
             ).fetchone()
             por_forma = self._conn.execute(
-                "SELECT forma_pagamento, COUNT(*) qtd, COALESCE(SUM(total),0) total FROM vendas "
+                "SELECT forma_pagamento, COUNT(*) qtd, COALESCE(SOMA_DINHEIRO(total),0) total FROM vendas "
                 "WHERE user_id=? AND status='concluida' AND date(criado_em, 'localtime') BETWEEN ? AND ? "
                 "GROUP BY forma_pagamento ORDER BY total DESC", (user_id, inicio, fim)
             ).fetchall()
             por_dia = self._conn.execute(
-                "SELECT date(criado_em, 'localtime') dia, COUNT(*) qtd, COALESCE(SUM(total),0) total FROM vendas "
+                "SELECT date(criado_em, 'localtime') dia, COUNT(*) qtd, COALESCE(SOMA_DINHEIRO(total),0) total FROM vendas "
                 "WHERE user_id=? AND status='concluida' AND date(criado_em, 'localtime') BETWEEN ? AND ? "
                 "GROUP BY dia ORDER BY dia", (user_id, inicio, fim)
             ).fetchall()
             top = self._conn.execute(
-                "SELECT i.produto_id, i.nome_produto, SUM(i.quantidade) qtd, SUM(i.subtotal) total "
+                "SELECT i.produto_id, i.nome_produto, SUM(i.quantidade) qtd, SOMA_DINHEIRO(i.subtotal) total "
                 "FROM itens_venda i JOIN vendas v ON v.id=i.venda_id "
                 "WHERE v.user_id=? AND v.status='concluida' AND date(v.criado_em, 'localtime') BETWEEN ? AND ? "
                 "GROUP BY i.produto_id, i.nome_produto ORDER BY total DESC LIMIT 10",
                 (user_id, inicio, fim)
             ).fetchall()
             margem = self._conn.execute(
-                "SELECT COALESCE(SUM((i.preco_unitario - COALESCE(p.preco_custo,0)) * i.quantidade),0) m "
+                "SELECT i.preco_unitario, COALESCE(p.preco_custo,0) preco_custo, i.quantidade "
                 "FROM itens_venda i JOIN vendas v ON v.id=i.venda_id "
                 "LEFT JOIN produtos p ON p.id=i.produto_id "
                 "WHERE v.user_id=? AND v.status='concluida' AND date(v.criado_em, 'localtime') BETWEEN ? AND ?",
                 (user_id, inicio, fim)
-            ).fetchone()["m"]
+            ).fetchall()
         faturamento = resumo["total"]
         qtd = resumo["qtd"]
         desconto = resumo["desconto"]
         # Lucro estimado: margem por item (custo atual) menos os descontos da venda.
-        lucro = margem - desconto
+        lucro = somar((decimal(r["preco_unitario"]) - decimal(r["preco_custo"]))
+                      * decimal(r["quantidade"]) for r in margem) - decimal(desconto)
         return {
             "inicio": inicio, "fim": fim,
-            "faturamento": round(faturamento, 2),
+            "faturamento": moeda(faturamento),
             "qtd_vendas": qtd,
-            "ticket_medio": round(faturamento / qtd, 2) if qtd else 0.0,
-            "desconto_total": round(desconto, 2),
-            "lucro_estimado": round(lucro, 2),
+            "ticket_medio": moeda(decimal(faturamento) / decimal(qtd)) if qtd else 0.0,
+            "desconto_total": moeda(desconto),
+            "lucro_estimado": moeda(lucro),
             "por_forma": [dict(r) for r in por_forma],
             "por_dia": [dict(r) for r in por_dia],
             "top_produtos": [dict(r) for r in top],
@@ -1248,7 +1265,7 @@ class Database:
                 "       COALESCE(NULLIF(p.cst_csosn,''),'102') csosn, "
                 "       COALESCE(NULLIF(p.cst_pis,''),'07') cst_pis, "
                 "       COALESCE(NULLIF(p.cst_cofins,''),'07') cst_cofins, "
-                "       SUM(i.quantidade) qtd, SUM(i.subtotal) total "
+                "       SUM(i.quantidade) qtd, SOMA_DINHEIRO(i.subtotal) total "
                 "FROM itens_venda i JOIN vendas v ON v.id=i.venda_id "
                 "LEFT JOIN produtos p ON p.id=i.produto_id "
                 "WHERE v.user_id=? AND v.status='concluida' "
@@ -1263,13 +1280,13 @@ class Database:
         # CST PIS/COFINS de tributação concentrada (monofásico), ST ou alíquota zero.
         PC_CONCENTRADO = {"04", "05", "06"}
 
-        icms_st = icms_normal = 0.0
-        pc_concentrado = pc_normal = 0.0
-        receita_segregada = receita_normal = 0.0
-        total_geral = 0.0
+        icms_st = icms_normal = decimal(0)
+        pc_concentrado = pc_normal = decimal(0)
+        receita_segregada = receita_normal = decimal(0)
+        total_geral = decimal(0)
         itens: list[dict[str, Any]] = []
         for r in linhas:
-            valor = round(r["total"] or 0.0, 2)
+            valor = decimal(r["total"] or 0)
             total_geral += valor
             csosn = str(r["csosn"]).strip()
             cst_pis = str(r["cst_pis"]).strip().zfill(2)
@@ -1297,24 +1314,24 @@ class Database:
                 "cst_pis": cst_pis,
                 "cst_cofins": cst_cofins,
                 "qtd": round(r["qtd"] or 0.0, 3),
-                "total": valor,
+                "total": moeda(valor),
                 "icms_substituicao": icms_recolhido,
                 "pis_cofins_concentrado": pc_recolhido,
             })
 
         return {
             "inicio": inicio, "fim": fim,
-            "total_geral": round(total_geral, 2),
+            "total_geral": moeda(total_geral),
             "icms": {
-                "substituicao_tributaria": round(icms_st, 2),
-                "tributado_normal": round(icms_normal, 2),
+                "substituicao_tributaria": moeda(icms_st),
+                "tributado_normal": moeda(icms_normal),
             },
             "pis_cofins": {
-                "monofasico_st": round(pc_concentrado, 2),
-                "tributado_normal": round(pc_normal, 2),
+                "monofasico_st": moeda(pc_concentrado),
+                "tributado_normal": moeda(pc_normal),
             },
-            "receita_segregada": round(receita_segregada, 2),
-            "receita_tributada_integral": round(receita_normal, 2),
+            "receita_segregada": moeda(receita_segregada),
+            "receita_tributada_integral": moeda(receita_normal),
             "itens": itens,
         }
 
@@ -1338,6 +1355,7 @@ class Database:
     def reconectar(self) -> None:
         self._conn = sqlite3.connect(str(DB_PATH), check_same_thread=False)
         self._conn.row_factory = sqlite3.Row
+        self._conn.create_aggregate("SOMA_DINHEIRO", 1, _SomaDinheiro)
         with self._conn:
             self._conn.execute("PRAGMA journal_mode = WAL")
 
