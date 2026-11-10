@@ -50,6 +50,10 @@ async def obter(conta_id: int, request: Request):
 @router.post("", status_code=201)
 async def criar(data: ContaReceberCreate, request: Request):
     user_id = _get_user_id(request)
+    if data.cliente_id is not None and not db.get_cliente(data.cliente_id, user_id):
+        raise HTTPException(status_code=400, detail="Cliente não encontrado.")
+    if data.venda_id is not None and not db.get_venda(data.venda_id, user_id):
+        raise HTTPException(status_code=400, detail="Venda não encontrada.")
     agora = _agora()
     conta = db.create_conta_receber(
         user_id, data.cliente_id, data.venda_id,

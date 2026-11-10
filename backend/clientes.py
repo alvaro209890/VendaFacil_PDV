@@ -120,6 +120,8 @@ async def atualizar(cliente_id: int, data: ClienteUpdate, request: Request):
 @router.delete("/{cliente_id}")
 async def remover(cliente_id: int, request: Request):
     user_id = _get_user_id(request)
+    if db.cliente_tem_divida_aberta(cliente_id, user_id):
+        raise HTTPException(status_code=409, detail="Cliente com fiado em aberto não pode ser ocultado.")
     c = db.update_cliente(cliente_id, user_id, ativo=0, atualizado_em=_agora())
     if not c:
         raise HTTPException(status_code=404, detail="Cliente não encontrado.")

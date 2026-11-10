@@ -1338,6 +1338,15 @@ class Database:
             ).fetchall()
         return [dict(r) for r in rows]
 
+    def cliente_tem_divida_aberta(self, cliente_id: int, user_id: int) -> bool:
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT 1 FROM contas_receber WHERE cliente_id = ? AND user_id = ? "
+                "AND status IN ('pendente', 'parcial') LIMIT 1",
+                (cliente_id, user_id),
+            ).fetchone()
+        return row is not None
+
     def get_cliente(self, cliente_id: int, user_id: int | None = None) -> dict[str, Any] | None:
         with self._lock:
             q = "SELECT * FROM clientes WHERE id = ?"
