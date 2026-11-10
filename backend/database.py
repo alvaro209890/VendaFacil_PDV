@@ -29,6 +29,9 @@ class Database:
         self._conn = sqlite3.connect(str(DB_PATH), check_same_thread=False)
         self._conn.row_factory = sqlite3.Row
         self._conn.create_aggregate("SOMA_DINHEIRO", 1, _SomaDinheiro)
+        self._conn.execute("PRAGMA busy_timeout = 5000")
+        self._conn.execute("PRAGMA foreign_keys = ON")
+        self._conn.execute("PRAGMA synchronous = FULL")
         with self._conn:
             self._conn.execute("PRAGMA journal_mode = WAL")
         self._init_schema()
@@ -1356,6 +1359,9 @@ class Database:
         self._conn = sqlite3.connect(str(DB_PATH), check_same_thread=False)
         self._conn.row_factory = sqlite3.Row
         self._conn.create_aggregate("SOMA_DINHEIRO", 1, _SomaDinheiro)
+        self._conn.execute("PRAGMA busy_timeout = 5000")
+        self._conn.execute("PRAGMA foreign_keys = ON")
+        self._conn.execute("PRAGMA synchronous = FULL")
         with self._conn:
             self._conn.execute("PRAGMA journal_mode = WAL")
 
