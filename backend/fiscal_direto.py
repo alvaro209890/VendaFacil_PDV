@@ -17,6 +17,7 @@ from pathlib import Path
 from xml.etree import ElementTree as ET
 
 from database import db
+from dinheiro import arredondar, decimal, moeda, multiplicar, somar
 
 NFE_NS = "http://www.portalfiscal.inf.br/nfe"
 ET.register_namespace("", NFE_NS)
@@ -376,8 +377,8 @@ def _grupo_pis(imposto, prod: dict, base: float) -> float:
     cst = (str(prod.get("cst_pis") or "07")).strip().zfill(2)
     pis = _tag(imposto, "PIS")
     if cst in {"01", "02"}:
-        aliq = float(prod.get("aliquota_pis") or 0)
-        valor = round(base * aliq / 100, 2)
+        aliq = decimal(prod.get("aliquota_pis") or 0)
+        valor = moeda(decimal(base) * aliq / 100)
         g = _tag(pis, "PISAliq")
         _tag(g, "CST", cst)
         _tag(g, "vBC", f"{base:.2f}")
@@ -388,8 +389,8 @@ def _grupo_pis(imposto, prod: dict, base: float) -> float:
         g = _tag(pis, "PISNT")
         _tag(g, "CST", cst)
         return 0.0
-    aliq = float(prod.get("aliquota_pis") or 0)
-    valor = round(base * aliq / 100, 2)
+    aliq = decimal(prod.get("aliquota_pis") or 0)
+    valor = moeda(decimal(base) * aliq / 100)
     g = _tag(pis, "PISOutr")
     _tag(g, "CST", cst)
     _tag(g, "vBC", f"{base:.2f}")
@@ -403,8 +404,8 @@ def _grupo_cofins(imposto, prod: dict, base: float) -> float:
     cst = (str(prod.get("cst_cofins") or "07")).strip().zfill(2)
     cof = _tag(imposto, "COFINS")
     if cst in {"01", "02"}:
-        aliq = float(prod.get("aliquota_cofins") or 0)
-        valor = round(base * aliq / 100, 2)
+        aliq = decimal(prod.get("aliquota_cofins") or 0)
+        valor = moeda(decimal(base) * aliq / 100)
         g = _tag(cof, "COFINSAliq")
         _tag(g, "CST", cst)
         _tag(g, "vBC", f"{base:.2f}")
@@ -415,8 +416,8 @@ def _grupo_cofins(imposto, prod: dict, base: float) -> float:
         g = _tag(cof, "COFINSNT")
         _tag(g, "CST", cst)
         return 0.0
-    aliq = float(prod.get("aliquota_cofins") or 0)
-    valor = round(base * aliq / 100, 2)
+    aliq = decimal(prod.get("aliquota_cofins") or 0)
+    valor = moeda(decimal(base) * aliq / 100)
     g = _tag(cof, "COFINSOutr")
     _tag(g, "CST", cst)
     _tag(g, "vBC", f"{base:.2f}")
@@ -426,23 +427,26 @@ def _grupo_cofins(imposto, prod: dict, base: float) -> float:
 
 
 def _ratear(total: float, valores: list[float]) -> list[float]:
-    """Rateia ``total`` proporcionalmente a ``valores`` (2 casas). A última
-    parcela absorve a sobra de arredondamento para a soma fechar exatamente —
-    é o que faz o desconto do cabeçalho bater com o somatório dos itens (senão
-    a SEFAZ rejeita o total)."""
-    soma = round(sum(valores), 2)
-    if total <= 0 or soma <= 0:
-        return [0.0 for _ in valores]
-    partes: list[float] = []
-    acumulado = 0.0
-    for i, v in enumerate(valores):
-        if i == len(valores) - 1:
-            partes.append(round(total - acumulado, 2))
-        else:
-            parte = round(total * v / soma, 2)
-            acumulado = round(acumulado + parte, 2)
-            partes.append(parte)
-    return partes
+    """Desconto proporcional pelo maior resto, em centavos transitórios.
+
+    O resíduo não é empurrado ao último item: isso podia gerar vDesc negativo
+    ou maior que vProd em cestas com muitos itens baratos. Empates mantêm a
+    ordem dos itens. O schema REAL e a ordem do cupom não mudam.
+    """
+    centavos = int(arredondar(total) * 100)
+    pesos = [int(arredondar(v) * 100) for v in valores]
+    soma = sum(pesos)
+    if centavos < 0 or any(p < 0 for p in pesos) or centavos > soma:
+        raise FiscalDiretoError("Desconto inválido para os valores dos produtos.")
+    if centavos == 0:
+        return [0.0 for _ in pesos]
+    quocientes = [divmod(centavos * p, soma) for p in pesos]
+    partes = [q for q, _ in quocientes]
+    restante = centavos - sum(partes)
+    ordem = sorted(range(len(pesos)), key=lambda i: (-quocientes[i][1], i))
+    for i in ordem[:restante]:
+        partes[i] += 1
+    return [moeda(decimal(p) / 100) for p in partes]
 
 
 def montar_documento(venda: dict, config: dict, modelo: str = "65",
@@ -578,9 +582,9 @@ def montar_documento(venda: dict, config: dict, modelo: str = "65",
             _tag(dest, "IE", ie_dest)
 
     itens = venda.get("itens", [])
-    brutos = [round(float(it["quantidade"]) * float(it["preco_unitario"]), 2) for it in itens]
-    total_prod = round(sum(brutos), 2)
-    desconto = round(float(venda.get("desconto") or 0), 2)
+    brutos = [multiplicar(it["quantidade"], it["preco_unitario"]) for it in itens]
+    total_prod = somar(brutos)
+    desconto = arredondar(venda.get("desconto") or 0)
     if desconto > total_prod:           # nunca descontar mais do que o valor dos produtos
         desconto = total_prod
     descontos = _ratear(desconto, brutos)
@@ -589,11 +593,11 @@ def montar_documento(venda: dict, config: dict, modelo: str = "65",
     # em Configurações Fiscais. Com ele preenchido o documento informa o VALOR
     # aproximado (vTotTrib por item e no total + texto no infCpl), como a lei
     # exige; com 0 a informação fica só referenciada ao IBPT.
-    p_ibpt = float(config.get("ibpt_percentual") or 0)
-    v_trib_total = 0.0
+    p_ibpt = decimal(config.get("ibpt_percentual") or 0)
+    v_trib_total = decimal(0)
 
-    v_pis_total = 0.0
-    v_cofins_total = 0.0
+    v_pis_total = decimal(0)
+    v_cofins_total = decimal(0)
     for idx, (item, bruto, vdesc) in enumerate(zip(itens, brutos, descontos), 1):
         prod = db.get_produto(item["produto_id"]) or {}
         qtd = float(item["quantidade"])
@@ -620,15 +624,15 @@ def montar_documento(venda: dict, config: dict, modelo: str = "65",
             _tag(p, "vDesc", f"{vdesc:.2f}")
         _tag(p, "indTot", "1")
         # Base de PIS/COFINS líquida do desconto rateado (relevante p/ CST tributado).
-        base_trib = round(bruto - vdesc, 2)
+        base_trib = moeda(bruto - decimal(vdesc))
         imp = _tag(det, "imposto")
         if p_ibpt > 0:
-            v_trib_item = round(base_trib * p_ibpt / 100, 2)
-            v_trib_total = round(v_trib_total + v_trib_item, 2)
+            v_trib_item = arredondar(decimal(base_trib) * p_ibpt / 100)
+            v_trib_total += v_trib_item
             _tag(imp, "vTotTrib", f"{v_trib_item:.2f}")
         _grupo_icms_sn(imp, prod)
-        v_pis_total += _grupo_pis(imp, prod, base_trib)
-        v_cofins_total += _grupo_cofins(imp, prod, base_trib)
+        v_pis_total += decimal(_grupo_pis(imp, prod, base_trib))
+        v_cofins_total += decimal(_grupo_cofins(imp, prod, base_trib))
 
     total = _tag(inf, "total")
     icmst = _tag(total, "ICMSTot")
@@ -638,7 +642,7 @@ def montar_documento(venda: dict, config: dict, modelo: str = "65",
     for tag in ("vBC", "vICMS", "vICMSDeson", "vFCPUFDest", "vICMSUFDest",
                 "vICMSUFRemet", "vFCP", "vBCST", "vST", "vFCPST", "vFCPSTRet"):
         _tag(icmst, tag, "0.00")
-    v_nf = round(total_prod - desconto, 2)
+    v_nf = moeda(total_prod - desconto)
     if modelo == "65":
         # Limites nacionais da NFC-e: acima de R$ 200.000,00 a emissão é vedada
         # (use NF-e mod. 55) e acima de R$ 10.000,00 o consumidor precisa estar

@@ -42,6 +42,16 @@ O sistema **funciona sem internet** (offline-first). Só pagamento em cartão e 
 nota fiscal precisam de conexão.
 
 ## 3. Vender (PDV)
+
+**Centavos e produtos fracionados (revisão 10/11/2026):** o subtotal de cada item
+é arredondado comercialmente (`ROUND_HALF_UP`) para duas casas, depois os itens
+são somados. O desconto também é quantizado em centavos antes de ser subtraído.
+Caixa, fiado e relatórios seguem a mesma conta; o preço unitário e a quantidade
+podem conservar casas adicionais. No XML fiscal, o desconto é distribuído por
+maiores restos, sem parcela negativa nem desconto maior que o item. O total da
+nota deve coincidir com o da venda. Isso não substitui o aceite em homologação
+com os dados e o certificado da própria loja.
+
 1. Na tela **PDV / Vender**, busque o produto por **nome** ou **código de
    barras** (pode usar leitor — bipou, entrou no carrinho).
 2. Ajuste a **quantidade** com + / − no carrinho.
