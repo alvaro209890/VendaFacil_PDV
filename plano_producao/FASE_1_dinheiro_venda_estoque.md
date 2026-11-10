@@ -14,9 +14,9 @@ P3 → P7 → P1 → P2. Todas passam por `backend/database.py`, que é **serial
 
 - [x] F1.1 (P3) Criar o módulo único de dinheiro (`backend/dinheiro.py`): `Decimal`, `ROUND_HALF_UP`, funções para converter entrada, multiplicar quantidade × preço, somar e devolver valor de 2 casas. Testes D01 e D02 falhando primeiro — 3fe1aa4 · test_dinheiro.py: 7 passed; revisão deleg_de215589 aprovada; suíte backend 83/painel 7
 - [x] F1.2 (P3) Trocar o cálculo do checkout (`vendas.py`) para o módulo de dinheiro. O schema continua `REAL`; o que muda é a conta — 52bb220 · test_checkout_dinheiro_half_up RED→GREEN; backend84/painel7; revisão deleg_6065d70c aprovada
-- [~] F1.3 (P3) Trocar o cálculo do resumo de caixa, do fiado e dos relatórios para o módulo de dinheiro. Teste D05
-- [ ] F1.4 (P3) Trocar os totais e o rateio de desconto do XML fiscal (`fiscal_direto.py`, `_ratear`) para o módulo de dinheiro. Testes D03 e D04. Os 49 testes fiscais existentes continuam verdes
-- [ ] F1.5 (P7) Definir `busy_timeout`, `foreign_keys=ON` e `synchronous` na abertura da conexão (`database.py:15` e `:1339`). Conferir que `foreign_keys` não quebra dado existente (rodar contra uma cópia de banco com dados)
+- [x] F1.3 (P3) Trocar o cálculo do resumo de caixa, do fiado e dos relatórios para o módulo de dinheiro. Teste D05 — d798762 · test_dinheiro_db.py: 8 testes; suíte92/7; revisão deleg_5f3d7323 aprovada
+- [x] F1.4 (P3) Trocar os totais e o rateio de desconto do XML fiscal (`fiscal_direto.py`, `_ratear`) para o módulo de dinheiro. Testes D03 e D04. Os 49 testes fiscais existentes continuam verdes — 2a9b689 · test_dinheiro_fiscal.py:9 verdes; suíte101/7 + fiscais49; revisão deleg_4caf6711 aprovada
+- [~] F1.5 (P7) Definir `busy_timeout`, `foreign_keys=ON` e `synchronous` na abertura da conexão (`database.py:15` e `:1339`). Conferir que `foreign_keys` não quebra dado existente (rodar contra uma cópia de banco com dados)
 - [ ] F1.6 (P1) Criar em `database.py` a função única de checkout: valida estoque, baixa, grava venda, itens, movimentações e conta a receber **numa transação** (`BEGIN IMMEDIATE`). `vendas.py` passa a chamá-la. Testes V01, V02, V03
 - [ ] F1.7 (P1) Concorrência e limites: testes V04, V05, V12, V13
 - [ ] F1.8 (P1) Queda no meio: teste V06 com subprocesso morto durante o checkout

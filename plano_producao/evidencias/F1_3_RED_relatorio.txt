@@ -1,0 +1,44 @@
+FF                                                                       [100%]
+================================== FAILURES ===================================
+_______________ test_relatorio_ticket_e_grupos_exatos[totais0] ________________
+backend\tests\test_dinheiro_db.py:79: in test_relatorio_ticket_e_grupos_exatos
+    assert resultado['ticket_medio'] == float((esperado / len(totais)).quantize(Decimal('.01'), rounding=ROUND_HALF_UP))
+E   AssertionError: assert 0.04 == 0.05
+E    +  where 0.05 = float(Decimal('0.05'))
+E    +    where Decimal('0.05') = <built-in method quantize of decimal.Decimal object at 0x000001892D63E020>(Decimal('0.01'), rounding='ROUND_HALF_UP')
+E    +      where <built-in method quantize of decimal.Decimal object at 0x000001892D63E020> = (Decimal('0.09') / 2).quantize
+E    +        where 2 = len([0.05, 0.04])
+E    +      and   Decimal('0.01') = Decimal('.01')
+_______________ test_relatorio_ticket_e_grupos_exatos[totais1] ________________
+backend\tests\test_dinheiro_db.py:77: in test_relatorio_ticket_e_grupos_exatos
+    assert resultado['por_forma'][0]['total'] == float(esperado)
+E   AssertionError: assert 0.30000000000000004 == 0.3
+E    +  where 0.3 = float(Decimal('0.3'))
+============================== warnings summary ===============================
+backend\.venv\Lib\site-packages\fastapi\testclient.py:1
+  C:\GIS\VendaFacil_PDV\backend\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+backend\main.py:92
+  C:\GIS\VendaFacil_PDV\backend\main.py:92: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("startup")
+
+backend\.venv\Lib\site-packages\fastapi\applications.py:4723
+  C:\GIS\VendaFacil_PDV\backend\.venv\Lib\site-packages\fastapi\applications.py:4723: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED backend/tests/test_dinheiro_db.py::test_relatorio_ticket_e_grupos_exatos[totais0]
+FAILED backend/tests/test_dinheiro_db.py::test_relatorio_ticket_e_grupos_exatos[totais1]
+2 failed, 5 deselected, 3 warnings in 0.48s

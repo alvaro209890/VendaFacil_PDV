@@ -36,10 +36,10 @@ Ao fechar: preencha **Onde** (`arquivo::função`) e **Commit**. Teste novo que 
 | ID | O que prova | Status | Onde | Commit |
 |---|---|---|---|---|
 | D01 | Σ itens − desconto = total, com casos quebrados (0,335 kg × 12,99 · 3 × 3,33 · desconto 0,01) | ✅ | `backend/tests/test_dinheiro.py::test_d01_soma_subtotais_e_desconto` e `test_checkout_dinheiro_half_up` | 52bb220 |
-| D02 | Arredondamento de meio centavo é `ROUND_HALF_UP` (ex.: 2,675 → 2,68) em todo cálculo | 🟥 RED comprovado; GREEN local aguardando revisão/commit | `backend/tests/test_dinheiro.py::test_d02_meio_centavo_comercial` | — |
-| D03 | Total da venda = Σ `vProd` − `vDesc` = `vNF` = Σ `vPag` no XML da NFC-e | ⬜ | | |
-| D04 | Rateio de desconto fecha no centavo com 3, 7 e 13 itens | ⬜ | | |
-| D05 | Resumo de caixa com 200 vendas de centavos quebrados bate com a soma exata | ⬜ | | |
+| D02 | Arredondamento de meio centavo é `ROUND_HALF_UP` (ex.: 2,675 → 2,68) em todo cálculo | ✅ | `backend/tests/test_dinheiro.py + test_dinheiro_db.py + test_dinheiro_fiscal.py (HALF_UP)` | 2a9b689 |
+| D03 | Total da venda = Σ `vProd` − `vDesc` = `vNF` = Σ `vPag` no XML da NFC-e | ✅ | `backend/tests/test_dinheiro_fiscal.py::test_d03_xml_bate_com_checkout_no_meio_centavo` | 2a9b689 |
+| D04 | Rateio de desconto fecha no centavo com 3, 7 e 13 itens | ✅ | `backend/tests/test_dinheiro_fiscal.py::test_d04_rateio_sem_residuo_negativo` | 2a9b689 |
+| D05 | Resumo de caixa com 200 vendas de centavos quebrados bate com a soma exata | ✅ | `backend/tests/test_dinheiro_db.py::test_d05_resumo_200_vendas_exato` | d798762 |
 
 ## V — Venda, estoque e cancelamento (Fase 1)
 
@@ -58,6 +58,8 @@ Ao fechar: preencha **Onde** (`arquivo::função`) e **Commit**. Teste novo que 
 | V11 | Venda cancelada sai do resumo do caixa, do dashboard e dos relatórios | ⬜ | | |
 | V12 | Produto inativo, inexistente, quantidade 0 ou negativa → 400 | ⬜ | | |
 | V13 | Venda de um usuário não é visível nem cancelável por outro | ⬜ | | |
+
+| V15 | PRAGMAs explícitos init/reconexão, FK recusa referência inexistente, cópia legada válida preserva dados | 🟥 RED guardado; GREEN em revisão | `backend/tests/test_transacoes.py::test_p7_pragmas_iniciais_e_reconexao` e outros2 testes P7 | — |
 
 ## C — Caixa e fiado (Fase 2)
 
