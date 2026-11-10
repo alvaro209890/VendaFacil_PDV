@@ -2,6 +2,7 @@ import os
 import hashlib
 import hmac
 import secrets
+import time
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, HTTPException, Request
@@ -37,6 +38,29 @@ def _resolver_jwt_secret() -> bytes:
 
 JWT_SECRET = _resolver_jwt_secret()
 TOKEN_EXPIRE_HOURS = 720  # 30 dias
+_relogio = time.time
+_falhas_login: dict[str, tuple[int, float]] = {}
+_ESPERAS_LOGIN = (30, 60, 120, 300, 900)
+
+
+def _espera_login(usuario: str) -> int:
+    _, until = _falhas_login.get(usuario, (0, 0.0))
+    falta = until - _relogio()
+    return max(1, int(falta)) if falta > 0 else 0
+
+
+def _anota_falha_login(usuario: str) -> None:
+    count, until = _falhas_login.get(usuario, (0, 0.0))
+    agora = _relogio()
+    if until > agora:
+        return
+    count += 1
+    espera = _ESPERAS_LOGIN[min(count - 5, len(_ESPERAS_LOGIN) - 1)] if count >= 5 else 0
+    _falhas_login[usuario] = (count, agora + espera)
+
+
+def _limpa_falha_login(usuario: str) -> None:
+    _falhas_login.pop(usuario, None)
 
 # ── Models ──
 
@@ -141,9 +165,14 @@ async def login(data: LoginRequest) -> dict:
         except ValueError as exc:
             raise HTTPException(status_code=401, detail=str(exc))
     else:
+        espera = _espera_login(usuario)
+        if espera:
+            raise HTTPException(status_code=429, detail=f"Muitas tentativas. Espere {espera} segundos.")
         user = db.get_user_by_usuario(usuario)
         if not user or not _verificar_senha(data.senha, user["senha_hash"]):
+            _anota_falha_login(usuario)
             raise HTTPException(status_code=401, detail="Usuário ou senha incorretos.")
+        _limpa_falha_login(usuario)
 
     db.update_last_login(usuario, _agora())
     token = _gerar_jwt(_token_user(user))
