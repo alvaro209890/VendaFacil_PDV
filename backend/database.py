@@ -719,6 +719,10 @@ class Database:
             ).fetchall()
             return [dict(r) for r in rows]
 
+    def tem_usuario(self) -> bool:
+        with self._lock:
+            return self._conn.execute("SELECT 1 FROM users LIMIT 1").fetchone() is not None
+
     def create_user(self, usuario: str, nome: str, senha_hash: str, criado_em: str) -> dict[str, Any] | None:
         login = usuario.strip().lower()
         with self._lock, self._conn:

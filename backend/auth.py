@@ -179,10 +179,15 @@ async def login(data: LoginRequest) -> dict:
     return {"token": token, "user": _user_response(user)}
 
 @router.post("/registro")
-async def registro(data: RegistroRequest) -> dict:
+async def registro(data: RegistroRequest, request: Request) -> dict:
     import conta as conta_mod
     if conta_mod.licenca_obrigatoria():
         raise HTTPException(status_code=403, detail="Registro local desativado. Use o usuário criado no painel.")
+    if db.tem_usuario():
+        header = request.headers.get("Authorization", "")
+        token = header[7:] if header.startswith("Bearer ") else ""
+        if not token or not _verificar_jwt(token):
+            raise HTTPException(status_code=401, detail="Registro fechado. Entre com um usuário existente.")
     lic = conta_mod.status()
     if lic.get("bloqueado"):
         raise HTTPException(status_code=403, detail=lic.get("motivo", "Sistema não ativado."))

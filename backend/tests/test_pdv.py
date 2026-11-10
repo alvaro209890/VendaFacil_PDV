@@ -127,8 +127,8 @@ def test_relatorio_vendas(client, auth):
     assert d["faturamento"] > 0 and d["qtd_vendas"] > 0
 
 
-def test_relatorio_fiscal_segrega_st_monofasico_e_normal(client):
-    r_auth = client.post("/api/auth/registro", json={
+def test_relatorio_fiscal_segrega_st_monofasico_e_normal(client, auth):
+    r_auth = client.post("/api/auth/registro", headers=auth, json={
         "usuario": "fiscal-segregado@example.com", "nome": "Fiscal", "senha": "Loja@2026xy",
     })
     assert r_auth.status_code == 200, r_auth.text
