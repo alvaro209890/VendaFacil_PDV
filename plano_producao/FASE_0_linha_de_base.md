@@ -1,6 +1,6 @@
 # Fase 0 — Linha de base e auditoria
 
-**Status:** 🟨 em andamento · **Depende de:** nada · **Toca em código:** não (só leitura, venv e esta pasta)
+**Status:** ✅ concluída · **Depende de:** nada · **Toca em código:** não (só leitura, venv e esta pasta)
 
 ## Objetivo
 
@@ -16,7 +16,7 @@ Confirmar o ponto de partida com números medidos e transformar as pistas em fil
 - [x] F0.6 Ler: `CLAUDE.md`, `docs/CHECKLIST_COMERCIALIZACAO.md`, `docs/TESTES.md`, `docs/TESTE_WINDOWS.md`, `docs/TESTE_FISCAL_WINDOWS.md`, `docs/LEGISLACAO_FISCAL_MT.md`, `docs/VINCULO_PAGAMENTO_MT.md`, `docs/CONTINGENCIA_OFFLINE.md`, `docs/BACKUP.md`, `docs/CAIXA.md`, `docs/LICENCA.md` — 6da6899 · leitura integral dos 11 documentos; divergências de fiscal e CI serão corrigidas nas fases previstas
 - [x] F0.7 Auditoria em paralelo: 1 subagente por módulo do backend (`database.py` dividido em 3 faixas de linhas) + 1 para `src/` + 1 para `painel/`. Retorno de cada um: `arquivo:linha · sintoma · como reproduzir · gravidade` — 6da6899 · seis auditorias deleg_4ebfcb98 + revisão em evidencias/F0_AUDITORIA.md; P23–P42 distribuídas
 - [x] F0.8 Consolidar: cada pista de `02_PISTAS.md` fica confirmada (segue aberta) ou descartada com prova (➖); achado novo vira `P23`… com teste novo em `03_TESTES.md` e tarefa nova na fase certa — 6da6899 · seis auditorias deleg_4ebfcb98 + revisão em evidencias/F0_AUDITORIA.md; P23–P42 distribuídas
-- [~] F0.9 Commitar a pasta `plano_producao/` (`docs: plano de produção e linha de base`) e atualizar o painel
+- [x] F0.9 Commitar a pasta `plano_producao/` (`docs: plano de produção e linha de base`) e atualizar o painel — 52c6e1e · git commit; backend 76 passed, painel 7 passed
 
 ## Portão de saída
 

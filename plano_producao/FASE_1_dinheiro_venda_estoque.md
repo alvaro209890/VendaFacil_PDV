@@ -1,6 +1,6 @@
 # Fase 1 — Dinheiro, venda, estoque e cancelamento
 
-**Status:** ⬜ não iniciada · **Depende de:** Fase 0 · **Pistas:** P1, P2, P3, P7, P11 · **Testes:** D01–D05, V01–V13
+**Status:** 🟨 em andamento · **Depende de:** Fase 0 · **Pistas:** P1, P2, P3, P7, P11 · **Testes:** D01–D05, V01–V13
 
 ## Objetivo
 
@@ -12,7 +12,7 @@ P3 → P7 → P1 → P2. Todas passam por `backend/database.py`, que é **serial
 
 ## Tarefas
 
-- [ ] F1.1 (P3) Criar o módulo único de dinheiro (`backend/dinheiro.py`): `Decimal`, `ROUND_HALF_UP`, funções para converter entrada, multiplicar quantidade × preço, somar e devolver valor de 2 casas. Testes D01 e D02 falhando primeiro
+- [~] F1.1 (P3) Criar o módulo único de dinheiro (`backend/dinheiro.py`): `Decimal`, `ROUND_HALF_UP`, funções para converter entrada, multiplicar quantidade × preço, somar e devolver valor de 2 casas. Testes D01 e D02 falhando primeiro
 - [ ] F1.2 (P3) Trocar o cálculo do checkout (`vendas.py`) para o módulo de dinheiro. O schema continua `REAL`; o que muda é a conta
 - [ ] F1.3 (P3) Trocar o cálculo do resumo de caixa, do fiado e dos relatórios para o módulo de dinheiro. Teste D05
 - [ ] F1.4 (P3) Trocar os totais e o rateio de desconto do XML fiscal (`fiscal_direto.py`, `_ratear`) para o módulo de dinheiro. Testes D03 e D04. Os 49 testes fiscais existentes continuam verdes
