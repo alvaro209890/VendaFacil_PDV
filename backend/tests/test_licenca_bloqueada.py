@@ -20,7 +20,7 @@ def test_l03_tela_nao_prende_caixa_backup_e_xml():
 
 def test_c07_api_nao_recusa_caixa_leitura_backup_xml(client, auth, monkeypatch):
     monkeypatch.setattr(conta, 'PAINEL_URL', 'http://painel.exemplo')
-    monkeypatch.setattr(conta, 'status', lambda: {
+    monkeypatch.setattr(conta, 'status', lambda **_k: {
         'obrigatoria': True, 'ativado': True, 'bloqueado': True,
         'motivo': 'Licença expirada. Renove para continuar.',
     })

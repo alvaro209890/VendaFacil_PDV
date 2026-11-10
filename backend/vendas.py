@@ -50,7 +50,7 @@ class CheckoutRequest(BaseModel):
 async def checkout(data: CheckoutRequest, request: Request):
     """Finaliza uma venda: baixa estoque e registra no banco."""
     user_id = _get_user_id(request)
-    licenca = conta_mod.status()
+    licenca = conta_mod.status(online=False)
     if licenca.get("bloqueado"):
         raise HTTPException(status_code=403, detail=licenca.get("motivo") or "Licença suspensa.")
 

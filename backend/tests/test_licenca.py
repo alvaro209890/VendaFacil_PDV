@@ -79,3 +79,26 @@ def test_l02_painel_fora_vende_na_carencia(client, auth, monkeypatch):
     assert login.status_code == 200, login.text
     venda = _vender(client, {'Authorization': 'Bearer ' + login.json()['token']})
     assert venda.status_code == 201, venda.text
+
+
+def test_l04_painel_fora_nao_atrasa_checkout(client, auth, monkeypatch):
+    import time
+    import urllib.error
+    from pathlib import Path
+    vendas = (Path(__file__).resolve().parents[1] / 'vendas.py').read_text(encoding='utf-8')
+    assert 'sync_client' not in vendas
+    assert 'enviar_pendentes' not in vendas
+    monkeypatch.setattr(conta, 'PAINEL_URL', 'http://painel.exemplo')
+    monkeypatch.setattr(conta, '_load', lambda: {
+        'ativo': True, 'licenca_expira_em': None, 'validado_em': _iso(20),
+        'nome_loja': 'Loja', 'token': 't', 'login': 'teste',
+    })
+    def rede_lenta(*_a, **_k):
+        time.sleep(2)
+        raise urllib.error.URLError('painel fora')
+    monkeypatch.setattr(conta, '_http', rede_lenta)
+    inicio = time.perf_counter()
+    venda = _vender(client, auth)
+    gasto = time.perf_counter() - inicio
+    assert venda.status_code == 201, venda.text
+    assert gasto < 1, f'checkout esperou a rede: {gasto:.2f}s'

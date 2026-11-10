@@ -155,7 +155,7 @@ def revalidar() -> dict | None:
     return estado
 
 
-def status() -> dict:
+def status(online: bool = True) -> dict:
     """Estado da licença para a UI/login decidir liberar ou bloquear."""
     if not licenca_obrigatoria():
         return {"obrigatoria": False, "ativado": True, "bloqueado": False, "motivo": "Licença desativada (modo local)."}
@@ -167,7 +167,7 @@ def status() -> dict:
     # Revalida online de forma silenciosa SÓ quando necessário (cache vencido/
     # bloqueado, ou passou o intervalo). Caso contrário usa o cache — login
     # instantâneo e sem depender de rede.
-    if _precisa_revalidar(estado):
+    if online and _precisa_revalidar(estado):
         estado = revalidar() or estado
 
     motivo = "ok"
