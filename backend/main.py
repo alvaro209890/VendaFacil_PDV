@@ -6,7 +6,7 @@ import time
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 
 from paths import resource_path
 from auth import router as auth_router, _verificar_jwt
@@ -76,6 +76,25 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+_ROTAS_PUBLICAS = {
+    ("POST", "/api/auth/login"),
+    ("POST", "/api/auth/registro"),
+    ("GET", "/api/ativacao/status"),
+    ("POST", "/api/ativacao"),
+    ("POST", "/api/heartbeat"),
+}
+
+
+@app.middleware("http")
+async def exige_token_api(request: Request, call_next):
+    path = request.url.path
+    if request.method != "OPTIONS" and path.startswith("/api/") and (request.method, path) not in _ROTAS_PUBLICAS:
+        header = request.headers.get("Authorization", "")
+        token = header[7:] if header.startswith("Bearer ") else ""
+        if not token or not _verificar_jwt(token):
+            return JSONResponse({"detail": "Token não informado."}, status_code=401)
+    return await call_next(request)
 
 
 @app.middleware("http")
