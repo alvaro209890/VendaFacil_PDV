@@ -423,6 +423,15 @@ export function removerCliente(id: number): Promise<{ ok: boolean }> {
 
 // ── Contas a Receber ──
 
+export interface PagamentoFiado {
+  id: number;
+  user_id: number;
+  conta_id: number;
+  valor: number;
+  forma: string;
+  criado_em: string;
+}
+
 export interface ContaReceber {
   id: number;
   user_id: number;
@@ -435,6 +444,7 @@ export interface ContaReceber {
   status: string;
   observacao: string;
   criado_em: string;
+  pagamentos?: PagamentoFiado[];
 }
 
 export interface ContaReceberInput {

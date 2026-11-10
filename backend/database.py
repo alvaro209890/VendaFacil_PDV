@@ -1320,7 +1320,17 @@ class Database:
                 params.append(status)
             q += " ORDER BY cr.data_vencimento IS NULL, cr.data_vencimento, cr.criado_em DESC"
             rows = self._conn.execute(q, params).fetchall()
-        return [dict(r) for r in rows]
+            ids = [r["id"] for r in rows]
+            por_conta: dict[int, list[dict[str, Any]]] = {}
+            if ids:
+                marcas = ",".join("?" for _ in ids)
+                for pagamento in self._conn.execute(
+                    "SELECT id, user_id, conta_id, valor, forma, criado_em "
+                    f"FROM pagamentos_fiado WHERE conta_id IN ({marcas}) ORDER BY id",
+                    ids,
+                ):
+                    por_conta.setdefault(pagamento["conta_id"], []).append(dict(pagamento))
+        return [{**dict(r), "pagamentos": por_conta.get(r["id"], [])} for r in rows]
 
     def get_conta_receber(self, conta_id: int, user_id: int | None = None) -> dict[str, Any] | None:
         with self._lock:

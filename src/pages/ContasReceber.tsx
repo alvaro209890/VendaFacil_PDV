@@ -87,8 +87,12 @@ export default function ContasReceber() {
     const valorStr = prompt(`Valor a receber (R$ ${conta.valor_pendente.toFixed(2)}):`, conta.valor_pendente.toFixed(2));
     if (!valorStr) return;
     const valor = parseFloat(valorStr);
-    if (valor <= 0 || valor > conta.valor_pendente) {
-      setMsg({ tipo: "erro", texto: "Valor inválido." });
+    if (!(valor > 0)) {
+      setMsg({ tipo: "erro", texto: "Valor deve ser maior que zero." });
+      return;
+    }
+    if (valor > conta.valor_pendente) {
+      setMsg({ tipo: "erro", texto: "Pagamento maior que o pendente." });
       return;
     }
     try {
@@ -207,6 +211,16 @@ export default function ContasReceber() {
                   </div>
                 )}
               </div>
+              {c.pagamentos && c.pagamentos.length > 0 && (
+                <div className="mt-3 border-t border-slate-800 pt-2">
+                  <p className="text-2xs text-slate-500 mb-1">Histórico</p>
+                  {c.pagamentos.map((p) => (
+                    <p key={p.id} className="text-xs text-slate-400">
+                      {p.criado_em} · {p.forma} · R$ {p.valor.toFixed(2)}
+                    </p>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
         </div>
