@@ -59,8 +59,22 @@ def _anota_falha_login(usuario: str) -> None:
     _falhas_login[usuario] = (count, agora + espera)
 
 
+_SENHAS_FRACAS = {
+    "senha", "1234", "12345", "123456", "12345678", "123456789",
+    "password", "qwerty", "admin", "admin123", "vendafacil", "00000000",
+}
+
+
 def _limpa_falha_login(usuario: str) -> None:
     _falhas_login.pop(usuario, None)
+
+
+def _senha_fraca(senha: str, usuario: str) -> str | None:
+    if len(senha) < 8:
+        return "Senha precisa de pelo menos 8 caracteres."
+    if senha.lower() in _SENHAS_FRACAS or senha.lower() == usuario.lower():
+        return "Senha muito fraca."
+    return None
 
 # ── Models ──
 
@@ -73,7 +87,7 @@ class RegistroRequest(BaseModel):
     usuario: str | None = Field(default=None, min_length=3, max_length=120)
     email: str | None = Field(default=None, min_length=3, max_length=120)
     nome: str = Field(min_length=1, max_length=80)
-    senha: str = Field(min_length=4, max_length=128)
+    senha: str = Field(min_length=1, max_length=128)
 
 # ── Helpers ──
 
@@ -193,8 +207,9 @@ async def registro(data: RegistroRequest, request: Request) -> dict:
         raise HTTPException(status_code=403, detail=lic.get("motivo", "Sistema não ativado."))
 
     usuario = _usuario(data)
-    if data.senha.lower() in ("senha", "1234", "12345", "123456", "password", usuario):
-        raise HTTPException(status_code=400, detail="Senha muito fraca.")
+    motivo = _senha_fraca(data.senha, usuario)
+    if motivo:
+        raise HTTPException(status_code=400, detail=motivo)
 
     hash_senha = _hash_senha(data.senha)
     user = db.create_user(usuario, data.nome, hash_senha, _agora())
