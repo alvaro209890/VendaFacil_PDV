@@ -192,6 +192,13 @@ class Database:
         pfiado = {r["name"] for r in self._conn.execute("PRAGMA table_info(pagamentos_fiado)")}
         if "sessao_id" not in pfiado:
             self._conn.execute("ALTER TABLE pagamentos_fiado ADD COLUMN sessao_id INTEGER")
+        self._conn.execute(
+            "CREATE TABLE IF NOT EXISTS notas_entrada ("
+            "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+            "user_id INTEGER NOT NULL, chave TEXT NOT NULL, "
+            "documento TEXT NOT NULL DEFAULT '', criado_em TEXT NOT NULL, "
+            "UNIQUE(user_id, chave))"
+        )
 
         # Campos fiscais nos produtos (NFC-e)
         pcols = {r["name"] for r in self._conn.execute("PRAGMA table_info(produtos)")}
@@ -876,6 +883,21 @@ class Database:
                 "VALUES (?,?,?,?,?,?,?,?,?)",
                 (user_id, produto_id, tipo, quantidade, custo_unitario, origem,
                  documento, observacao, agora),
+            )
+
+    def nota_entrada_importada(self, user_id: int, chave: str) -> bool:
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT 1 FROM notas_entrada WHERE user_id = ? AND chave = ?",
+                (user_id, chave),
+            ).fetchone()
+        return row is not None
+
+    def registrar_nota_entrada(self, user_id: int, chave: str, documento: str, agora: str) -> None:
+        with self._lock, self._conn:
+            self._conn.execute(
+                "INSERT INTO notas_entrada (user_id, chave, documento, criado_em) VALUES (?, ?, ?, ?)",
+                (user_id, chave, documento, agora),
             )
 
     def list_movimentacoes(self, user_id: int, produto_id: int | None = None,

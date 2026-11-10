@@ -94,6 +94,7 @@ class ItemImportar(BaseModel):
 
 class ConfirmarImportacao(BaseModel):
     documento: str = Field(default="", max_length=60)   # nº/chave da NF-e
+    chave: str = Field(default="", max_length=44)
     itens: list[ItemImportar]
 
 
@@ -215,7 +216,8 @@ async def importar_xml_preview(request: Request):
             "acao": "atualizar" if match else "criar",
         })
     return {"emitente": nfe["emitente"], "numero": nfe["numero"],
-            "chave": nfe["chave"], "itens": itens}
+            "chave": nfe["chave"], "ja_importada": bool(nfe["chave"]) and db.nota_entrada_importada(user_id, nfe["chave"]),
+            "itens": itens}
 
 
 @router.post("/importar-xml/confirmar")
@@ -224,6 +226,11 @@ async def importar_xml_confirmar(data: ConfirmarImportacao, request: Request):
     user_id = _get_user_id(request)
     agora = _agora()
     doc = data.documento or ""
+    chave = (data.chave or "").strip()
+    if chave and (len(chave) != 44 or not chave.isdigit()):
+        raise HTTPException(status_code=400, detail="Chave da NF-e inválida.")
+    if chave and db.nota_entrada_importada(user_id, chave):
+        raise HTTPException(status_code=409, detail="NF-e já importada.")
     criados = atualizados = 0
     for it in data.itens:
         if it.produto_id:
@@ -263,6 +270,8 @@ async def importar_xml_confirmar(data: ConfirmarImportacao, request: Request):
                     observacao=f"{it.nome} ({it.quantidade_xml or it.quantidade} {it.unidade_compra or it.unidade})",
                 )
                 criados += 1
+    if chave:
+        db.registrar_nota_entrada(user_id, chave, doc, agora)
     return {"criados": criados, "atualizados": atualizados,
             "total": criados + atualizados}
 
