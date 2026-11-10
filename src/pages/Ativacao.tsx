@@ -36,6 +36,17 @@ export default function GateAtivacao({ children }: { children: React.ReactNode }
     );
   }
 
+  if (status && status.ativado && status.bloqueado) {
+    return (
+      <>
+        <p className="bg-amber-500/10 text-amber-200 text-sm p-3">
+          Licença suspensa: {status.motivo}. Dá para fechar o caixa, consultar os dados e exportar backup ou XML. Venda nova fica bloqueada.
+        </p>
+        {children}
+      </>
+    );
+  }
+
   if (status && (!status.obrigatoria || !status.ativado || (status.ativado && !status.bloqueado))) {
     return <>{children}</>;
   }

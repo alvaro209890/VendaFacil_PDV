@@ -9,6 +9,7 @@ from auth import _agora
 from database import db, EstoqueConcorrente
 from dinheiro import decimal, moeda, multiplicar, somar
 from produtos import _get_user_id
+import conta as conta_mod
 
 router = APIRouter()
 
@@ -49,6 +50,9 @@ class CheckoutRequest(BaseModel):
 async def checkout(data: CheckoutRequest, request: Request):
     """Finaliza uma venda: baixa estoque e registra no banco."""
     user_id = _get_user_id(request)
+    licenca = conta_mod.status()
+    if licenca.get("bloqueado"):
+        raise HTTPException(status_code=403, detail=licenca.get("motivo") or "Licença suspensa.")
 
     if not data.itens:
         raise HTTPException(status_code=400, detail="Adicione pelo menos um item à venda.")

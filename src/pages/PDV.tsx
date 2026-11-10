@@ -17,7 +17,7 @@ import {
 import {
   listarProdutos, checkout, getDashboard, gerarPixQrCode, listarClientes,
   getConfigMaquininha, criarCobrancaMaquininha, consultarCobrancaMaquininha,
-  cancelarCobrancaMaquininha, getConfigFiscal, caixaAtual,
+  cancelarCobrancaMaquininha, getConfigFiscal, caixaAtual, getAtivacaoStatus,
 } from "../lib/api";
 import type { Produto, DashboardData, PixQrCodeResponse, Cliente, PagamentoEletronico } from "../lib/api";
 import { imprimirRecibo, getLarguraRecibo, setLarguraRecibo } from "../lib/recibo";
@@ -61,6 +61,7 @@ export default function PDV() {
   const [msg, setMsg] = useState<{ tipo: "ok" | "erro"; texto: string } | null>(null);
   const [dash, setDash] = useState<DashboardData | null>(null);
   const [caixaAberto, setCaixaAberto] = useState<boolean | null>(null);
+  const [licencaBloqueada, setLicencaBloqueada] = useState(false);
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [clienteFiado, setClienteFiado] = useState<number | "">("");
   const [emitirNota, setEmitirNota] = useState(false);
@@ -116,6 +117,12 @@ export default function PDV() {
       setCaixaAberto(caixa.aberto);
     } catch {
       setCaixaAberto(null);
+    }
+    try {
+      const licenca = await getAtivacaoStatus();
+      setLicencaBloqueada(licenca.ativado && licenca.bloqueado);
+    } catch {
+      setLicencaBloqueada(false);
     }
     // Cabeçalho do recibo (usa os dados fiscais da loja, se preenchidos).
     try {
@@ -281,6 +288,10 @@ export default function PDV() {
     );
 
   async function finalizarVenda() {
+    if (licencaBloqueada) {
+      setMsg({ tipo: "erro", texto: "Licença suspensa. Dá para fechar o caixa e exportar, mas não vender." });
+      return;
+    }
     if (carrinho.length === 0) return;
     if (!dinheiroOk) {
       setMsg({ tipo: "erro", texto: `Informe o dinheiro recebido. Ainda faltam ${moeda(faltaDinheiro)}.` });
@@ -759,6 +770,11 @@ export default function PDV() {
                 </select>
               </div>
 
+              {licencaBloqueada && (
+                <p className="mb-3 rounded border border-amber-400/40 bg-amber-400/10 p-2 text-xs text-amber-200">
+                  Licença suspensa. Dá para fechar o caixa e exportar, mas não vender.
+                </p>
+              )}
               {caixaAberto === false && (
                 <p className="mb-3 rounded border border-amber-400/40 bg-amber-400/10 p-2 text-xs text-amber-200">
                   Caixa fechado. A venda será registrada, mas não entra no fechamento até você abrir o caixa.
@@ -769,9 +785,9 @@ export default function PDV() {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={finalizarVenda}
-                disabled={loading || pixLoading || !!maqModal || carrinho.length === 0 || !dinheiroOk}
+                disabled={loading || pixLoading || !!maqModal || carrinho.length === 0 || !dinheiroOk || licencaBloqueada}
                 className={`w-full py-4 rounded-2xl text-white font-black text-lg tracking-tight shadow-xl transition-all flex items-center justify-center gap-3 ${
-                  loading || pixLoading || !!maqModal || carrinho.length === 0 || !dinheiroOk
+                  loading || pixLoading || !!maqModal || carrinho.length === 0 || !dinheiroOk || licencaBloqueada
                     ? "bg-slate-800 text-slate-500 cursor-not-allowed"
                     : "bg-gradient-to-r from-emerald-600 to-teal-600 shadow-emerald-900/20"
                 }`}
