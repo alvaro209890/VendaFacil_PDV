@@ -203,3 +203,58 @@ def test_v13_venda_nao_visivel_a_outro_usuario(checkout_local):
     alheio = {'Authorization': 'Bearer ' + _gerar_jwt(_token_user(outro))}
     assert api.get(f"/api/vendas/{venda['id']}", headers=alheio).status_code == 404
     assert api.get('/api/vendas', headers=alheio).json()['vendas'] == []
+
+
+def test_v06_processo_morto_no_meio_do_checkout(checkout_local, tmp_path):
+    import os
+    from pathlib import Path
+    import queue
+    import subprocess
+    import sys
+    import threading
+    _, local, _, produto, _, _ = checkout_local
+    raiz = Path(__file__).resolve().parents[2]
+    origem_legada = ''
+    if os.environ.get('VENDAFACIL_TEST_CHECKOUT_LEGADO') == '1':
+        # Controle RED executa a rota real anterior à correção, extraída do git.
+        pasta = tmp_path / 'rota_legada'
+        pasta.mkdir()
+        codigo = subprocess.check_output(['git', 'show', 'a4f8e69:backend/vendas.py'], cwd=raiz)
+        (pasta / 'vendas.py').write_bytes(codigo)
+        origem_legada = str(pasta)
+    env = dict(os.environ)
+    env.pop('PYTHONPATH', None)
+    env['VENDAFACIL_DATA_DIR'] = str(tmp_path)
+    env['VENDAFACIL_PAINEL_URL'] = ''
+    proc = subprocess.Popen([
+        sys.executable, '-I', '-u', str(Path(__file__).with_name('checkout_queda_worker.py')),
+        str(tmp_path), str(produto['id']), origem_legada,
+    ], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+       text=True, env=env, cwd=raiz)
+    linhas = queue.Queue()
+    def ler_saida():
+        for linha in proc.stdout:
+            linhas.put(linha)
+        linhas.put(None)
+    leitor = threading.Thread(target=ler_saida, daemon=True)
+    leitor.start()
+    try:
+        while True:
+            linha = linhas.get(timeout=20)
+            assert linha is not None, 'Worker encerrou antes do ponto de corte.'
+            if 'PONTO_DE_CORTE_SQL' in linha:
+                break
+        proc.kill()
+        proc.wait(timeout=10)
+    finally:
+        if proc.poll() is None:
+            proc.kill()
+            proc.wait(timeout=10)
+        leitor.join(timeout=5)
+        for pipe in (proc.stdin, proc.stdout):
+            pipe.close()
+    assert local.get_produto(produto['id'])['estoque'] == 5
+    for tabela in ('vendas', 'itens_venda', 'movimentacoes_estoque', 'contas_receber'):
+        assert local._conn.execute(f'SELECT COUNT(*) FROM {tabela}').fetchone()[0] == 0
+    assert local._conn.execute('PRAGMA integrity_check').fetchone()[0] == 'ok'
+    assert list(local._conn.execute('PRAGMA foreign_key_check')) == []
