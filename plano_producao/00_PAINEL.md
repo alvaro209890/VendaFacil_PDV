@@ -6,11 +6,11 @@
 |---|---|
 | Estado geral | 🟨 EM ANDAMENTO |
 | Fase atual | 1 |
-| Próxima ação | F1.1 módulo único de dinheiro; RED antes da implementação |
+| Próxima ação | F1.3 cálculo decimal em caixa, fiado e relatórios (database.py serial) |
 | Última atualização | 10/11/2026 14:38 BRT (Fase 0) |
 | Commit de partida | `6da6899` |
 | Versão de partida → de entrega | 1.0.12 → 1.0.13 |
-| Testes backend (partida → agora) | 76 → 76 |
+| Testes backend (partida → agora) | 76 → 84 |
 | Testes painel (partida → agora) | 7 → 7 |
 
 Estados gerais possíveis: ⬜ NÃO INICIADO · 🟨 EM ANDAMENTO · ⏸ AGUARDANDO TERCEIRO · ✅ CONCLUÍDO.
@@ -20,7 +20,7 @@ Estados gerais possíveis: ⬜ NÃO INICIADO · 🟨 EM ANDAMENTO · ⏸ AGUARDA
 | Fase | Arquivo | Status | Itens fechados | Portão de saída | Commit do fechamento |
 |---|---|---|---|---|---|
 | 0 | `FASE_0_linha_de_base.md` | ✅ | 9/9 | ✅ | 52c6e1e |
-| 1 | `FASE_1_dinheiro_venda_estoque.md` | 🟨 | 0/14 | ⬜ | — |
+| 1 | `FASE_1_dinheiro_venda_estoque.md` | 🟨 | 2/14 | ⬜ | — |
 | 2 | `FASE_2_caixa_fiado_importacao_licenca.md` | ⬜ | 0/19 | ⬜ | — |
 | 3 | `FASE_3_seguranca_e_front.md` | ⬜ | 0/22 | ⬜ | — |
 | 4 | `FASE_4_fiscal_mt.md` | ⬜ | 0/27 | ⬜ | — |

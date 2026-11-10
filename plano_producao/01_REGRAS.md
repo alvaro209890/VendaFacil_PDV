@@ -7,8 +7,8 @@
 | Repositório | `C:\GIS\VendaFacil_PDV` (GitHub `alvaro209890/VendaFacil_PDV`, público), branch `master` |
 | Toolchain | Node 22 · npm 10 · Python 3.11 (`py -3.11`) · Inno Setup 6 (`C:\Program Files (x86)\Inno Setup 6\ISCC.exe`) |
 | Shell do agente | bash (git-bash). `.bat` roda com `cmd.exe /c "arquivo.bat"` |
-| Testes backend | `cd backend && env -u PYTHONPATH .venv/Scripts/python -I -m pytest -q` |
-| Testes painel | `cd painel && env -u PYTHONPATH .venv/Scripts/python -I -m pytest -q` (o venv é criado na Fase 0) |
+| Testes backend | `cd backend && env -u PYTHONPATH .venv/Scripts/python -I -m pytest -q --tb=short` |
+| Testes painel | `cd painel && env -u PYTHONPATH .venv/Scripts/python -I -m pytest -q --tb=short` (o venv é criado na Fase 0) |
 | Front | `npm run build` · `npx eslint .` |
 | Build do `.exe` | `cmd.exe /c "build_exe.bat"` → `dist_exe\VendaFacilPDV.exe` |
 | Build do instalador | `cmd.exe /c "installer\build_installer.bat"` → `dist_installer\VendaFacilPDV-Setup-<versão>.exe` |
@@ -17,7 +17,7 @@
 
 Arquitetura em uma linha: `.exe` único (FastAPI em `127.0.0.1:3020` servindo o React embutido) + SQLite local. `backend/database.py` concentra todo o acesso ao banco. `painel/` é o SaaS de licença e **não entra no `.exe`**.
 
-**Isolamento medido na Fase 0:** o processo do Hermes herda `PYTHONPATH` com bibliotecas de outro Python. Execute também as instalações com `env -u PYTHONPATH .venv/Scripts/python -I -m pip ...`; não use o `pip` global. `-I` evita carregar extensões de ABI incompatível.
+**Isolamento medido na Fase 0:** o processo do Hermes herda `PYTHONPATH` com bibliotecas de outro Python. Execute também as instalações com `env -u PYTHONPATH .venv/Scripts/python -I -m pip ...`; não use o `pip` global. `-I` evita carregar extensões de ABI incompatível. Use `--tb=short` para a falha não imprimir o dicionário da fixture `auth` com JWT sintético. Evidências de falha devem ser revisadas e mascaradas antes do stage.
 
 ## 2. Regras duras
 

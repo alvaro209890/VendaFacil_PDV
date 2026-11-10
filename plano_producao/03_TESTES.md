@@ -35,8 +35,8 @@ Ao fechar: preencha **Onde** (`arquivo::função`) e **Commit**. Teste novo que 
 
 | ID | O que prova | Status | Onde | Commit |
 |---|---|---|---|---|
-| D01 | Σ itens − desconto = total, com casos quebrados (0,335 kg × 12,99 · 3 × 3,33 · desconto 0,01) | ⬜ | | |
-| D02 | Arredondamento de meio centavo é `ROUND_HALF_UP` (ex.: 2,675 → 2,68) em todo cálculo | ⬜ | | |
+| D01 | Σ itens − desconto = total, com casos quebrados (0,335 kg × 12,99 · 3 × 3,33 · desconto 0,01) | ✅ | `backend/tests/test_dinheiro.py::test_d01_soma_subtotais_e_desconto` e `test_checkout_dinheiro_half_up` | 52bb220 |
+| D02 | Arredondamento de meio centavo é `ROUND_HALF_UP` (ex.: 2,675 → 2,68) em todo cálculo | 🟥 RED comprovado; GREEN local aguardando revisão/commit | `backend/tests/test_dinheiro.py::test_d02_meio_centavo_comercial` | — |
 | D03 | Total da venda = Σ `vProd` − `vDesc` = `vNF` = Σ `vPag` no XML da NFC-e | ⬜ | | |
 | D04 | Rateio de desconto fecha no centavo com 3, 7 e 13 itens | ⬜ | | |
 | D05 | Resumo de caixa com 200 vendas de centavos quebrados bate com a soma exata | ⬜ | | |
