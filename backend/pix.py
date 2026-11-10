@@ -3,6 +3,8 @@
 import io
 import os
 import base64
+import re
+import unicodedata
 
 import qrcode
 from fastapi import APIRouter, HTTPException, Request
@@ -39,6 +41,15 @@ def _get_user_id(request: Request) -> int:
 
 
 # ── BR Code / PIX Payload ──
+
+
+def _emv_texto(valor: str, limite: int, padrao: str) -> str:
+    """Nome e cidade do BR Code são ASCII, sem acento."""
+    sem_acento = unicodedata.normalize("NFD", valor or "")
+    sem_acento = "".join(c for c in sem_acento if unicodedata.category(c) != "Mn")
+    limpo = re.sub(r"[^A-Za-z0-9 ]", " ", sem_acento).upper()
+    limpo = re.sub(r" +", " ", limpo).strip()
+    return (limpo or padrao)[:limite]
 
 
 def _tlv(tag: str, value: str) -> str:
@@ -94,11 +105,11 @@ def gerar_payload(
     # 58 — Country Code
     payload += _tlv("58", "BR")
 
-    # 59 — Merchant Name (até 25 chars)
-    payload += _tlv("59", nome[:25].upper())
+    # 59 — Merchant Name (até 25 chars, ASCII)
+    payload += _tlv("59", _emv_texto(nome, 25, "VENDAS"))
 
     # 60 — Merchant City
-    payload += _tlv("60", cidade[:15].upper())
+    payload += _tlv("60", _emv_texto(cidade, 15, "QUERENCIA"))
 
     # 62 — Additional Data Field Template
     payload += _tlv("62", _tlv("05", txid))
