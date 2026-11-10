@@ -57,6 +57,13 @@ juntos em uma única transação local. Falha em qualquer etapa desfaz todas ess
 alterações. A emissão fiscal acontece depois dessa gravação: se a nota falhar,
 a venda permanece registrada e o erro fiscal é apresentado para tratamento.
 
+**Cancelamento comercial (API, F1.9):** o backend exige um motivo de 3–255
+caracteres, registra data/motivo e devolve estoque e fiado numa transação. Duas
+tentativas não devolvem o estoque duas vezes. Se o fiado já teve recebimento,
+recusa: o recebimento precisa ser estornado antes (D8). Não confunda cancelamento
+de venda com evento de cancelamento de nota fiscal. A integração fiscal e o botão
+na tela ainda passam pelos itens F1.10/F1.11 do plano de produção.
+
 1. Na tela **PDV / Vender**, busque o produto por **nome** ou **código de
    barras** (pode usar leitor — bipou, entrou no carrinho).
 2. Ajuste a **quantidade** com + / − no carrinho.

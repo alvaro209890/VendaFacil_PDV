@@ -167,6 +167,9 @@ class Database:
     def _migrar(self) -> None:
         """Migrações leves e idempotentes (adicionar colunas novas)."""
         cols = {r["name"] for r in self._conn.execute("PRAGMA table_info(vendas)")}
+        for col in ("cancelada_em", "motivo_cancelamento"):
+            if col not in cols:
+                self._conn.execute(f"ALTER TABLE vendas ADD COLUMN {col} TEXT")
         if "sincronizado" not in cols:
             self._conn.execute(
                 "ALTER TABLE vendas ADD COLUMN sincronizado INTEGER NOT NULL DEFAULT 0"
@@ -1005,6 +1008,61 @@ class Database:
                      f"Venda #{venda_id} — {len(itens)} item(ns)", agora, agora),
                 )
             return self.get_venda(venda_id)
+
+    def cancelar_venda(self, venda_id: int, user_id: int, motivo: str,
+                       agora: str) -> dict[str, Any] | None:
+        """Estorno comercial exatamente uma vez, com motivo e trilha de estoque."""
+        motivo = motivo.strip()
+        if not 3 <= len(motivo) <= 255:
+            raise ValueError("Informe um motivo de cancelamento com 3 a 255 caracteres.")
+        with self._lock, self._conn:
+            self._conn.execute("BEGIN IMMEDIATE")
+            venda = self.get_venda(venda_id, user_id)
+            if not venda:
+                return None
+            if venda["status"] != "concluida":
+                raise ValueError("Venda já cancelada ou não concluída.")
+            contas = self._conn.execute(
+                "SELECT valor_total, valor_pendente, status FROM contas_receber "
+                "WHERE venda_id = ? AND user_id = ?", (venda_id, user_id),
+            ).fetchall()
+            if any(c["status"] in ("pago", "parcial") or
+                   decimal(c["valor_pendente"]) < decimal(c["valor_total"]) for c in contas):
+                raise ValueError("Estorne o recebimento antes de cancelar a venda fiada.")
+            for item in self.get_itens_venda(venda_id):
+                produto = self.get_produto(item["produto_id"], user_id)
+                if not produto:
+                    raise ValueError("Produto da venda não encontrado; estorno não realizado.")
+                estoque = decimal(produto["estoque"]) + decimal(item["quantidade"])
+                atualizacao = self._conn.execute(
+                    "UPDATE produtos SET estoque = ?, atualizado_em = ? WHERE id = ? AND user_id = ?",
+                    (float(estoque), agora, produto["id"], user_id),
+                )
+                if atualizacao.rowcount != 1:
+                    raise ValueError("Não foi possível devolver o estoque; estorno não realizado.")
+                movimento = self._conn.execute(
+                    "INSERT INTO movimentacoes_estoque (user_id, produto_id, tipo, quantidade, "
+                    "origem, documento, observacao, criado_em) "
+                    "VALUES (?, ?, 'entrada', ?, 'cancelamento_venda', ?, ?, ?)",
+                    (user_id, produto["id"], item["quantidade"], str(venda_id), motivo, agora),
+                )
+                if movimento.rowcount != 1:
+                    raise ValueError("Não foi possível registrar a devolução; estorno não realizado.")
+            estorno = self._conn.execute(
+                "UPDATE contas_receber SET status = 'cancelado', valor_pendente = 0, "
+                "atualizado_em = ? WHERE venda_id = ? AND user_id = ?",
+                (agora, venda_id, user_id),
+            )
+            if estorno.rowcount != len(contas):
+                raise ValueError("Não foi possível estornar o fiado; cancelamento não realizado.")
+            atualizacao = self._conn.execute(
+                "UPDATE vendas SET status = 'cancelada', cancelada_em = ?, "
+                "motivo_cancelamento = ?, sincronizado = 0 WHERE id = ? AND user_id = ?",
+                (agora, motivo, venda_id, user_id),
+            )
+            if atualizacao.rowcount != 1:
+                raise ValueError("Não foi possível cancelar a venda; estorno não realizado.")
+            return self.get_venda_completa(venda_id, user_id)
 
     def create_venda(self, user_id: int, cliente_id: int | None,
                      total: float, desconto: float,

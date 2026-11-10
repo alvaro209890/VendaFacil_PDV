@@ -164,3 +164,19 @@ async def obter(venda_id: int, request: Request):
     if not venda:
         raise HTTPException(status_code=404, detail="Venda não encontrada.")
     return {"venda": venda}
+
+
+class CancelarVendaRequest(BaseModel):
+    motivo: str = Field(min_length=3, max_length=255)
+
+
+@router.post("/{venda_id}/cancelar")
+async def cancelar_venda(venda_id: int, data: CancelarVendaRequest, request: Request):
+    user_id = _get_user_id(request)
+    try:
+        venda = db.cancelar_venda(venda_id, user_id, data.motivo, _agora())
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    if not venda:
+        raise HTTPException(status_code=404, detail="Venda não encontrada.")
+    return {"venda": venda}
