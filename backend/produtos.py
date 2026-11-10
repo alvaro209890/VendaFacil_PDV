@@ -156,12 +156,8 @@ async def criar(data: ProdutoCreate, request: Request):
         unidade_compra=_norm_unidade(data.unidade_compra, data.unidade),
         quantidade_por_embalagem=_fator(data.quantidade_por_embalagem),
         agora=agora,
+        fiscais={k: v for k, v in data.model_dump(include=set(FiscalMixin.model_fields)).items() if v is not None},
     )
-    # Persiste os campos fiscais informados (create_produto só grava os básicos).
-    fiscais = data.model_dump(include=set(FiscalMixin.model_fields))
-    fiscais = {k: v for k, v in fiscais.items() if v is not None}
-    if fiscais and p:
-        p = db.update_produto(p["id"], user_id, atualizado_em=agora, **fiscais)
     return {"produto": p}
 
 

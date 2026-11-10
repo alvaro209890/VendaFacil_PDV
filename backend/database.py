@@ -799,17 +799,25 @@ class Database:
                        codigo_barras: str, unidade: str, agora: str,
                        categoria_id: int | None = None,
                        unidade_compra: str = "",
-                       quantidade_por_embalagem: float = 1) -> dict[str, Any] | None:
+                       quantidade_por_embalagem: float = 1,
+                       fiscais: dict | None = None) -> dict[str, Any] | None:
+        cols = ["user_id", "categoria_id", "nome", "preco_custo", "preco_venda", "estoque",
+                "estoque_minimo", "codigo_barras", "unidade", "unidade_compra",
+                "quantidade_por_embalagem", "criado_em", "atualizado_em"]
+        vals = [user_id, categoria_id, nome.strip(), preco_custo, preco_venda, estoque,
+                estoque_minimo, codigo_barras.strip(), unidade.strip().upper(),
+                (unidade_compra or unidade).strip().upper(),
+                max(float(quantidade_por_embalagem or 1), 0.0001), agora, agora]
+        permitidos = {"ncm", "cest", "cfop", "origem", "unidade_tributavel", "cst_csosn",
+                      "aliquota_icms", "cst_pis", "aliquota_pis", "cst_cofins", "aliquota_cofins"}
+        for chave, valor in (fiscais or {}).items():
+            if chave in permitidos and valor is not None:
+                cols.append(chave)
+                vals.append(valor)
         with self._lock, self._conn:
             cursor = self._conn.execute(
-                """INSERT INTO produtos (user_id, categoria_id, nome, preco_custo, preco_venda, estoque,
-                   estoque_minimo, codigo_barras, unidade, unidade_compra, quantidade_por_embalagem,
-                   criado_em, atualizado_em)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                (user_id, categoria_id, nome.strip(), preco_custo, preco_venda, estoque,
-                 estoque_minimo, codigo_barras.strip(), unidade.strip().upper(),
-                 (unidade_compra or unidade).strip().upper(),
-                 max(float(quantidade_por_embalagem or 1), 0.0001), agora, agora),
+                f"INSERT INTO produtos ({', '.join(cols)}) VALUES ({', '.join('?' for _ in cols)})",
+                vals,
             )
             return self.get_produto(cursor.lastrowid)
 
