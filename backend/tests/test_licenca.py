@@ -38,3 +38,44 @@ def test_status_usa_cache_sem_chamar_rede(monkeypatch):
     st = conta.status()
     assert st["bloqueado"] is False
     assert chamadas == []  # cache saudável e recente → não tocou na rede
+
+
+def _vender(client, headers):
+    produto = client.post('/api/produtos', json={
+        'nome': 'Item licenca', 'preco_venda': 2, 'preco_custo': 1, 'estoque': 5,
+        'codigo_barras': '',
+    }, headers=headers)
+    assert produto.status_code == 201, produto.text
+    venda = client.post('/api/vendas/checkout', headers=headers, json={
+        'itens': [{'produto_id': produto.json()['produto']['id'], 'quantidade': 1}],
+        'forma_pagamento': 'dinheiro',
+    })
+    return venda
+
+
+def test_l01_modo_local_vende_sem_rede(client, auth, monkeypatch):
+    import urllib.error
+    monkeypatch.setattr(conta, 'PAINEL_URL', '')
+    def rede(*_a, **_k):
+        raise urllib.error.URLError('sem rede')
+    monkeypatch.setattr(conta, '_http', rede)
+    assert conta.status()['bloqueado'] is False
+    venda = _vender(client, auth)
+    assert venda.status_code == 201, venda.text
+
+
+def test_l02_painel_fora_vende_na_carencia(client, auth, monkeypatch):
+    import urllib.error
+    monkeypatch.setattr(conta, 'PAINEL_URL', 'http://painel.exemplo')
+    monkeypatch.setattr(conta, '_load', lambda: {
+        'ativo': True, 'licenca_expira_em': None, 'validado_em': _iso(48),
+        'nome_loja': 'Loja', 'token': 't', 'login': 'teste',
+    })
+    def rede(*_a, **_k):
+        raise urllib.error.URLError('painel fora')
+    monkeypatch.setattr(conta, '_http', rede)
+    assert conta.status()['bloqueado'] is False
+    login = client.post('/api/auth/login', json={'usuario': 'teste', 'senha': 'Loja@2026xy'})
+    assert login.status_code == 200, login.text
+    venda = _vender(client, {'Authorization': 'Bearer ' + login.json()['token']})
+    assert venda.status_code == 201, venda.text
