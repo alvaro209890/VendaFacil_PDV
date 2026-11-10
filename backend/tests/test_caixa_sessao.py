@@ -30,3 +30,12 @@ def test_c01_esperado_bate_com_gaveta(checkout_local):
     assert resumo['dinheiro_esperado'] == 11.5
     fechado = local.fechar_caixa(sessao['id'], 11.5, resumo['dinheiro_esperado'], _agora(), '')
     assert fechado['diferenca'] == 0
+
+
+def test_d4_pdv_avisa_caixa_fechado_sem_bloquear():
+    from pathlib import Path
+    tela = (Path(__file__).resolve().parents[2] / 'src/pages/PDV.tsx').read_text(encoding='utf-8')
+    assert 'caixaAtual' in tela
+    assert 'Caixa fechado' in tela
+    assert 'caixaAberto === false' in tela
+    assert 'disabled={loading || pixLoading || !!maqModal || carrinho.length === 0 || !dinheiroOk}' in tela

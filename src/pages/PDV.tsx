@@ -17,7 +17,7 @@ import {
 import {
   listarProdutos, checkout, getDashboard, gerarPixQrCode, listarClientes,
   getConfigMaquininha, criarCobrancaMaquininha, consultarCobrancaMaquininha,
-  cancelarCobrancaMaquininha, getConfigFiscal,
+  cancelarCobrancaMaquininha, getConfigFiscal, caixaAtual,
 } from "../lib/api";
 import type { Produto, DashboardData, PixQrCodeResponse, Cliente, PagamentoEletronico } from "../lib/api";
 import { imprimirRecibo, getLarguraRecibo, setLarguraRecibo } from "../lib/recibo";
@@ -60,6 +60,7 @@ export default function PDV() {
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<{ tipo: "ok" | "erro"; texto: string } | null>(null);
   const [dash, setDash] = useState<DashboardData | null>(null);
+  const [caixaAberto, setCaixaAberto] = useState<boolean | null>(null);
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [clienteFiado, setClienteFiado] = useState<number | "">("");
   const [emitirNota, setEmitirNota] = useState(false);
@@ -109,6 +110,12 @@ export default function PDV() {
       setMaqPixIntegrado(!!config.pix_integrado);
     } catch {
       setMaqHabilitada(false);
+    }
+    try {
+      const caixa = await caixaAtual();
+      setCaixaAberto(caixa.aberto);
+    } catch {
+      setCaixaAberto(null);
     }
     // Cabeçalho do recibo (usa os dados fiscais da loja, se preenchidos).
     try {
@@ -751,6 +758,12 @@ export default function PDV() {
                   <option value={58}>58mm</option>
                 </select>
               </div>
+
+              {caixaAberto === false && (
+                <p className="mb-3 rounded border border-amber-400/40 bg-amber-400/10 p-2 text-xs text-amber-200">
+                  Caixa fechado. A venda será registrada, mas não entra no fechamento até você abrir o caixa.
+                </p>
+              )}
 
               <motion.button
                 whileHover={{ scale: 1.02 }}
