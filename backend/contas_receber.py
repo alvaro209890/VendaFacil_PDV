@@ -67,7 +67,8 @@ async def pagar(conta_id: int, data: PagamentoConta, request: Request):
     try:
         conta = db.pagar_conta_receber(conta_id, user_id, data.valor, agora, data.forma)
     except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+        codigo = 409 if "cancelada" in str(exc).lower() else 400
+        raise HTTPException(status_code=codigo, detail=str(exc)) from exc
     if not conta:
         raise HTTPException(status_code=404, detail="Conta não encontrada.")
     return {"conta": conta}

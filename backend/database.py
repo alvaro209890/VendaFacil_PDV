@@ -1140,6 +1140,13 @@ class Database:
             if nota_ativa:
                 raise ValueError("Resolva o documento fiscal antes de cancelar a venda: "
                                  "cancele a nota autorizada ou consulte a nota ainda pendente.")
+            if venda.get("sessao_id"):
+                sessao = self._conn.execute(
+                    "SELECT fechado_em FROM caixa_sessoes WHERE id = ?",
+                    (venda["sessao_id"],),
+                ).fetchone()
+                if sessao and sessao["fechado_em"]:
+                    raise ValueError("Caixa dessa venda já foi fechado.")
             contas = self._conn.execute(
                 "SELECT valor_total, valor_pendente, status FROM contas_receber "
                 "WHERE venda_id = ? AND user_id = ?", (venda_id, user_id),
@@ -1398,6 +1405,8 @@ class Database:
             ).fetchone()
             if not row:
                 return None
+            if row["status"] == "cancelado":
+                raise ValueError("Conta cancelada não recebe pagamento.")
             pago = decimal(moeda(valor))
             pendente = decimal(row["valor_pendente"])
             if pago <= 0:
