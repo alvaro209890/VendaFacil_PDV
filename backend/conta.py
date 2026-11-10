@@ -18,7 +18,7 @@ import json
 import os
 import urllib.error
 import urllib.request
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from paths import DATA_DIR
 
@@ -77,11 +77,15 @@ def _now() -> datetime:
 def _parse(iso: str | None) -> datetime | None:
     if not iso:
         return None
+    texto = iso.strip()
     try:
-        d = datetime.fromisoformat(iso)
-        return d if d.tzinfo else d.replace(tzinfo=timezone.utc)
+        if len(texto) == 10:
+            dia = datetime.fromisoformat(texto).date()
+            return datetime(dia.year, dia.month, dia.day, 23, 59, 59, tzinfo=timezone(timedelta(hours=-4)))
+        d = datetime.fromisoformat(texto)
+        return d if d.tzinfo else d.replace(tzinfo=timezone(timedelta(hours=-4)))
     except ValueError:
-        return None
+        return datetime(1970, 1, 1, tzinfo=timezone.utc)
 
 
 def _load() -> dict | None:

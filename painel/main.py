@@ -4,7 +4,7 @@ Você (admin) gerencia as contas das lojas (login/senha de cada mercado),
 ativa/bloqueia e define validade de licença. Os PDVs (.exe) validam a conta
 aqui e sincronizam as vendas.
 """
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -51,19 +51,31 @@ def _conta_atual(request: Request) -> dict:
     return payload
 
 
-def _licenca_valida(conta: dict) -> tuple[bool, str]:
+MT = timezone(timedelta(hours=-4))
+
+
+def _limite_licenca(exp: str) -> datetime:
+    texto = (exp or "").strip()
+    if len(texto) == 10:
+        dia = datetime.fromisoformat(texto).date()
+        return datetime(dia.year, dia.month, dia.day, 23, 59, 59, tzinfo=MT)
+    venc = datetime.fromisoformat(texto)
+    if venc.tzinfo is None:
+        venc = venc.replace(tzinfo=MT)
+    return venc
+
+
+def _licenca_valida(conta: dict, agora: datetime | None = None) -> tuple[bool, str]:
     if not conta.get("ativo"):
         return False, "Conta bloqueada. Entre em contato com o suporte."
     exp = conta.get("licenca_expira_em")
     if exp:
         try:
-            venc = datetime.fromisoformat(exp)
-            if venc.tzinfo is None:
-                venc = venc.replace(tzinfo=timezone.utc)
-            if venc < datetime.now(timezone.utc):
-                return False, "Licença expirada. Renove para continuar."
+            limite = _limite_licenca(exp)
         except ValueError:
-            pass
+            return False, "Data de licença inválida."
+        if limite < (agora or datetime.now(timezone.utc)):
+            return False, "Licença expirada. Renove para continuar."
     return True, "ok"
 
 
@@ -215,6 +227,11 @@ async def listar_contas(request: Request) -> dict:
 @app.post("/api/admin/contas")
 async def criar_conta(data: ContaInput, request: Request) -> dict:
     _admin_atual(request)
+    if data.licenca_expira_em:
+        try:
+            _limite_licenca(data.licenca_expira_em)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Data de licença inválida.")
     conta = db.criar_conta(
         data.nome_loja, data.login, security.hash_senha(data.senha),
         data.plano, data.licenca_expira_em, data.observacao,
@@ -238,6 +255,11 @@ async def atualizar_conta(conta_id: int, data: ContaUpdate, request: Request) ->
     if data.plano is not None:
         campos["plano"] = data.plano
     if data.licenca_expira_em is not None:
+        if data.licenca_expira_em:
+            try:
+                _limite_licenca(data.licenca_expira_em)
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Data de licença inválida.")
         campos["licenca_expira_em"] = data.licenca_expira_em or None
     if data.observacao is not None:
         campos["observacao"] = data.observacao
