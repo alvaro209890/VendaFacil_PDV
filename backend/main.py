@@ -27,7 +27,15 @@ from database import db
 from errors import configure_error_logging, register_error_handlers
 
 configure_error_logging()
-app = FastAPI(title="VendaFácil PDV", version="0.1.0")
+
+
+def urls_doc(empacotado: bool) -> dict:
+    if empacotado:
+        return {"docs_url": None, "redoc_url": None, "openapi_url": None}
+    return {"docs_url": "/docs", "redoc_url": "/redoc", "openapi_url": "/openapi.json"}
+
+
+app = FastAPI(title="VendaFácil PDV", version="0.1.0", **urls_doc(getattr(sys, "frozen", False)))
 
 # ── Watchdog: encerra o processo quando a aba do navegador é fechada ──
 # Só ativo no .exe empacotado (sys.frozen). Em dev, o Uvicorn já cuida disso.
