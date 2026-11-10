@@ -359,11 +359,13 @@ async def sync_vendas(data: SyncPayload, request: Request) -> dict:
         raise HTTPException(status_code=404, detail="Conta não encontrada.")
     ok_lic, motivo = _licenca_valida(atual)
     recebidas = 0
+    aceitas = []
     for v in data.vendas:
         if db.registrar_venda_sync(conta_id, v.model_dump()):
             recebidas += 1
+        aceitas.append(v.uuid)
     db.marcar_acesso(conta_id)
-    return {"recebidas": recebidas, "licenca_ok": ok_lic, "motivo": motivo}
+    return {"recebidas": recebidas, "aceitas": aceitas, "licenca_ok": ok_lic, "motivo": motivo}
 
 
 # ── UI Admin (estática) ──

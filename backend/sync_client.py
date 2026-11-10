@@ -19,7 +19,7 @@ INTERVALO_SEG = 120
 _TIMEOUT = 8
 
 
-def _enviar(token: str, vendas: list[dict]) -> bool:
+def _enviar(token: str, vendas: list[dict]) -> list[str]:
     url = f"{conta_mod.PAINEL_URL}/api/sync/vendas"
     body = json.dumps({"vendas": vendas}).encode()
     req = urllib.request.Request(
@@ -28,7 +28,15 @@ def _enviar(token: str, vendas: list[dict]) -> bool:
         method="POST",
     )
     with urllib.request.urlopen(req, timeout=_TIMEOUT) as r:
-        return r.status == 200
+        if r.status != 200:
+            return []
+        data = json.loads(r.read().decode() or "{}")
+    aceitas = data.get("aceitas")
+    if isinstance(aceitas, list):
+        return [str(u) for u in aceitas]
+    if data.get("recebidas") == len(vendas):
+        return [v["uuid"] for v in vendas]
+    return []
 
 
 def enviar_pendentes() -> int:
@@ -54,9 +62,10 @@ def enviar_pendentes() -> int:
         ids.append(v["id"])
 
     try:
-        if _enviar(token, payload):
-            db.marcar_vendas_sincronizadas(ids)
-            return len(ids)
+        aceitas = set(_enviar(token, payload))
+        ids_ok = [i for i, v in zip(ids, payload) if v["uuid"] in aceitas]
+        db.marcar_vendas_sincronizadas(ids_ok)
+        return len(ids_ok)
     except (urllib.error.URLError, urllib.error.HTTPError, OSError):
         return 0  # offline → tenta no próximo ciclo
     return 0
