@@ -24,7 +24,7 @@ test.beforeEach(async ({ page, request }, info) => {
   await page.getByRole('button', { name: new RegExp(codigo) }).click();
 });
 
-for (const valor of ['0,50', '0.50']) {
+for (const valor of ['0,50', '0.50', '1,5', '1.5']) {
   test(`U03: desconto ${valor} preserva digitacao e valor enviado`, async ({ page }) => {
     const desconto = page.getByLabel('Desconto', { exact: true });
     await desconto.focus();
@@ -67,7 +67,7 @@ for (const caso of [
   }
 }
 
-for (const valor of ['0,5', '0.5', '0,125']) {
+for (const valor of ['0,5', '0.5', '0,125', '1,5', '1.5']) {
   test(`U03: quantidade ${valor} preserva etapas e valor enviado`, async ({ page }) => {
     const quantidade = page.getByLabel(/^Quantidade de DEC-/);
     await quantidade.focus();
@@ -80,7 +80,7 @@ for (const valor of ['0,5', '0.5', '0,125']) {
     }
     const numero = Number(valor.replace(',', '.'));
     await expect(page.getByText(`Falta R$ ${(10 * numero).toFixed(2)}`, { exact: true })).toBeVisible();
-    await page.getByPlaceholder('0,00', { exact: true }).fill('10');
+    await page.getByPlaceholder('0,00', { exact: true }).fill(String(10 * numero));
     const checkout = page.waitForResponse(r => r.url().endsWith('/api/vendas/checkout') && r.request().method() === 'POST');
     await page.keyboard.press('Enter');
     const resposta = await checkout;
