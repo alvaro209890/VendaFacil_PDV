@@ -166,7 +166,7 @@ export default function ProdutosPage() {
         ncm: it.ncm,
         cfop: it.cfop,
       }));
-      const r = await importarXmlConfirmar(doc, itens);
+      const r = await importarXmlConfirmar(doc, itens, importInfo?.chave || "");
       setImportInfo(null);
       setImportItens([]);
       setMsg({ tipo: "ok", texto: `Importado! ${r.atualizados} atualizado(s), ${r.criados} novo(s).` });
@@ -703,6 +703,9 @@ export default function ProdutosPage() {
             </div>
 
             <div className="flex-1 overflow-auto p-3">
+              {msg?.tipo === "erro" && (
+                <p role="alert" className="mb-3 p-3 rounded-lg border border-red-500/30 text-red-400 text-sm">{msg.texto}</p>
+              )}
               <table className="w-full text-sm">
                 <thead className="text-slate-500 text-xs uppercase text-left">
                   <tr>

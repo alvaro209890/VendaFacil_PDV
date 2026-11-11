@@ -274,10 +274,10 @@ export async function importarXmlPreview(file: File | Blob): Promise<PreviewXml>
   return data;
 }
 
-export function importarXmlConfirmar(documento: string, itens: ItemConfirmarXml[]): Promise<{ criados: number; atualizados: number; total: number }> {
+export function importarXmlConfirmar(documento: string, itens: ItemConfirmarXml[], chave: string): Promise<{ criados: number; atualizados: number; total: number }> {
   return request("/api/produtos/importar-xml/confirmar", {
     method: "POST",
-    body: JSON.stringify({ documento, itens }),
+    body: JSON.stringify({ documento, itens, chave }),
   });
 }
 

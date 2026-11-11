@@ -52,7 +52,9 @@ Também o fornecedor (`emit/xNome`) e o número da nota.
   desligar isso por item futuramente; hoje atualiza por padrão).
 - Ao **criar**, o preço de venda sugerido é **custo + 30%** (editável na prévia).
 - Com chave preenchida, a mesma NF-e só pode ser confirmada **uma vez por usuário**;
-  repetição devolve 409. Sem chave, não há deduplicação por documento.
+  repetição devolve 409. A tela encaminha a chave da prévia para a confirmação,
+  e apresenta a recusa e seu código de referência dentro do modal. Sem chave,
+  não há deduplicação por documento.
 - Produto, campos fiscais, quantidade/custo, movimentos e chave são gravados na
   **mesma transação SQLite**. Falha em qualquer escrita desfaz o lote inteiro;
   uma nova tentativa não duplica a primeira parte. Duas confirmações da mesma
