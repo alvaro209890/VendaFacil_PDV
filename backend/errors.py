@@ -104,12 +104,11 @@ def register_error_handlers(app: FastAPI) -> None:
         campos = [_format_validation_error(err) for err in exc.errors()]
         erros = [c["mensagem"] for c in campos]
         logger.warning(
-            "validation_error request_id=%s method=%s path=%s errors=%s body=%s",
+            "validation_error request_id=%s method=%s path=%s errors=%s",
             request_id,
             request.method,
             request.url.path,
             json.dumps(campos, ensure_ascii=False),
-            _safe_json(getattr(exc, "body", None)),
         )
         return _json_error(
             422,
@@ -231,11 +230,8 @@ def _sanitize(value: Any) -> Any:
         return clean
     if isinstance(value, list):
         return [_sanitize(item) for item in value]
-    if isinstance(value, bytes):
-        try:
-            return value.decode("utf-8")[:2000]
-        except UnicodeDecodeError:
-            return "<bytes>"
+    if isinstance(value, (bytes, bytearray, memoryview)):
+        return "<bytes>"
     if isinstance(value, str) and len(value) > 2000:
         return value[:2000] + "...<truncado>"
     return value
@@ -245,4 +241,4 @@ def _safe_json(value: Any) -> str:
     try:
         return json.dumps(_sanitize(value), ensure_ascii=False, default=str)
     except Exception:
-        return repr(value)
+        return '"<detalhe não serializável>"'

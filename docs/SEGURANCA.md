@@ -11,6 +11,14 @@ O que o caixa da mercearia protege, o que fica de fora de propósito e o que faz
 - O executável não publica `/docs` nem `/openapi.json`.
 - Leitura da configuração fiscal e da maquininha não devolve CSC, senha do certificado, arquivo A1 nem token. O log troca esses campos por `***`.
 
+## Erros de validação e corpos recebidos
+
+O log de validação registra identificador, método, rota e descritores dos campos,
+mas **não grava o corpo recebido**, mesmo em JSON malformado. Binários são tratados
+como opacos pelo formatter. Se a sanitização falhar, o fallback não usa `repr`
+do objeto original. Detalhes estruturados continuam mascarando os campos
+sensíveis e preservando o motivo útil; os testes usam canários não secretos.
+
 ## Senha
 
 - Mínimo de 8 caracteres no registro.
