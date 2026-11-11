@@ -51,6 +51,17 @@ Também o fornecedor (`emit/xNome`) e o número da nota.
 - Ao **repor**, o **preço de custo é atualizado** com o valor da nota (pode
   desligar isso por item futuramente; hoje atualiza por padrão).
 - Ao **criar**, o preço de venda sugerido é **custo + 30%** (editável na prévia).
+- Com chave preenchida, a mesma NF-e só pode ser confirmada **uma vez por usuário**;
+  repetição devolve 409. Sem chave, não há deduplicação por documento.
+- Produto, campos fiscais, quantidade/custo, movimentos e chave são gravados na
+  **mesma transação SQLite**. Falha em qualquer escrita desfaz o lote inteiro;
+  uma nova tentativa não duplica a primeira parte. Duas confirmações da mesma
+  chave em conexões diferentes geram uma entrada e uma recusa.
+- Referência inexistente, inativa ou de outro usuário recusa o lote com 400.
+  Não se ignora um item para importar só os demais.
+- Lote vazio e valores não finitos são recusados antes de gravar (422).
+- Se a nota chega em UN, o fator/unidade de compra do cadastro é preservado;
+  a conversão de CX usa o fator configurado na prévia.
 
 ## API (backend, exige JWT)
 

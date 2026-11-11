@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from auth import _verificar_jwt, _agora
-from database import db
+from database import db, NotaEntradaDuplicada
 import importacao_xml
 
 router = APIRouter()
@@ -84,6 +84,8 @@ class ProdutoUpdate(FiscalMixin):
 
 
 class ItemImportar(BaseModel):
+    model_config = {"allow_inf_nan": False}
+
     produto_id: int | None = None        # None = criar produto novo
     nome: str = Field(min_length=1, max_length=120)
     codigo_barras: str = Field(default="", max_length=60)
@@ -102,7 +104,7 @@ class ItemImportar(BaseModel):
 class ConfirmarImportacao(BaseModel):
     documento: str = Field(default="", max_length=60)   # nº/chave da NF-e
     chave: str = Field(default="", max_length=44)
-    itens: list[ItemImportar]
+    itens: list[ItemImportar] = Field(min_length=1)
 
 
 class EntradaInput(BaseModel):
@@ -243,49 +245,20 @@ async def importar_xml_confirmar(data: ConfirmarImportacao, request: Request):
     chave = (data.chave or "").strip()
     if chave and (len(chave) != 44 or not chave.isdigit()):
         raise HTTPException(status_code=400, detail="Chave da NF-e inválida.")
-    if chave and db.nota_entrada_importada(user_id, chave):
-        raise HTTPException(status_code=409, detail="NF-e já importada.")
-    criados = atualizados = 0
-    for it in data.itens:
-        codigo = _ean(it.codigo_barras)
-        produto_id = it.produto_id
-        if not produto_id and codigo:
-            existente = db.get_produto_by_codigo(user_id, codigo)
-            produto_id = existente["id"] if existente else None
-        if produto_id:
-            if not db.get_produto(produto_id, user_id):
-                continue
-            novo_custo = it.preco_custo if (it.atualizar_custo and it.preco_custo > 0) else None
-            db.entrada_estoque(produto_id, user_id, it.quantidade, agora, novo_custo)
-            db.registrar_movimentacao(
-                user_id, produto_id, "entrada", it.quantidade, agora,
-                custo_unitario=it.preco_custo, origem="xml", documento=doc,
-                observacao=f"{it.nome} ({it.quantidade_xml or it.quantidade} {it.unidade_compra or it.unidade})",
-            )
-            atualizados += 1
-        else:
-            novo = db.create_produto(
-                user_id=user_id, nome=it.nome, categoria_id=None,
-                preco_custo=it.preco_custo, preco_venda=it.preco_venda,
-                estoque=it.quantidade, estoque_minimo=5,
-                codigo_barras=codigo, unidade=_norm_unidade(it.unidade), agora=agora,
-                unidade_compra=_norm_unidade(it.unidade_compra, it.unidade),
-                quantidade_por_embalagem=_fator(it.quantidade_por_embalagem),
-            )
-            if novo:
-                fiscais = {k: v for k, v in {"ncm": it.ncm, "cfop": it.cfop}.items() if v}
-                if fiscais:
-                    db.update_produto(novo["id"], user_id, atualizado_em=agora, **fiscais)
-                db.registrar_movimentacao(
-                    user_id, novo["id"], "entrada", it.quantidade, agora,
-                    custo_unitario=it.preco_custo, origem="xml", documento=doc,
-                    observacao=f"{it.nome} ({it.quantidade_xml or it.quantidade} {it.unidade_compra or it.unidade})",
-                )
-                criados += 1
-    if chave:
-        db.registrar_nota_entrada(user_id, chave, doc, agora)
-    return {"criados": criados, "atualizados": atualizados,
-            "total": criados + atualizados}
+    itens = []
+    for item in data.itens:
+        normalizado = item.model_dump()
+        normalizado["codigo_barras"] = _ean(item.codigo_barras)
+        normalizado["unidade"] = _norm_unidade(item.unidade)
+        normalizado["unidade_compra"] = _norm_unidade(item.unidade_compra, item.unidade)
+        normalizado["quantidade_por_embalagem"] = _fator(item.quantidade_por_embalagem)
+        itens.append(normalizado)
+    try:
+        return db.importar_entrada_atomica(user_id, chave, doc, itens, agora)
+    except NotaEntradaDuplicada as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 # ── Entrada manual de estoque + histórico ──

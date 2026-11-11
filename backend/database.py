@@ -22,6 +22,10 @@ class EstoqueConcorrente(ValueError):
     """O estoque mudou ou uma baixa foi recusada dentro da transação."""
 
 
+class NotaEntradaDuplicada(ValueError):
+    """A chave já foi confirmada para este usuário."""
+
+
 DB_DIR = DATA_DIR
 DB_PATH = DB_DIR / "vendafacil.db"
 
@@ -920,6 +924,77 @@ class Database:
                 "INSERT INTO notas_entrada (user_id, chave, documento, criado_em) VALUES (?, ?, ?, ?)",
                 (user_id, chave, documento, agora),
             )
+
+    def importar_entrada_atomica(self, user_id: int, chave: str, documento: str,
+                                 itens: list[dict], agora: str) -> dict[str, int]:
+        """Produto, estoque, fiscal, movimentos e chave: todos ou nenhum."""
+        with self._lock:
+            try:
+                self._conn.execute("BEGIN IMMEDIATE")
+                if chave:
+                    if self._conn.execute(
+                        "SELECT 1 FROM notas_entrada WHERE user_id = ? AND chave = ?",
+                        (user_id, chave),
+                    ).fetchone():
+                        raise NotaEntradaDuplicada("NF-e já importada.")
+                    cur = self._conn.execute(
+                        "INSERT INTO notas_entrada (user_id, chave, documento, criado_em) VALUES (?,?,?,?)",
+                        (user_id, chave, documento, agora),
+                    )
+                    if cur.rowcount != 1:
+                        raise sqlite3.IntegrityError("Chave de entrada não foi gravada.")
+                criados = atualizados = 0
+                for it in itens:
+                    pid = it.get("produto_id")
+                    codigo = it.get("codigo_barras") or ""
+                    if not pid and codigo:
+                        existente = self._conn.execute(
+                            "SELECT id FROM produtos WHERE user_id = ? AND codigo_barras = ? AND ativo = 1",
+                            (user_id, codigo),
+                        ).fetchone()
+                        pid = existente["id"] if existente else None
+                    if pid:
+                        existente = self._conn.execute(
+                            "SELECT id FROM produtos WHERE id = ? AND user_id = ? AND ativo = 1",
+                            (pid, user_id),
+                        ).fetchone()
+                        if not existente:
+                            raise ValueError("Produto da entrada não encontrado ou inativo.")
+                        custo = it["preco_custo"] if it["atualizar_custo"] and it["preco_custo"] > 0 else None
+                        cur = self._conn.execute(
+                            "UPDATE produtos SET estoque = estoque + ?, preco_custo = COALESCE(?, preco_custo), "
+                            "atualizado_em = ? WHERE id = ? AND user_id = ? AND ativo = 1",
+                            (it["quantidade"], custo, agora, pid, user_id),
+                        )
+                        if cur.rowcount != 1:
+                            raise sqlite3.IntegrityError("Estoque da entrada não foi atualizado.")
+                        atualizados += 1
+                    else:
+                        cur = self._conn.execute(
+                            "INSERT INTO produtos (user_id, nome, preco_custo, preco_venda, estoque, "
+                            "estoque_minimo, codigo_barras, unidade, unidade_compra, quantidade_por_embalagem, "
+                            "ncm, cfop, criado_em, atualizado_em) VALUES (?,?,?,?,?,5,?,?,?,?,?,?,?,?)",
+                            (user_id, it["nome"].strip(), it["preco_custo"], it["preco_venda"],
+                             it["quantidade"], codigo, it["unidade"], it["unidade_compra"],
+                             it["quantidade_por_embalagem"], it.get("ncm") or "", it.get("cfop") or "", agora, agora),
+                        )
+                        if cur.rowcount != 1:
+                            raise sqlite3.IntegrityError("Produto da entrada não foi criado.")
+                        pid = cur.lastrowid
+                        criados += 1
+                    observacao = f"{it['nome']} ({it.get('quantidade_xml') or it['quantidade']} {it['unidade_compra'] or it['unidade']})"
+                    cur = self._conn.execute(
+                        "INSERT INTO movimentacoes_estoque (user_id, produto_id, tipo, quantidade, "
+                        "custo_unitario, origem, documento, observacao, criado_em) VALUES (?,?,'entrada',?,?,'xml',?,?,?)",
+                        (user_id, pid, it["quantidade"], it["preco_custo"], documento, observacao, agora),
+                    )
+                    if cur.rowcount != 1:
+                        raise sqlite3.IntegrityError("Movimento da entrada não foi gravado.")
+                self._conn.commit()
+                return {"criados": criados, "atualizados": atualizados, "total": criados + atualizados}
+            except Exception:
+                self._conn.rollback()
+                raise
 
     def cobranca_aprovada_sem_venda(self, user_id: int) -> dict[str, Any] | None:
         with self._lock:
