@@ -90,6 +90,8 @@ ela sai do total do dia, do caixa, do dashboard e dos relatórios.
 
 Os atalhos de busca/quantidade/desconto/pagamento ficam suspensos enquanto o pagamento
 está sendo carregado ou há janela de pagamento aberta. Não descartam o carrinho.
+Depois de adicionar pelo botão, concluir uma venda ou fechar a janela de pagamento,
+o foco volta ao campo do leitor; mudanças de estado comuns não roubam o foco.
 
 **Rascunho do carrinho:** os itens e quantidades ficam salvos neste navegador,
 separados por usuário. F5 ou fechar/reabrir a aba recupera os itens; preços e

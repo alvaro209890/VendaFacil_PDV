@@ -184,6 +184,13 @@ export default function PDV() {
   const descontoRef = useRef<HTMLInputElement>(null);
   const quantidadeRef = useRef<HTMLInputElement>(null);
   const pagamentoRef = useRef<HTMLButtonElement>(null);
+  const modalPagamentoAnterior = useRef(false);
+  const modalPagamentoAberto = !!(pixModal || maqModal);
+
+  useLayoutEffect(() => {
+    if (modalPagamentoAnterior.current && !modalPagamentoAberto) buscaRef.current?.focus();
+    modalPagamentoAnterior.current = modalPagamentoAberto;
+  }, [modalPagamentoAberto]);
 
   function addAoCarrinho(p: Produto) {
     setCarrinho((prev) => {
@@ -195,6 +202,7 @@ export default function PDV() {
       return [...prev, { ...p, qtd: 1 }];
     });
     setMsg(null);
+    buscaRef.current?.focus();
   }
 
   // Leitor de código de barras / Enter: bipa → adiciona → limpa → mantém o foco.
@@ -503,6 +511,7 @@ export default function PDV() {
       setCpfConsumidor("");
       setPixModal(null);
       carregar();
+      buscaRef.current?.focus();
     } catch (err: unknown) {
       setMsg({ tipo: "erro", texto: (err as Error).message });
     } finally {
