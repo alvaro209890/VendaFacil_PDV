@@ -18,9 +18,9 @@ painel**.
 1. **Ativação (1 vez, com internet):** a loja informa login/senha → o painel
    valida → o `.exe` salva localmente (`dados/conta.json`): token, se está
    **ativo**, a **validade da licença** e a data da última validação.
-2. **No uso diário:** o `.exe` revalida online **periodicamente** (padrão a cada
-   **12h**). Entre uma revalidação e outra, o login usa o **cache** — instantâneo
-   e sem depender de rede.
+2. **No uso diário:** a consulta de status tenta revalidar quando o cache exige
+   (padrão **12h**, ou conta bloqueada/vencida). Login e ativação podem tentar
+   validar online e usar o fallback offline já cadastrado se a rede falhar.
 3. **Sem internet:** continua vendendo normalmente, usando o cache, por um
    **período de carência** (padrão **30 dias**).
 4. **Cache bloqueado/vencido:** se a conta aparece bloqueada ou vencida no cache,
@@ -35,7 +35,7 @@ painel**.
 - Na **renovação**: ao estender a validade no painel, a loja precisa ficar online
   uma vez para puxar a nova data.
 
-## O que faz travar
+## O que bloqueia novas vendas
 
 - Conta **bloqueada** no painel (aplica na próxima revalidação online).
 - **Validade vencida** (checada no próprio cache — vale mesmo offline).
@@ -48,6 +48,29 @@ painel**.
 - `VENDAFACIL_CARENCIA_DIAS`: dias de carência offline (padrão 30).
 - `VENDAFACIL_REVALIDA_HORAS`: intervalo de revalidação online (padrão 12).
 
-> Resumo: sem wi-fi **não trava** — vende com o cache por até 30 dias, e os
-> logins são instantâneos (só vai à rede no máximo a cada 12h, ou na hora de
-> recuperar de um bloqueio/renovação).
+## O que continua disponível
+
+Licença bloqueada recusa novo checkout (403), mas não substitui a tela inteira.
+Continuam disponíveis fechamento de caixa, leitura de produtos/vendas, backup e
+exportação dos XMLs fiscais. O checkout usa só o cache (`online=False`): não
+espera o painel fora do ar. Ativação/login continuam podendo consultar a rede.
+
+## Validade e sincronização
+
+- Data sem hora, como `2026-11-10`, vale até 23:59:59 no fuso UTC−4 de MT; não
+  expira à meia-noite UTC. Data inválida é recusada pelo cadastro/edição (400) e
+  um valor inválido legado bloqueia, não vira licença perpétua.
+- Vendas são locais antes do envio em background. O ACK informa UUIDs aceitos;
+  numa aceitação parcial, só essas vendas saem da fila. Resposta não-JSON, UTF-8
+  inválido ou schema inválido do ACK mantém a fila para o próximo ciclo, sem
+  exceção. Quando `aceitas` existe, precisa ser lista de strings: nunca cai no
+  modo legado por ter tipo errado. Sem `aceitas`, o legado só aceita contagem
+  inteira igual ao lote inteiro (não booleano/float). O checkout não depende
+  dessa sincronização.
+- Cobrança eletrônica aprovada sem venda permanece pendente de conciliação;
+  outra cobrança é recusada (409) e o mesmo payment_id reutiliza a venda, sem
+  nova baixa de estoque.
+- PIX estático normaliza nome/cidade para ASCII e recalcula o CRC do payload.
+
+> Sem internet, vende dentro da carência e da validade do cache. Bloqueio de
+> licença não retém os dados do lojista.

@@ -30,11 +30,19 @@ def _enviar(token: str, vendas: list[dict]) -> list[str]:
     with urllib.request.urlopen(req, timeout=_TIMEOUT) as r:
         if r.status != 200:
             return []
-        data = json.loads(r.read().decode() or "{}")
-    aceitas = data.get("aceitas")
-    if isinstance(aceitas, list):
-        return [str(u) for u in aceitas]
-    if data.get("recebidas") == len(vendas):
+        try:
+            data = json.loads(r.read().decode() or "{}")
+        except (UnicodeError, json.JSONDecodeError):
+            return []
+    if not isinstance(data, dict):
+        return []
+    if "aceitas" in data:
+        aceitas = data["aceitas"]
+        if not isinstance(aceitas, list) or not all(isinstance(u, str) for u in aceitas):
+            return []
+        return aceitas
+    recebidas = data.get("recebidas")
+    if type(recebidas) is int and recebidas == len(vendas):
         return [v["uuid"] for v in vendas]
     return []
 
