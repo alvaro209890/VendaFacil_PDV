@@ -14,14 +14,29 @@ const python = path.join(root, 'backend/.venv/Scripts/python.exe');
 const api = spawn(python, ['-X', 'utf8', '-I', '-c',
   `import sys; sys.path.insert(0, ${JSON.stringify(path.join(root, 'backend'))}); import uvicorn; uvicorn.run('main:app', host='127.0.0.1', port=3121, access_log=False)`],
   { cwd: root, env, stdio: 'inherit' });
-const vite = spawn(process.execPath, [path.join(root, 'node_modules/vite/bin/vite.js'),
-  '--host', '127.0.0.1', '--port', '5173', '--strictPort'],
-  { cwd: root, env: { ...env, VITE_API_URL: 'http://127.0.0.1:3121' }, stdio: 'inherit' });
-function parar() { api.kill(); vite.kill(); }
+let vite = null;
+async function iniciarFrontend() {
+  const limite = Date.now() + 45000;
+  let pronta = false;
+  while (Date.now() < limite) {
+    if (api.exitCode !== null) throw new Error('Backend E2E encerrou antes de ficar pronto.');
+    try {
+      const resposta = await fetch('http://127.0.0.1:3121/health', { signal: AbortSignal.timeout(500) });
+      if (resposta.ok) { pronta = true; break; }
+    } catch { /* backend ainda está iniciando */ }
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+  if (!pronta) throw new Error('Backend E2E não respondeu ao health em 45 segundos.');
+  vite = spawn(process.execPath, [path.join(root, 'node_modules/vite/bin/vite.js'),
+    '--host', '127.0.0.1', '--port', '5173', '--strictPort'],
+    { cwd: root, env: { ...env, VITE_API_URL: 'http://127.0.0.1:3121' }, stdio: 'inherit' });
+  vite.on('error', () => { parar(); process.exit(1); });
+  vite.on('exit', code => { api.kill(); process.exit(code || 0); });
+}
+function parar() { api.kill(); vite?.kill(); }
 process.on('SIGINT', parar);
 process.on('SIGTERM', parar);
 process.on('exit', parar);
 api.on('error', () => { parar(); process.exit(1); });
-vite.on('error', () => { parar(); process.exit(1); });
-api.on('exit', code => { vite.kill(); process.exit(code || 0); });
-vite.on('exit', code => { api.kill(); process.exit(code || 0); });
+api.on('exit', code => { vite?.kill(); process.exit(code || 0); });
+iniciarFrontend().catch(error => { console.error(error.message); parar(); process.exit(1); });
