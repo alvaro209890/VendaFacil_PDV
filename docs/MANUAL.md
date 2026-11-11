@@ -76,6 +76,15 @@ ela sai do total do dia, do caixa, do dashboard e dos relatórios.
 
 Atalhos: **F2** finaliza, **F4** foca a busca.
 
+**Rascunho do carrinho:** os itens e quantidades ficam salvos neste navegador,
+separados por usuário. F5 ou fechar/reabrir a aba recupera os itens; preços e
+estoque são atualizados pelo cadastro ao carregar. Desconto, forma de pagamento e
+dados fiscais precisam ser conferidos novamente. Finalizar com sucesso limpa o
+rascunho. Para desistir antes de vender, use a lixeira **Cancelar venda** no topo
+do carrinho e confirme: ela não registra venda nem baixa estoque. Se o navegador
+não conseguir salvar, o PDV avisa para não recarregar. Não recarregue durante uma
+cobrança na maquininha; o rascunho não é comprovante de pagamento.
+
 ## 4. Formas de pagamento
 - **Dinheiro / Débito / Crédito**: registra direto.
 - **PIX** — dois jeitos:

@@ -23,8 +23,9 @@ import type { Produto, DashboardData, PixQrCodeResponse, Cliente, PagamentoEletr
 import { imprimirRecibo, getLarguraRecibo, setLarguraRecibo } from "../lib/recibo";
 import type { ReciboData } from "../lib/recibo";
 import Mascote from "../components/Mascote";
-
-type CartItem = Produto & { qtd: number };
+import { useAuthStore } from "../store/authStore";
+import { lerCarrinho, salvarCarrinho } from "../lib/carrinho";
+import type { CartItem } from "../lib/carrinho";
 
 const PAGAMENTOS = [
   { value: "dinheiro", label: "Dinheiro", icon: <Banknote size={18} /> },
@@ -53,7 +54,8 @@ const parseMoeda = (v: string) => Number((v || "").replace(",", ".")) || 0;
 export default function PDV() {
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [busca, setBusca] = useState("");
-  const [carrinho, setCarrinho] = useState<CartItem[]>([]);
+  const chaveCarrinho = `vf_carrinho_v1:${useAuthStore((s) => s.user?.id)}`;
+  const [carrinho, setCarrinho] = useState<CartItem[]>(() => lerCarrinho(chaveCarrinho));
   const [desconto, setDesconto] = useState(0);
   const [pagamento, setPagamento] = useState("dinheiro");
   const [valorRecebido, setValorRecebido] = useState("");
@@ -98,6 +100,11 @@ export default function PDV() {
     try {
       const [p, d, c] = await Promise.all([listarProdutos(true), getDashboard(), listarClientes()]);
       setProdutos(p.produtos.filter((x) => x.estoque > 0));
+      // Reabre o rascunho com preço/estoque atuais; o backend segue validando o checkout.
+      setCarrinho((anterior) => anterior.map((item) => {
+        const atual = p.produtos.find((produto) => produto.id === item.id);
+        return atual ? { ...atual, qtd: item.qtd } : item;
+      }));
       setDash(d);
       setClientes(c.clientes);
     } catch {
@@ -140,6 +147,30 @@ export default function PDV() {
   useEffect(() => {
     void carregar();
   }, [carregar]);
+
+  useEffect(() => {
+    if (!salvarCarrinho(chaveCarrinho, carrinho)) {
+      setMsg({ tipo: "erro", texto: "Não foi possível salvar o rascunho. Não recarregue esta aba antes de finalizar a venda." });
+    }
+  }, [carrinho, chaveCarrinho]);
+
+  function cancelarVenda() {
+    if (loading || maqModal || pixModal) return;
+    if (maqPagamentoRef.current) {
+      setMsg({ tipo: "erro", texto: "Há pagamento aprovado. Conclua a venda antes de cancelar o carrinho." });
+      return;
+    }
+    if (!window.confirm("Cancelar esta venda e limpar o carrinho?")) return;
+    setCarrinho([]);
+    setDesconto(0);
+    setValorRecebido("");
+    setPagamento("dinheiro");
+    setClienteFiado("");
+    setEmitirNota(false);
+    setCpfConsumidor("");
+    setMsg(null);
+    buscaRef.current?.focus();
+  }
 
   const filtrados = busca
     ? produtos.filter(
@@ -538,9 +569,16 @@ export default function PDV() {
             <h2 className="text-white font-black text-lg tracking-tight">CARRINHO</h2>
           </div>
           {itensCarrinho > 0 && (
-            <span className="px-3 py-1 rounded-full bg-brand-600 text-white text-[10px] font-black uppercase shadow-lg shadow-brand-600/20">
-              {itensCarrinho} {itensCarrinho === 1 ? "Item" : "Itens"}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="px-3 py-1 rounded-full bg-brand-600 text-white text-[10px] font-black uppercase shadow-lg shadow-brand-600/20">
+                {itensCarrinho} {itensCarrinho === 1 ? "Item" : "Itens"}
+              </span>
+              <button type="button" onClick={cancelarVenda} disabled={loading || !!maqModal || !!pixModal}
+                title="Cancelar venda" aria-label="Cancelar venda"
+                className="p-2 rounded-lg text-red-400 hover:bg-red-500/10 disabled:opacity-40">
+                <Trash2 size={18} />
+              </button>
+            </div>
           )}
         </div>
 

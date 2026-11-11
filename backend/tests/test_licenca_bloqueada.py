@@ -14,7 +14,8 @@ def test_l03_tela_nao_prende_caixa_backup_e_xml():
     assert 'fechar o caixa' in trecho.lower()
     pdv = (RAIZ / 'src' / 'pages' / 'PDV.tsx').read_text(encoding='utf-8')
     assert 'licencaBloqueada' in pdv
-    botao = pdv[pdv.find('disabled={'):pdv.find('disabled={') + 220]
+    inicio = pdv.index('onClick={finalizarVenda}')
+    botao = pdv[inicio:pdv.index('className=', inicio)]
     assert 'licencaBloqueada' in botao
 
 

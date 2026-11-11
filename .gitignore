@@ -17,3 +17,6 @@ dist_installer/
 !.claude/settings.json
 .agents/
 skills-lock.json
+# Relatórios descartáveis do navegador; evidências selecionadas ficam no plano.
+test-results/
+playwright-report/

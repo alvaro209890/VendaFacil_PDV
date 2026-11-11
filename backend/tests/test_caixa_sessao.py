@@ -38,6 +38,7 @@ def test_d4_pdv_avisa_caixa_fechado_sem_bloquear():
     assert 'caixaAtual' in tela
     assert 'Caixa fechado' in tela
     assert 'caixaAberto === false' in tela
-    botao = tela[tela.find('disabled={'):tela.find('disabled={') + 240]
+    inicio = tela.index('onClick={finalizarVenda}')
+    botao = tela[inicio:tela.index('className=', inicio)]
     assert 'caixaAberto' not in botao
     assert 'licencaBloqueada' in botao
