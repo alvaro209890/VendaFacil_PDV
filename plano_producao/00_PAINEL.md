@@ -5,9 +5,9 @@
 | Campo | Valor |
 |---|---|
 | Estado geral | 🟨 EM ANDAMENTO |
-| Fase atual | 2 — correção de lacunas do portão; F3.1–9 já commitados |
-| Próxima ação | Push do checkpoint das Fases 1/2 via helper autorizado; conferir SHA remoto antes de encerrar portões |
-| Última atualização | 2026-11-11 08:50 BRT — roteiro offline verde; revisões pendentes |
+| Fase atual | 3 — segurança e front; continuar de F3.10 |
+| Próxima ação | F3.10: teclado/leitor/atalhos com teste Chromium RED antes de alterar o PDV |
+| Última atualização | 2026-11-11 09:00 BRT — push real05c6323 verificado; fases1/2 fechadas |
 | Commit de partida | `6da6899` |
 | Versão de partida → de entrega | 1.0.12 → 1.0.13 |
 | Testes backend (partida → agora) | 76 → 274 (F2_PORTAO_BACKEND.txt); 9 painel e 5 Chromium verdes, build/lint exit0 |
@@ -20,8 +20,8 @@ Estados gerais possíveis: ⬜ NÃO INICIADO · 🟨 EM ANDAMENTO · ⏸ AGUARDA
 | Fase | Arquivo | Status | Itens fechados | Portão de saída | Commit do fechamento |
 |---|---|---|---|---|---|
 | 0 | `FASE_0_linha_de_base.md` | ✅ | 9/9 | ✅ | 52c6e1e |
-| 1 | `FASE_1_dinheiro_venda_estoque.md` | 🟨 | 15/15 | ⬜ | — |
-| 2 | `FASE_2_caixa_fiado_importacao_licenca.md` | 🟨 | 22/22 (código) | ⬜ L01 revisão/plano/push | — |
+| 1 | `FASE_1_dinheiro_venda_estoque.md` | ✅ | 15/15 | ✅ | 05c6323 |
+| 2 | `FASE_2_caixa_fiado_importacao_licenca.md` | ✅ | 22/22 | ✅ | 05c6323 |
 | 3 | `FASE_3_seguranca_e_front.md` | 🟨 | 9/22 | ⬜ | — |
 | 4 | `FASE_4_fiscal_mt.md` | ⬜ | 0/27 | ⬜ | — |
 | 5 | `FASE_5_robustez_e_suporte.md` | ⬜ | 0/12 | ⬜ | — |

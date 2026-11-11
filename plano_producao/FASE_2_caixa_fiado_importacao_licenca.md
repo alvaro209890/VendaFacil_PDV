@@ -1,6 +1,6 @@
 # Fase 2 — Caixa, fiado, importação de XML e licença
 
-**Status:** 🟨 em andamento (código original concluído; lacunas I06/L07 na reconciliação) · **Depende de:** Fase 1 · **Pistas:** P4, P21 · **Testes:** C01–C08, I01–I05, L01–L04
+**Status:** ✅ concluída · **Depende de:** Fase 1 · **Pistas:** P4, P21 · **Testes:** C01–C08, I01–I05, L01–L04
 
 ## Objetivo
 
@@ -55,7 +55,7 @@ O fechamento do caixa bate com a gaveta, o fiado tem histórico, a importação 
 - [x] C01–C08, I01–I05 e L01–L04 ✅ em `03_TESTES.md` — 8a05019 · roteiro offline revisto deleg_f6a9cdcd; demais casos na suíte274.
 - [x] Suítes do backend e do painel verdes — 8a05019 · F2_PORTAO_BACKEND.txt 274 passed; F2_PORTAO_PAINEL.txt 9 passed; código idêntico e recheck L01 no parent.
 - [x] `docs/CAIXA.md`, `docs/ESTOQUE_E_XML.md`, `docs/LICENCA.md` e `docs/MANUAL.md` atualizados no que mudou — 978c6d4/5b8f0f2/40f49e7 · contratos reconciliados.
-- [~] Pasta do plano commitada e `git push origin master` — checkpoint978c6d4; envio em preparação, sem alegar publicação.
+- [x] Pasta do plano commitada e `git push origin master` — 05c6323 · push real via helper autorizado, readback do SHA remoto igual ao HEAD; testes274/9 e cinco Chromium verdes.
 
 ## Evidências
 

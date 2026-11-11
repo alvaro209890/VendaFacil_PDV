@@ -1,6 +1,6 @@
 # Fase 1 — Dinheiro, venda, estoque e cancelamento
 
-**Status:** 🟨 em andamento · **Depende de:** Fase 0 · **Pistas:** P1, P2, P3, P7, P11 · **Testes:** D01–D05, V01–V13
+**Status:** ✅ concluída · **Depende de:** Fase 0 · **Pistas:** P1, P2, P3, P7, P11 · **Testes:** D01–D05, V01–V13
 
 ## Objetivo
 
@@ -37,7 +37,7 @@ P3 → P7 → P1 → P2. Todas passam por `backend/database.py`, que é **serial
 - [x] Suíte do backend verde, com o número novo no painel — 158 backend / 7 painel em `evidencias/F1_14_GREEN.txt`
 - [x] `grep -n "round(" backend/vendas.py backend/caixa.py backend/contas_receber.py` não mostra conta de dinheiro fora do módulo — 0 ocorrências em 10/11/2026
 - [x] Um commit por pista; `docs/CAIXA.md` e `docs/MANUAL.md` atualizados com o cancelamento de venda
-- [ ] Pasta do plano commitada e `git push origin master`
+- [x] Pasta do plano commitada e `git push origin master` — 05c6323 · push real e SHA remoto05c63237c03a0711e86ab399b60898a1fe9b0139 conferido; encerramento documental tardio após recuperação do helper autorizado.
 
 ## Evidências
 

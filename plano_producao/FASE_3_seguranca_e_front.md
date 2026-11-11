@@ -1,6 +1,6 @@
 # Fase 3 — Segurança mínima e front de caixa
 
-**Status:** 🟨 em andamento (F3.1–F3.9 commitados; retorno à Fase 2 para lacunas do portão) · **Depende de:** Fase 2 · **Pistas:** P5, P6, P10, P14 · **Testes:** S01–S08, U01–U05
+**Status:** 🟨 em andamento (F3.1–F3.9 commitados; portões das Fases 1/2 encerrados) · **Depende de:** Fase 2 · **Pistas:** P5, P6, P10, P14 · **Testes:** S01–S08, U01–U05
 
 ## Objetivo
 
