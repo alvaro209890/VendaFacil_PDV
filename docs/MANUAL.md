@@ -56,6 +56,10 @@ com os dados e o certificado da própria loja.
 juntos em uma única transação local. Falha em qualquer etapa desfaz todas essas
 alterações. A emissão fiscal acontece depois dessa gravação: se a nota falhar,
 a venda permanece registrada e o erro fiscal é apresentado para tratamento.
+O aviso mostra o motivo devolvido pelo backend e orienta **não repetir a venda**:
+o recebimento e o estoque já foram registrados. A tela só informa "Nota emitida"
+com retorno `autorizada`; rejeição, pendência e contingência mostram o retorno
+fiscal separado, sem afirmar autorização. Isso não substitui a consulta fiscal.
 
 **Cancelamento comercial (API, F1.9):** o backend exige um motivo de 3–255
 caracteres, registra data/motivo e devolve estoque e fiado numa transação. Duas

@@ -538,7 +538,15 @@ export default function PDV() {
       setUltimaVenda(recibo);
       if (imprimirAuto) imprimirRecibo(recibo, largura);
 
-      setMsg({ tipo: "ok", texto: `Venda finalizada! Total: R$ ${total.toFixed(2)}${emitirNota ? " (Nota emitida)" : ""}` });
+      // A venda já foi gravada: falha fiscal não deve incentivar repetir a cobrança.
+      const statusNota = resp.nota?.status;
+      const avisoFiscal = !!resp.erro_nota || (emitirNota && statusNota !== "autorizada");
+      const motivoFiscal = resp.erro_nota || resp.nota?.motivo_rejeicao || resp.nota?.mensagem
+        || "Retorno fiscal não confirmou a autorização.";
+      const resultadoFiscal = avisoFiscal
+        ? ` Venda registrada; não repita a venda. NFC-e ${statusNota || "não emitida"}: ${motivoFiscal}`
+        : statusNota === "autorizada" ? " (Nota emitida)" : "";
+      setMsg({ tipo: avisoFiscal ? "erro" : "ok", texto: `Venda finalizada! Total: R$ ${total.toFixed(2)}${resultadoFiscal}` });
       maqPagamentoRef.current = null;
       setCarrinho([]); setQuantidadesTexto({});
       setDesconto(0);
