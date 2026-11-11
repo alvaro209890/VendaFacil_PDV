@@ -6,7 +6,7 @@
 |---|---|
 | Estado geral | 🟨 EM ANDAMENTO |
 | Fase atual | 2 — correção de lacunas do portão; F3.1–9 já commitados |
-| Próxima ação | Receber revisão deleg_f6a9cdcd de L01, commitar cobertura; fechar portão/plano e push via helper autorizado sd |
+| Próxima ação | Push do checkpoint das Fases 1/2 via helper autorizado; conferir SHA remoto antes de encerrar portões |
 | Última atualização | 2026-11-11 08:50 BRT — roteiro offline verde; revisões pendentes |
 | Commit de partida | `6da6899` |
 | Versão de partida → de entrega | 1.0.12 → 1.0.13 |
@@ -35,7 +35,7 @@ Status de fase: ⬜ não iniciada · 🟨 em andamento · ✅ concluída · ⏸ 
 | Controle | Total | Fechados | Bloqueados | Abertos |
 |---|---|---|---|---|
 | Pistas (`02_PISTAS.md`) | 43 | 10 | 0 | 33 |
-| Testes (`03_TESTES.md`) | 123 | 53 | 0 | 70 |
+| Testes (`03_TESTES.md`) | 123 | 55 | 0 | 68 |
 | Bloqueios (`04_BLOQUEIOS.md`) | 9 | — | 0 ativos | — |
 | Decisões do Álvaro (`05_DECISOES_ALVARO.md`) | 9 | 0 respondidas | — | 9 |
 

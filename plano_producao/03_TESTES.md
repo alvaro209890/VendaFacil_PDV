@@ -91,7 +91,7 @@ Ao fechar: preencha **Onde** (`arquivo::função`) e **Commit**. Teste novo que 
 
 | ID | O que prova | Status | Onde | Commit |
 |---|---|---|---|---|
-| L01 | Modo local, sem rede: todos os fluxos funcionam | ⬜ | Checkout offline em test_licenca.py; roteiro completo de todos os fluxos ainda pendente | be1efa7 (parcial) |
+| L01 | Modo local, sem rede: todos os fluxos funcionam | ✅ | `test_offline_roteiro.py`: core API completo com zero rede; UI/instalador/fiscal têm portões próprios | 8a05019 |
 | L02 | Painel fora do ar dentro da carência: vende normalmente | ✅ | `backend/tests/test_licenca.py::test_l02_painel_fora_vende_na_carencia` | be1efa7 |
 | L03 | Licença vencida ou carência estourada: ainda fecha caixa, lê dados, exporta backup e XML fiscal | ✅ | `backend/tests/test_licenca_bloqueada.py (UI + API)` | b247f2b |
 | L04 | Painel fora do ar não atrasa o checkout (tempo medido) | ✅ | `backend/tests/test_licenca.py::test_l04_painel_fora_nao_atrasa_checkout` | 3e8f1a4 |
