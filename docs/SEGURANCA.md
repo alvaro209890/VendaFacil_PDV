@@ -40,6 +40,19 @@ No executável, a pasta é `%LOCALAPPDATA%\VendaFacilPDV\dados`. Em desenvolvime
 | `jwt_secret.key` | segredo que assina o token local |
 | `logs/vendafacil.log` | erros, com segredo mascarado |
 
+## Dependências e auditoria npm
+
+Em 2026-11-11, a auditoria real passou de 21 avisos para zero após atualização
+conservadora do lock e override de `minimatch` para `^11.0.8`. O override deve
+ser reavaliado quando os consumidores atualizarem seus próprios intervalos;
+não é autorização para forçar versões futuras nem ocultar advisories.
+
+`npm audit`, `npm ls`, build e ESLint foram executados novamente pelo orquestrador,
+assim como os 13 testes Chromium existentes; a revisão independente do patch
+fica registrada no plano. Zero aqui significa zero avisos conhecidos no relatório
+consultado, não ausência garantida de vulnerabilidades. As credenciais de registro
+npm nunca entram em relatório ou commit.
+
 ## PC trocado ou roubado
 
 1. No computador novo, restaurar o backup só se a loja ainda tem o controle da máquina antiga. Se foi roubo, não restaurar o certificado velho.
