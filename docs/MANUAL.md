@@ -93,6 +93,12 @@ está sendo carregado ou há janela de pagamento aberta. Não descartam o carrin
 Depois de adicionar pelo botão, concluir uma venda ou fechar a janela de pagamento,
 o foco volta ao campo do leitor; mudanças de estado comuns não roubam o foco.
 
+**Decimais:** quantidade e desconto aceitam vírgula ou ponto e preservam a digitação
+parcial (por exemplo, `0,`). Quantidade aceita até 3 casas e deve ser positiva e
+não superar o estoque; desconto é não negativo com até 2 casas. Campo inválido
+fica visível para correção e impede finalizar por botão ou F2; não se vende com
+um valor anterior escondido. Limpar o desconto equivale a zero.
+
 **Rascunho do carrinho:** os itens e quantidades ficam salvos neste navegador,
 separados por usuário. F5 ou fechar/reabrir a aba recupera os itens; preços e
 estoque são atualizados pelo cadastro ao carregar. Desconto, forma de pagamento e

@@ -50,13 +50,22 @@ const fmtQtd = (v: number) => Number(v || 0).toLocaleString("pt-BR", { maximumFr
 const passoQtd = (unidade?: string) => ["KG", "G", "LT", "ML"].includes((unidade || "").toUpperCase()) ? 0.1 : 1;
 const moeda = (v: number) => `R$ ${Number(v || 0).toFixed(2)}`;
 const parseMoeda = (v: string) => Number((v || "").replace(",", ".")) || 0;
+function decimalDigitado(texto: string, casas: number): number | null {
+  const valor = texto.trim().replace(",", ".");
+  if (!/^(?:\d+(?:\.\d*)?|\.\d+)$/.test(valor) || (valor.split(".")[1]?.length ?? 0) > casas) return null;
+  const numero = Number(valor);
+  return Number.isFinite(numero) ? numero : null;
+}
 
 export default function PDV() {
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [busca, setBusca] = useState("");
   const chaveCarrinho = `vf_carrinho_v1:${useAuthStore((s) => s.user?.id)}`;
   const [carrinho, setCarrinho] = useState<CartItem[]>(() => lerCarrinho(chaveCarrinho));
-  const [desconto, setDesconto] = useState(0);
+  const [descontoTexto, setDescontoTexto] = useState("");
+  const [quantidadesTexto, setQuantidadesTexto] = useState<Record<number, string>>({});
+  const desconto = decimalDigitado(descontoTexto, 2) ?? 0;
+  function setDesconto(valor: number) { setDescontoTexto(valor ? String(valor) : ""); }
   const [pagamento, setPagamento] = useState("dinheiro");
   const [valorRecebido, setValorRecebido] = useState("");
   const [loading, setLoading] = useState(false);
@@ -161,7 +170,7 @@ export default function PDV() {
       return;
     }
     if (!window.confirm("Cancelar esta venda e limpar o carrinho?")) return;
-    setCarrinho([]);
+    setCarrinho([]); setQuantidadesTexto({});
     setDesconto(0);
     setValorRecebido("");
     setPagamento("dinheiro");
@@ -263,11 +272,32 @@ export default function PDV() {
     return () => window.removeEventListener("keydown", onKey);
   });
 
+  function limparTextoQuantidade(id: number) {
+    setQuantidadesTexto((prev) => { const novo = { ...prev }; delete novo[id]; return novo; });
+  }
+
+  function quantidadeDigitadaValida(id: number, estoque: number) {
+    if (quantidadesTexto[id] === undefined) return true;
+    const numero = decimalDigitado(quantidadesTexto[id], 3);
+    return numero !== null && numero > 0 && numero <= estoque;
+  }
+
+  function confirmarQuantidade(id: number, estoque: number) {
+    if (!quantidadeDigitadaValida(id, estoque)) {
+      setMsg({ tipo: "erro", texto: "Corrija a quantidade: maior que zero, até o estoque e com até 3 casas decimais." });
+      return false;
+    }
+    limparTextoQuantidade(id);
+    return true;
+  }
+
   function removerDoCarrinho(id: number) {
+    limparTextoQuantidade(id);
     setCarrinho((prev) => prev.filter((i) => i.id !== id));
   }
 
   function alterarQtd(id: number, delta: number) {
+    limparTextoQuantidade(id);
     setCarrinho((prev) =>
       prev.map((i) => {
         if (i.id !== id) return i;
@@ -356,6 +386,14 @@ export default function PDV() {
       return;
     }
     if (carrinho.length === 0) return;
+    if (descontoTexto.trim() && decimalDigitado(descontoTexto, 2) === null) {
+      setMsg({ tipo: "erro", texto: "Corrija o desconto: valor não negativo com até 2 casas decimais." });
+      return;
+    }
+    if (carrinho.some((i) => !quantidadeDigitadaValida(i.id, i.estoque))) {
+      setMsg({ tipo: "erro", texto: "Corrija a quantidade: maior que zero, até o estoque e com até 3 casas decimais." });
+      return;
+    }
     if (!dinheiroOk) {
       setMsg({ tipo: "erro", texto: `Informe o dinheiro recebido. Ainda faltam ${moeda(faltaDinheiro)}.` });
       return;
@@ -502,7 +540,7 @@ export default function PDV() {
 
       setMsg({ tipo: "ok", texto: `Venda finalizada! Total: R$ ${total.toFixed(2)}${emitirNota ? " (Nota emitida)" : ""}` });
       maqPagamentoRef.current = null;
-      setCarrinho([]);
+      setCarrinho([]); setQuantidadesTexto({});
       setDesconto(0);
       setPagamento("dinheiro");
       setValorRecebido("");
@@ -651,12 +689,19 @@ export default function PDV() {
                           <Minus size={14} />
                         </button>
                         <input
-                          type="number"
+                          type="text"
+                          inputMode="decimal"
                           ref={i.id === carrinho[carrinho.length - 1]?.id ? quantidadeRef : undefined}
                           aria-label={`Quantidade de ${i.nome}`}
-                          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); buscaRef.current?.focus(); } }}
-                          value={i.qtd}
-                          onChange={(e) => definirQtd(i.id, Number(e.target.value))}
+                          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); if (confirmarQuantidade(i.id, i.estoque)) buscaRef.current?.focus(); } }}
+                          value={quantidadesTexto[i.id] ?? String(i.qtd)}
+                          onChange={(e) => {
+                            const texto = e.target.value;
+                            setQuantidadesTexto((prev) => ({ ...prev, [i.id]: texto }));
+                            const numero = decimalDigitado(texto, 3);
+                            if (numero !== null && numero > 0 && numero <= i.estoque) definirQtd(i.id, numero);
+                          }}
+                          onBlur={() => { confirmarQuantidade(i.id, i.estoque); }}
                           min={passoQtd(i.unidade)}
                           max={i.estoque}
                           step={passoQtd(i.unidade)}
@@ -695,11 +740,12 @@ export default function PDV() {
                 <div className="relative">
                   <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-500">R$</span>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="decimal"
                     ref={descontoRef}
                     aria-label="Desconto"
-                    value={desconto || ""}
-                    onChange={(e) => setDesconto(Number(e.target.value) || 0)}
+                    value={descontoTexto}
+                    onChange={(e) => setDescontoTexto(e.target.value)}
                     placeholder="0.00"
                     className="w-24 bg-slate-900/50 border border-slate-700/50 rounded-lg pl-7 pr-2 py-1.5 text-brand-400 text-right text-xs font-bold focus:outline-none focus:border-brand-500 transition-all"
                   />

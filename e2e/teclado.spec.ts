@@ -32,7 +32,7 @@ test.beforeEach(async ({ page, request }, info) => {
 });
 
 test('U02: F3 foca quantidade e Enter confirma sem vender', async ({ page }) => {
-  const quantidade = page.locator('input[type="number"][max="20"]');
+  const quantidade = page.getByLabel(/^Quantidade de KEY-/);
   await page.keyboard.press('F3');
   await expect(quantidade).toBeFocused();
   await page.keyboard.press('ControlOrMeta+A');
@@ -109,7 +109,7 @@ test('U02: leitor e F4 nao alteram carrinho sob janela PIX', async ({ page, requ
     headers: { Authorization: `Bearer ${token}` },
     data: { pix_chave: 'fixture-e2e@example.invalid', pix_nome: 'Fixture', pix_cidade: 'Teste' },
   });
-  const quantidade = page.getByRole('spinbutton', { name: /^Quantidade de KEY-/ });
+  const quantidade = page.getByLabel(/^Quantidade de KEY-/);
   const codigo = (await quantidade.getAttribute('aria-label'))!.replace('Quantidade de ', '');
   await page.keyboard.press('F7');
   await page.keyboard.press('Tab');
@@ -143,7 +143,7 @@ test('U02: tres produtos distintos e venda inteira so com teclado', async ({ pag
     await page.keyboard.type(codigo, { delay: 2 });
     await page.keyboard.press('Enter');
   }
-  await expect(page.getByRole('spinbutton', { name: /^Quantidade de KEY-/ })).toHaveCount(3);
+  await expect(page.getByLabel(/^Quantidade de KEY-/)).toHaveCount(3);
   await page.keyboard.press('F7');
   await expect(page.getByRole('button', { name: 'Dinheiro', exact: true })).toBeFocused();
   for (let n = 0; n < 5; n += 1) await page.keyboard.press('Tab');
