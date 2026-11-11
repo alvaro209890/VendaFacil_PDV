@@ -11,21 +11,21 @@ Ao fechar: preencha **Onde** (`arquivo::função`) e **Commit**. Teste novo que 
 | ID | O que prova | Status | Onde | Commit |
 |---|---|---|---|---|
 | V14 | P23: Validar todas as referências e retornos por usuário | ✅ | `backend/tests/test_referencias.py` | c7e3991 |
-| I06 | P24: Importação atômica/idempotente e validar GTIN/modelo/embalagem | ⬜ | | |
+| I06 | P24: Importação atômica/idempotente e validar GTIN/modelo/embalagem | ✅ | `test_importacao_atomica.py` + `test_importacao_parser.py` + `test_importacao_regras.py`; falhas/concorrência/schema e HTTP400 | 00e709d/5b8f0f2 |
 | S09 | P25: Nunca registrar corpo bruto; sanitizar erros e exceções | ⬜ | | |
 | S10 | P26: Preservar segredo omitido/vazio; remoção precisa ser explícita | ⬜ | | |
-| L05 | P27: Persistir pagamento pendente e impedir segunda cobrança/venda | ⬜ | | |
-| L06 | P28: Normalização ASCII, comprimento em bytes, CRC provado | ⬜ | | |
-| L07 | P29: Conferir contrato de ACK e preservar pendências em resposta inválida | ⬜ | | |
-| L08 | P30: Validar datas, recusar inválidas e usar fim do dia local de MT | ⬜ | | |
+| L05 | P27: Persistir pagamento pendente e impedir segunda cobrança/venda | ✅ | `backend/tests/test_cobranca_pendente.py` | b633307 |
+| L06 | P28: Normalização ASCII, comprimento em bytes, CRC provado | ✅ | `backend/tests/test_pix_emv.py` | 3227373 |
+| L07 | P29: Conferir contrato de ACK e preservar pendências em resposta inválida | ✅ | `test_sync_ack.py` + `test_sync_ack_invalido.py`: parcial, inválidos/schema, retry e legado | 46244a9/40f49e7 |
+| L08 | P30: Validar datas, recusar inválidas e usar fim do dia local de MT | ✅ | `painel/tests/test_licenca_data.py` | f1aeec4 |
 | U06 | P31: Parser numérico pt-BR compartilhado, sem truncamento silencioso | ⬜ | | |
 | S11 | P32: Escape completo de texto/atributos; QR Base64 validado | ⬜ | | |
 | E10 | P33: Esperar imagens e afterprint, ciclo testável | ⬜ | | |
 | U07 | P34: Total diário pelo backend, excluindo canceladas e fuso MT | ⬜ | | |
 | X14 | P35: Reserva persistente/concorrente e tratamento de falhas antes da transmissão | ⬜ | | |
 | X15 | P36: Basear prazo em dhRecbto; datas fiscais em MT | ⬜ | | |
-| C09 | P37: Preservar fiado visível e validar referência/estado da conta | ⬜ | | |
-| I07 | P38: Cadastro do produto inteiro em uma transação | ⬜ | | |
+| C09 | P37: Preservar fiado visível e validar referência/estado da conta | ✅ | `backend/tests/test_cliente_divida.py + test_adversario_caixa.py` | e1ad5e2/be78390 |
+| I07 | P38: Cadastro do produto inteiro em uma transação | ✅ | `backend/tests/test_produto_atomico.py` | 7dee50a |
 | R10 | P39: Encerrar com segurança e identificar serviço antes de reutilizar porta | ⬜ | | |
 | S12 | P40: Atualizar dependências compatíveis e validar build/lint/audit | ⬜ | | |
 | S13 | P41: Bootstrap atômico, validação de senha e versão de credencial | ⬜ | | |
@@ -68,52 +68,52 @@ Ao fechar: preencha **Onde** (`arquivo::função`) e **Commit**. Teste novo que 
 
 | ID | O que prova | Status | Onde | Commit |
 |---|---|---|---|---|
-| C01 | Abrir, vender em dinheiro, sangria, suprimento, fechar: dinheiro esperado exato | ⬜ | | |
-| C02 | Recebimento de fiado em dinheiro entra no dinheiro esperado do caixa | ⬜ | | |
-| C03 | Baixa parcial: pendente e status corretos, histórico de pagamentos gravado | ⬜ | | |
-| C04 | Pagamento maior que o pendente → recusado | ⬜ | | |
-| C05 | Valor ≤ 0 em sangria, suprimento e pagamento → 400 | ⬜ | | |
-| C06 | Venda de uma sessão de caixa não entra no resumo da sessão seguinte | ⬜ | | |
-| C07 | Fechar caixa funciona com a licença bloqueada | ⬜ | | |
-| C08 | Segundo caixa aberto pelo mesmo usuário → recusado | ⬜ | | |
+| C01 | Abrir, vender em dinheiro, sangria, suprimento, fechar: dinheiro esperado exato | ✅ | `backend/tests/test_caixa_sessao.py::test_c01_esperado_bate_com_gaveta` | 320bc56 |
+| C02 | Recebimento de fiado em dinheiro entra no dinheiro esperado do caixa | ✅ | `backend/tests/test_fiado_caixa.py` | 7c56670 |
+| C03 | Baixa parcial: pendente e status corretos, histórico de pagamentos gravado | ✅ | `backend/tests/test_fiado_historico.py` | 2fbd5e1 |
+| C04 | Pagamento maior que o pendente → recusado | ✅ | `backend/tests/test_fiado_limites.py` | 4033835 |
+| C05 | Valor ≤ 0 em sangria, suprimento e pagamento → 400 | ✅ | `backend/tests/test_caixa_limites.py + test_fiado_limites.py` | 85a3abf/4033835 |
+| C06 | Venda de uma sessão de caixa não entra no resumo da sessão seguinte | ✅ | `backend/tests/test_caixa_sessao.py::test_c06_venda_nao_entra_na_sessao_seguinte` | 320bc56 |
+| C07 | Fechar caixa funciona com a licença bloqueada | ✅ | `backend/tests/test_licenca_bloqueada.py::test_c07_api_nao_recusa_caixa_leitura_backup_xml` | b247f2b |
+| C08 | Segundo caixa aberto pelo mesmo usuário → recusado | ✅ | `backend/tests/test_caixa_limites.py::test_c08_segundo_caixa_recusado` | 85a3abf |
 
 ## I — Importação de XML e produtos (Fase 2)
 
 | ID | O que prova | Status | Onde | Commit |
 |---|---|---|---|---|
-| I01 | Mesma chave de NF-e importada duas vezes não duplica estoque | ⬜ | | |
-| I02 | Unidade e quantidade por embalagem convertidas corretamente | ⬜ | | |
-| I03 | XML malformado ou que não é NF-e → 400, nada gravado | ⬜ | | |
-| I04 | Código de barras duplicado → recusado ou unificado, sem dois produtos iguais | ⬜ | | |
-| I05 | Item com `cEAN` "SEM GTIN" importa sem código de barras falso | ⬜ | | |
+| I01 | Mesma chave de NF-e importada duas vezes não duplica estoque | ✅ | `backend/tests/test_importacao_chave.py` | 781f6cd |
+| I02 | Unidade e quantidade por embalagem convertidas corretamente | ✅ | `backend/tests/test_importacao_regras.py (3 casos de embalagem)` | 18c590d |
+| I03 | XML malformado ou que não é NF-e → 400, nada gravado | ✅ | `backend/tests/test_importacao_regras.py::test_i03_xml_invalido_nao_grava` | 18c590d |
+| I04 | Código de barras duplicado → recusado ou unificado, sem dois produtos iguais | ✅ | `backend/tests/test_importacao_regras.py::test_i04_codigo_repetido_nao_cria_outro_produto` | 18c590d |
+| I05 | Item com `cEAN` "SEM GTIN" importa sem código de barras falso | ✅ | `backend/tests/test_importacao_regras.py::test_i05_sem_gtin_nao_grava_codigo_falso` | 18c590d |
 
 ## L — Licença e sincronização (Fase 2)
 
 | ID | O que prova | Status | Onde | Commit |
 |---|---|---|---|---|
-| L01 | Modo local, sem rede: todos os fluxos funcionam | ⬜ | | |
-| L02 | Painel fora do ar dentro da carência: vende normalmente | ⬜ | | |
-| L03 | Licença vencida ou carência estourada: ainda fecha caixa, lê dados, exporta backup e XML fiscal | ⬜ | | |
-| L04 | Painel fora do ar não atrasa o checkout (tempo medido) | ⬜ | | |
+| L01 | Modo local, sem rede: todos os fluxos funcionam | ⬜ | Checkout offline em test_licenca.py; roteiro completo de todos os fluxos ainda pendente | be1efa7 (parcial) |
+| L02 | Painel fora do ar dentro da carência: vende normalmente | ✅ | `backend/tests/test_licenca.py::test_l02_painel_fora_vende_na_carencia` | be1efa7 |
+| L03 | Licença vencida ou carência estourada: ainda fecha caixa, lê dados, exporta backup e XML fiscal | ✅ | `backend/tests/test_licenca_bloqueada.py (UI + API)` | b247f2b |
+| L04 | Painel fora do ar não atrasa o checkout (tempo medido) | ✅ | `backend/tests/test_licenca.py::test_l04_painel_fora_nao_atrasa_checkout` | 3e8f1a4 |
 
 ## S — Segurança (Fase 3)
 
 | ID | O que prova | Status | Onde | Commit |
 |---|---|---|---|---|
-| S01 | Senhas erradas seguidas → bloqueio temporário; depois da espera, a senha certa entra | ⬜ | | |
-| S02 | `/registro` sem token, depois do primeiro usuário → recusado | ⬜ | | |
-| S03 | Origem estranha não recebe `Access-Control-Allow-Origin` | ⬜ | | |
-| S04 | `/docs` e `/openapi.json` → 404 quando empacotado | ⬜ | | |
-| S05 | Leitura da configuração fiscal nunca devolve CSC, senha, `.pfx` nem token | ⬜ | | |
-| S06 | Depois da suíte, o log não contém senha, token, CSC nem `.pfx` | ⬜ | | |
-| S07 | Toda rota `/api/*` (fora login, registro, ativação e health) responde 401 sem token — teste percorre `app.routes` | ⬜ | | |
-| S08 | Token expirado ou adulterado → 401 | ⬜ | | |
+| S01 | Senhas erradas seguidas → bloqueio temporário; depois da espera, a senha certa entra | ✅ | `backend/tests/test_login_limite.py` | 3544de8 |
+| S02 | `/registro` sem token, depois do primeiro usuário → recusado | ✅ | `backend/tests/test_registro_fechado.py` | ac2f81e |
+| S03 | Origem estranha não recebe `Access-Control-Allow-Origin` | ✅ | `backend/tests/test_cors.py` | 433ff7c |
+| S04 | `/docs` e `/openapi.json` → 404 quando empacotado | ✅ | `backend/tests/test_docs_empacotado.py (flag empacotado; exe real na F6)` | 88a4ca2 |
+| S05 | Leitura da configuração fiscal nunca devolve CSC, senha, `.pfx` nem token | ✅ | `backend/tests/test_segredos_config.py::test_s05_leitura_nao_devolve_segredo` | c7ff77c |
+| S06 | Depois da suíte, o log não contém senha, token, CSC nem `.pfx` | ✅ | `backend/tests/test_segredos_config.py::test_s06_log_nao_grava_segredo (payload JSON fiscal; bytes em S09 ainda pendente)` | c7ff77c |
+| S07 | Toda rota `/api/*` (fora login, registro, ativação e health) responde 401 sem token — teste percorre `app.routes` | ✅ | `backend/tests/test_rotas_sem_token.py (inclui heartbeat público)` | a7a398d |
+| S08 | Token expirado ou adulterado → 401 | ✅ | `backend/tests/test_rotas_sem_token.py` | a7a398d |
 
 ## U — Front e teclado (Fase 3)
 
 | ID | O que prova | Status | Onde | Commit |
 |---|---|---|---|---|
-| U01 | Carrinho sobrevive ao F5 e é limpo ao finalizar | ⬜ | | |
+| U01 | Carrinho sobrevive ao F5 e é limpo ao finalizar | ✅ | `e2e/carrinho.spec.ts` (5 casos Chromium real, `F3_09_E2E.txt`) | 1a23906 |
 | U02 | Venda inteira só com teclado: código + Enter (3 itens), F2, confirmar | ⬜ | | |
 | U03 | Quantidade e desconto aceitam `1,5` e `1.5` | ⬜ | | |
 | U04 | Foco volta ao campo de código depois de adicionar, finalizar e fechar janela | ⬜ | | |

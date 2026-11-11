@@ -1,0 +1,62 @@
+[WebServer] INFO:     Started server process [35020]
+[WebServer] INFO:     Waiting for application startup.
+[WebServer] INFO:     Application startup complete.
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+
+Running 2 tests using 1 worker
+
+[1/2] e2e\carrinho.spec.ts:40:1 › U01: F5 preserva o carrinho e finalizar apaga o rascunho
+[WebServer] INFO: http_error request_id=7791f7fc7b78 status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+  1) e2e\carrinho.spec.ts:40:1 › U01: F5 preserva o carrinho e finalizar apaga o rascunho ──────────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText('Total a Pagar', { exact: true })
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByText('Total a Pagar', { exact: true }) with timeout 5000ms
+      - waiting for getByText('Total a Pagar', { exact: true })
+
+
+      41 |   await adicionar(page);
+      42 |   await page.reload();
+    > 43 |   await expect(page.getByText('Total a Pagar', { exact: true })).toBeVisible();
+         |                                                                  ^
+      44 |   await page.getByPlaceholder('0,00', { exact: true }).fill('5');
+      45 |   await page.getByRole('button', { name: /Finalizar Venda/ }).click();
+      46 |   await expect(page.getByText(/Venda finalizada!/)).toBeVisible();
+        at C:\GIS\VendaFacil_PDV\e2e\carrinho.spec.ts:43:66
+
+    Error Context: test-results\carrinho-U01-F5-preserva-o-3400d--finalizar-apaga-o-rascunho\error-context.md
+
+
+[2/2] e2e\carrinho.spec.ts:54:1 › U01: cancelar a venda apaga o rascunho sem baixar estoque
+  2) e2e\carrinho.spec.ts:54:1 › U01: cancelar a venda apaga o rascunho sem baixar estoque ─────────
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: 'Cancelar venda', exact: true })
+
+
+      55 |   await adicionar(page);
+      56 |   page.once('dialog', dialog => dialog.accept());
+    > 57 |   await page.getByRole('button', { name: 'Cancelar venda', exact: true }).click();
+         |                                                                           ^
+      58 |   await page.reload();
+      59 |   await expect(page.getByText('Total a Pagar', { exact: true })).toHaveCount(0);
+      60 |   const produtos = await request.get(`${api}/api/produtos`, { headers: { Authorization: `Bearer ${token}` } });
+        at C:\GIS\VendaFacil_PDV\e2e\carrinho.spec.ts:57:75
+
+    Error Context: test-results\carrinho-U01-cancelar-a-ve-e46f1-rascunho-sem-baixar-estoque\error-context.md
+
+
+  2 failed
+    e2e\carrinho.spec.ts:40:1 › U01: F5 preserva o carrinho e finalizar apaga o rascunho ───────────
+    e2e\carrinho.spec.ts:54:1 › U01: cancelar a venda apaga o rascunho sem baixar estoque ──────────

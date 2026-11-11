@@ -1,6 +1,6 @@
 # Fase 3 — Segurança mínima e front de caixa
 
-**Status:** ⬜ não iniciada · **Depende de:** Fase 2 · **Pistas:** P5, P6, P10, P14 · **Testes:** S01–S08, U01–U05
+**Status:** 🟨 em andamento (F3.1–F3.9 commitados; retorno à Fase 2 para lacunas do portão) · **Depende de:** Fase 2 · **Pistas:** P5, P6, P10, P14 · **Testes:** S01–S08, U01–U05
 
 ## Objetivo
 
@@ -10,18 +10,18 @@ Um PDV de balcão seguro o bastante para ficar ligado o dia todo num PC de loja,
 
 ### Segurança (backend)
 
-- [ ] F3.1 (P5) Limite de tentativas no login local com espera crescente, sem travar o lojista para sempre. Teste S01
-- [ ] F3.2 (P5) `/registro` fechado depois do primeiro usuário: novo usuário só por quem está autenticado. Teste S02. Conferir que o primeiro acesso da loja continua simples
-- [ ] F3.3 (P5) CORS restrito à origem do próprio PDV (`127.0.0.1` e `localhost` na porta em uso). Teste S03. O modo de desenvolvimento do Vite continua funcionando
-- [ ] F3.4 (P5) Senha: mínimo e lista de senhas fracas revisados; registrar a escolha em `docs/SEGURANCA.md`. Validade do token (30 dias) avaliada e justificada
-- [ ] F3.5 (P6) `/docs` e `/openapi.json` desligados quando empacotado. Teste S04
-- [ ] F3.6 Teste S07: percorre `app.routes` e exige 401 sem token em toda rota `/api/*`, com lista explícita das exceções. Teste S08
-- [ ] F3.7 (P14) Teste S05 (configuração fiscal e da maquininha nunca devolvem segredo) e S06 (log sem segredo depois da suíte)
-- [ ] F3.8 Escrever `docs/SEGURANCA.md`: o que o sistema protege, o que é aceito num PDV offline e por quê (cofre fiscal em claro no SQLite — decisão D6), onde ficam os segredos, o que fazer se o PC da loja for trocado ou roubado
+- [x] F3.1 (P5) Limite de tentativas no login local com espera crescente, sem travar o lojista para sempre. Teste S01 — 3544de8 · RED a sexta ainda entrava; suíte196; revisão deleg_6eb90d8f aprovada
+- [x] F3.2 (P5) `/registro` fechado depois do primeiro usuário: novo usuário só por quem está autenticado. Teste S02. Conferir que o primeiro acesso da loja continua simples — ac2f81e · RED segundo registro era 200; suíte197; revisão deleg_cbdb6c83 aprovada
+- [x] F3.3 (P5) CORS restrito à origem do próprio PDV (`127.0.0.1` e `localhost` na porta em uso). Teste S03. O modo de desenvolvimento do Vite continua funcionando — 433ff7c · RED cabeçalho era *; suíte199; revisão deleg_2268a7a3 aprovada
+- [x] F3.4 (P5) Senha: mínimo e lista de senhas fracas revisados; registrar a escolha em `docs/SEGURANCA.md`. Validade do token (30 dias) avaliada e justificada — ebc8390 · RED 12345678 cadastrava; suíte200; revisão deleg_0b710f4c aprovada
+- [x] F3.5 (P6) `/docs` e `/openapi.json` desligados quando empacotado. Teste S04 — 88a4ca2 · RED urls_doc não existia; suíte202; revisão deleg_d2c28f21 aprovada
+- [x] F3.6 Teste S07: percorre `app.routes` e exige 401 sem token em toda rota `/api/*`, com lista explícita das exceções. Teste S08 — a7a398d · RED POST sem token era 422; suíte204; revisão deleg_b7e4672e aprovada
+- [x] F3.7 (P14) Teste S05 (configuração fiscal e da maquininha nunca devolvem segredo) e S06 (log sem segredo depois da suíte) — c7ff77c · testes travam a máscara; suíte206; revisão deleg_8cac5cf5 aprovada
+- [x] F3.8 Escrever `docs/SEGURANCA.md`: o que o sistema protege, o que é aceito num PDV offline e por quê (cofre fiscal em claro no SQLite — decisão D6), onde ficam os segredos, o que fazer se o PC da loja for trocado ou roubado — f9d8ad1 · doc conferida contra paths.py; revisão deleg_ff063fa7 aprovada
 
 ### Front (caixa usa teclado e leitor, não mouse)
 
-- [ ] F3.9 (P10) Carrinho persistido em `localStorage`, restaurado ao abrir e limpo ao finalizar ou cancelar. Teste U01
+- [x] F3.9 (P10) Carrinho persistido em `localStorage`, restaurado ao abrir e limpo ao finalizar ou cancelar. Teste U01 — 1a23906 · 5 testes Chromium reais; backend206/painel9; revisão deleg_385d098d aprovada
 - [ ] F3.10 Teclado: leitor de código de barras (digitação rápida + Enter) adiciona o item; Enter confirma; Esc fecha janela; F2 finaliza; atalho para quantidade, desconto e forma de pagamento. Teste U02
 - [ ] F3.11 Foco sempre volta ao campo de código depois de adicionar, finalizar e fechar janela. Teste U04
 - [ ] F3.12 Campos de quantidade e desconto aceitam vírgula e ponto, sem travar a digitação. Teste U03

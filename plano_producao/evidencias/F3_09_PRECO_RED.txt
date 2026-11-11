@@ -1,0 +1,41 @@
+[WebServer] INFO:     Started server process [35260]
+
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+
+Running 1 test using 1 worker
+
+[1/1] e2e\carrinho.spec.ts:94:1 › U01: recarga atualiza o preço do rascunho pelo cadastro atual
+[WebServer] INFO: http_error request_id=20791361b006 status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+  1) e2e\carrinho.spec.ts:94:1 › U01: recarga atualiza o preço do rascunho pelo cadastro atual ─────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText('Falta R$ 8.00', { exact: true })
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByText('Falta R$ 8.00', { exact: true }) with timeout 5000ms
+      - waiting for getByText('Falta R$ 8.00', { exact: true })
+
+
+      100 |   await page.reload();
+      101 |   await expect(page.getByPlaceholder('0,00', { exact: true })).toBeVisible();
+    > 102 |   await expect(page.getByText('Falta R$ 8.00', { exact: true })).toBeVisible();
+          |                                                                  ^
+      103 | });
+      104 |
+        at C:\GIS\VendaFacil_PDV\e2e\carrinho.spec.ts:102:66
+
+    Error Context: test-results\carrinho-U01-recarga-atual-79785-ascunho-pelo-cadastro-atual\error-context.md
+
+
+  1 failed
+    e2e\carrinho.spec.ts:94:1 › U01: recarga atualiza o preço do rascunho pelo cadastro atual ──────

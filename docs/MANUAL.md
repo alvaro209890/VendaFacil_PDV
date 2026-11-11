@@ -130,12 +130,15 @@ Detalhes: [`ESTOQUE_E_XML.md`](ESTOQUE_E_XML.md).
 
 ## 7. Categorias e clientes
 - **Categorias**: organize os produtos (com cores).
-- **Clientes**: cadastro para venda fiada e histórico.
+- **Clientes**: cadastro para venda fiada e histórico. Cliente com fiado aberto
+  não pode ser ocultado pela exclusão (409); primeiro confira a dívida.
 
 ## 8. Fiado (contas a receber)
 - Venda no **fiado** gera uma conta a receber para o cliente.
 - Em **Contas a Receber**, registre **pagamentos** (total ou parcial) e acompanhe
-  o que está pendente/vencido.
+  o que está pendente/vencido. A tela mostra o histórico de pagamentos. Excedente
+  é recusado, não vira crédito: informe no máximo o pendente. Recebimento em
+  dinheiro entra na gaveta da sessão aberta. Conta cancelada não recebe baixa.
 
 ## 9. Caixa (abrir/fechar)
 Tela **Caixa**:

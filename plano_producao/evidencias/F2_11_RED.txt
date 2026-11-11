@@ -1,0 +1,31 @@
+F.                                                                       [100%]
+================================== FAILURES ===================================
+E   assert '{children}' in 'status.ativado && status.bloqueado;\n\n  async function enviar(e: React.FormEvent) {\n    e.preventDefault();\n    se...0 }}\n        className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl"\n      >\n  '
+C:\GIS\VendaFacil_PDV\backend\tests\test_licenca_bloqueada.py:14: assert '{children}' in 'status.ativado && status.bloqueado;\n\n  async function enviar(e: React.FormEvent) {\n    e.preventDefault();\n    se...0 }}\n        className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl"\n      >\n  '
+============================== warnings summary ===============================
+backend\.venv\Lib\site-packages\fastapi\testclient.py:1
+  C:\GIS\VendaFacil_PDV\backend\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+backend\main.py:92
+  C:\GIS\VendaFacil_PDV\backend\main.py:92: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("startup")
+
+backend\.venv\Lib\site-packages\fastapi\applications.py:4723
+  C:\GIS\VendaFacil_PDV\backend\.venv\Lib\site-packages\fastapi\applications.py:4723: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED backend/tests/test_licenca_bloqueada.py::test_l03_tela_nao_prende_caixa_backup_e_xml
+1 failed, 1 passed, 3 warnings in 0.19s

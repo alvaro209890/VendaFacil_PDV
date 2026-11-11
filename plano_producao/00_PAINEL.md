@@ -5,13 +5,13 @@
 | Campo | Valor |
 |---|---|
 | Estado geral | 🟨 EM ANDAMENTO |
-| Fase atual | 1 |
-| Próxima ação | Fechar portão da Fase 1 e iniciar F2.1 sessão de caixa |
-| Última atualização | 10/11/2026 |
+| Fase atual | 2 — correção de lacunas do portão; F3.1–9 já commitados |
+| Próxima ação | Receber revisão deleg_f6a9cdcd de L01, commitar cobertura; fechar portão/plano e push via helper autorizado sd |
+| Última atualização | 2026-11-11 08:50 BRT — roteiro offline verde; revisões pendentes |
 | Commit de partida | `6da6899` |
 | Versão de partida → de entrega | 1.0.12 → 1.0.13 |
-| Testes backend (partida → agora) | 76 → 158 |
-| Testes painel (partida → agora) | 7 → 7 |
+| Testes backend (partida → agora) | 76 → 274 (F2_PORTAO_BACKEND.txt); 9 painel e 5 Chromium verdes, build/lint exit0 |
+| Testes painel (partida → agora) | 7 → 9 (F3_09_PAINEL.txt); navegador: 5 E2E |
 
 Estados gerais possíveis: ⬜ NÃO INICIADO · 🟨 EM ANDAMENTO · ⏸ AGUARDANDO TERCEIRO · ✅ CONCLUÍDO.
 
@@ -21,8 +21,8 @@ Estados gerais possíveis: ⬜ NÃO INICIADO · 🟨 EM ANDAMENTO · ⏸ AGUARDA
 |---|---|---|---|---|---|
 | 0 | `FASE_0_linha_de_base.md` | ✅ | 9/9 | ✅ | 52c6e1e |
 | 1 | `FASE_1_dinheiro_venda_estoque.md` | 🟨 | 15/15 | ⬜ | — |
-| 2 | `FASE_2_caixa_fiado_importacao_licenca.md` | ⬜ | 0/19 | ⬜ | — |
-| 3 | `FASE_3_seguranca_e_front.md` | ⬜ | 0/22 | ⬜ | — |
+| 2 | `FASE_2_caixa_fiado_importacao_licenca.md` | 🟨 | 22/22 (código) | ⬜ L01 revisão/plano/push | — |
+| 3 | `FASE_3_seguranca_e_front.md` | 🟨 | 9/22 | ⬜ | — |
 | 4 | `FASE_4_fiscal_mt.md` | ⬜ | 0/27 | ⬜ | — |
 | 5 | `FASE_5_robustez_e_suporte.md` | ⬜ | 0/12 | ⬜ | — |
 | 6 | `FASE_6_build_instalador_e2e.md` | ⬜ | 0/14 | ⬜ | — |
@@ -34,8 +34,8 @@ Status de fase: ⬜ não iniciada · 🟨 em andamento · ✅ concluída · ⏸ 
 
 | Controle | Total | Fechados | Bloqueados | Abertos |
 |---|---|---|---|---|
-| Pistas (`02_PISTAS.md`) | 43 | 7 | 0 | 36 |
-| Testes (`03_TESTES.md`) | 123 | 22 | 0 | 101 |
+| Pistas (`02_PISTAS.md`) | 43 | 10 | 0 | 33 |
+| Testes (`03_TESTES.md`) | 123 | 53 | 0 | 70 |
 | Bloqueios (`04_BLOQUEIOS.md`) | 9 | — | 0 ativos | — |
 | Decisões do Álvaro (`05_DECISOES_ALVARO.md`) | 9 | 0 respondidas | — | 9 |
 

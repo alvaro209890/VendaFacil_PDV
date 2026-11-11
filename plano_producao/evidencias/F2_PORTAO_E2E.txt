@@ -1,0 +1,19 @@
+[WebServer] INFO:     Started server process [25140]
+
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+
+Running 5 tests using 1 worker
+
+[1/5] e2e\carrinho.spec.ts:40:1 › U01: F5 preserva o carrinho e finalizar apaga o rascunho
+[WebServer] INFO: http_error request_id=eb26f682da07 status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+[2/5] e2e\carrinho.spec.ts:54:1 › U01: cancelar a venda apaga o rascunho sem baixar estoque
+[3/5] e2e\carrinho.spec.ts:65:1 › U01: rascunho corrompido não derruba a tela
+[4/5] e2e\carrinho.spec.ts:77:1 › U01: outro usuário não recebe o carrinho anterior
+[5/5] e2e\carrinho.spec.ts:94:1 › U01: recarga atualiza o preço do rascunho pelo cadastro atual
+  5 passed (13.3s)

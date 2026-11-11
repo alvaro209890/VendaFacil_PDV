@@ -1,0 +1,133 @@
+FFFFFFFFF......FFFFFFFFFFFF.                                             [100%]
+================================== FAILURES ===================================
+______________ test_i06_modelo_diferente_ou_ausente_recusado[65] ______________
+backend\tests\test_importacao_parser.py:14: in test_i06_modelo_diferente_ou_ausente_recusado
+    with pytest.raises(ValueError, match='modelo 55'):
+E   Failed: DID NOT RAISE ValueError
+______________ test_i06_modelo_diferente_ou_ausente_recusado[57] ______________
+backend\tests\test_importacao_parser.py:14: in test_i06_modelo_diferente_ou_ausente_recusado
+    with pytest.raises(ValueError, match='modelo 55'):
+E   Failed: DID NOT RAISE ValueError
+_______________ test_i06_modelo_diferente_ou_ausente_recusado[] _______________
+backend\tests\test_importacao_parser.py:14: in test_i06_modelo_diferente_ou_ausente_recusado
+    with pytest.raises(ValueError, match='modelo 55'):
+E   Failed: DID NOT RAISE ValueError
+_____________ test_i06_modelo_diferente_ou_ausente_recusado[None] _____________
+backend\tests\test_importacao_parser.py:14: in test_i06_modelo_diferente_ou_ausente_recusado
+    with pytest.raises(ValueError, match='modelo 55'):
+E   Failed: DID NOT RAISE ValueError
+____________________ test_i06_gtin_invalido_recusado[123] _____________________
+backend\tests\test_importacao_parser.py:20: in test_i06_gtin_invalido_recusado
+    with pytest.raises(ValueError, match='GTIN'):
+E   Failed: DID NOT RAISE ValueError
+_______________ test_i06_gtin_invalido_recusado[7891000888002] ________________
+backend\tests\test_importacao_parser.py:20: in test_i06_gtin_invalido_recusado
+    with pytest.raises(ValueError, match='GTIN'):
+E   Failed: DID NOT RAISE ValueError
+_______________ test_i06_gtin_invalido_recusado[ABC1000888001] ________________
+backend\tests\test_importacao_parser.py:20: in test_i06_gtin_invalido_recusado
+    with pytest.raises(ValueError, match='GTIN'):
+E   Failed: DID NOT RAISE ValueError
+__________________ test_i06_gtin_invalido_recusado[00000000] __________________
+backend\tests\test_importacao_parser.py:20: in test_i06_gtin_invalido_recusado
+    with pytest.raises(ValueError, match='GTIN'):
+E   Failed: DID NOT RAISE ValueError
+_ test_i06_gtin_invalido_recusado[\uff17\uff18\uff19\uff11\uff10\uff10\uff10\uff18\uff18\uff18\uff10\uff10\uff11] _
+backend\tests\test_importacao_parser.py:20: in test_i06_gtin_invalido_recusado
+    with pytest.raises(ValueError, match='GTIN'):
+E   Failed: DID NOT RAISE ValueError
+__________________ test_i06_quantidade_invalida_recusada[0] ___________________
+backend\tests\test_importacao_parser.py:32: in test_i06_quantidade_invalida_recusada
+    with pytest.raises(ValueError, match='quantidade'):
+E   Failed: DID NOT RAISE ValueError
+__________________ test_i06_quantidade_invalida_recusada[-1] __________________
+backend\tests\test_importacao_parser.py:32: in test_i06_quantidade_invalida_recusada
+    with pytest.raises(ValueError, match='quantidade'):
+E   Failed: DID NOT RAISE ValueError
+_________________ test_i06_quantidade_invalida_recusada[NaN] __________________
+backend\tests\test_importacao_parser.py:32: in test_i06_quantidade_invalida_recusada
+    with pytest.raises(ValueError, match='quantidade'):
+E   Failed: DID NOT RAISE ValueError
+_______________ test_i06_quantidade_invalida_recusada[Infinity] _______________
+backend\tests\test_importacao_parser.py:32: in test_i06_quantidade_invalida_recusada
+    with pytest.raises(ValueError, match='quantidade'):
+E   Failed: DID NOT RAISE ValueError
+________________ test_i06_quantidade_invalida_recusada[texto] _________________
+backend\tests\test_importacao_parser.py:32: in test_i06_quantidade_invalida_recusada
+    with pytest.raises(ValueError, match='quantidade'):
+E   Failed: DID NOT RAISE ValueError
+___________________ test_i06_quantidade_invalida_recusada[] ___________________
+backend\tests\test_importacao_parser.py:32: in test_i06_quantidade_invalida_recusada
+    with pytest.raises(ValueError, match='quantidade'):
+E   Failed: DID NOT RAISE ValueError
+____________________ test_i06_custo_invalido_recusado[-1] _____________________
+backend\tests\test_importacao_parser.py:38: in test_i06_custo_invalido_recusado
+    with pytest.raises(ValueError, match='custo'):
+E   Failed: DID NOT RAISE ValueError
+____________________ test_i06_custo_invalido_recusado[NaN] ____________________
+backend\tests\test_importacao_parser.py:38: in test_i06_custo_invalido_recusado
+    with pytest.raises(ValueError, match='custo'):
+E   Failed: DID NOT RAISE ValueError
+_________________ test_i06_custo_invalido_recusado[Infinity] __________________
+backend\tests\test_importacao_parser.py:38: in test_i06_custo_invalido_recusado
+    with pytest.raises(ValueError, match='custo'):
+E   Failed: DID NOT RAISE ValueError
+___________________ test_i06_custo_invalido_recusado[texto] ___________________
+backend\tests\test_importacao_parser.py:38: in test_i06_custo_invalido_recusado
+    with pytest.raises(ValueError, match='custo'):
+E   Failed: DID NOT RAISE ValueError
+_____________________ test_i06_custo_invalido_recusado[] ______________________
+backend\tests\test_importacao_parser.py:38: in test_i06_custo_invalido_recusado
+    with pytest.raises(ValueError, match='custo'):
+E   Failed: DID NOT RAISE ValueError
+_____________ test_i06_outro_documento_com_nfe_aninhada_recusado ______________
+backend\tests\test_importacao_parser.py:43: in test_i06_outro_documento_com_nfe_aninhada_recusado
+    with pytest.raises(ValueError, match='NF-e'):
+E   Failed: DID NOT RAISE ValueError
+============================== warnings summary ===============================
+backend\.venv\Lib\site-packages\fastapi\testclient.py:1
+  C:\GIS\VendaFacil_PDV\backend\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+backend\main.py:132
+  C:\GIS\VendaFacil_PDV\backend\main.py:132: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("startup")
+
+backend\.venv\Lib\site-packages\fastapi\applications.py:4723
+  C:\GIS\VendaFacil_PDV\backend\.venv\Lib\site-packages\fastapi\applications.py:4723: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED backend/tests/test_importacao_parser.py::test_i06_modelo_diferente_ou_ausente_recusado[65]
+FAILED backend/tests/test_importacao_parser.py::test_i06_modelo_diferente_ou_ausente_recusado[57]
+FAILED backend/tests/test_importacao_parser.py::test_i06_modelo_diferente_ou_ausente_recusado[]
+FAILED backend/tests/test_importacao_parser.py::test_i06_modelo_diferente_ou_ausente_recusado[None]
+FAILED backend/tests/test_importacao_parser.py::test_i06_gtin_invalido_recusado[123]
+FAILED backend/tests/test_importacao_parser.py::test_i06_gtin_invalido_recusado[7891000888002]
+FAILED backend/tests/test_importacao_parser.py::test_i06_gtin_invalido_recusado[ABC1000888001]
+FAILED backend/tests/test_importacao_parser.py::test_i06_gtin_invalido_recusado[00000000]
+FAILED backend/tests/test_importacao_parser.py::test_i06_gtin_invalido_recusado[\uff17\uff18\uff19\uff11\uff10\uff10\uff10\uff18\uff18\uff18\uff10\uff10\uff11]
+FAILED backend/tests/test_importacao_parser.py::test_i06_quantidade_invalida_recusada[0]
+FAILED backend/tests/test_importacao_parser.py::test_i06_quantidade_invalida_recusada[-1]
+FAILED backend/tests/test_importacao_parser.py::test_i06_quantidade_invalida_recusada[NaN]
+FAILED backend/tests/test_importacao_parser.py::test_i06_quantidade_invalida_recusada[Infinity]
+FAILED backend/tests/test_importacao_parser.py::test_i06_quantidade_invalida_recusada[texto]
+FAILED backend/tests/test_importacao_parser.py::test_i06_quantidade_invalida_recusada[]
+FAILED backend/tests/test_importacao_parser.py::test_i06_custo_invalido_recusado[-1]
+FAILED backend/tests/test_importacao_parser.py::test_i06_custo_invalido_recusado[NaN]
+FAILED backend/tests/test_importacao_parser.py::test_i06_custo_invalido_recusado[Infinity]
+FAILED backend/tests/test_importacao_parser.py::test_i06_custo_invalido_recusado[texto]
+FAILED backend/tests/test_importacao_parser.py::test_i06_custo_invalido_recusado[]
+FAILED backend/tests/test_importacao_parser.py::test_i06_outro_documento_com_nfe_aninhada_recusado
+21 failed, 7 passed, 3 warnings in 0.24s

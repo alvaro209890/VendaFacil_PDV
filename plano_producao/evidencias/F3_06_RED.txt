@@ -1,0 +1,284 @@
+F.                                                                       [100%]
+================================== FAILURES ===================================
+E   AssertionError: assert ['POST /api/c... -> 422', ...] == []
+      
+      Left contains 16 more items, first extra item: 'POST /api/caixa/fechar -> 422'
+      Use -v to get more diff
+---------------------------- Captured stderr call -----------------------------
+INFO: http_error request_id=c5434b74e1ea status=401 method=DELETE path=/api/categorias/1 detail="Token não informado."
+INFO: HTTP Request: DELETE http://testserver/api/categorias/1 "HTTP/1.1 401 Unauthorized"
+INFO: http_error request_id=c00f6f15b1d5 status=401 method=DELETE path=/api/clientes/1 detail="Token não informado."
+INFO: HTTP Request: DELETE http://testserver/api/clientes/1 "HTTP/1.1 401 Unauthorized"
+INFO: http_error request_id=6de730f486ac status=401 method=DELETE path=/api/maquininha/cobranca/1 detail="Token invalido ou expirado."
+INFO: HTTP Request: DELETE http://testserver/api/maquininha/cobranca/1 "HTTP/1.1 401 Unauthorized"
+INFO: http_error request_id=3553ffaa85ef status=401 method=DELETE path=/api/produtos/1 detail="Token não informado."
+INFO: HTTP Request: DELETE http://testserver/api/produtos/1 "HTTP/1.1 401 Unauthorized"
+INFO: http_error request_id=99758763026a status=401 method=GET path=/api/auth/me detail="Token não informado."
+INFO: HTTP Request: GET http://testserver/api/auth/me "HTTP/1.1 401 Unauthorized"
+INFO: http_error request_id=8889ba296dde status=401 method=GET path=/api/backup/exportar detail="Token inválido ou expirado."
+INFO: HTTP Request: GET http://testserver/api/backup/exportar "HTTP/1.1 401 Unauthorized"
+INFO: http_error request_id=9506d98e67e3 status=401 method=GET path=/api/backup/listar detail="Token inválido ou expirado."
+INFO: HTTP Request: GET http://testserver/api/backup/listar "HTTP/1.1 401 Unauthorized"
+INFO: http_error request_id=55374c68d21d status=401 method=GET path=/api/caixa/atual detail="Token inválido ou expirado."
+INFO: HTTP Request: GET http://testserver/api/caixa/atual "HTTP/1.1 401 Unauthorized"
+INFO: http_error request_id=1e45f514eb70 status=401 method=GET path=/api/caixa/historico detail="Token inválido ou expirado."
+INFO: HTTP Request: GET http://testserver/api/caixa/historico "HTTP/1.1 401 Unauthorized"
+INFO: http_error request_id=809cfb86643a status=401 method=GET path=/api/categorias detail="Token não informado."
+INFO: HTTP Request: GET http://testserver/api/categorias "HTTP/1.1 401 Unauthorized"
+INFO: http_error request_id=6cd54b0fdcf2 status=401 method=GET path=/api/clientes detail="Token não informado."
+INFO: HTTP Request: GET http://testserver/api/clientes "HTTP/1.1 401 Unauthorized"
+INFO: http_error request_id=840a81e84340 status=401 method=GET path=/api/clientes/1 detail="Token não informado."
+INFO: HTTP Request: GET http://testserver/api/clientes/1 "HTTP/1.1 401 Unauthorized"
+INFO: http_error request_id=933f237a1bca status=401 method=GET path=/api/contas-receber detail="Token não informado."
+INFO: HTTP Request: GET http://testserver/api/contas-receber "HTTP/1.1 401 Unauthorized"
+INFO: http_error request_id=31d412031134 status=401 method=GET path=/api/contas-receber/1 detail="Token não informado."
+INFO: HTTP Request: GET http://testserver/api/contas-receber/1 "HTTP/1.1 401 Unauthorized"
+INFO: http_error request_id=c646a9ac04e0 status=401 method=GET path=/api/dashboard detail="Token não informado."
+INFO: HTTP Request: GET http://testserver/api/dashboard "HTTP/1.1 401 Unauthorized"
+INFO: http_error request_id=e7075e625d04 status=401 method=GET path=/api/fiscal/config detail="Token inválido ou expirado."
+INFO: HTTP Request: GET http://testserver/api/fiscal/config "HTTP/1.1 401 Unauthorized"
+INFO: http_error request_id=78c90e9bcf31 status=401 method=GET path=/api/fiscal/nfce/export/xml detail="Token inválido ou expirado."
+INFO: HTTP Request: GET http://testserver/api/fiscal/nfce/export/xml "HTTP/1.1 401 Unauthorized"
+INFO: http_error request_id=d666f488fbba status=401 method=GET path=/api/fiscal/nfce/nota/1/xml detail="Token inválido ou expirado."
+INFO: HTTP Request: GET http://testserver/api/fiscal/nfce/nota/1/xml "HTTP/1.1 401 Unauthorized"
+INFO: http_error request_id=a971526dbd7f status=401 method=GET path=/api/fiscal/nfce/venda/1 detail="Token inválido ou expirado."
+INFO: HTTP Request: GET http://testserver/api/fiscal/nfce/venda/1 "HTTP/1.1 401 Unauthorized"
+INFO: http_error request_id=4c6ade4e30c2 status=401 method=GET path=/api/fiscal/nfe/venda/1 detail="Token inválido ou expirado."
+INFO: HTTP Request: GET http://testserver/api/fiscal/nfe/venda/1 "HTTP/1.1 401 Unauthorized"
+INFO: http_error request_id=32b5409d4e52 status=401 method=GET path=/api/maquininha/cobranca/1 detail="Token invalido ou expirado."
+INFO: HTTP Request: GET http://testserver/api/maquininha/cobranca/1 "HTTP/1.1 401 Unauthorized"
+INFO: http_error request_id=bbe187e4a73c status=401 method=GET path=/api/maquininha/config detail="Token invalido ou expirado."
+INFO: HTTP Request: GET http://testserver/api/maquininha/config "HTTP/1.1 401 Unauthorized"
+INFO: http_error request_id=e111eaee6c51 status=401 method=GET path=/api/maquininha/diagnostico detail="Token invalido ou expirado."
+INFO: HTTP Request: GET http://testserver/api/maquininha/diagnostico "HTTP/1.1 401 Unauthorized"
+INFO: http_error request_id=c3333f57bda6 status=401 method=GET path=/api/maquininha/dispositivos detail="Token invalido ou expirado."
+INFO: HTTP Request: GET http://testserver/api/maquininha/dispositivos "HTTP/1.1 401 Unauthorized"
+INFO: http_error request_id=8d592d725b4f status=401 method=GET path=/api/pix/chave detail="Token não informado."
+INFO: HTTP Request: GET http://testserver/api/pix/chave "HTTP/1.1 401 Unauthorized"
+INFO: http_error request_id=ee2daa0587d9 status=401 method=GET path=/api/pix/config detail="Token não informado."
+INFO: HTTP Request: GET http://testserver/api/pix/config "HTTP/1.1 401 Unauthorized"
+INFO: http_error request_id=ecab67c77b4d status=401 method=GET path=/api/produtos detail="Token não informado."
+INFO: HTTP Request: GET http://testserver/api/produtos "HTTP/1.1 401 Unauthorized"
+INFO: http_error request_id=3d8364e93d26 status=401 method=GET path=/api/produtos/1 detail="Token não informado."
+INFO: HTTP Request: GET http://testserver/api/produtos/1 "HTTP/1.1 401 Unauthorized"
+INFO: http_error request_id=a72c6e6c1426 status=401 method=GET path=/api/produtos/1/movimentacoes detail="Token não informado."
+INFO: HTTP Request: GET http://testserver/api/produtos/1/movimentacoes "HTTP/1.1 401 Unauthorized"
+INFO: http_error request_id=3fbf61a0ac3f status=401 method=GET path=/api/relatorios/fiscal detail="Token não informado."
+INFO: HTTP Request: GET http://testserver/api/relatorios/fiscal "HTTP/1.1 401 Unauthorized"
+INFO: http_error request_id=3b82310f7e40 status=401 method=GET path=/api/relatorios/vendas detail="Token não informado."
+INFO: HTTP Request: GET http://testserver/api/relatorios/vendas "HTTP/1.1 401 Unauthorized"
+INFO: http_error request_id=d224e577cb81 status=401 method=GET path=/api/vendas detail="Token não informado."
+INFO: HTTP Request: GET http://testserver/api/vendas "HTTP/1.1 401 Unauthorized"
+INFO: http_error request_id=64e5fad2b2a7 status=401 method=GET path=/api/vendas/1 detail="Token não informado."
+INFO: HTTP Request: GET http://testserver/api/vendas/1 "HTTP/1.1 401 Unauthorized"
+INFO: http_error request_id=cc61fe76ccd3 status=401 method=POST path=/api/backup/restaurar detail="Token inválido ou expirado."
+INFO: HTTP Request: POST http://testserver/api/backup/restaurar "HTTP/1.1 401 Unauthorized"
+INFO: http_error request_id=6ba93e33c0e1 status=401 method=POST path=/api/caixa/abrir detail="Token inválido ou expirado."
+INFO: HTTP Request: POST http://testserver/api/caixa/abrir "HTTP/1.1 401 Unauthorized"
+WARNING: validation_error request_id=bf4f515bc11b method=POST path=/api/caixa/fechar errors=[{"campo": "valor_fechamento", "mensagem": "Valor fechamento é obrigatório.", "tipo": "missing"}] body={}
+INFO: HTTP Request: POST http://testserver/api/caixa/fechar "HTTP/1.1 422 Unprocessable Entity"
+WARNING: validation_error request_id=720fc96eae40 method=POST path=/api/caixa/movimento errors=[{"campo": "tipo", "mensagem": "Tipo é obrigatório.", "tipo": "missing"}, {"campo": "valor", "mensagem": "Valor é obrigatório.", "tipo": "missing"}] body={}
+INFO: HTTP Request: POST http://testserver/api/caixa/movimento "HTTP/1.1 422 Unprocessable Entity"
+WARNING: validation_error request_id=d6f9917f4f8a method=POST path=/api/categorias errors=[{"campo": "nome", "mensagem": "Nome é obrigatório.", "tipo": "missing"}] body={}
+INFO: HTTP Request: POST http://testserver/api/categorias "HTTP/1.1 422 Unprocessable Entity"
+WARNING: validation_error request_id=ca13eac17fa5 method=POST path=/api/clientes errors=[{"campo": "nome", "mensagem": "Nome é obrigatório.", "tipo": "missing"}] body={}
+INFO: HTTP Request: POST http://testserver/api/clientes "HTTP/1.1 422 Unprocessable Entity"
+WARNING: validation_error request_id=111307cd5420 method=POST path=/api/contas-receber errors=[{"campo": "valor_total", "mensagem": "Valor total é obrigatório.", "tipo": "missing"}] body={}
+INFO: HTTP Request: POST http://testserver/api/contas-receber "HTTP/1.1 422 Unprocessable Entity"
+INFO: http_error request_id=7f97f0cddb79 status=401 method=POST path=/api/contas-receber/1/cancelar detail="Token não informado."
+INFO: HTTP Request: POST http://testserver/api/contas-receber/1/cancelar "HTTP/1.1 401 Unauthorized"
+WARNING: validation_error request_id=6683c1da7aee method=POST path=/api/contas-receber/1/pagar errors=[{"campo": "valor", "mensagem": "Valor é obrigatório.", "tipo": "missing"}] body={}
+INFO: HTTP Request: POST http://testserver/api/contas-receber/1/pagar "HTTP/1.1 422 Unprocessable Entity"
+INFO: http_error request_id=9208d17b352b status=401 method=POST path=/api/fiscal/nfce/venda/1/emitir detail="Token inválido ou expirado."
+INFO: HTTP Request: POST http://testserver/api/fiscal/nfce/venda/1/emitir "HTTP/1.1 401 Unauthorized"
+WARNING: validation_error request_id=ec42b8234fec method=POST path=/api/fiscal/nfce/1/cancelar errors=[{"campo": "justificativa", "mensagem": "Justificativa é obrigatório.", "tipo": "missing"}] body={}
+INFO: HTTP Request: POST http://testserver/api/fiscal/nfce/1/cancelar "HTTP/1.1 422 Unprocessable Entity"
+INFO: http_error request_id=fa17852cf1fe status=401 method=POST path=/api/fiscal/nfce/1/consultar detail="Token inválido ou expirado."
+INFO: HTTP Request: POST http://testserver/api/fiscal/nfce/1/consultar "HTTP/1.1 401 Unauthorized"
+WARNING: validation_error request_id=14aad38e7537 method=POST path=/api/fiscal/nfe/venda/1/emitir errors=[{"campo": "cliente_id", "mensagem": "Cliente id é obrigatório.", "tipo": "missing"}] body={}
+INFO: HTTP Request: POST http://testserver/api/fiscal/nfe/venda/1/emitir "HTTP/1.1 422 Unprocessable Entity"
+INFO: http_error request_id=928af9308f21 status=401 method=POST path=/api/fiscal/nfe/1/consultar detail="Token inválido ou expirado."
+INFO: HTTP Request: POST http://testserver/api/fiscal/nfe/1/consultar "HTTP/1.1 401 Unauthorized"
+WARNING: validation_error request_id=d3e45d8a7354 method=POST path=/api/maquininha/cobranca errors=[{"campo": "valor", "mensagem": "Valor é obrigatório.", "tipo": "missing"}] body={}
+INFO: HTTP Request: POST http://testserver/api/maquininha/cobranca "HTTP/1.1 422 Unprocessable Entity"
+WARNING: validation_error request_id=ca44c12219f7 method=POST path=/api/pix/qrcode errors=[{"campo": "valor", "mensagem": "Valor é obrigatório.", "tipo": "missing"}] body={}
+INFO: HTTP Request: POST http://testserver/api/pix/qrcode "HTTP/1.1 422 Unprocessable Entity"
+WARNING: validation_error request_id=967995c11e58 method=POST path=/api/produtos errors=[{"campo": "nome", "mensagem": "Nome é obrigatório.", "tipo": "missing"}] body={}
+INFO: HTTP Request: POST http://testserver/api/produtos "HTTP/1.1 422 Unprocessable Entity"
+WARNING: validation_error request_id=40e59653fb9e method=POST path=/api/produtos/importar-xml/confirmar errors=[{"campo": "itens", "mensagem": "Itens é obrigatório.", "tipo": "missing"}] body={}
+INFO: HTTP Request: POST http://testserver/api/produtos/importar-xml/confirmar "HTTP/1.1 422 Unprocessable Entity"
+INFO: http_error request_id=95d4ca188b8f status=401 method=POST path=/api/produtos/importar-xml/preview detail="Token não informado."
+INFO: HTTP Request: POST http://testserver/api/produtos/importar-xml/preview "HTTP/1.1 401 Unauthorized"
+WARNING: validation_error request_id=2a4dd99c6eb7 method=POST path=/api/produtos/1/ajuste errors=[{"campo": "tipo", "mensagem": "Tipo é obrigatório.", "tipo": "missing"}, {"campo": "quantidade", "mensagem": "Quantidade é obrigatório.", "tipo": "missing"}] body={}
+INFO: HTTP Request: POST http://testserver/api/produtos/1/ajuste "HTTP/1.1 422 Unprocessable Entity"
+WARNING: validation_error request_id=bc5f41d124db method=POST path=/api/produtos/1/entrada errors=[{"campo": "quantidade", "mensagem": "Quantidade é obrigatório.", "tipo": "missing"}] body={}
+INFO: HTTP Request: POST http://testserver/api/produtos/1/entrada "HTTP/1.1 422 Unprocessable Entity"
+WARNING: validation_error request_id=dd203b74a8f3 method=POST path=/api/vendas/checkout errors=[{"campo": "itens", "mensagem": "Itens é obrigatório.", "tipo": "missing"}] body={}
+INFO: HTTP Request: POST http://testserver/api/vendas/checkout "HTTP/1.1 422 Unprocessable Entity"
+WARNING: validation_error request_id=6a463aed1934 method=POST path=/api/vendas/1/cancelar errors=[{"campo": "motivo", "mensagem": "Motivo é obrigatório.", "tipo": "missing"}] body={}
+INFO: HTTP Request: POST http://testserver/api/vendas/1/cancelar "HTTP/1.1 422 Unprocessable Entity"
+INFO: http_error request_id=f1813c1fc9b5 status=401 method=PUT path=/api/categorias/1 detail="Token não informado."
+INFO: HTTP Request: PUT http://testserver/api/categorias/1 "HTTP/1.1 401 Unauthorized"
+INFO: http_error request_id=ab200f23594d status=401 method=PUT path=/api/clientes/1 detail="Token não informado."
+INFO: HTTP Request: PUT http://testserver/api/clientes/1 "HTTP/1.1 401 Unauthorized"
+INFO: http_error request_id=a4477b2f731b status=401 method=PUT path=/api/fiscal/config detail="Token inválido ou expirado."
+INFO: HTTP Request: PUT http://testserver/api/fiscal/config "HTTP/1.1 401 Unauthorized"
+INFO: http_error request_id=10320d276656 status=401 method=PUT path=/api/maquininha/config detail="Token invalido ou expirado."
+INFO: HTTP Request: PUT http://testserver/api/maquininha/config "HTTP/1.1 401 Unauthorized"
+INFO: http_error request_id=a826ea512b38 status=401 method=PUT path=/api/pix/config detail="Token não informado."
+INFO: HTTP Request: PUT http://testserver/api/pix/config "HTTP/1.1 401 Unauthorized"
+INFO: http_error request_id=c782ae37283b status=401 method=PUT path=/api/produtos/1 detail="Token não informado."
+INFO: HTTP Request: PUT http://testserver/api/produtos/1 "HTTP/1.1 401 Unauthorized"
+------------------------------ Captured log call ------------------------------
+INFO     vendafacil.api:errors.py:130 http_error request_id=c5434b74e1ea status=401 method=DELETE path=/api/categorias/1 detail="Token não informado."
+INFO     httpx:_client.py:1025 HTTP Request: DELETE http://testserver/api/categorias/1 "HTTP/1.1 401 Unauthorized"
+INFO     vendafacil.api:errors.py:130 http_error request_id=c00f6f15b1d5 status=401 method=DELETE path=/api/clientes/1 detail="Token não informado."
+INFO     httpx:_client.py:1025 HTTP Request: DELETE http://testserver/api/clientes/1 "HTTP/1.1 401 Unauthorized"
+INFO     vendafacil.api:errors.py:130 http_error request_id=6de730f486ac status=401 method=DELETE path=/api/maquininha/cobranca/1 detail="Token invalido ou expirado."
+INFO     httpx:_client.py:1025 HTTP Request: DELETE http://testserver/api/maquininha/cobranca/1 "HTTP/1.1 401 Unauthorized"
+INFO     vendafacil.api:errors.py:130 http_error request_id=3553ffaa85ef status=401 method=DELETE path=/api/produtos/1 detail="Token não informado."
+INFO     httpx:_client.py:1025 HTTP Request: DELETE http://testserver/api/produtos/1 "HTTP/1.1 401 Unauthorized"
+INFO     vendafacil.api:errors.py:130 http_error request_id=99758763026a status=401 method=GET path=/api/auth/me detail="Token não informado."
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/auth/me "HTTP/1.1 401 Unauthorized"
+INFO     vendafacil.api:errors.py:130 http_error request_id=8889ba296dde status=401 method=GET path=/api/backup/exportar detail="Token inválido ou expirado."
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/backup/exportar "HTTP/1.1 401 Unauthorized"
+INFO     vendafacil.api:errors.py:130 http_error request_id=9506d98e67e3 status=401 method=GET path=/api/backup/listar detail="Token inválido ou expirado."
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/backup/listar "HTTP/1.1 401 Unauthorized"
+INFO     vendafacil.api:errors.py:130 http_error request_id=55374c68d21d status=401 method=GET path=/api/caixa/atual detail="Token inválido ou expirado."
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/caixa/atual "HTTP/1.1 401 Unauthorized"
+INFO     vendafacil.api:errors.py:130 http_error request_id=1e45f514eb70 status=401 method=GET path=/api/caixa/historico detail="Token inválido ou expirado."
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/caixa/historico "HTTP/1.1 401 Unauthorized"
+INFO     vendafacil.api:errors.py:130 http_error request_id=809cfb86643a status=401 method=GET path=/api/categorias detail="Token não informado."
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/categorias "HTTP/1.1 401 Unauthorized"
+INFO     vendafacil.api:errors.py:130 http_error request_id=6cd54b0fdcf2 status=401 method=GET path=/api/clientes detail="Token não informado."
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/clientes "HTTP/1.1 401 Unauthorized"
+INFO     vendafacil.api:errors.py:130 http_error request_id=840a81e84340 status=401 method=GET path=/api/clientes/1 detail="Token não informado."
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/clientes/1 "HTTP/1.1 401 Unauthorized"
+INFO     vendafacil.api:errors.py:130 http_error request_id=933f237a1bca status=401 method=GET path=/api/contas-receber detail="Token não informado."
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/contas-receber "HTTP/1.1 401 Unauthorized"
+INFO     vendafacil.api:errors.py:130 http_error request_id=31d412031134 status=401 method=GET path=/api/contas-receber/1 detail="Token não informado."
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/contas-receber/1 "HTTP/1.1 401 Unauthorized"
+INFO     vendafacil.api:errors.py:130 http_error request_id=c646a9ac04e0 status=401 method=GET path=/api/dashboard detail="Token não informado."
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/dashboard "HTTP/1.1 401 Unauthorized"
+INFO     vendafacil.api:errors.py:130 http_error request_id=e7075e625d04 status=401 method=GET path=/api/fiscal/config detail="Token inválido ou expirado."
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/fiscal/config "HTTP/1.1 401 Unauthorized"
+INFO     vendafacil.api:errors.py:130 http_error request_id=78c90e9bcf31 status=401 method=GET path=/api/fiscal/nfce/export/xml detail="Token inválido ou expirado."
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/fiscal/nfce/export/xml "HTTP/1.1 401 Unauthorized"
+INFO     vendafacil.api:errors.py:130 http_error request_id=d666f488fbba status=401 method=GET path=/api/fiscal/nfce/nota/1/xml detail="Token inválido ou expirado."
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/fiscal/nfce/nota/1/xml "HTTP/1.1 401 Unauthorized"
+INFO     vendafacil.api:errors.py:130 http_error request_id=a971526dbd7f status=401 method=GET path=/api/fiscal/nfce/venda/1 detail="Token inválido ou expirado."
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/fiscal/nfce/venda/1 "HTTP/1.1 401 Unauthorized"
+INFO     vendafacil.api:errors.py:130 http_error request_id=4c6ade4e30c2 status=401 method=GET path=/api/fiscal/nfe/venda/1 detail="Token inválido ou expirado."
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/fiscal/nfe/venda/1 "HTTP/1.1 401 Unauthorized"
+INFO     vendafacil.api:errors.py:130 http_error request_id=32b5409d4e52 status=401 method=GET path=/api/maquininha/cobranca/1 detail="Token invalido ou expirado."
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/maquininha/cobranca/1 "HTTP/1.1 401 Unauthorized"
+INFO     vendafacil.api:errors.py:130 http_error request_id=bbe187e4a73c status=401 method=GET path=/api/maquininha/config detail="Token invalido ou expirado."
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/maquininha/config "HTTP/1.1 401 Unauthorized"
+INFO     vendafacil.api:errors.py:130 http_error request_id=e111eaee6c51 status=401 method=GET path=/api/maquininha/diagnostico detail="Token invalido ou expirado."
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/maquininha/diagnostico "HTTP/1.1 401 Unauthorized"
+INFO     vendafacil.api:errors.py:130 http_error request_id=c3333f57bda6 status=401 method=GET path=/api/maquininha/dispositivos detail="Token invalido ou expirado."
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/maquininha/dispositivos "HTTP/1.1 401 Unauthorized"
+INFO     vendafacil.api:errors.py:130 http_error request_id=8d592d725b4f status=401 method=GET path=/api/pix/chave detail="Token não informado."
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/pix/chave "HTTP/1.1 401 Unauthorized"
+INFO     vendafacil.api:errors.py:130 http_error request_id=ee2daa0587d9 status=401 method=GET path=/api/pix/config detail="Token não informado."
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/pix/config "HTTP/1.1 401 Unauthorized"
+INFO     vendafacil.api:errors.py:130 http_error request_id=ecab67c77b4d status=401 method=GET path=/api/produtos detail="Token não informado."
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/produtos "HTTP/1.1 401 Unauthorized"
+INFO     vendafacil.api:errors.py:130 http_error request_id=3d8364e93d26 status=401 method=GET path=/api/produtos/1 detail="Token não informado."
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/produtos/1 "HTTP/1.1 401 Unauthorized"
+INFO     vendafacil.api:errors.py:130 http_error request_id=a72c6e6c1426 status=401 method=GET path=/api/produtos/1/movimentacoes detail="Token não informado."
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/produtos/1/movimentacoes "HTTP/1.1 401 Unauthorized"
+INFO     vendafacil.api:errors.py:130 http_error request_id=3fbf61a0ac3f status=401 method=GET path=/api/relatorios/fiscal detail="Token não informado."
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/relatorios/fiscal "HTTP/1.1 401 Unauthorized"
+INFO     vendafacil.api:errors.py:130 http_error request_id=3b82310f7e40 status=401 method=GET path=/api/relatorios/vendas detail="Token não informado."
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/relatorios/vendas "HTTP/1.1 401 Unauthorized"
+INFO     vendafacil.api:errors.py:130 http_error request_id=d224e577cb81 status=401 method=GET path=/api/vendas detail="Token não informado."
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/vendas "HTTP/1.1 401 Unauthorized"
+INFO     vendafacil.api:errors.py:130 http_error request_id=64e5fad2b2a7 status=401 method=GET path=/api/vendas/1 detail="Token não informado."
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/vendas/1 "HTTP/1.1 401 Unauthorized"
+INFO     vendafacil.api:errors.py:130 http_error request_id=cc61fe76ccd3 status=401 method=POST path=/api/backup/restaurar detail="Token inválido ou expirado."
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/api/backup/restaurar "HTTP/1.1 401 Unauthorized"
+INFO     vendafacil.api:errors.py:130 http_error request_id=6ba93e33c0e1 status=401 method=POST path=/api/caixa/abrir detail="Token inválido ou expirado."
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/api/caixa/abrir "HTTP/1.1 401 Unauthorized"
+WARNING  vendafacil.api:errors.py:106 validation_error request_id=bf4f515bc11b method=POST path=/api/caixa/fechar errors=[{"campo": "valor_fechamento", "mensagem": "Valor fechamento é obrigatório.", "tipo": "missing"}] body={}
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/api/caixa/fechar "HTTP/1.1 422 Unprocessable Entity"
+WARNING  vendafacil.api:errors.py:106 validation_error request_id=720fc96eae40 method=POST path=/api/caixa/movimento errors=[{"campo": "tipo", "mensagem": "Tipo é obrigatório.", "tipo": "missing"}, {"campo": "valor", "mensagem": "Valor é obrigatório.", "tipo": "missing"}] body={}
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/api/caixa/movimento "HTTP/1.1 422 Unprocessable Entity"
+WARNING  vendafacil.api:errors.py:106 validation_error request_id=d6f9917f4f8a method=POST path=/api/categorias errors=[{"campo": "nome", "mensagem": "Nome é obrigatório.", "tipo": "missing"}] body={}
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/api/categorias "HTTP/1.1 422 Unprocessable Entity"
+WARNING  vendafacil.api:errors.py:106 validation_error request_id=ca13eac17fa5 method=POST path=/api/clientes errors=[{"campo": "nome", "mensagem": "Nome é obrigatório.", "tipo": "missing"}] body={}
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/api/clientes "HTTP/1.1 422 Unprocessable Entity"
+WARNING  vendafacil.api:errors.py:106 validation_error request_id=111307cd5420 method=POST path=/api/contas-receber errors=[{"campo": "valor_total", "mensagem": "Valor total é obrigatório.", "tipo": "missing"}] body={}
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/api/contas-receber "HTTP/1.1 422 Unprocessable Entity"
+INFO     vendafacil.api:errors.py:130 http_error request_id=7f97f0cddb79 status=401 method=POST path=/api/contas-receber/1/cancelar detail="Token não informado."
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/api/contas-receber/1/cancelar "HTTP/1.1 401 Unauthorized"
+WARNING  vendafacil.api:errors.py:106 validation_error request_id=6683c1da7aee method=POST path=/api/contas-receber/1/pagar errors=[{"campo": "valor", "mensagem": "Valor é obrigatório.", "tipo": "missing"}] body={}
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/api/contas-receber/1/pagar "HTTP/1.1 422 Unprocessable Entity"
+INFO     vendafacil.api:errors.py:130 http_error request_id=9208d17b352b status=401 method=POST path=/api/fiscal/nfce/venda/1/emitir detail="Token inválido ou expirado."
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/api/fiscal/nfce/venda/1/emitir "HTTP/1.1 401 Unauthorized"
+WARNING  vendafacil.api:errors.py:106 validation_error request_id=ec42b8234fec method=POST path=/api/fiscal/nfce/1/cancelar errors=[{"campo": "justificativa", "mensagem": "Justificativa é obrigatório.", "tipo": "missing"}] body={}
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/api/fiscal/nfce/1/cancelar "HTTP/1.1 422 Unprocessable Entity"
+INFO     vendafacil.api:errors.py:130 http_error request_id=fa17852cf1fe status=401 method=POST path=/api/fiscal/nfce/1/consultar detail="Token inválido ou expirado."
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/api/fiscal/nfce/1/consultar "HTTP/1.1 401 Unauthorized"
+WARNING  vendafacil.api:errors.py:106 validation_error request_id=14aad38e7537 method=POST path=/api/fiscal/nfe/venda/1/emitir errors=[{"campo": "cliente_id", "mensagem": "Cliente id é obrigatório.", "tipo": "missing"}] body={}
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/api/fiscal/nfe/venda/1/emitir "HTTP/1.1 422 Unprocessable Entity"
+INFO     vendafacil.api:errors.py:130 http_error request_id=928af9308f21 status=401 method=POST path=/api/fiscal/nfe/1/consultar detail="Token inválido ou expirado."
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/api/fiscal/nfe/1/consultar "HTTP/1.1 401 Unauthorized"
+WARNING  vendafacil.api:errors.py:106 validation_error request_id=d3e45d8a7354 method=POST path=/api/maquininha/cobranca errors=[{"campo": "valor", "mensagem": "Valor é obrigatório.", "tipo": "missing"}] body={}
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/api/maquininha/cobranca "HTTP/1.1 422 Unprocessable Entity"
+WARNING  vendafacil.api:errors.py:106 validation_error request_id=ca44c12219f7 method=POST path=/api/pix/qrcode errors=[{"campo": "valor", "mensagem": "Valor é obrigatório.", "tipo": "missing"}] body={}
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/api/pix/qrcode "HTTP/1.1 422 Unprocessable Entity"
+WARNING  vendafacil.api:errors.py:106 validation_error request_id=967995c11e58 method=POST path=/api/produtos errors=[{"campo": "nome", "mensagem": "Nome é obrigatório.", "tipo": "missing"}] body={}
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/api/produtos "HTTP/1.1 422 Unprocessable Entity"
+WARNING  vendafacil.api:errors.py:106 validation_error request_id=40e59653fb9e method=POST path=/api/produtos/importar-xml/confirmar errors=[{"campo": "itens", "mensagem": "Itens é obrigatório.", "tipo": "missing"}] body={}
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/api/produtos/importar-xml/confirmar "HTTP/1.1 422 Unprocessable Entity"
+INFO     vendafacil.api:errors.py:130 http_error request_id=95d4ca188b8f status=401 method=POST path=/api/produtos/importar-xml/preview detail="Token não informado."
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/api/produtos/importar-xml/preview "HTTP/1.1 401 Unauthorized"
+WARNING  vendafacil.api:errors.py:106 validation_error request_id=2a4dd99c6eb7 method=POST path=/api/produtos/1/ajuste errors=[{"campo": "tipo", "mensagem": "Tipo é obrigatório.", "tipo": "missing"}, {"campo": "quantidade", "mensagem": "Quantidade é obrigatório.", "tipo": "missing"}] body={}
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/api/produtos/1/ajuste "HTTP/1.1 422 Unprocessable Entity"
+WARNING  vendafacil.api:errors.py:106 validation_error request_id=bc5f41d124db method=POST path=/api/produtos/1/entrada errors=[{"campo": "quantidade", "mensagem": "Quantidade é obrigatório.", "tipo": "missing"}] body={}
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/api/produtos/1/entrada "HTTP/1.1 422 Unprocessable Entity"
+WARNING  vendafacil.api:errors.py:106 validation_error request_id=dd203b74a8f3 method=POST path=/api/vendas/checkout errors=[{"campo": "itens", "mensagem": "Itens é obrigatório.", "tipo": "missing"}] body={}
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/api/vendas/checkout "HTTP/1.1 422 Unprocessable Entity"
+WARNING  vendafacil.api:errors.py:106 validation_error request_id=6a463aed1934 method=POST path=/api/vendas/1/cancelar errors=[{"campo": "motivo", "mensagem": "Motivo é obrigatório.", "tipo": "missing"}] body={}
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/api/vendas/1/cancelar "HTTP/1.1 422 Unprocessable Entity"
+INFO     vendafacil.api:errors.py:130 http_error request_id=f1813c1fc9b5 status=401 method=PUT path=/api/categorias/1 detail="Token não informado."
+INFO     httpx:_client.py:1025 HTTP Request: PUT http://testserver/api/categorias/1 "HTTP/1.1 401 Unauthorized"
+INFO     vendafacil.api:errors.py:130 http_error request_id=ab200f23594d status=401 method=PUT path=/api/clientes/1 detail="Token não informado."
+INFO     httpx:_client.py:1025 HTTP Request: PUT http://testserver/api/clientes/1 "HTTP/1.1 401 Unauthorized"
+INFO     vendafacil.api:errors.py:130 http_error request_id=a4477b2f731b status=401 method=PUT path=/api/fiscal/config detail="Token inválido ou expirado."
+INFO     httpx:_client.py:1025 HTTP Request: PUT http://testserver/api/fiscal/config "HTTP/1.1 401 Unauthorized"
+INFO     vendafacil.api:errors.py:130 http_error request_id=10320d276656 status=401 method=PUT path=/api/maquininha/config detail="Token invalido ou expirado."
+INFO     httpx:_client.py:1025 HTTP Request: PUT http://testserver/api/maquininha/config "HTTP/1.1 401 Unauthorized"
+INFO     vendafacil.api:errors.py:130 http_error request_id=a826ea512b38 status=401 method=PUT path=/api/pix/config detail="Token não informado."
+INFO     httpx:_client.py:1025 HTTP Request: PUT http://testserver/api/pix/config "HTTP/1.1 401 Unauthorized"
+INFO     vendafacil.api:errors.py:130 http_error request_id=c782ae37283b status=401 method=PUT path=/api/produtos/1 detail="Token não informado."
+INFO     httpx:_client.py:1025 HTTP Request: PUT http://testserver/api/produtos/1 "HTTP/1.1 401 Unauthorized"
+C:\GIS\VendaFacil_PDV\backend\tests\test_rotas_sem_token.py:52: AssertionError: assert ['POST /api/c... -> 422', ...] == []
+============================== warnings summary ===============================
+backend\.venv\Lib\site-packages\fastapi\testclient.py:1
+  C:\GIS\VendaFacil_PDV\backend\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+backend\main.py:113
+  C:\GIS\VendaFacil_PDV\backend\main.py:113: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("startup")
+
+backend\.venv\Lib\site-packages\fastapi\applications.py:4723
+  C:\GIS\VendaFacil_PDV\backend\.venv\Lib\site-packages\fastapi\applications.py:4723: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED backend/tests/test_rotas_sem_token.py::test_s07_api_sem_token_responde_401
+1 failed, 1 passed, 3 warnings in 0.32s

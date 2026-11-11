@@ -11,7 +11,7 @@ conferência do dinheiro na gaveta. Roda no **.exe local** (offline-first).
    por **forma de pagamento** (dinheiro, PIX, débito, crédito, fiado).
 3. **Suprimento** (reforço de troco) e **Sangria** (retirada de dinheiro) ajustam
    o esperado na gaveta.
-4. **Dinheiro esperado** = abertura + vendas em dinheiro + suprimentos − sangrias.
+4. **Dinheiro esperado** = abertura + vendas em dinheiro + recebimentos de fiado em dinheiro + suprimentos − sangrias.
 5. **Fechar caixa**: conte o dinheiro e informe o valor. O sistema mostra a
    **diferença** (sobra/falta) em relação ao esperado e guarda no histórico.
 
@@ -41,4 +41,25 @@ Se houve recebimento parcial/total, recusa e orienta estornar o recebimento ante
 
 A conferência fiscal bloqueia o estorno enquanto existir nota autorizada, pendente,
 em processamento ou em contingência. A reserva é gravada antes da transmissão.
-A exclusão dos totais de caixa/relatórios e o botão da tela seguem no F1.11.
+Venda cancelada sai dos totais. Venda vinculada a caixa já fechado não pode ser
+estornada comercialmente: retorna 409 sem reabrir o caixa nem alterar a gaveta.
+
+## Sessões e validações
+
+- Cada venda nova guarda a sessão aberta do próprio usuário na mesma transação.
+  A sessão seguinte não soma as vendas da anterior; janela temporal é só fallback
+  para vendas legadas sem vínculo.
+- Sem caixa aberto, a venda continua permitida (D4), com aviso na tela. Ela não
+  ganha vínculo retroativo ao abrir outra sessão.
+- Segundo caixa aberto pelo mesmo usuário: 409.
+- Sangria, suprimento e pagamento de fiado precisam ter valor maior que zero
+  (400). Sangria acima do dinheiro esperado: 409, sem gravar movimento.
+- Licença bloqueada não impede fechar caixa nem ler/exportar dados.
+
+## Fiado
+
+Baixas parciais/totais mantêm histórico de data, valor e forma. Excedente não é
+engolido: retorna 400 sem baixar a conta. Valor exato quita. Conta cancelada não
+aceita recebimento (409). Receber em dinheiro entra no caixa aberto do usuário;
+PIX/cartão não alteram espécie. Cliente com fiado em aberto não pode ser ocultado
+pelo DELETE (409).
