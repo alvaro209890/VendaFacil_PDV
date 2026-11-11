@@ -3,9 +3,9 @@
 XML_NFE = b"""<?xml version="1.0" encoding="UTF-8"?>
 <nfeProc xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00"><NFe>
 <infNFe Id="NFe35200114200166000187650010000000071123456789" versao="4.00">
-<ide><nNF>71</nNF></ide>
+<ide><mod>55</mod><nNF>71</nNF></ide>
 <emit><xNome>Distribuidora Teste</xNome></emit>
-<det nItem="1"><prod><cEAN>7891000555555</cEAN><xProd>BISCOITO</xProd>
+<det nItem="1"><prod><cEAN>7891000555552</cEAN><xProd>BISCOITO</xProd>
 <uCom>UN</uCom><qCom>12.0000</qCom><vUnCom>2.5000</vUnCom></prod></det>
 </infNFe></NFe></nfeProc>"""
 
@@ -93,7 +93,7 @@ def test_importar_xml(client, auth):
     conf = client.post("/api/produtos/importar-xml/confirmar", json={
         "documento": "71",
         "itens": [{
-            "produto_id": None, "nome": "BISCOITO", "codigo_barras": "7891000555555",
+            "produto_id": None, "nome": "BISCOITO", "codigo_barras": "7891000555552",
             "unidade": "UN", "quantidade": 12, "preco_custo": 2.5, "preco_venda": 4.0,
             "atualizar_custo": True,
         }],

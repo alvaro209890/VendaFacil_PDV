@@ -60,6 +60,12 @@ Também o fornecedor (`emit/xNome`) e o número da nota.
 - Referência inexistente, inativa ou de outro usuário recusa o lote com 400.
   Não se ignora um item para importar só os demais.
 - Lote vazio e valores não finitos são recusados antes de gravar (422).
+- A prévia aceita somente raiz NFe/nfeProc, modelo 55. GTIN deve ter 8, 12,
+  13 ou 14 dígitos ASCII e verificador válido, ou ser vazio/SEM GTIN. Quantidade
+  precisa ser positiva; custo, não negativo; ambos finitos. Item sem produto
+  ou nome também recusa o XML inteiro com 400, em vez de sumir da prévia.
+  Essa leitura não substitui validação XSD, assinatura digital ou situação da
+  nota na SEFAZ: esses portões fiscais são separados.
 - Se a nota chega em UN, o fator/unidade de compra do cadastro é preservado;
   a conversão de CX usa o fator configurado na prévia.
 

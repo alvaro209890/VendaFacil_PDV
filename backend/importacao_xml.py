@@ -5,6 +5,8 @@ extraímos os itens (produto, código de barras, quantidade, custo) para dar
 entrada no estoque. É tolerante a namespace e aceita tanto `nfeProc` quanto
 `NFe` na raiz.
 """
+import math
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 import xml.etree.ElementTree as ET
 
 
@@ -32,11 +34,30 @@ def _first(root, name: str):
     return None
 
 
-def _float(s: str) -> float:
+def _numero(texto: str, campo: str, positivo: bool = False) -> float:
     try:
-        return float((s or "0").replace(",", "."))
-    except ValueError:
-        return 0.0
+        valor = Decimal(texto.replace(",", "."))
+        if not valor.is_finite() or valor < 0 or (positivo and valor == 0):
+            raise ValueError
+        if not positivo:
+            valor = valor.quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+        numero = float(valor)
+        if not math.isfinite(numero) or (positivo and numero <= 0):
+            raise ValueError
+        return numero
+    except (InvalidOperation, ValueError, OverflowError):
+        raise ValueError(f"Valor de {campo} inválido na NF-e.") from None
+
+
+def _gtin(texto: str) -> str:
+    if texto.upper().replace(" ", "") in ("SEMGTIN", ""):
+        return ""
+    if len(texto) not in (8, 12, 13, 14) or not texto.isascii() or not texto.isdigit() or set(texto) == {"0"}:
+        raise ValueError("GTIN inválido na NF-e.")
+    soma = sum(int(c) * (3 if i % 2 == 0 else 1) for i, c in enumerate(reversed(texto[:-1])))
+    if (-soma) % 10 != int(texto[-1]):
+        raise ValueError("Dígito verificador do GTIN inválido na NF-e.")
+    return texto
 
 
 def parse_nfe(xml_bytes: bytes) -> dict:
@@ -46,13 +67,22 @@ def parse_nfe(xml_bytes: bytes) -> dict:
     except ET.ParseError as e:
         raise ValueError(f"XML inválido: {e}")
 
-    inf = _first(root, "infNFe")
+    if _local(root.tag) == "NFe":
+        nfe = root
+    elif _local(root.tag) == "nfeProc":
+        nfes = [e for e in root if _local(e.tag) == "NFe"]
+        nfe = nfes[0] if len(nfes) == 1 else None
+    else:
+        nfe = None
+    inf = _child(nfe, "infNFe") if nfe is not None else None
     if inf is None:
-        raise ValueError("Arquivo não parece ser uma NF-e (infNFe não encontrado).")
+        raise ValueError("Arquivo não parece ser uma NF-e (raiz NFe/nfeProc e infNFe obrigatórios).")
 
+    ide = _child(inf, "ide")
+    if _ctext(ide, "mod") != "55":
+        raise ValueError("Importação exige NF-e de modelo 55.")
     chave = (inf.get("Id") or "").replace("NFe", "").strip()
-    emit = _first(inf, "emit")
-    ide = _first(inf, "ide")
+    emit = _child(inf, "emit")
     emitente = _ctext(emit, "xNome") if emit is not None else ""
     numero = _ctext(ide, "nNF") if ide is not None else ""
 
@@ -62,16 +92,17 @@ def parse_nfe(xml_bytes: bytes) -> dict:
             continue
         prod = _child(det, "prod")
         if prod is None:
-            continue
-        ean = _ctext(prod, "cEAN")
-        if ean.upper().replace(" ", "") in ("SEMGTIN", ""):
-            ean = ""
+            raise ValueError("Estrutura de item inválida na NF-e (prod ausente).")
+        nome = _ctext(prod, "xProd")
+        if not nome:
+            raise ValueError("Nome do item ausente na NF-e.")
+        ean = _gtin(_ctext(prod, "cEAN"))
         itens.append({
-            "nome": _ctext(prod, "xProd"),
+            "nome": nome,
             "codigo_barras": ean,
             "unidade": _ctext(prod, "uCom") or "UN",
-            "quantidade": _float(_ctext(prod, "qCom")),
-            "valor_unitario": round(_float(_ctext(prod, "vUnCom")), 4),
+            "quantidade": _numero(_ctext(prod, "qCom"), "quantidade", positivo=True),
+            "valor_unitario": _numero(_ctext(prod, "vUnCom"), "custo"),
             "ncm": _ctext(prod, "NCM"),
             "cfop": _ctext(prod, "CFOP"),
         })

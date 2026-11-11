@@ -1,10 +1,10 @@
 """I01: a mesma chave de NF-e não entra no estoque duas vezes."""
 CHAVE = '35200114200166000187650010000000991123456780'
-EAN = '7891000999111'
+EAN = '7891000999110'
 XML = f'''<?xml version="1.0" encoding="UTF-8"?>
 <nfeProc xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00"><NFe>
 <infNFe Id="NFe{CHAVE}" versao="4.00">
-<ide><nNF>99</nNF></ide>
+<ide><mod>55</mod><nNF>99</nNF></ide>
 <emit><xNome>Distribuidora Isolada</xNome></emit>
 <det nItem="1"><prod><cEAN>{EAN}</cEAN><xProd>BOLACHA</xProd>
 <uCom>UN</uCom><qCom>12.0000</qCom><vUnCom>2.5000</vUnCom></prod></det>
