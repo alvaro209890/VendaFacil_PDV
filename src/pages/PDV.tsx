@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useLayoutEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Search, 
@@ -181,6 +181,9 @@ export default function PDV() {
     : produtos;
 
   const buscaRef = useRef<HTMLInputElement>(null);
+  const descontoRef = useRef<HTMLInputElement>(null);
+  const quantidadeRef = useRef<HTMLInputElement>(null);
+  const pagamentoRef = useRef<HTMLButtonElement>(null);
 
   function addAoCarrinho(p: Produto) {
     setCarrinho((prev) => {
@@ -196,6 +199,7 @@ export default function PDV() {
 
   // Leitor de código de barras / Enter: bipa → adiciona → limpa → mantém o foco.
   function onBuscaKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (loading || pixLoading || maqModal || pixModal) return;
     if (e.key === "Escape") {
       setBusca("");
       return;
@@ -215,21 +219,41 @@ export default function PDV() {
     buscaRef.current?.focus();
   }
 
-  // Atalhos globais: F2 finaliza a venda, F4 foca a busca.
-  useEffect(() => {
+  // Instala antes de pintar, sempre com o estado do render atual (como o clique).
+  // F2 finaliza, F3 quantidade, F4 busca, F6 desconto, F7 pagamento; Esc fecha modal.
+  useLayoutEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key === "F2") {
+      // Estado atual, inclusive enquanto o PIX está carregando.
+      if (e.key === "Escape" && !loading) {
+        if (pixModal) {
+          e.preventDefault();
+          cancelarPix();
+        } else if (maqModal && maqModal.fase !== "criando" && !maqPagamentoRef.current) {
+          e.preventDefault();
+          void cancelarCobrancaMaq();
+        }
+      } else if (e.key === "F2") {
         e.preventDefault();
-        if (carrinho.length > 0 && !loading && !maqModal && !pixModal) void finalizarVenda();
-      } else if (e.key === "F4") {
+        if (carrinho.length > 0 && !loading && !pixLoading && !maqModal && !pixModal) void finalizarVenda();
+      } else if (e.key === "F3" && !loading && !pixLoading && !maqModal && !pixModal) {
+        e.preventDefault();
+        quantidadeRef.current?.focus();
+        quantidadeRef.current?.select();
+      } else if (e.key === "F7" && !loading && !pixLoading && !maqModal && !pixModal) {
+        e.preventDefault();
+        pagamentoRef.current?.focus();
+      } else if (e.key === "F6" && !loading && !pixLoading && !maqModal && !pixModal) {
+        e.preventDefault();
+        descontoRef.current?.focus();
+        descontoRef.current?.select();
+      } else if (e.key === "F4" && !loading && !pixLoading && !maqModal && !pixModal) {
         e.preventDefault();
         buscaRef.current?.focus();
       }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [carrinho, loading, pagamento, clienteFiado, desconto, valorRecebido, maqModal, pixModal]);
+  });
 
   function removerDoCarrinho(id: number) {
     setCarrinho((prev) => prev.filter((i) => i.id !== id));
@@ -619,6 +643,9 @@ export default function PDV() {
                         </button>
                         <input
                           type="number"
+                          ref={i.id === carrinho[carrinho.length - 1]?.id ? quantidadeRef : undefined}
+                          aria-label={`Quantidade de ${i.nome}`}
+                          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); buscaRef.current?.focus(); } }}
                           value={i.qtd}
                           onChange={(e) => definirQtd(i.id, Number(e.target.value))}
                           min={passoQtd(i.unidade)}
@@ -660,6 +687,8 @@ export default function PDV() {
                   <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-500">R$</span>
                   <input
                     type="number"
+                    ref={descontoRef}
+                    aria-label="Desconto"
                     value={desconto || ""}
                     onChange={(e) => setDesconto(Number(e.target.value) || 0)}
                     placeholder="0.00"
@@ -685,6 +714,7 @@ export default function PDV() {
                     whileHover={{ y: -2 }}
                     whileTap={{ scale: 0.95 }}
                     key={fp.value}
+                    ref={pagamento === fp.value ? pagamentoRef : undefined}
                     onClick={() => { setPagamento(fp.value); if (fp.value !== "fiado") setClienteFiado(""); }}
                     className={`flex flex-col items-center justify-center py-3 rounded-xl transition-all border ${
                       pagamento === fp.value
@@ -716,6 +746,13 @@ export default function PDV() {
                   <input
                     type="text"
                     inputMode="decimal"
+                    aria-label="Dinheiro recebido"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !loading && !pixLoading && !maqModal && !pixModal) {
+                        e.preventDefault();
+                        void finalizarVenda();
+                      }
+                    }}
                     value={valorRecebido}
                     onChange={(e) => setValorRecebido(e.target.value.replace(/[^\d,.]/g, ""))}
                     placeholder="0,00"

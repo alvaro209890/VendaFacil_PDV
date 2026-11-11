@@ -74,7 +74,22 @@ ela sai do total do dia, do caixa, do dashboard e dos relatórios.
 4. Escolha a **forma de pagamento**.
 5. Clique em **FINALIZAR VENDA** (atalho **F2**). O estoque baixa automaticamente.
 
-Atalhos: **F2** finaliza, **F4** foca a busca.
+### Atalhos do caixa
+
+| Tecla | Ação |
+|---|---|
+| Leitor + Enter na busca | Adiciona o código exato (ou primeiro resultado), limpa a busca |
+| F2 | Finaliza pela mesma validação do botão; não atravessa pagamento em andamento |
+| F3 | Foca e seleciona a quantidade do último item do carrinho |
+| F4 | Volta à busca |
+| F6 | Foca e seleciona o desconto |
+| F7 | Foca a forma de pagamento atual; Tab navega e Enter seleciona |
+| Enter no dinheiro recebido | Confirma a venda, exigindo valor suficiente |
+| Enter na quantidade | Confirma e volta à busca, sem finalizar a venda |
+| Esc | Fecha PIX ou solicita cancelamento da cobrança pendente, como o botão; não interrompe criação da cobrança/checkout |
+
+Os atalhos de busca/quantidade/desconto/pagamento ficam suspensos enquanto o pagamento
+está sendo carregado ou há janela de pagamento aberta. Não descartam o carrinho.
 
 **Rascunho do carrinho:** os itens e quantidades ficam salvos neste navegador,
 separados por usuário. F5 ou fechar/reabrir a aba recupera os itens; preços e
