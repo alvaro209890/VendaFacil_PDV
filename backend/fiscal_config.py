@@ -61,6 +61,7 @@ class ConfigFiscalInput(BaseModel):
     resp_tec_fone: str | None = Field(default=None, max_length=14)
     resp_tec_csrt: str | None = Field(default=None, max_length=64)
     resp_tec_id_csrt: str | None = Field(default=None, max_length=10)
+    limpar_segredos: list[str] | None = None
 
     @field_validator("cep", mode="before")
     @classmethod
@@ -92,7 +93,37 @@ async def obter(request: Request) -> dict:
 @router.put("")
 async def salvar(data: ConfigFiscalInput, request: Request) -> dict:
     _auth(request)
+    if data.limpar_segredos:
+        invalidos = set(data.limpar_segredos) - _SENSIVEIS
+        if invalidos:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Campos inválidos para limpeza: {sorted(invalidos)}. Apenas segredos podem ser limpos.",
+            )
+        for campo_limpar in data.limpar_segredos:
+            val = getattr(data, campo_limpar, None)
+            if isinstance(val, str) and val.strip():
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Conflito: campo '{campo_limpar}' informado com novo valor e marcado para limpeza.",
+                )
+
     campos = data.model_dump(exclude_none=True)
+    campos.pop("limpar_segredos", None)
+
+    for k in _SENSIVEIS:
+        if data.limpar_segredos and k in data.limpar_segredos:
+            campos[k] = ""
+        elif k in campos:
+            val = campos[k]
+            if isinstance(val, str):
+                val_limpo = val.strip()
+                if not val_limpo:
+                    campos.pop(k, None)
+                # Valor não vazio é opaco: preservar exatamente, inclusive espaços.
+            else:
+                campos.pop(k, None)
+
     for flag in ("habilitado", "resp_tec_habilitado"):
         if flag in campos:
             campos[flag] = 1 if campos[flag] else 0

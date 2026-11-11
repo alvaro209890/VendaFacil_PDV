@@ -21,6 +21,19 @@ O que o caixa da mercearia protege, o que fica de fora de propósito e o que faz
 
 CSC, senha do certificado, arquivo A1 e tokens ficam no SQLite da loja, em claro. A leitura da API devolve o campo vazio e a marca de preenchido. O log troca esses valores por `***`. Criptografar o arquivo do banco não foi feito: quem tem o PC da loja já tem o caixa. Se o computador for trocado ou roubado, restaurar o backup só na máquina nova e trocar CSC e certificado no painel da SEFAZ.
 
+## Salvar configuração mascarada
+
+O PUT fiscal e o da maquininha preservam segredos omitidos, nulos, vazios ou
+compostos apenas por espaços. Reenviar o GET mascarado não apaga credenciais.
+Um novo valor não vazio é armazenado **exatamente como recebido**, inclusive
+espaços nas extremidades: senha e token são valores opacos, não texto a normalizar.
+
+A remoção exige `limpar_segredos`, lista explícita limitada aos campos sensíveis
+daquela configuração. Um nome fora da lista permitida é recusado; enviar um
+novo valor e pedir limpeza do mesmo campo também é recusado, antes de gravar.
+Campos comuns e flags continuam atualizáveis. A resposta permanece mascarada.
+Esse contrato de armazenamento não valida certificado nem prova homologação.
+
 ## Token de 30 dias
 
 O token local dura 720 horas. A loja abre e fecha no mesmo PC, muitas vezes sem internet. Um token curto trancaria o caixa no meio do expediente se o painel não respondesse. Trinta dias cobrem o mês sem pedir senha todo dia, e o bloqueio da licença continua valendo na revalidação. Não é sessão de banco: é o caixa da loja.
