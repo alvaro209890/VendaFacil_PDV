@@ -961,6 +961,11 @@ def _xml_autorizado(xml_assinado: str | None, prot_el) -> str | None:
 def normalizar_retorno_sefaz(texto: str | None, xml_assinado: str | None = None,
                              http_status: int | None = None) -> dict:
     """Interpreta retorno SOAP/XML da SEFAZ e devolve campos de notas_fiscais."""
+    if http_status and http_status >= 500:
+        # O intermediário pode ter falhado depois de a SEFAZ receber a nota.
+        # Preserve a chave/reserva e consulte antes de qualquer nova emissão.
+        return {"status": "processando",
+                "mensagem": f"SEFAZ indisponível (HTTP {http_status}); aguardando consulta pela chave."}
     if not texto:
         return {
             "status": "rejeitada" if http_status and http_status >= 400 else "processando",
