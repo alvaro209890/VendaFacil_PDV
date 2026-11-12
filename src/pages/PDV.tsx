@@ -197,6 +197,12 @@ export default function PDV() {
   }, [modalPagamentoAberto]);
 
   function addAoCarrinho(p: Produto) {
+    // D3 (Álvaro, 12/11/2026): sem preço de venda não vende (o backend também recusa).
+    if (!(Number(p.preco_venda) > 0)) {
+      setMsg({ tipo: "erro", texto: `"${p.nome}" está sem preço de venda. Cadastre o preço em Produtos antes de vender.` });
+      buscaRef.current?.focus();
+      return;
+    }
     setCarrinho((prev) => {
       const existe = prev.find((i) => i.id === p.id);
       if (existe) {

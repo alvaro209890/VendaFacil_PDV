@@ -1,0 +1,52 @@
+Commit: e77429a (antes da correção)
+$ pytest -q --tb=short tests/test_cancelamento.py::test_d3_preco_zero_bloqueia_venda tests/test_adversario_f113.py::test_preco_e_custo_zero_nao_baixa_estoque
+FF                                                                       [100%]
+================================== FAILURES ===================================
+______________________ test_d3_preco_zero_bloqueia_venda ______________________
+tests\test_cancelamento.py:100: in test_d3_preco_zero_bloqueia_venda
+    assert resposta.status_code == 400, resposta.text
+E   AssertionError: {"venda":{"id":1,"user_id":1,"cliente_id":null,"total":3.0,"desconto":0.0,"forma_pagamento":"dinheiro","status":"concluida","observacao":"","criado_em":"2026-11-12T20:06:56.757261+00:00","cancelada_em":null,"motivo_cancelamento":null,"sincronizado_em":null,"sincronizado":0,"uuid":null,"pagamento_detalhe":null,"sessao_id":null},"itens":[{"produto_id":1,"nome_produto":"Transação","quantidade":2.0,"preco_unitario":1.5,"subtotal":3.0}],"nota":null}
+E   assert 201 == 400
+E    +  where 201 = <Response [201 Created]>.status_code
+---------------------------- Captured stderr call -----------------------------
+INFO: HTTP Request: POST http://testserver/api/vendas/checkout "HTTP/1.1 201 Created"
+------------------------------ Captured log call ------------------------------
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/api/vendas/checkout "HTTP/1.1 201 Created"
+__________________ test_preco_e_custo_zero_nao_baixa_estoque __________________
+tests\test_adversario_f113.py:65: in test_preco_e_custo_zero_nao_baixa_estoque
+    assert resposta.status_code == 400
+E   assert 201 == 400
+E    +  where 201 = <Response [201 Created]>.status_code
+---------------------------- Captured stderr call -----------------------------
+INFO: HTTP Request: POST http://testserver/api/vendas/checkout "HTTP/1.1 201 Created"
+------------------------------ Captured log call ------------------------------
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/api/vendas/checkout "HTTP/1.1 201 Created"
+    from starlette.testclient import TestClient as TestClient  # noqa
+=========================== short test summary info ===========================
+FAILED tests/test_cancelamento.py::test_d3_preco_zero_bloqueia_venda - Assert...
+FAILED tests/test_adversario_f113.py::test_preco_e_custo_zero_nao_baixa_estoque
+Exit code: 1
+$ npx playwright test e2e/preco-zero.spec.ts --workers=1 --reporter=line --timeout=30000 (antes da correção na tela)
+Running 1 test using 1 worker
+[1/1] e2e\preco-zero.spec.ts:7:1 › D3: produto sem preço de venda não entra no carrinho e avisa
+  1) e2e\preco-zero.spec.ts:7:1 › D3: produto sem preço de venda não entra no carrinho e avisa ─────
+    Error: expect(locator).toBeVisible() failed
+    Locator: getByText(/sem preço de venda/)
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+    Call log:
+      - Expect "toBeVisible" getByText(/sem preço de venda/) with timeout 5000ms
+      - waiting for getByText(/sem preço de venda/)
+      21 |   await page.goto('/pdv');
+      22 |   await page.getByRole('button', { name: new RegExp(codigo) }).click();
+    > 23 |   await expect(page.getByText(/sem preço de venda/)).toBeVisible();
+         |                                                      ^
+      24 |   await expect(page.getByLabel(`Quantidade de ${codigo}`)).toHaveCount(0);
+      25 |   await expect(page.getByText('Total a Pagar', { exact: true })).toHaveCount(0);
+      26 | });
+        at C:\GIS\VendaFacil_PDV\e2e\preco-zero.spec.ts:23:54
+    Error Context: test-results\preco-zero-D3-produto-sem--1bb5a-o-entra-no-carrinho-e-avisa\error-context.md
+  1 failed
+    e2e\preco-zero.spec.ts:7:1 › D3: produto sem preço de venda não entra no carrinho e avisa ──────
+Exit code: 1

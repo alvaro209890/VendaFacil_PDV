@@ -55,15 +55,15 @@ def test_motivo_curto_recusado_e_limite_aceito(checkout_local):
     assert local.get_produto(produto['id'])['estoque'] == 5
 
 
-def test_preco_e_custo_zero_baixa_estoque(checkout_local):
+def test_preco_e_custo_zero_nao_baixa_estoque(checkout_local):
+    """D3: produto sem preço de venda é recusado sem mexer no estoque."""
     api, local, user, produto, _, headers = checkout_local
     local.update_produto(produto['id'], user, preco_venda=0, preco_custo=0, estoque=10)
     resposta = api.post('/api/vendas/checkout', headers=headers, json={
         'itens': [{'produto_id': produto['id'], 'quantidade': 1}],
     })
-    assert resposta.status_code == 201
-    assert resposta.json()['venda']['total'] == 0
-    assert local.get_produto(produto['id'])['estoque'] == 9
+    assert resposta.status_code == 400
+    assert local.get_produto(produto['id'])['estoque'] == 10
 
 
 def test_d4_checkout_sem_caixa_aberto_continua_permitido(checkout_local):

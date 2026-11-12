@@ -96,7 +96,13 @@ async def checkout(data: CheckoutRequest, request: Request):
             )
             continue
 
-        preco = produto["preco_venda"] if produto["preco_venda"] > 0 else produto["preco_custo"]
+        # D3 (Álvaro, 12/11/2026): produto sem preço de venda não é vendido
+        # (antes caía para o preço de custo, sem aviso).
+        if not produto["preco_venda"] or produto["preco_venda"] <= 0:
+            erros.append(f"Produto '{produto['nome']}' está sem preço de venda. "
+                         "Cadastre o preço em Produtos antes de vender.")
+            continue
+        preco = produto["preco_venda"]
         subtotal = multiplicar(item.quantidade, preco)
         subtotal_total += subtotal
 

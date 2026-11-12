@@ -1,0 +1,29 @@
+Commit: e77429a + bloqueio D3 em backend/vendas.py e src/pages/PDV.tsx
+$ pytest focados D3
+23 passed, 1 warning in 7.67s
+$ backend completo (antes do front): 460 passed, 9 deselected (logsScratch/D3_SUITE.txt)
+$ npx playwright test e2e/preco-zero.spec.ts e2e/carrinho.spec.ts e2e/erros.spec.ts e2e/teclado.spec.ts --workers=1 --reporter=line
+Running 21 tests using 1 worker
+[1/21] e2e\carrinho.spec.ts:40:1 › U01: F5 preserva o carrinho e finalizar apaga o rascunho
+[2/21] e2e\carrinho.spec.ts:54:1 › U01: cancelar a venda apaga o rascunho sem baixar estoque
+[3/21] e2e\carrinho.spec.ts:65:1 › U01: rascunho corrompido não derruba a tela
+[4/21] e2e\carrinho.spec.ts:77:1 › U01: outro usuário não recebe o carrinho anterior
+[5/21] e2e\carrinho.spec.ts:94:1 › U01: recarga atualiza o preço do rascunho pelo cadastro atual
+[6/21] e2e\erros.spec.ts:36:1 › F3.13: estoque alterado no backend mostra motivo e preserva carrinho
+[7/21] e2e\erros.spec.ts:56:1 › F3.13: caixa fechado avisa sem impedir venda conforme D4
+[8/21] e2e\erros.spec.ts:67:1 › F3.13: falha fiscal real local aparece sem alegar nota emitida ou repetir venda
+[9/21] e2e\erros.spec.ts:91:3 › F3.13: contrato UI distingue nota rejeitada (fixture sem SEFAZ)
+[10/21] e2e\erros.spec.ts:91:3 › F3.13: contrato UI distingue nota pendente (fixture sem SEFAZ)
+[11/21] e2e\erros.spec.ts:91:3 › F3.13: contrato UI distingue nota contingencia (fixture sem SEFAZ)
+[12/21] e2e\erros.spec.ts:91:3 › F3.13: contrato UI distingue nota autorizada (fixture sem SEFAZ)
+[13/21] e2e\preco-zero.spec.ts:7:1 › D3: produto sem preço de venda não entra no carrinho e avisa
+[14/21] e2e\teclado.spec.ts:34:1 › U02: F3 foca quantidade e Enter confirma sem vender
+[15/21] e2e\teclado.spec.ts:46:1 › U02: F7 seleciona pagamento com Tab e Enter, F2 vende
+[16/21] e2e\teclado.spec.ts:57:1 › U02: Enter no dinheiro recebido confirma a venda
+[17/21] e2e\teclado.spec.ts:64:1 › U02: Escape fecha PIX sem finalizar nem apagar carrinho
+[18/21] e2e\teclado.spec.ts:81:1 › U02: F2 e atalhos nao atravessam PIX ainda carregando
+[19/21] e2e\teclado.spec.ts:107:1 › U02: leitor e F4 nao alteram carrinho sob janela PIX
+[20/21] e2e\teclado.spec.ts:130:1 › U02: tres produtos distintos e venda inteira so com teclado
+[21/21] e2e\teclado.spec.ts:156:1 › U02: F6 foca desconto e permite ajustar pelo teclado
+  21 passed (48.8s)
+Exit code: 0

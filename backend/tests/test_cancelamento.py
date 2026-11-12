@@ -89,17 +89,17 @@ def test_v11_tela_confirma_cancelamento_com_atalho():
     assert "status !== 'concluida'" in tela or 'status === "cancelada"' in tela
 
 
-def test_d3_preco_zero_vende_pelo_custo(checkout_local):
-    """D3: caracterização do comportamento atual, não é correção."""
+def test_d3_preco_zero_bloqueia_venda(checkout_local):
+    """D3 (resposta do Álvaro, 12/11/2026): sem preço de venda não vende."""
     api, local, user, produto, _, headers = checkout_local
     local.update_produto(produto['id'], user, preco_venda=0, preco_custo=1.5)
+    estoque = local.get_produto(produto['id'])['estoque']
     resposta = api.post('/api/vendas/checkout', headers=headers, json={
         'itens': [{'produto_id': produto['id'], 'quantidade': 2}],
     })
-    assert resposta.status_code == 201, resposta.text
-    venda = resposta.json()['venda']
-    assert venda['total'] == 3
-    assert resposta.json()['itens'][0]['preco_unitario'] == 1.5
+    assert resposta.status_code == 400, resposta.text
+    assert 'sem preço de venda' in resposta.text
+    assert local.get_produto(produto['id'])['estoque'] == estoque
     local.update_produto(produto['id'], user, preco_venda=2, preco_custo=1.5, estoque=5)
     cobrado = api.post('/api/vendas/checkout', headers=headers, json={
         'itens': [{'produto_id': produto['id'], 'quantidade': 1}],
