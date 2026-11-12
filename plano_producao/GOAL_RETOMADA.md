@@ -1,47 +1,47 @@
-# GOAL — retomada em 12/11/2026
+# GOAL — retomada em 12/11/2026 (Fase 4)
 
-> Copie o bloco abaixo e envie no próximo chat. Ele é autossuficiente: aponta os arquivos que mandam e o ponto exato de retomada.
+> Copie o bloco abaixo e envie no próximo chat.
 
 ---
 
-**Objetivo:** continuar o VendaFácil PDV (`C:\GIS\VendaFacil_PDV`, branch `master`, HEAD `b5db49c` ou posterior — confira com `git log -1`) do ponto em que parou e executar até o fim o plano de `C:\GIS\VendaFacil_PDV\plano_producao\`.
+**Objetivo:** continuar o VendaFácil PDV (`C:\GIS\VendaFacil_PDV`, branch `master`, HEAD `c9f6d1d` ou posterior) do ponto em que parou e executar até o fim o plano de `C:\GIS\VendaFacil_PDV\plano_producao\`.
 
 **Antes de escrever qualquer linha**
 
 1. Leia, nesta ordem: `plano_producao/RETOMADA.md`, `00_PAINEL.md`, `01_REGRAS.md`, `README.md`.
-2. Confira o estado real: `git log --oneline -5`, `git status --porcelain`, suítes backend/painel.
-3. Não refaça o que já está fechado. Fases 0, 1 e 2 estão concluídas e publicadas; a Fase 3 está em **21/24**.
+2. Confira o estado real: `git log --oneline -8`, `git status --porcelain`, e a suíte backend.
+3. Não refaça o que está fechado. Fases 0, 1, 2 e 3 estão concluídas e publicadas. A Fase 4 está em **7/27**.
 
-**Onde retomar (Fase 3, nesta ordem)**
+**Onde retomar (nesta ordem)**
 
-| Item | Pista/Teste | O que fazer |
+| Item | O que falta | Onde |
 |---|---|---|
-| F3.22 | P42 / S14 | Validar o dono da nota antes de ler, consultar ou cancelar (`fiscal_router.py`). Teste que falha primeiro, com dois usuários. |
-| F3.21 | P41 / S13 | Bootstrap de admin atômico, senha mínima no painel e troca de senha que revoga tokens. |
-| F3.19 | P34 / U07 | Total diário pelo backend, sem truncar nas 100 vendas, respeitando o fuso de MT. |
+| F4.27 (P35/P36) | 4 RED já escritos: config vazia não levanta, preflight certificado/itens grava nota, assinatura queima número | `backend/tests/test_fiscal_reserva_regras.py` + `fiscal_direto.py` |
+| F4.11 | 5 RED no simulador: M05 (503 devolve rejeitada), M08 (evento 135 preso em processando), M09 (falta `inutilizar_numeracao`), M10×2 (fixture sem certificado) | `backend/tests/sefaz_fake.py`, `test_sefaz_simulador.py` |
+| F4.6 | X11: prazo de cancelamento 30 min NFC-e / 2 h NF-e no fuso de MT (X09 já está verde) | `fiscal.py` / testes fiscais |
+| F4.8 / F4.9 | X13 (nenhum caminho cai em FocusNFe/PlugNotas) e X12 (numeração sem buraco sob concorrência) | `fiscal.py`, `fiscal_direto.py` |
+| F4.10 | Reconferir `docs/LEGISLACAO_FISCAL_MT.md` e `docs/VINCULO_PAGAMENTO_MT.md` contra o código; o que divergir vira pista | docs + código |
+| F4.18 / F4.19 | Inutilização (X05/M09) e campos obrigatórios do cupom DANFE NFC-e | `fiscal_direto.py`, `recibo.ts` |
+| Bloco B | M01–M04, M06, M07, M11, M12 ponta a ponta com o simulador | `test_sefaz_simulador.py` |
+| F4.20–F4.26 | Precheck, `pytest.ini` com marker `homologacao`, H01–H09 (ou `[!]` B1–B5), revisor fiscal, docs | `scripts/`, `pytest.ini`, `backend/tests/` |
 
-Feche cada item no ciclo do README: `[~]` → teste RED → correção → suíte → revisão independente → commit com caminho explícito → `[x]` com commit/teste → atualizar `03_TESTES.md`, `02_PISTAS.md`, `06_DIARIO.md` e `00_PAINEL.md`.
-
-Depois dos três: portão da Fase 3 (suítes verdes, plano commitado, `git push origin master`) e siga para as fases 4 → 7, em ordem.
+**Atenção:** `backend/tests/test_sefaz_simulador.py` e `test_fiscal_reserva_regras.py` estão no working tree **sem commit** e ainda falham. Não commitar antes do GREEN. Enquanto existirem, rode a suíte com `--ignore` nesses dois arquivos; o resto está em 347 verdes.
 
 **Regras que não se negociam**
 
 - Um bug = um commit, mensagem em português, `git add` sempre por caminho explícito. Nunca `git add -A`; nunca commitar `dist_exe/VendaFacilPDV.exe`.
+- Item só fecha com a saída real do comando e a linha `— <commit> · <teste>`.
 - Segredo não entra em commit, log, diário nem vault. Evidência de falha é revisada e mascarada antes do stage.
-- Fiscal: blocos A e B (offline, XSD/assinatura/QR e simulador local) são obrigatórios; o bloco C (SEFAZ-MT real) depende de B1–B5 e fica `[!]` se faltar. Nunca inventar dado fiscal, nunca usar certificado que não seja o da mercearia, nunca sair de `homologacao`.
-- Autonomia primeiro: resolva sozinho build, teste, dependência, porta ocupada. Só marque `[!]` para os itens da lista fechada `04_BLOQUEIOS.md`. Decisão de produto: aplique o padrão de `05_DECISOES_ALVARO.md` e registre. Perguntas ao Álvaro só no fim, numa lista única.
-- Subagentes: `delegate_task` em `ag/gemini-3.8-flash-high`, raciocínio `high`, quantos precisar. Você orquestra, confere a saída e é o único que commita. Relato de subagente é pista, não prova.
+- Fiscal: blocos A e B (offline e simulador) são obrigatórios; o bloco C (SEFAZ-MT real) depende de B1–B5 e fica `[!]` com a prova do precheck. Nunca inventar dado fiscal, nunca usar certificado que não seja o da mercearia, nunca sair de `homologacao`.
+- Autonomia primeiro: resolva sozinho build, teste, dependência, porta ocupada. Só marque `[!]` para itens de `04_BLOQUEIOS.md`. Decisão de produto: padrão de `05_DECISOES_ALVARO.md`, registrado. Perguntas ao Álvaro só no fim, numa lista única.
+- Subagentes: `delegate_task` em `ag/gemini-3.8-flash-high`, raciocínio `high`. Você orquestra, confere e é o único que commita. Relato de subagente é pista, não prova.
 
 **Armadilhas medidas nesta máquina**
 
-- A suíte E2E tem 81 testes com `workers: 1` e não cabe no limite de 350–600 s de uma ferramenta. Rode em 4 lotes e guarde a saída:
-  1. `e2e/carrinho.spec.ts e2e/decimais.spec.ts` (28)
-  2. `e2e/erros.spec.ts e2e/foco.spec.ts e2e/teclado.spec.ts` (20)
-  3. `e2e/locale.spec.ts e2e/produtos-locale.spec.ts e2e/xml-idempotencia.spec.ts` (19)
-  4. `e2e/xml-locale.spec.ts` (14)
-- Antes de rodar, exporte `TEMP`/`TMP`/`TMPDIR` para uma pasta scratch. Memória de 16 GB: Browser/Chromium crashando com "Target crashed" é falta de RAM, não falha de teste — feche apps pesados e repita o lote.
+- Suíte E2E: 81 testes com `workers: 1` não cabem em uma ferramenta. Rode em 4 lotes (A 28, B 20, C 19, XML 14) e guarde a saída.
+- Antes de Playwright, exporte `TEMP`/`TMP`/`TMPDIR` para uma pasta scratch. Chromium com "Target crashed" é falta de RAM, não falha.
 - Python sempre com `-X utf8 -I` e sem `PYTHONPATH` herdado.
-- Push: use o helper efêmero documentado em `RETOMADA.md` (`git -c credential.helper='!sh .../git-cred-sd.sh' push origin master`). Não grave, não imprima e não copie credencial.
+- Push com o helper efêmero de `RETOMADA.md`; não grave nem imprima credencial.
 
 **Só pare quando**
 
