@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Wallet, ArrowDownCircle, ArrowUpCircle, Lock, Unlock, CheckCircle2, AlertCircle } from "lucide-react";
 import { caixaAtual, abrirCaixa, movimentoCaixa, fecharCaixa } from "../lib/api";
 import type { CaixaAtual } from "../lib/api";
+import { lerNumeroPtBr } from "../lib/numeros";
 
 const moeda = (v: number) => `R$ ${(v || 0).toFixed(2)}`;
 const LABEL: Record<string, string> = { dinheiro: "Dinheiro", pix: "PIX", debito: "Débito", credito: "Crédito", fiado: "Fiado" };
@@ -23,8 +24,10 @@ export default function CaixaPage() {
   useEffect(() => { void carregar(); }, [carregar]);
 
   async function abrir() {
+    const valor = abertura.trim() ? lerNumeroPtBr(abertura, 2) : 0;
+    if (valor === null) { setMsg({ tipo: "erro", texto: "Valor de abertura inválido." }); return; }
     setBusy(true); setMsg(null);
-    try { setEstado(await abrirCaixa(Number(abertura) || 0)); }
+    try { setEstado(await abrirCaixa(valor)); }
     catch (e) { setMsg({ tipo: "erro", texto: (e as Error).message }); }
     finally { setBusy(false); }
   }
@@ -32,7 +35,7 @@ export default function CaixaPage() {
   async function movimento(tipo: "sangria" | "suprimento") {
     const v = prompt(`${tipo === "sangria" ? "Sangria (retirada)" : "Suprimento (reforço)"} — valor em R$:`, "");
     if (v === null) return;
-    const valor = Number(v);
+    const valor = lerNumeroPtBr(v, 2);
     if (!valor || valor <= 0) { setMsg({ tipo: "erro", texto: "Valor inválido." }); return; }
     const motivo = prompt("Motivo (opcional):", "") || "";
     setBusy(true); setMsg(null);
@@ -43,10 +46,12 @@ export default function CaixaPage() {
 
   async function fechar() {
     if (contado === "") { setMsg({ tipo: "erro", texto: "Informe o valor contado na gaveta." }); return; }
+    const valor = lerNumeroPtBr(contado, 2);
+    if (valor === null) { setMsg({ tipo: "erro", texto: "Valor contado inválido." }); return; }
     if (!confirm("Fechar o caixa agora?")) return;
     setBusy(true); setMsg(null);
     try {
-      const r = await fecharCaixa(Number(contado), "");
+      const r = await fecharCaixa(valor, "");
       const dif = r.sessao.diferenca ?? 0;
       setMsg({ tipo: "ok", texto: `Caixa fechado. Diferença: ${moeda(dif)} ${dif === 0 ? "(bateu certinho!)" : dif > 0 ? "(sobra)" : "(falta)"}` });
       setContado("");
@@ -91,7 +96,7 @@ export default function CaixaPage() {
           <div className="flex items-end gap-3">
             <div>
               <label className="block text-xs text-slate-500 mb-1">Valor de abertura (R$)</label>
-              <input type="number" step="0.01" value={abertura} onChange={(e) => setAbertura(e.target.value)} className={`${inputCls} w-40`} />
+              <input type="text" inputMode="decimal" aria-label="Valor de abertura (R$)" value={abertura} onChange={(e) => setAbertura(e.target.value)} className={`${inputCls} w-40`} />
             </div>
             <button onClick={abrir} disabled={busy} className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white rounded-lg font-bold">Abrir caixa</button>
           </div>
@@ -131,7 +136,7 @@ export default function CaixaPage() {
             <div className="flex items-end gap-3">
               <div>
                 <label className="block text-xs text-slate-500 mb-1">Valor contado (R$)</label>
-                <input type="number" step="0.01" value={contado} onChange={(e) => setContado(e.target.value)} className={`${inputCls} w-40`} placeholder="0,00" />
+                <input type="text" inputMode="decimal" aria-label="Valor contado (R$)" value={contado} onChange={(e) => setContado(e.target.value)} className={`${inputCls} w-40`} placeholder="0,00" />
               </div>
               <button onClick={fechar} disabled={busy} className="px-5 py-2 bg-red-600 hover:bg-red-500 disabled:opacity-60 text-white rounded-lg font-bold">Fechar caixa</button>
             </div>

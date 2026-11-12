@@ -14,6 +14,7 @@ import {
 import type {
   Produto, ProdutoInput, Categoria, CamposFiscais, PreviewXml, ItemConfirmarXml, Movimentacao,
 } from "../lib/api";
+import { lerNumeroPtBr } from "../lib/numeros";
 
 // Item da importação com flags editáveis na tela.
 type ItemImport = ItemConfirmarXml & {
@@ -23,6 +24,19 @@ type ItemImport = ItemConfirmarXml & {
   valor_unitario_xml?: number;
 };
 
+const CAMPOS_NUMEROS_XML = {
+  quantidade_xml: "Qtd XML", quantidade_por_embalagem: "Qtd/emb.",
+  quantidade: "Entra", preco_custo: "Custo R$", preco_venda: "Venda R$",
+} as const;
+type CampoNumeroXml = keyof typeof CAMPOS_NUMEROS_XML;
+
+function numeroXmlValido(campo: CampoNumeroXml, valor: number): boolean {
+  if (!Number.isFinite(valor)) return false;
+  if (campo === "quantidade_por_embalagem") return valor >= 0.0001;
+  if (campo === "quantidade_xml" || campo === "quantidade") return valor > 0;
+  return valor >= 0;
+}
+
 const FISCAL_VAZIO: CamposFiscais = {
   ncm: "", cest: "", cfop: "5102", origem: "0", unidade_tributavel: "",
   cst_csosn: "102", cst_pis: "07", cst_cofins: "07",
@@ -30,7 +44,12 @@ const FISCAL_VAZIO: CamposFiscais = {
 
 const UNIDADES = ["UN", "KG", "G", "LT", "ML", "CX", "FD", "PCT", "SC"];
 const normUn = (v: string, fallback = "UN") => (v || fallback).trim().toUpperCase() || fallback;
-const fatorSeguro = (v: number | string | undefined) => Math.max(Number(v) || 1, 0.0001);
+const fatorSeguro = (v: number | string | undefined) => {
+  if (typeof v === "number") return Number.isFinite(v) && v > 0 ? Math.max(v, 0.0001) : 1;
+  if (!v) return 1;
+  const parsed = lerNumeroPtBr(String(v));
+  return parsed !== null && parsed > 0 ? Math.max(parsed, 0.0001) : 1;
+};
 const fmtQtd = (v: number) => Number(v || 0).toLocaleString("pt-BR", { maximumFractionDigits: 3 });
 const fmtData = (iso: string) => {
   const d = new Date(iso);
@@ -67,6 +86,7 @@ export default function ProdutosPage() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [importInfo, setImportInfo] = useState<{ emitente: string; numero: string; chave: string } | null>(null);
   const [importItens, setImportItens] = useState<ItemImport[]>([]);
+  const [importTextos, setImportTextos] = useState<Record<string, string>>({});
   const [importBusy, setImportBusy] = useState(false);
 
   // Histórico de movimentações de um produto
@@ -96,6 +116,7 @@ export default function ProdutosPage() {
     setMsg(null);
     try {
       const prev: PreviewXml = await importarXmlPreview(file);
+      setImportTextos({});
       setImportInfo({ emitente: prev.emitente, numero: prev.numero, chave: prev.chave });
       setImportItens(prev.itens.map((it) => ({
         produto_id: it.produto_id,
@@ -142,8 +163,42 @@ export default function ProdutosPage() {
       return next;
     }));
 
+  function fecharImportacao() {
+    setImportInfo(null);
+    setImportItens([]);
+    setImportTextos({});
+    setMsg(null);
+  }
+
+  const textoImport = (i: number, campo: CampoNumeroXml) =>
+    importTextos[`${i}:${campo}`] ?? String(importItens[i]?.[campo] ?? 0);
+
+  function editarNumeroImport(i: number, campo: CampoNumeroXml, texto: string) {
+    const numero = lerNumeroPtBr(texto);
+    const valido = numero !== null && numeroXmlValido(campo, numero);
+    setImportTextos((ant) => {
+      const next = { ...ant, [`${i}:${campo}`]: texto };
+      if (valido && (campo === "quantidade_xml" || campo === "quantidade_por_embalagem")) {
+        delete next[`${i}:quantidade`];
+        delete next[`${i}:preco_custo`];
+      }
+      return next;
+    });
+    if (valido) setItem(i, campo, numero);
+  }
+
   async function confirmarImportacao() {
-    const sel = importItens.filter((it) => it.incluir && it.quantidade > 0);
+    for (const [i, it] of importItens.entries()) {
+      if (!it.incluir) continue;
+      for (const campo of Object.keys(CAMPOS_NUMEROS_XML) as CampoNumeroXml[]) {
+        const numero = lerNumeroPtBr(textoImport(i, campo));
+        if (numero === null || !numeroXmlValido(campo, numero)) {
+          setMsg({ tipo: "erro", texto: `Item ${i + 1}: valor inválido em ${CAMPOS_NUMEROS_XML[campo]}.` });
+          return;
+        }
+      }
+    }
+    const sel = importItens.filter((it) => it.incluir);
     if (sel.length === 0) {
       setMsg({ tipo: "erro", texto: "Selecione ao menos um item para importar." });
       return;
@@ -167,8 +222,7 @@ export default function ProdutosPage() {
         cfop: it.cfop,
       }));
       const r = await importarXmlConfirmar(doc, itens, importInfo?.chave || "");
-      setImportInfo(null);
-      setImportItens([]);
+      fecharImportacao();
       setMsg({ tipo: "ok", texto: `Importado! ${r.atualizados} atualizado(s), ${r.criados} novo(s).` });
       carregar();
     } catch (err) {
@@ -181,8 +235,8 @@ export default function ProdutosPage() {
   async function entradaRapida(p: Produto) {
     const q = prompt(`Entrada de estoque — "${p.nome}"\nQuantidade a adicionar em ${p.unidade}:`, "1");
     if (q === null) return;
-    const qtd = Number(q);
-    if (!qtd || qtd <= 0) { setMsg({ tipo: "erro", texto: "Quantidade inválida." }); return; }
+    const qtd = lerNumeroPtBr(q);
+    if (qtd === null || qtd <= 0) { setMsg({ tipo: "erro", texto: "Quantidade inválida." }); return; }
     try {
       await entradaEstoque(p.id, qtd);
       setMsg({ tipo: "ok", texto: `+${fmtQtd(qtd)} ${p.unidade} em "${p.nome}".` });
@@ -206,8 +260,8 @@ export default function ProdutosPage() {
       : `Quantidade a baixar (${tipo}) em ${p.unidade}:`;
     const q = prompt(rotulo, tipo === "inventario" ? String(p.estoque) : "1");
     if (q === null) return;
-    const qtd = Number(q);
-    if (qtd < 0 || Number.isNaN(qtd) || (tipo !== "inventario" && qtd <= 0)) {
+    const qtd = lerNumeroPtBr(q);
+    if (qtd === null || qtd < 0 || (tipo !== "inventario" && qtd <= 0)) {
       setMsg({ tipo: "erro", texto: "Quantidade inválida." }); return;
     }
     try {
@@ -295,28 +349,108 @@ export default function ProdutosPage() {
       return;
     }
 
+    let valCusto = 0;
+    if (precoCusto.trim() !== "") {
+      const parsed = lerNumeroPtBr(precoCusto);
+      if (parsed === null) {
+        setMsg({ tipo: "erro", texto: "Preço de custo inválido." });
+        return;
+      }
+      valCusto = parsed;
+    }
+
+    let valVenda = 0;
+    if (precoVenda.trim() !== "") {
+      const parsed = lerNumeroPtBr(precoVenda);
+      if (parsed === null) {
+        setMsg({ tipo: "erro", texto: "Preço de venda inválido." });
+        return;
+      }
+      valVenda = parsed;
+    }
+
+    let valEstoque = 0;
+    if (estoque.trim() !== "") {
+      const parsed = lerNumeroPtBr(estoque);
+      if (parsed === null) {
+        setMsg({ tipo: "erro", texto: "Estoque inválido." });
+        return;
+      }
+      valEstoque = parsed;
+    }
+
+    let valMinimo = 0;
+    if (estoqueMinimo.trim() !== "") {
+      const parsed = lerNumeroPtBr(estoqueMinimo);
+      if (parsed === null) {
+        setMsg({ tipo: "erro", texto: "Estoque mínimo inválido." });
+        return;
+      }
+      valMinimo = parsed;
+    }
+
+    let valFator = 1;
+    if (quantidadePorEmbalagem.trim() !== "") {
+      const parsed = lerNumeroPtBr(quantidadePorEmbalagem);
+      if (parsed === null || parsed < 0.0001) {
+        setMsg({ tipo: "erro", texto: "Quantidade por compra inválida." });
+        return;
+      }
+      valFator = parsed;
+    }
+
+    let valIcms = 0;
+    if (fiscal.aliquota_icms !== undefined && String(fiscal.aliquota_icms).trim() !== "") {
+      const parsed = lerNumeroPtBr(String(fiscal.aliquota_icms));
+      if (parsed === null) {
+        setMsg({ tipo: "erro", texto: "Alíquota ICMS inválida." });
+        return;
+      }
+      valIcms = parsed;
+    }
+
+    let valPis = 0;
+    if (fiscal.aliquota_pis !== undefined && String(fiscal.aliquota_pis).trim() !== "") {
+      const parsed = lerNumeroPtBr(String(fiscal.aliquota_pis));
+      if (parsed === null) {
+        setMsg({ tipo: "erro", texto: "Alíquota PIS inválida." });
+        return;
+      }
+      valPis = parsed;
+    }
+
+    let valCofins = 0;
+    if (fiscal.aliquota_cofins !== undefined && String(fiscal.aliquota_cofins).trim() !== "") {
+      const parsed = lerNumeroPtBr(String(fiscal.aliquota_cofins));
+      if (parsed === null) {
+        setMsg({ tipo: "erro", texto: "Alíquota COFINS inválida." });
+        return;
+      }
+      valCofins = parsed;
+    }
+
     const data: ProdutoInput = {
       nome: nome.trim(),
       categoria_id: categoriaId || undefined,
-      preco_custo: Number(precoCusto) || 0,
-      preco_venda: Number(precoVenda) || 0,
-      estoque: Number(estoque) || 0,
-      estoque_minimo: Number(estoqueMinimo) || 0,
+      preco_custo: valCusto,
+      preco_venda: valVenda,
+      estoque: valEstoque,
+      estoque_minimo: valMinimo,
       codigo_barras: codigoBarras.trim(),
       unidade: normUn(unidade),
       unidade_compra: normUn(unidadeCompra, unidade),
-      quantidade_por_embalagem: fatorSeguro(quantidadePorEmbalagem),
+      quantidade_por_embalagem: valFator,
       ncm: (fiscal.ncm || "").trim(),
       cest: (fiscal.cest || "").trim(),
       cfop: (fiscal.cfop || "").trim(),
       origem: fiscal.origem || "0",
       unidade_tributavel: (fiscal.unidade_tributavel || "").trim(),
       cst_csosn: (fiscal.cst_csosn || "").trim(),
-      aliquota_icms: Number(fiscal.aliquota_icms) || 0,
+      aliquota_icms: valIcms,
       cst_pis: (fiscal.cst_pis || "").trim(),
-      aliquota_pis: Number(fiscal.aliquota_pis) || 0,
+      aliquota_pis: valPis,
       cst_cofins: (fiscal.cst_cofins || "").trim(),
-      aliquota_cofins: Number(fiscal.aliquota_cofins) || 0,
+      aliquota_cofins: valCofins,
     };
 
     try {
@@ -544,23 +678,23 @@ export default function ProdutosPage() {
               <div>
                 <label className="text-slate-400 text-xs block mb-0.5">Preço Custo</label>
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="decimal"
                   value={precoCusto}
                   onChange={(e) => setPrecoCusto(e.target.value)}
                   className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500"
-                  step="0.01"
-                  min="0"
+                  placeholder="0,00"
                 />
               </div>
               <div>
                 <label className="text-slate-400 text-xs block mb-0.5">Preço Venda</label>
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="decimal"
                   value={precoVenda}
                   onChange={(e) => setPrecoVenda(e.target.value)}
                   className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500"
-                  step="0.01"
-                  min="0"
+                  placeholder="0,00"
                 />
               </div>
             </div>
@@ -569,21 +703,23 @@ export default function ProdutosPage() {
               <div>
                 <label className="text-slate-400 text-xs block mb-0.5">Estoque</label>
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="decimal"
                   value={estoque}
                   onChange={(e) => setEstoque(e.target.value)}
                   className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500"
-                  min="0"
+                  placeholder="0"
                 />
               </div>
               <div>
                 <label className="text-slate-400 text-xs block mb-0.5">Estoque Mínimo</label>
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="decimal"
                   value={estoqueMinimo}
                   onChange={(e) => setEstoqueMinimo(e.target.value)}
                   className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500"
-                  min="0"
+                  placeholder="0"
                 />
               </div>
             </div>
@@ -626,12 +762,12 @@ export default function ProdutosPage() {
               <div>
                 <label className="text-slate-400 text-xs block mb-0.5">Qtd por compra</label>
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="decimal"
                   value={quantidadePorEmbalagem}
                   onChange={(e) => setQuantidadePorEmbalagem(e.target.value)}
                   className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500"
-                  step="0.001"
-                  min="0.001"
+                  placeholder="1"
                 />
               </div>
             </div>
@@ -670,7 +806,7 @@ export default function ProdutosPage() {
                     </div>
                     <div>
                       <label className="text-slate-400 text-xs block mb-0.5">Alíq. ICMS %</label>
-                      <input type="number" step="0.01" value={fiscal.aliquota_icms ?? ""} onChange={(e) => setF("aliquota_icms", e.target.value)} placeholder="0" className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500" />
+                      <input type="text" inputMode="decimal" value={fiscal.aliquota_icms ?? ""} onChange={(e) => setF("aliquota_icms", e.target.value)} placeholder="0" className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500" />
                     </div>
                   </div>
                   <p className="text-slate-500 text-[11px] leading-snug">
@@ -699,7 +835,7 @@ export default function ProdutosPage() {
                 <h3 className="text-white font-black text-lg">📄 Importar XML — entrada de estoque</h3>
                 <p className="text-slate-500 text-xs">{importInfo.emitente || "Fornecedor"} · NF {importInfo.numero || "—"}</p>
               </div>
-              <button onClick={() => { setImportInfo(null); setImportItens([]); }} className="text-slate-400 hover:text-white text-2xl leading-none">×</button>
+              <button onClick={fecharImportacao} className="text-slate-400 hover:text-white text-2xl leading-none">×</button>
             </div>
 
             <div className="flex-1 overflow-auto p-3">
@@ -744,13 +880,13 @@ export default function ProdutosPage() {
                           {UNIDADES.map((u) => <option key={u} value={u}>{u}</option>)}
                         </select>
                       </td>
-                      <td className="p-2"><input type="number" step="0.001" value={it.quantidade_xml} onChange={(e) => setItem(i, "quantidade_xml", Number(e.target.value))} className="w-20 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white" /></td>
-                      <td className="p-2"><input type="number" step="0.001" value={it.quantidade_por_embalagem} onChange={(e) => setItem(i, "quantidade_por_embalagem", Number(e.target.value))} className="w-20 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white" /></td>
-                      <td className="p-2"><input type="number" step="0.001" value={it.quantidade} onChange={(e) => setItem(i, "quantidade", Number(e.target.value))} className="w-20 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white" /></td>
-                      <td className="p-2"><input type="number" step="0.01" value={it.preco_custo} onChange={(e) => setItem(i, "preco_custo", Number(e.target.value))} className="w-20 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white" /></td>
+                      <td className="p-2"><input type="text" inputMode="decimal" value={textoImport(i, "quantidade_xml")} onChange={(e) => editarNumeroImport(i, "quantidade_xml", e.target.value)} className="w-20 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white" /></td>
+                      <td className="p-2"><input type="text" inputMode="decimal" value={textoImport(i, "quantidade_por_embalagem")} onChange={(e) => editarNumeroImport(i, "quantidade_por_embalagem", e.target.value)} className="w-20 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white" /></td>
+                      <td className="p-2"><input type="text" inputMode="decimal" value={textoImport(i, "quantidade")} onChange={(e) => editarNumeroImport(i, "quantidade", e.target.value)} className="w-20 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white" /></td>
+                      <td className="p-2"><input type="text" inputMode="decimal" value={textoImport(i, "preco_custo")} onChange={(e) => editarNumeroImport(i, "preco_custo", e.target.value)} className="w-20 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white" /></td>
                       <td className="p-2">
                         {it.acao === "criar"
-                          ? <input type="number" step="0.01" value={it.preco_venda} onChange={(e) => setItem(i, "preco_venda", Number(e.target.value))} className="w-20 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white" />
+                          ? <input type="text" inputMode="decimal" value={textoImport(i, "preco_venda")} onChange={(e) => editarNumeroImport(i, "preco_venda", e.target.value)} className="w-20 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white" />
                           : <span className="text-slate-600 text-xs">mantém</span>}
                       </td>
                     </tr>
@@ -762,7 +898,7 @@ export default function ProdutosPage() {
             <div className="p-4 border-t border-slate-800 flex items-center justify-between gap-3">
               <p className="text-slate-500 text-xs">Confira quantidades e custos. "Repor" soma ao estoque atual; "criar novo" cadastra o produto.</p>
               <div className="flex gap-2 shrink-0">
-                <button onClick={() => { setImportInfo(null); setImportItens([]); }} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm font-bold">Cancelar</button>
+                <button onClick={fecharImportacao} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm font-bold">Cancelar</button>
                 <button onClick={confirmarImportacao} disabled={importBusy} className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white rounded-lg text-sm font-bold">{importBusy ? "Importando..." : "Confirmar importação"}</button>
               </div>
             </div>

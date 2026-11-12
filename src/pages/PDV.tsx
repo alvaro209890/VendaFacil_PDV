@@ -26,6 +26,7 @@ import Mascote from "../components/Mascote";
 import { useAuthStore } from "../store/authStore";
 import { lerCarrinho, salvarCarrinho } from "../lib/carrinho";
 import type { CartItem } from "../lib/carrinho";
+import { lerNumeroPtBr as decimalDigitado } from "../lib/numeros";
 
 const PAGAMENTOS = [
   { value: "dinheiro", label: "Dinheiro", icon: <Banknote size={18} /> },
@@ -49,13 +50,8 @@ const ERRO_POINT_NAO_PUXOU =
 const fmtQtd = (v: number) => Number(v || 0).toLocaleString("pt-BR", { maximumFractionDigits: 3 });
 const passoQtd = (unidade?: string) => ["KG", "G", "LT", "ML"].includes((unidade || "").toUpperCase()) ? 0.1 : 1;
 const moeda = (v: number) => `R$ ${Number(v || 0).toFixed(2)}`;
-const parseMoeda = (v: string) => Number((v || "").replace(",", ".")) || 0;
-function decimalDigitado(texto: string, casas: number): number | null {
-  const valor = texto.trim().replace(",", ".");
-  if (!/^(?:\d+(?:\.\d*)?|\.\d+)$/.test(valor) || (valor.split(".")[1]?.length ?? 0) > casas) return null;
-  const numero = Number(valor);
-  return Number.isFinite(numero) ? numero : null;
-}
+const parseMoeda = (v: string) => decimalDigitado(v) ?? 0;
+
 
 export default function PDV() {
   const [produtos, setProdutos] = useState<Produto[]>([]);

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { lerNumeroPtBr } from "../lib/numeros";
 import {
   listarContasReceber,
   criarContaReceber,
@@ -62,7 +63,8 @@ export default function ContasReceber() {
   }
 
   async function handleCriar() {
-    if (!formValor || parseFloat(formValor) <= 0) {
+    const valor = lerNumeroPtBr(formValor, 2);
+    if (valor === null || valor <= 0) {
       setMsg({ tipo: "erro", texto: "Valor inválido." });
       return;
     }
@@ -70,7 +72,7 @@ export default function ContasReceber() {
     try {
       await criarContaReceber({
         cliente_id: formClienteId || null,
-        valor_total: parseFloat(formValor),
+        valor_total: valor,
         data_vencimento: formVencimento || null,
         observacao: formObs,
       });
@@ -86,8 +88,8 @@ export default function ContasReceber() {
   async function handlePagar(conta: ContaReceber) {
     const valorStr = prompt(`Valor a receber (R$ ${conta.valor_pendente.toFixed(2)}):`, conta.valor_pendente.toFixed(2));
     if (!valorStr) return;
-    const valor = parseFloat(valorStr);
-    if (!(valor > 0)) {
+    const valor = lerNumeroPtBr(valorStr, 2);
+    if (valor === null || !(valor > 0)) {
       setMsg({ tipo: "erro", texto: "Valor deve ser maior que zero." });
       return;
     }
@@ -243,9 +245,8 @@ export default function ContasReceber() {
                 ))}
               </select>
               <input
-                type="number"
-                step="0.01"
-                min="0"
+                type="text"
+                inputMode="decimal"
                 placeholder="Valor *"
                 value={formValor}
                 onChange={(e) => setFormValor(e.target.value)}
