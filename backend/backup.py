@@ -7,7 +7,9 @@ Os dados do lojista ficam num SQLite na própria máquina. Aqui o lojista pode:
 
 Tudo local — não depende de internet.
 """
+import logging
 import os
+import tempfile
 import threading
 import time
 from datetime import datetime, timezone
@@ -17,10 +19,11 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse
 
 from auth import _verificar_jwt
-from database import db
+from database import db, verificar_integridade
 from paths import DATA_DIR
 
 router = APIRouter()
+log = logging.getLogger(__name__)
 
 BACKUP_DIR = DATA_DIR / "backups"
 BACKUP_DIR.mkdir(parents=True, exist_ok=True)
@@ -43,7 +46,15 @@ def _stamp() -> str:
 
 def _gerar_backup(prefixo: str = "backup") -> Path:
     destino = BACKUP_DIR / f"vendafacil-{prefixo}-{_stamp()}.db"
-    db.backup_para(destino)
+    with tempfile.TemporaryDirectory(prefix=".vf-backup-", dir=BACKUP_DIR) as pasta:
+        temporario = Path(pasta) / "copia.db"
+        db.backup_para(temporario)
+        try:
+            verificar_integridade(temporario)
+        except ValueError:
+            log.error("Backup descartado por falha de integridade.")
+            raise
+        temporario.replace(destino)
     return destino
 
 

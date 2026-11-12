@@ -1,6 +1,8 @@
 import sqlite3
 import threading
+from contextlib import closing
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from typing import Any
 
 from paths import DATA_DIR
@@ -29,6 +31,18 @@ class NotaEntradaDuplicada(ValueError):
 
 DB_DIR = DATA_DIR
 DB_PATH = DB_DIR / "vendafacil.db"
+
+
+def verificar_integridade(caminho: Path) -> None:
+    """Abre sem criar arquivo e exige que o SQLite consiga ler todo o banco."""
+    try:
+        uri = f"{caminho.resolve().as_uri()}?mode=ro"
+        with closing(sqlite3.connect(uri, uri=True)) as conn:
+            if conn.execute("PRAGMA integrity_check").fetchall() == [("ok",)]:
+                return
+    except sqlite3.Error:
+        pass
+    raise ValueError("O banco não passou na verificação de integridade.")
 
 
 class Database:
