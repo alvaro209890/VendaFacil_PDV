@@ -28,7 +28,7 @@ Ao fechar: preencha **Onde** (`arquivo::função`) e **Commit**. Teste novo que 
 | X15 | P36: Basear prazo em dhRecbto; datas fiscais em MT | ✅ | `test_prazo_cancelamento.py`: 4 casos (NFC-e 30 min e NF-e 2 h contados de `autorizado_em`, fallback `criado_em`); suíte 355 | c62400c |
 | C09 | P37: Preservar fiado visível e validar referência/estado da conta | ✅ | `backend/tests/test_cliente_divida.py + test_adversario_caixa.py` | e1ad5e2/be78390 |
 | I07 | P38: Cadastro do produto inteiro em uma transação | ✅ | `backend/tests/test_produto_atomico.py` | 7dee50a |
-| R10 | P39: Encerrar com segurança e identificar serviço antes de reutilizar porta | ⬜ | | |
+| R10 | P39: Encerrar com segurança e identificar serviço antes de reutilizar porta | ✅ | F5_INSTANCIA_GREEN.txt, probe HTTP e espera da tarefa | e6885ba/f1bdf6a |
 | S12 | P40: Atualizar dependências compatíveis e validar build/lint/audit | ✅ | npm audit21→0; npm_ls/build/lint e Chromium verdes; F3_20_RECHECK_AUDIT.json | fa736aa |
 | S13 | P41: Bootstrap atômico, validação de senha e versão de credencial | ✅ | `painel/tests/test_bootstrap_atomico.py`, `test_senha_painel.py`, `test_revogacao_tokens.py`; painel23 | 31541bd/1f52324/f54b125 |
 | S14 | P42: Validar owner antes de qualquer leitura ou transmissão | ✅ | `backend/tests/test_fiscal_owner.py` (8 casos); backend323/painel9 | 342f3d6 |
@@ -183,15 +183,15 @@ Marker `homologacao`, fora da execução padrão. Sem os itens da loja: ⛔ com 
 
 | ID | O que prova | Status | Onde | Commit |
 |---|---|---|---|---|
-| R01 | Backup automático gera arquivo que passa no `integrity_check` | ⬜ | | |
-| R02 | Retenção mantém só os N mais recentes | ⬜ | | |
-| R03 | Restauração em banco novo: contagens de produtos, vendas, clientes e notas iguais | ⬜ | | |
-| R04 | Arquivo corrompido ou que não é do VendaFácil → recusado; banco atual intacto | ⬜ | | |
-| R05 | Banco corrompido na abertura → sistema sobe em modo consulta e avisa | ⬜ | | |
-| R06 | Backup durante vendas concorrentes não trava nem corrompe | ⬜ | | |
-| R07 | Log rotaciona e fica em `logs/` dentro da pasta de dados | ⬜ | | |
-| R08 | Diagnóstico devolve todos os campos e nenhum segredo | ⬜ | | |
-| R09 | Segunda instância do `.exe` abre o navegador na que já está rodando | ⬜ | | |
+| R01 | Backup automático gera arquivo que passa no `integrity_check` | ✅ | F5_R01_GREEN.txt | 73ae8f2 |
+| R02 | Retenção mantém só os N mais recentes | ✅ | F5_R02_GREEN.txt | 1979b2e |
+| R03 | Restauração em banco novo: contagens de produtos, vendas, clientes e notas iguais | ✅ | F5_R03_R04_GREEN.txt, cinco contagens iguais | 1ee3df3 |
+| R04 | Arquivo corrompido ou que não é do VendaFácil → recusado; banco atual intacto | ✅ | F5_R03_R04_GREEN.txt, arquivos incompatível e corrompido | 1ee3df3 |
+| R05 | Banco corrompido na abertura → sistema sobe em modo consulta e avisa | ✅ | F5_R05_GREEN.txt e F5_RECUPERACAO_AUTH_GREEN.txt | 15696f5/c387de0 |
+| R06 | Backup durante vendas concorrentes não trava nem corrompe | ✅ | F5_R06_GREEN.txt, dez checkouts | f7abe37 |
+| R07 | Log rotaciona e fica em `logs/` dentro da pasta de dados | ✅ | F5_R07_GREEN.txt | 3d2882b |
+| R08 | Diagnóstico devolve todos os campos e nenhum segredo | ✅ | F5_R08_GREEN.txt e F5_DIAGNOSTICO_CHROMIUM.txt | f25d05f/aa2ea37 |
+| R09 | Segunda instância do `.exe` abre o navegador na que já está rodando | ✅ | F5_INSTANCIA_GREEN.txt, mesmo ponto de entrada do executável | e6885ba |
 
 ## E — Ponta a ponta no `.exe` e instalador (Fase 6)
 
