@@ -1,0 +1,44 @@
+[WebServer] INFO:     Started server process [37448]
+
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+
+Running 1 test using 1 worker
+
+[1/1] e2e\teclado.spec.ts:63:1 › U02: Escape fecha PIX sem finalizar nem apagar carrinho
+[WebServer] INFO: http_error request_id=defa7420e471 status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+  1) e2e\teclado.spec.ts:63:1 › U02: Escape fecha PIX sem finalizar nem apagar carrinho ────────────
+
+    Error: expect(locator).toHaveCount(expected) failed
+
+    Locator:  getByRole('heading', { name: 'PAGAMENTO PIX' })
+    Expected: 0
+    Received: 1
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveCount" getByRole('heading', { name: 'PAGAMENTO PIX' }) with timeout 5000ms
+      - waiting for getByRole('heading', { name: 'PAGAMENTO PIX' })
+        14 × locator resolved to 1 element
+           - unexpected value "1"
+
+
+      73 |   await expect(page.getByRole('heading', { name: 'PAGAMENTO PIX' })).toBeVisible();
+      74 |   await page.keyboard.press('Escape');
+    > 75 |   await expect(page.getByRole('heading', { name: 'PAGAMENTO PIX' })).toHaveCount(0);
+         |                                                                      ^
+      76 |   await expect(page.getByText('Total a Pagar', { exact: true })).toBeVisible();
+      77 |   await expect(page.getByText(/Venda finalizada!/)).toHaveCount(0);
+      78 | });
+        at C:\GIS\VendaFacil_PDV\e2e\teclado.spec.ts:75:70
+
+    Error Context: test-results\teclado-U02-Escape-fecha-P-e9147-nalizar-nem-apagar-carrinho\error-context.md
+
+
+  1 failed
+    e2e\teclado.spec.ts:63:1 › U02: Escape fecha PIX sem finalizar nem apagar carrinho ─────────────

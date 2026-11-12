@@ -1,0 +1,71 @@
+[WebServer] INFO:     Started server process [18248]
+
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+
+Running 18 tests using 1 worker
+
+[1/18] e2e\teclado.spec.ts:34:1 › U02: F3 foca quantidade e Enter confirma sem vender
+[WebServer] INFO: http_error request_id=21f4e68c05ef status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+[2/18] e2e\teclado.spec.ts:46:1 › U02: F7 seleciona pagamento com Tab e Enter, F2 vende
+[3/18] e2e\teclado.spec.ts:57:1 › U02: Enter no dinheiro recebido confirma a venda
+[4/18] e2e\teclado.spec.ts:64:1 › U02: Escape fecha PIX sem finalizar nem apagar carrinho
+e2e\teclado.spec.ts:64:1 › U02: Escape fecha PIX sem finalizar nem apagar carrinho
+[DEBUG-e2e-escape] {"pix":false,"pixLoading":true,"loading":false}
+
+  1) e2e\teclado.spec.ts:64:1 › U02: Escape fecha PIX sem finalizar nem apagar carrinho ────────────
+
+    Error: expect(locator).toHaveCount(expected) failed
+
+    Locator:  getByRole('heading', { name: 'PAGAMENTO PIX' })
+    Expected: 0
+    Received: 1
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveCount" getByRole('heading', { name: 'PAGAMENTO PIX' }) with timeout 5000ms
+      - waiting for getByRole('heading', { name: 'PAGAMENTO PIX' })
+        14 × locator resolved to 1 element
+           - unexpected value "1"
+
+
+      74 |   await expect(page.getByRole('heading', { name: 'PAGAMENTO PIX' })).toBeVisible();
+      75 |   await page.keyboard.press('Escape');
+    > 76 |   await expect(page.getByRole('heading', { name: 'PAGAMENTO PIX' })).toHaveCount(0);
+         |                                                                      ^
+      77 |   await expect(page.getByText('Total a Pagar', { exact: true })).toBeVisible();
+      78 |   await expect(page.getByText(/Venda finalizada!/)).toHaveCount(0);
+      79 | });
+        at C:\GIS\VendaFacil_PDV\e2e\teclado.spec.ts:76:70
+
+    Error Context: test-results\teclado-U02-Escape-fecha-P-e9147-nalizar-nem-apagar-carrinho\error-context.md
+
+
+[5/18] e2e\teclado.spec.ts:81:1 › U02: F2 e atalhos nao atravessam PIX ainda carregando
+[6/18] e2e\teclado.spec.ts:107:1 › U02: F6 foca desconto e permite ajustar pelo teclado
+[7/18] e2e\teclado.spec.ts:34:1 › U02: F3 foca quantidade e Enter confirma sem vender
+[8/18] e2e\teclado.spec.ts:46:1 › U02: F7 seleciona pagamento com Tab e Enter, F2 vende
+[9/18] e2e\teclado.spec.ts:57:1 › U02: Enter no dinheiro recebido confirma a venda
+[10/18] e2e\teclado.spec.ts:64:1 › U02: Escape fecha PIX sem finalizar nem apagar carrinho
+e2e\teclado.spec.ts:64:1 › U02: Escape fecha PIX sem finalizar nem apagar carrinho
+[DEBUG-e2e-escape] {"pix":true,"pixLoading":false,"loading":false}
+
+[11/18] e2e\teclado.spec.ts:81:1 › U02: F2 e atalhos nao atravessam PIX ainda carregando
+[12/18] e2e\teclado.spec.ts:107:1 › U02: F6 foca desconto e permite ajustar pelo teclado
+[13/18] e2e\teclado.spec.ts:34:1 › U02: F3 foca quantidade e Enter confirma sem vender
+[14/18] e2e\teclado.spec.ts:46:1 › U02: F7 seleciona pagamento com Tab e Enter, F2 vende
+[15/18] e2e\teclado.spec.ts:57:1 › U02: Enter no dinheiro recebido confirma a venda
+[16/18] e2e\teclado.spec.ts:64:1 › U02: Escape fecha PIX sem finalizar nem apagar carrinho
+e2e\teclado.spec.ts:64:1 › U02: Escape fecha PIX sem finalizar nem apagar carrinho
+[DEBUG-e2e-escape] {"pix":true,"pixLoading":false,"loading":false}
+
+[17/18] e2e\teclado.spec.ts:81:1 › U02: F2 e atalhos nao atravessam PIX ainda carregando
+[18/18] e2e\teclado.spec.ts:107:1 › U02: F6 foca desconto e permite ajustar pelo teclado
+  1 failed
+    e2e\teclado.spec.ts:64:1 › U02: Escape fecha PIX sem finalizar nem apagar carrinho ─────────────
+  17 passed (43.4s)

@@ -1,0 +1,44 @@
+[WebServer] INFO:     Started server process [15108]
+
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+
+Running 1 test using 1 worker
+
+[1/1] e2e\xml-locale.spec.ts:38:1 › U06 XML: cancelar e reabrir nao herda textos da previa anterior
+[WebServer] INFO: http_error request_id=661973fe52f9 status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+  1) e2e\xml-locale.spec.ts:38:1 › U06 XML: cancelar e reabrir nao herda textos da previa anterior ─
+
+    Error: expect(locator).toHaveValue(expected) failed
+
+    Locator:  getByRole('table').filter({ has: getByRole('columnheader', { name: 'Qtd XML', exact: true }) }).locator('tbody tr').getByRole('cell').nth(5).locator('input')
+    Expected: "2"
+    Received: "1,5"
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveValue" getByRole('table').filter({ has: getByRole('columnheader', { name: 'Qtd XML', exact: true }) }).locator('tbody tr').getByRole('cell').nth(5).locator('input') with timeout 5000ms
+      - waiting for getByRole('table').filter({ has: getByRole('columnheader', { name: 'Qtd XML', exact: true }) }).locator('tbody tr').getByRole('cell').nth(5).locator('input')
+        14 × locator resolved to <input type="text" value="1,5" inputmode="decimal" class="w-20 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white"/>
+           - unexpected value "1,5"
+
+
+      42 |   await page.getByRole('button', { name: 'Cancelar', exact: true }).click();
+      43 |   const novo = await abrirXml(page, `XML-novo-${info.testId}`);
+    > 44 |   await expect(novo.campo('Qtd XML')).toHaveValue('2');
+         |                                       ^
+      45 |   await expect(novo.campo('Custo R$')).toHaveValue('3');
+      46 | });
+      47 |
+        at C:\GIS\VendaFacil_PDV\e2e\xml-locale.spec.ts:44:39
+
+    Error Context: test-results\xml-locale-U06-XML-cancela-9bf27-a-textos-da-previa-anterior\error-context.md
+
+
+  1 failed
+    e2e\xml-locale.spec.ts:38:1 › U06 XML: cancelar e reabrir nao herda textos da previa anterior ──

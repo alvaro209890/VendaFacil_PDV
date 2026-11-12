@@ -1,0 +1,19 @@
+[WebServer] INFO:     Started server process [56084]
+
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+
+Running 5 tests using 1 worker
+
+[1/5] e2e\decimais.spec.ts:28:3 › U03: desconto 0,50 preserva digitacao e valor enviado
+[WebServer] INFO: http_error request_id=1a503859c077 status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+[2/5] e2e\decimais.spec.ts:28:3 › U03: desconto 0.50 preserva digitacao e valor enviado
+[3/5] e2e\decimais.spec.ts:46:3 › U03: quantidade 0,5 preserva etapas e valor enviado
+[4/5] e2e\decimais.spec.ts:46:3 › U03: quantidade 0.5 preserva etapas e valor enviado
+[5/5] e2e\decimais.spec.ts:46:3 › U03: quantidade 0,125 preserva etapas e valor enviado
+  5 passed (17.0s)

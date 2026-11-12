@@ -1,0 +1,43 @@
+
+Running 1 test using 1 worker
+
+[WebServer] INFO:     Started server process [33356]
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+[1/1] e2e\teclado.spec.ts:45:1 › U02: F7 seleciona pagamento com Tab e Enter, F2 vende
+[WebServer] INFO: http_error request_id=88e8b07398e2 status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+  1) e2e\teclado.spec.ts:45:1 › U02: F7 seleciona pagamento com Tab e Enter, F2 vende ──────────────
+
+    Error: expect(locator).toBeFocused() failed
+
+    Locator:  getByRole('button', { name: 'Dinheiro', exact: true })
+    Expected: focused
+    Received: inactive
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toBeFocused" getByRole('button', { name: 'Dinheiro', exact: true }) with timeout 5000ms
+      - waiting for getByRole('button', { name: 'Dinheiro', exact: true })
+        14 × locator resolved to <button tabindex="0" class="flex flex-col items-center justify-center py-3 rounded-xl transition-all border bg-brand-600 border-brand-500 text-white shadow-lg shadow-brand-600/20">…</button>
+           - unexpected value "inactive"
+
+
+      45 | test('U02: F7 seleciona pagamento com Tab e Enter, F2 vende', async ({ page }) => {
+      46 |   await page.keyboard.press('F7');
+    > 47 |   await expect(page.getByRole('button', { name: 'Dinheiro', exact: true })).toBeFocused();
+         |                                                                             ^
+      48 |   await page.keyboard.press('Tab');
+      49 |   await page.keyboard.press('Tab');
+      50 |   await expect(page.getByRole('button', { name: 'Débito', exact: true })).toBeFocused();
+        at C:\GIS\VendaFacil_PDV\e2e\teclado.spec.ts:47:77
+
+    Error Context: test-results\teclado-U02-F7-seleciona-pagamento-com-Tab-e-Enter-F2-vende\error-context.md
+
+
+  1 failed
+    e2e\teclado.spec.ts:45:1 › U02: F7 seleciona pagamento com Tab e Enter, F2 vende ───────────────

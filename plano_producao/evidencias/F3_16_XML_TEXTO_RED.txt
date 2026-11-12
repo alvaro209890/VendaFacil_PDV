@@ -1,0 +1,44 @@
+[WebServer] INFO:     Started server process [26256]
+
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+
+Running 1 test using 1 worker
+
+[1/1] e2e\xml-locale.spec.ts:39:1 › U06 XML: virgula nos cinco campos preserva texto, payload e estoque
+[WebServer] INFO: http_error request_id=994f67fc1864 status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+  1) e2e\xml-locale.spec.ts:39:1 › U06 XML: virgula nos cinco campos preserva texto, payload e estoque 
+
+    Error: expect(locator).toHaveValue(expected) failed
+
+    Locator:  getByRole('table').filter({ has: getByRole('columnheader', { name: 'Qtd XML', exact: true }) }).locator('tbody tr').getByRole('cell').nth(5).locator('input')
+    Expected: "1,5"
+    Received: "015"
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveValue" getByRole('table').filter({ has: getByRole('columnheader', { name: 'Qtd XML', exact: true }) }).locator('tbody tr').getByRole('cell').nth(5).locator('input') with timeout 5000ms
+      - waiting for getByRole('table').filter({ has: getByRole('columnheader', { name: 'Qtd XML', exact: true }) }).locator('tbody tr').getByRole('cell').nth(5).locator('input')
+        13 × locator resolved to <input value="2" step="0.001" type="number" class="w-20 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white"/>
+           - unexpected value "015"
+
+
+      43 |   await campo('Qtd XML').fill('');
+      44 |   await campo('Qtd XML').pressSequentially('1,5');
+    > 45 |   await expect(campo('Qtd XML')).toHaveValue('1,5');
+         |                                  ^
+      46 |   await campo('Qtd/emb.').fill('1,5');
+      47 |   await expect(campo('Qtd/emb.')).toHaveValue('1,5');
+      48 |   await expect(campo('Entra')).toHaveValue(String(1.5 * 1.5));
+        at C:\GIS\VendaFacil_PDV\e2e\xml-locale.spec.ts:45:34
+
+    Error Context: test-results\xml-locale-U06-XML-virgula-97c83-rva-texto-payload-e-estoque\error-context.md
+
+
+  1 failed
+    e2e\xml-locale.spec.ts:39:1 › U06 XML: virgula nos cinco campos preserva texto, payload e estoque 

@@ -1,0 +1,67 @@
+FFFF...                                                                  [100%]
+================================== FAILURES ===================================
+_____________ test_s09_nao_registra_corpo_bruto[json-malformado] ______________
+backend\tests\test_erros_corpo_bruto.py:65: in test_s09_nao_registra_corpo_bruto
+    assert vazou is False, "Corpo bruto de entrada foi registrado"
+E   AssertionError: Corpo bruto de entrada foi registrado
+E   assert True is False
+---------------------------- Captured stderr call -----------------------------
+INFO: HTTP Request: POST http://testserver/modelo "HTTP/1.1 422 Unprocessable Entity"
+------------------------------ Captured log call ------------------------------
+WARNING  vendafacil.api:errors.py:106 validation_error request_id=5d8dbd2989aa method=POST path=/modelo errors=[{"campo": "44", "mensagem": "JSON decode error", "tipo": "json_invalid"}] body="{\"senha\":\"CANARIO_P25_NAO_SECRETO\",\"numero\":}"
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/modelo "HTTP/1.1 422 Unprocessable Entity"
+___________ test_s09_nao_registra_corpo_bruto[erro-com-body-bytes] ____________
+backend\tests\test_erros_corpo_bruto.py:65: in test_s09_nao_registra_corpo_bruto
+    assert vazou is False, "Corpo bruto de entrada foi registrado"
+E   AssertionError: Corpo bruto de entrada foi registrado
+E   assert True is False
+---------------------------- Captured stderr call -----------------------------
+INFO: HTTP Request: POST http://testserver/bytes "HTTP/1.1 422 Unprocessable Entity"
+------------------------------ Captured log call ------------------------------
+WARNING  vendafacil.api:errors.py:106 validation_error request_id=076498c93330 method=POST path=/bytes errors=[{"campo": "numero", "mensagem": "Número deve ser um número inteiro.", "tipo": "int_parsing"}] body="{\"senha\":\"CANARIO_P25_NAO_SECRETO\",\"numero\":\"x\"}"
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/bytes "HTTP/1.1 422 Unprocessable Entity"
+______ test_s09_nao_registra_corpo_bruto[json-invalido-sem-corpo-no-log] ______
+backend\tests\test_erros_corpo_bruto.py:65: in test_s09_nao_registra_corpo_bruto
+    assert vazou is False, "Corpo bruto de entrada foi registrado"
+E   AssertionError: Corpo bruto de entrada foi registrado
+E   assert True is False
+---------------------------- Captured stderr call -----------------------------
+INFO: HTTP Request: POST http://testserver/modelo "HTTP/1.1 422 Unprocessable Entity"
+------------------------------ Captured log call ------------------------------
+WARNING  vendafacil.api:errors.py:106 validation_error request_id=d7a466a3448c method=POST path=/modelo errors=[{"campo": "numero", "mensagem": "Número deve ser um número inteiro.", "tipo": "int_parsing"}] body={"numero": "x", "observacao": "CANARIO_P25_NAO_SECRETO"}
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/modelo "HTTP/1.1 422 Unprocessable Entity"
+__________________ test_s09_bytes_utf8_nao_viram_texto_bruto __________________
+backend\tests\test_erros_corpo_bruto.py:72: in test_s09_bytes_utf8_nao_viram_texto_bruto
+    assert vazou is False, "Formatter decodificou bytes sem sanitizar"
+E   AssertionError: Formatter decodificou bytes sem sanitizar
+E   assert True is False
+============================== warnings summary ===============================
+backend\.venv\Lib\site-packages\fastapi\testclient.py:1
+  C:\GIS\VendaFacil_PDV\backend\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+backend\main.py:132
+  C:\GIS\VendaFacil_PDV\backend\main.py:132: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("startup")
+
+backend\.venv\Lib\site-packages\fastapi\applications.py:4723
+  C:\GIS\VendaFacil_PDV\backend\.venv\Lib\site-packages\fastapi\applications.py:4723: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED backend/tests/test_erros_corpo_bruto.py::test_s09_nao_registra_corpo_bruto[json-malformado]
+FAILED backend/tests/test_erros_corpo_bruto.py::test_s09_nao_registra_corpo_bruto[erro-com-body-bytes]
+FAILED backend/tests/test_erros_corpo_bruto.py::test_s09_nao_registra_corpo_bruto[json-invalido-sem-corpo-no-log]
+FAILED backend/tests/test_erros_corpo_bruto.py::test_s09_bytes_utf8_nao_viram_texto_bruto
+4 failed, 3 passed, 3 warnings in 0.21s

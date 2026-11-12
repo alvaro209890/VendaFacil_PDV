@@ -1,0 +1,42 @@
+[WebServer] INFO:     Started server process [43344]
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+
+Running 1 test using 1 worker
+
+[1/1] e2e\foco.spec.ts:14:1 › U04: adicionar pelo botao devolve foco ao leitor
+[WebServer] INFO: http_error request_id=8e4929e112bb status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+  1) e2e\foco.spec.ts:14:1 › U04: adicionar pelo botao devolve foco ao leitor ──────────────────────
+
+    Error: expect(locator).toBeFocused() failed
+
+    Locator:  getByPlaceholder(/Bipe o código/)
+    Expected: focused
+    Received: inactive
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toBeFocused" getByPlaceholder(/Bipe o código/) with timeout 5000ms
+      - waiting for getByPlaceholder(/Bipe o código/)
+        14 × locator resolved to <input value="" type="text" placeholder="Bipe o código de barras ou busque por nome  ·  Enter adiciona" class="w-full pl-12 pr-4 py-4 bg-slate-900/50 backdrop-blur-md border border-slate-800 rounded-2xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm shadow-xl"/>
+           - unexpected value "inactive"
+
+
+      24 |   await page.getByRole('button', { name: new RegExp(codigo) }).click();
+      25 |   await expect(page.getByText('Total a Pagar', { exact: true })).toBeVisible();
+    > 26 |   await expect(page.getByPlaceholder(/Bipe o código/)).toBeFocused();
+         |                                                        ^
+      27 | });
+      28 |
+        at C:\GIS\VendaFacil_PDV\e2e\foco.spec.ts:26:56
+
+    Error Context: test-results\foco-U04-adicionar-pelo-botao-devolve-foco-ao-leitor\error-context.md
+
+
+  1 failed
+    e2e\foco.spec.ts:14:1 › U04: adicionar pelo botao devolve foco ao leitor ───────────────────────

@@ -1,0 +1,44 @@
+[WebServer] INFO:     Started server process [15652]
+
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+
+Running 1 test using 1 worker
+
+[1/1] e2e\teclado.spec.ts:33:1 › U02: F6 foca desconto e permite ajustar pelo teclado
+[WebServer] INFO: http_error request_id=77034a264b9e status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+  1) e2e\teclado.spec.ts:33:1 › U02: F6 foca desconto e permite ajustar pelo teclado ───────────────
+
+    Error: expect(locator).toBeFocused() failed
+
+    Locator:  getByPlaceholder('0.00', { exact: true })
+    Expected: focused
+    Received: inactive
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toBeFocused" getByPlaceholder('0.00', { exact: true }) with timeout 5000ms
+      - waiting for getByPlaceholder('0.00', { exact: true })
+        14 × locator resolved to <input value="" type="number" placeholder="0.00" class="w-24 bg-slate-900/50 border border-slate-700/50 rounded-lg pl-7 pr-2 py-1.5 text-brand-400 text-right text-xs font-bold focus:outline-none focus:border-brand-500 transition-all"/>
+           - unexpected value "inactive"
+
+
+      34 |   await page.keyboard.press('F6');
+      35 |   const desconto = page.getByPlaceholder('0.00', { exact: true });
+    > 36 |   await expect(desconto).toBeFocused();
+         |                          ^
+      37 |   await page.keyboard.type('1');
+      38 |   await expect(page.getByText('Falta R$ 4.00', { exact: true })).toBeVisible();
+      39 | });
+        at C:\GIS\VendaFacil_PDV\e2e\teclado.spec.ts:36:26
+
+    Error Context: test-results\teclado-U02-F6-foca-desconto-e-permite-ajustar-pelo-teclado\error-context.md
+
+
+  1 failed
+    e2e\teclado.spec.ts:33:1 › U02: F6 foca desconto e permite ajustar pelo teclado ────────────────

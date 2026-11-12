@@ -1,0 +1,17 @@
+[WebServer] INFO:     Started server process [36584]
+
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+
+Running 3 tests using 1 worker
+
+[1/3] e2e\teclado.spec.ts:63:1 › U02: Escape fecha PIX sem finalizar nem apagar carrinho
+[WebServer] INFO: http_error request_id=5eb220de92e5 status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+[2/3] e2e\teclado.spec.ts:63:1 › U02: Escape fecha PIX sem finalizar nem apagar carrinho
+[3/3] e2e\teclado.spec.ts:63:1 › U02: Escape fecha PIX sem finalizar nem apagar carrinho
+  3 passed (15.1s)

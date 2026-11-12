@@ -1,6 +1,6 @@
 # Fase 2 — Caixa, fiado, importação de XML e licença
 
-**Status:** ✅ concluída · **Depende de:** Fase 1 · **Pistas:** P4, P21 · **Testes:** C01–C08, I01–I05, L01–L04
+**Status:** ✅ concluída (reaberta em 11/11 para F2.23/P46/I08 e refechada em 12/11) · **Depende de:** Fase 1
 
 ## Objetivo
 
@@ -50,12 +50,16 @@ O fechamento do caixa bate com a gaveta, o fiado tem histórico, a importação 
 - [x] F2.21 P24/I06: completar validação do modelo 55/GTIN e números do XML na prévia; não alegar validação completa só com SEM GTIN e XML malformado. — 5b8f0f2 · 34 casos do parser e HTTP400; suíte256/9; build/lint verdes; revisão deleg_177521b8 aprovada, recheck no parent.
 - [x] F2.22 P29/L07: respostas não-JSON/tipos inválidos do ACK devem preservar fila sem exceção; complementar teste parcial existente. — 40f49e7 · 17 novos casos + ACK parcial; suítes273/9 (gate posterior274/9), revisão deleg_754105c0 aprovada e recheck no parent.
 
+- [x] F2.23 P46/I08: encaminhar a chave recebida da prévia na confirmação pela UI; repetir XML na tela deve retornar 409 e preservar estoque/produtos. RED real: segunda importação retornou200. — 41c9265;67Chromium/315backend/9painel;revisão deleg_d6e39f23 aprovada,recheckUIverde.
+
 ## Portão de saída
+
+- [x] I08 em Chromium com leitura do estoque persistido; revisão independente e recheck. — 41c9265;primeira200,segunda409,umprodutoestoque2;mensagem+IDvisíveis.
 
 - [x] C01–C08, I01–I05 e L01–L04 ✅ em `03_TESTES.md` — 8a05019 · roteiro offline revisto deleg_f6a9cdcd; demais casos na suíte274.
 - [x] Suítes do backend e do painel verdes — 8a05019 · F2_PORTAO_BACKEND.txt 274 passed; F2_PORTAO_PAINEL.txt 9 passed; código idêntico e recheck L01 no parent.
 - [x] `docs/CAIXA.md`, `docs/ESTOQUE_E_XML.md`, `docs/LICENCA.md` e `docs/MANUAL.md` atualizados no que mudou — 978c6d4/5b8f0f2/40f49e7 · contratos reconciliados.
-- [x] Pasta do plano commitada e `git push origin master` — 05c6323 · push real via helper autorizado, readback do SHA remoto igual ao HEAD; testes274/9 e cinco Chromium verdes.
+- [x] Pasta do plano commitada e `git push origin master` — 05c6323 · primeiro push real com readback; F2.23 publicada em 11/12 e novo push em 12/12 (ver diário), restando o push final da Fase 3.
 
 ## Evidências
 

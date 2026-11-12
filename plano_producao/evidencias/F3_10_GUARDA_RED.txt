@@ -1,0 +1,39 @@
+[WebServer] INFO:     Started server process [35356]
+
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+
+Running 1 test using 1 worker
+
+[1/1] e2e\teclado.spec.ts:80:1 › U02: F2 e atalhos nao atravessam PIX ainda carregando
+[WebServer] INFO: http_error request_id=0a7669b6e30d status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+[WebServer] ERROR: http_error request_id=9ec265eb0acd status=503 method=POST path=/api/pix/qrcode detail="Chave PIX não configurada. Configure em Configurações da Loja."
+
+[WebServer] ERROR: http_error request_id=40ec848c10ae status=503 method=POST path=/api/pix/qrcode detail="Chave PIX não configurada. Configure em Configurações da Loja."
+
+  1) e2e\teclado.spec.ts:80:1 › U02: F2 e atalhos nao atravessam PIX ainda carregando ──────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 1
+    Received: 2
+
+       96 |     await page.keyboard.press('F2');
+       97 |     await page.keyboard.press('F6');
+    >  98 |     expect(pedidos).toBe(1);
+          |                     ^
+       99 |     await expect(page.getByPlaceholder('0.00', { exact: true })).not.toBeFocused();
+      100 |   } finally {
+      101 |     liberar();
+        at C:\GIS\VendaFacil_PDV\e2e\teclado.spec.ts:98:21
+
+    Error Context: test-results\teclado-U02-F2-e-atalhos-nao-atravessam-PIX-ainda-carregando\error-context.md
+
+
+  1 failed
+    e2e\teclado.spec.ts:80:1 › U02: F2 e atalhos nao atravessam PIX ainda carregando ───────────────

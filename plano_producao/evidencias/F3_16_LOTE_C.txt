@@ -1,0 +1,44 @@
+[WebServer] INFO:     Started server process [34612]
+
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+
+Running 19 tests using 1 worker
+
+[1/19] e2e\locale.spec.ts:34:3 › U06: fechamento 1,50 persiste valor contado correto
+[WebServer] INFO: http_error request_id=7688a390e376 status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+[2/19] e2e\locale.spec.ts:34:3 › U06: fechamento 1.50 persiste valor contado correto
+[3/19] e2e\locale.spec.ts:62:3 › U06: criar fiado 1,50 persiste decimal
+[4/19] e2e\locale.spec.ts:85:3 › U06: receber fiado 1,50 nao trunca centavos
+[5/19] e2e\locale.spec.ts:62:3 › U06: criar fiado 1.50 persiste decimal
+[6/19] e2e\locale.spec.ts:85:3 › U06: receber fiado 1.50 nao trunca centavos
+[WebServer] ERROR: Exception in callback _ProactorBasePipeTransport._call_connection_lost(None)
+[WebServer] handle: <Handle _ProactorBasePipeTransport._call_connection_lost(None)>
+[WebServer] Traceback (most recent call last):
+[WebServer]   File "C:\Users\Usuario\AppData\Local\Programs\Python\Python311\Lib\asyncio\events.py", line 80, in _run
+[WebServer]     self._context.run(self._callback, *self._args)
+[WebServer]   File "C:\Users\Usuario\AppData\Local\Programs\Python\Python311\Lib\asyncio\proactor_events.py", line 165, in _call_connection_lost
+[WebServer]     self._sock.shutdown(socket.SHUT_RDWR)
+[WebServer] ConnectionResetError: [WinError 10054] Foi forçado o cancelamento de uma conexão existente pelo host remoto
+
+[7/19] e2e\locale.spec.ts:109:3 › U06: suprimento 0,50 persiste sem truncar
+[8/19] e2e\locale.spec.ts:109:3 › U06: suprimento 0.50 persiste sem truncar
+[9/19] e2e\locale.spec.ts:125:3 › U06: abertura de caixa 1,50 preserva decimal e persiste valor
+[10/19] e2e\locale.spec.ts:125:3 › U06: abertura de caixa 1.50 preserva decimal e persiste valor
+[11/19] e2e\produtos-locale.spec.ts:21:1 › U01: cadastro de produto com virgula em todos os campos decimais
+[12/19] e2e\produtos-locale.spec.ts:77:1 › U02: cadastro de produto com ponto em todos os campos decimais
+[13/19] e2e\produtos-locale.spec.ts:132:1 › U03: edicao de produto atualiza com virgula e ponto
+[14/19] e2e\produtos-locale.spec.ts:196:1 › U04: validacao impede envio de texto invalido e nao usa fallback silencioso 0/1
+[15/19] e2e\produtos-locale.spec.ts:223:1 › U06: fator abaixo do minimo nao e elevado silenciosamente
+[16/19] e2e\produtos-locale.spec.ts:237:1 › U05: campos vazios conservam defaults legitimos (0 e 1 no fator)
+[17/19] e2e\produtos-locale.spec.ts:282:1 › U06: entrada rapida de estoque aceita virgula e ponto
+[18/19] e2e\produtos-locale.spec.ts:337:1 › U07: ajuste rapido aceita perda com virgula e inventario com zero e fracionario
+[19/19] e2e\xml-idempotencia.spec.ts:16:1 › I08: reimportar a mesma chave pela tela recusa duplicacao sem alterar estoque
+[WebServer] INFO: http_error request_id=2142e9270d21 status=409 method=POST path=/api/produtos/importar-xml/confirmar detail="NF-e já importada."
+
+  19 passed (25.9s)

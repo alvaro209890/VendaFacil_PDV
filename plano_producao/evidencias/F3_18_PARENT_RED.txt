@@ -1,0 +1,116 @@
+TAP version 13
+# Subtest: Controle: cupom normal 58mm não-fiscal renderiza texto e layout sem erros
+ok 1 - Controle: cupom normal 58mm não-fiscal renderiza texto e layout sem erros
+  ---
+  duration_ms: 192.1677
+  type: 'test'
+  ...
+# Subtest: Controle: cupom normal 80mm com DANFE preserva fixture PNG válido e bloco fiscal
+ok 2 - Controle: cupom normal 80mm com DANFE preserva fixture PNG válido e bloco fiscal
+  ---
+  duration_ms: 20.4283
+  type: 'test'
+  ...
+# Subtest: Cobertura: campos protegidos por esc() (loja, itens, chave) são texto inerte
+ok 3 - Cobertura: campos protegidos por esc() (loja, itens, chave) são texto inerte
+  ---
+  duration_ms: 15.233
+  type: 'test'
+  ...
+# Subtest: RED F3.18: forma de pagamento maliciosa deve ser texto inerte e não executar scripts nem injetar DOM
+not ok 4 - RED F3.18: forma de pagamento maliciosa deve ser texto inerte e não executar scripts nem injetar DOM
+  ---
+  duration_ms: 9.6808
+  type: 'test'
+  location: 'C:\\GIS\\VendaFacil_PDV\\frontend-tests\\recibo-xss.test.mjs:268:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Elemento DOM injetado via forma de pagamento deve ser nulo
+    
+    true !== false
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: false
+  actual: true
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///C:/GIS/VendaFacil_PDV/frontend-tests/recibo-xss.test.mjs:279:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: RED F3.18: vendaId malicioso deve ser texto inerte e não executar scripts nem injetar DOM
+not ok 5 - RED F3.18: vendaId malicioso deve ser texto inerte e não executar scripts nem injetar DOM
+  ---
+  duration_ms: 10.2508
+  type: 'test'
+  location: 'C:\\GIS\\VendaFacil_PDV\\frontend-tests\\recibo-xss.test.mjs:287:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Elemento DOM injetado via vendaId deve ser nulo
+    
+    true !== false
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: false
+  actual: true
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///C:/GIS/VendaFacil_PDV/frontend-tests/recibo-xss.test.mjs:299:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: RED F3.18: nota.numero e nota.serie maliciosos devem ser texto inerte no bloco fiscal
+not ok 6 - RED F3.18: nota.numero e nota.serie maliciosos devem ser texto inerte no bloco fiscal
+  ---
+  duration_ms: 8.9664
+  type: 'test'
+  location: 'C:\\GIS\\VendaFacil_PDV\\frontend-tests\\recibo-xss.test.mjs:307:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    nota.numero não pode injetar tags HTML
+    
+    true !== false
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: false
+  actual: true
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///C:/GIS/VendaFacil_PDV/frontend-tests/recibo-xss.test.mjs:323:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: RED F3.18: qrcode_base64 com escape de aspas não pode injetar atributos/eventos nem quebrar tag img
+not ok 7 - RED F3.18: qrcode_base64 com escape de aspas não pode injetar atributos/eventos nem quebrar tag img
+  ---
+  duration_ms: 8.2121
+  type: 'test'
+  location: 'C:\\GIS\\VendaFacil_PDV\\frontend-tests\\recibo-xss.test.mjs:330:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Atributo data-injetado não pode ser introduzido na tag img
+    
+    true !== false
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: false
+  actual: true
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///C:/GIS/VendaFacil_PDV/frontend-tests/recibo-xss.test.mjs:347:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 3
+# fail 4
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1202.8819

@@ -1,0 +1,50 @@
+[WebServer] INFO:     Started server process [6928]
+
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+
+Running 6 tests using 1 worker
+
+[1/6] e2e\teclado.spec.ts:33:1 › U02: F3 foca quantidade e Enter confirma sem vender
+[WebServer] INFO: http_error request_id=1600f04bfc16 status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+[2/6] e2e\teclado.spec.ts:45:1 › U02: F7 seleciona pagamento com Tab e Enter, F2 vende
+[3/6] e2e\teclado.spec.ts:56:1 › U02: Enter no dinheiro recebido confirma a venda
+[4/6] e2e\teclado.spec.ts:63:1 › U02: Escape fecha PIX sem finalizar nem apagar carrinho
+  1) e2e\teclado.spec.ts:63:1 › U02: Escape fecha PIX sem finalizar nem apagar carrinho ────────────
+
+    Error: expect(locator).toHaveCount(expected) failed
+
+    Locator:  getByRole('heading', { name: 'PAGAMENTO PIX' })
+    Expected: 0
+    Received: 1
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveCount" getByRole('heading', { name: 'PAGAMENTO PIX' }) with timeout 5000ms
+      - waiting for getByRole('heading', { name: 'PAGAMENTO PIX' })
+        14 × locator resolved to 1 element
+           - unexpected value "1"
+
+
+      73 |   await expect(page.getByRole('heading', { name: 'PAGAMENTO PIX' })).toBeVisible();
+      74 |   await page.keyboard.press('Escape');
+    > 75 |   await expect(page.getByRole('heading', { name: 'PAGAMENTO PIX' })).toHaveCount(0);
+         |                                                                      ^
+      76 |   await expect(page.getByText('Total a Pagar', { exact: true })).toBeVisible();
+      77 |   await expect(page.getByText(/Venda finalizada!/)).toHaveCount(0);
+      78 | });
+        at C:\GIS\VendaFacil_PDV\e2e\teclado.spec.ts:75:70
+
+    Error Context: test-results\teclado-U02-Escape-fecha-P-e9147-nalizar-nem-apagar-carrinho\error-context.md
+
+
+[5/6] e2e\teclado.spec.ts:80:1 › U02: F2 e atalhos nao atravessam PIX ainda carregando
+[6/6] e2e\teclado.spec.ts:106:1 › U02: F6 foca desconto e permite ajustar pelo teclado
+  1 failed
+    e2e\teclado.spec.ts:63:1 › U02: Escape fecha PIX sem finalizar nem apagar carrinho ─────────────
+  5 passed (21.8s)

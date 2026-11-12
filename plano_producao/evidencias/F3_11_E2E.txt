@@ -1,0 +1,41 @@
+[WebServer] INFO:     Started server process [38744]
+
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+
+Running 18 tests using 1 worker
+
+[1/18] e2e\carrinho.spec.ts:40:1 › U01: F5 preserva o carrinho e finalizar apaga o rascunho
+[WebServer] INFO: http_error request_id=c0d52fc2acee status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+[2/18] e2e\carrinho.spec.ts:54:1 › U01: cancelar a venda apaga o rascunho sem baixar estoque
+[3/18] e2e\carrinho.spec.ts:65:1 › U01: rascunho corrompido não derruba a tela
+[4/18] e2e\carrinho.spec.ts:77:1 › U01: outro usuário não recebe o carrinho anterior
+[5/18] e2e\carrinho.spec.ts:94:1 › U01: recarga atualiza o preço do rascunho pelo cadastro atual
+[WebServer] ERROR: Exception in callback _ProactorBasePipeTransport._call_connection_lost(None)
+[WebServer] handle: <Handle _ProactorBasePipeTransport._call_connection_lost(None)>
+[WebServer] Traceback (most recent call last):
+[WebServer]   File "C:\Users\Usuario\AppData\Local\Programs\Python\Python311\Lib\asyncio\events.py", line 80, in _run
+[WebServer]     self._context.run(self._callback, *self._args)
+[WebServer]   File "C:\Users\Usuario\AppData\Local\Programs\Python\Python311\Lib\asyncio\proactor_events.py", line 165, in _call_connection_lost
+[WebServer]     self._sock.shutdown(socket.SHUT_RDWR)
+[WebServer] ConnectionResetError: [WinError 10054] Foi forçado o cancelamento de uma conexão existente pelo host remoto
+
+[6/18] e2e\foco.spec.ts:27:1 › U04: adicionar pelo botao devolve foco ao leitor
+[7/18] e2e\foco.spec.ts:35:3 › U04: fechar PIX por botao devolve foco ao leitor
+[8/18] e2e\foco.spec.ts:35:3 › U04: fechar PIX por Escape devolve foco ao leitor
+[9/18] e2e\foco.spec.ts:56:3 › U04: finalizar por botao devolve foco ao leitor
+[10/18] e2e\foco.spec.ts:56:3 › U04: finalizar por F2 devolve foco ao leitor
+[11/18] e2e\teclado.spec.ts:34:1 › U02: F3 foca quantidade e Enter confirma sem vender
+[12/18] e2e\teclado.spec.ts:46:1 › U02: F7 seleciona pagamento com Tab e Enter, F2 vende
+[13/18] e2e\teclado.spec.ts:57:1 › U02: Enter no dinheiro recebido confirma a venda
+[14/18] e2e\teclado.spec.ts:64:1 › U02: Escape fecha PIX sem finalizar nem apagar carrinho
+[15/18] e2e\teclado.spec.ts:81:1 › U02: F2 e atalhos nao atravessam PIX ainda carregando
+[16/18] e2e\teclado.spec.ts:107:1 › U02: leitor e F4 nao alteram carrinho sob janela PIX
+[17/18] e2e\teclado.spec.ts:130:1 › U02: tres produtos distintos e venda inteira so com teclado
+[18/18] e2e\teclado.spec.ts:156:1 › U02: F6 foca desconto e permite ajustar pelo teclado
+  18 passed (40.2s)

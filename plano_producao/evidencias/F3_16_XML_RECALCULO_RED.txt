@@ -1,0 +1,44 @@
+[WebServer] INFO:     Started server process [21156]
+
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+
+Running 1 test using 1 worker
+
+[1/1] e2e\xml-locale.spec.ts:38:1 › U06 XML: recalculo de fator descarta textos derivados antigos
+[WebServer] INFO: http_error request_id=7ce5cc063740 status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+  1) e2e\xml-locale.spec.ts:38:1 › U06 XML: recalculo de fator descarta textos derivados antigos ───
+
+    Error: expect(locator).toHaveValue(expected) failed
+
+    Locator:  getByRole('table').filter({ has: getByRole('columnheader', { name: 'Qtd XML', exact: true }) }).locator('tbody tr').getByRole('cell').nth(7).locator('input')
+    Expected: "4"
+    Received: "7,5"
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveValue" getByRole('table').filter({ has: getByRole('columnheader', { name: 'Qtd XML', exact: true }) }).locator('tbody tr').getByRole('cell').nth(7).locator('input') with timeout 5000ms
+      - waiting for getByRole('table').filter({ has: getByRole('columnheader', { name: 'Qtd XML', exact: true }) }).locator('tbody tr').getByRole('cell').nth(7).locator('input')
+        14 × locator resolved to <input type="text" value="7,5" inputmode="decimal" class="w-20 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white"/>
+           - unexpected value "7,5"
+
+
+      42 |   await campo('Custo R$').fill('9,5');
+      43 |   await campo('Qtd/emb.').fill('2');
+    > 44 |   await expect(campo('Entra')).toHaveValue(String(2 * 2));
+         |                                ^
+      45 |   await expect(campo('Custo R$')).toHaveValue(String(3 / 2));
+      46 |   await campo('Qtd XML').fill('3,5');
+      47 |   await expect(campo('Entra')).toHaveValue(String(3.5 * 2));
+        at C:\GIS\VendaFacil_PDV\e2e\xml-locale.spec.ts:44:32
+
+    Error Context: test-results\xml-locale-U06-XML-recalcu-2be38-ta-textos-derivados-antigos\error-context.md
+
+
+  1 failed
+    e2e\xml-locale.spec.ts:38:1 › U06 XML: recalculo de fator descarta textos derivados antigos ────

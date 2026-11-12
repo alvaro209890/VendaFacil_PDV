@@ -1,0 +1,22 @@
+[WebServer] INFO:     Started server process [33812]
+
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+
+Running 8 tests using 1 worker
+
+[1/8] e2e\produtos-locale.spec.ts:21:1 › U01: cadastro de produto com virgula em todos os campos decimais
+[WebServer] INFO: http_error request_id=983667dc78bc status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+[2/8] e2e\produtos-locale.spec.ts:77:1 › U02: cadastro de produto com ponto em todos os campos decimais
+[3/8] e2e\produtos-locale.spec.ts:132:1 › U03: edicao de produto atualiza com virgula e ponto
+[4/8] e2e\produtos-locale.spec.ts:196:1 › U04: validacao impede envio de texto invalido e nao usa fallback silencioso 0/1
+[5/8] e2e\produtos-locale.spec.ts:223:1 › U06: fator abaixo do minimo nao e elevado silenciosamente
+[6/8] e2e\produtos-locale.spec.ts:237:1 › U05: campos vazios conservam defaults legitimos (0 e 1 no fator)
+[7/8] e2e\produtos-locale.spec.ts:282:1 › U06: entrada rapida de estoque aceita virgula e ponto
+[8/8] e2e\produtos-locale.spec.ts:337:1 › U07: ajuste rapido aceita perda com virgula e inventario com zero e fracionario
+  8 passed (17.9s)

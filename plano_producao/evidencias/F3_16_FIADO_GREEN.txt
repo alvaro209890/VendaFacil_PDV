@@ -1,0 +1,24 @@
+[WebServer] INFO:     Started server process [23984]
+
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+
+Running 10 tests using 1 worker
+
+[1/10] e2e\locale.spec.ts:34:3 › U06: fechamento 1,50 persiste valor contado correto
+[WebServer] INFO: http_error request_id=01ef609b8e3a status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+[2/10] e2e\locale.spec.ts:34:3 › U06: fechamento 1.50 persiste valor contado correto
+[3/10] e2e\locale.spec.ts:62:3 › U06: criar fiado 1,50 persiste decimal
+[4/10] e2e\locale.spec.ts:85:3 › U06: receber fiado 1,50 nao trunca centavos
+[5/10] e2e\locale.spec.ts:62:3 › U06: criar fiado 1.50 persiste decimal
+[6/10] e2e\locale.spec.ts:85:3 › U06: receber fiado 1.50 nao trunca centavos
+[7/10] e2e\locale.spec.ts:109:3 › U06: suprimento 0,50 persiste sem truncar
+[8/10] e2e\locale.spec.ts:109:3 › U06: suprimento 0.50 persiste sem truncar
+[9/10] e2e\locale.spec.ts:125:3 › U06: abertura de caixa 1,50 preserva decimal e persiste valor
+[10/10] e2e\locale.spec.ts:125:3 › U06: abertura de caixa 1.50 preserva decimal e persiste valor
+  10 passed (15.5s)

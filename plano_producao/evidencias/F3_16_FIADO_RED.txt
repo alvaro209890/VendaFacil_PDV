@@ -1,0 +1,68 @@
+[WebServer] INFO:     Started server process [7184]
+
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+
+Running 4 tests using 1 worker
+
+[1/4] e2e\locale.spec.ts:62:3 › U06: criar fiado 1,50 persiste decimal
+[WebServer] INFO: http_error request_id=713cc75c0be4 status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+  1) e2e\locale.spec.ts:62:3 › U06: criar fiado 1,50 persiste decimal ──────────────────────────────
+
+    Error: expect(locator).toHaveValue(expected) failed
+
+    Locator:  getByPlaceholder('Valor *', { exact: true })
+    Expected: "1,50"
+    Received: "150"
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveValue" getByPlaceholder('Valor *', { exact: true }) with timeout 5000ms
+      - waiting for getByPlaceholder('Valor *', { exact: true })
+        14 × locator resolved to <input min="0" value="" step="0.01" type="number" placeholder="Valor *" class="w-full px-3 py-2.5 bg-slate-800 text-white rounded-lg border border-slate-700 focus:border-brand-500 outline-none text-sm"/>
+           - unexpected value "150"
+
+
+      66 |     await campo.focus();
+      67 |     await page.keyboard.type(valor);
+    > 68 |     await expect(campo).toHaveValue(valor);
+         |                         ^
+      69 |     const observacao = `CRIAR-${info.testId}`;
+      70 |     await page.getByPlaceholder('Observação', { exact: true }).fill(observacao);
+      71 |     const criada = page.waitForResponse(r => r.url().endsWith('/api/contas-receber') && r.request().method() === 'POST');
+        at C:\GIS\VendaFacil_PDV\e2e\locale.spec.ts:68:25
+
+    Error Context: test-results\locale-U06-criar-fiado-1-50-persiste-decimal\error-context.md
+
+
+[2/4] e2e\locale.spec.ts:85:3 › U06: receber fiado 1,50 nao trunca centavos
+  2) e2e\locale.spec.ts:85:3 › U06: receber fiado 1,50 nao trunca centavos ─────────────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 1.5
+    Received: 1
+
+       97 |     expect(resposta.status()).toBe(200);
+       98 |     const numero = Number(valor.replace(',', '.'));
+    >  99 |     expect(resposta.request().postDataJSON().valor).toBe(numero);
+          |                                                     ^
+      100 |     const salva = await request.get(`${api}/api/contas-receber/${contaId}`, { headers });
+      101 |     expect(salva.status()).toBe(200);
+      102 |     const conta = (await salva.json()).conta;
+        at C:\GIS\VendaFacil_PDV\e2e\locale.spec.ts:99:53
+
+    Error Context: test-results\locale-U06-receber-fiado-1-50-nao-trunca-centavos\error-context.md
+
+
+[3/4] e2e\locale.spec.ts:62:3 › U06: criar fiado 1.50 persiste decimal
+[4/4] e2e\locale.spec.ts:85:3 › U06: receber fiado 1.50 nao trunca centavos
+  2 failed
+    e2e\locale.spec.ts:62:3 › U06: criar fiado 1,50 persiste decimal ───────────────────────────────
+    e2e\locale.spec.ts:85:3 › U06: receber fiado 1,50 nao trunca centavos ──────────────────────────
+  2 passed (18.4s)

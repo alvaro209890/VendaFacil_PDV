@@ -1,0 +1,41 @@
+[WebServer] INFO:     Started server process [5520]
+
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+
+Running 21 tests using 1 worker
+
+[1/21] e2e\erros.spec.ts:36:1 › F3.13: estoque alterado no backend mostra motivo e preserva carrinho
+[WebServer] INFO: http_error request_id=4840311baed6 status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+[WebServer] INFO: http_error request_id=1cffaf09ec3a status=400 method=POST path=/api/vendas/checkout detail={"erros": ["Estoque insuficiente de 'ERRO-f84e50dac733a22d8dad-3a8676532a6fc0ee1e3e': tem 0.0 UN, pedido 1.0."]}
+
+[2/21] e2e\erros.spec.ts:56:1 › F3.13: caixa fechado avisa sem impedir venda conforme D4
+[3/21] e2e\erros.spec.ts:67:1 › F3.13: falha fiscal real local aparece sem alegar nota emitida ou repetir venda
+[4/21] e2e\erros.spec.ts:91:3 › F3.13: contrato UI distingue nota rejeitada (fixture sem SEFAZ)
+[5/21] e2e\erros.spec.ts:91:3 › F3.13: contrato UI distingue nota pendente (fixture sem SEFAZ)
+[6/21] e2e\erros.spec.ts:91:3 › F3.13: contrato UI distingue nota contingencia (fixture sem SEFAZ)
+[7/21] e2e\erros.spec.ts:91:3 › F3.13: contrato UI distingue nota autorizada (fixture sem SEFAZ)
+[8/21] e2e\erros.spec.ts:36:1 › F3.13: estoque alterado no backend mostra motivo e preserva carrinho
+[WebServer] INFO: http_error request_id=56beecb73680 status=400 method=POST path=/api/vendas/checkout detail={"erros": ["Estoque insuficiente de 'ERRO-f84e50dac733a22d8dad-193c3678d190a7e4c196': tem 0.0 UN, pedido 1.0."]}
+
+[9/21] e2e\erros.spec.ts:56:1 › F3.13: caixa fechado avisa sem impedir venda conforme D4
+[10/21] e2e\erros.spec.ts:67:1 › F3.13: falha fiscal real local aparece sem alegar nota emitida ou repetir venda
+[11/21] e2e\erros.spec.ts:91:3 › F3.13: contrato UI distingue nota rejeitada (fixture sem SEFAZ)
+[12/21] e2e\erros.spec.ts:91:3 › F3.13: contrato UI distingue nota pendente (fixture sem SEFAZ)
+[13/21] e2e\erros.spec.ts:91:3 › F3.13: contrato UI distingue nota contingencia (fixture sem SEFAZ)
+[14/21] e2e\erros.spec.ts:91:3 › F3.13: contrato UI distingue nota autorizada (fixture sem SEFAZ)
+[15/21] e2e\erros.spec.ts:36:1 › F3.13: estoque alterado no backend mostra motivo e preserva carrinho
+[WebServer] INFO: http_error request_id=9201934d15ef status=400 method=POST path=/api/vendas/checkout detail={"erros": ["Estoque insuficiente de 'ERRO-f84e50dac733a22d8dad-7ffec204b92d04049aed': tem 0.0 UN, pedido 1.0."]}
+
+[16/21] e2e\erros.spec.ts:56:1 › F3.13: caixa fechado avisa sem impedir venda conforme D4
+[17/21] e2e\erros.spec.ts:67:1 › F3.13: falha fiscal real local aparece sem alegar nota emitida ou repetir venda
+[18/21] e2e\erros.spec.ts:91:3 › F3.13: contrato UI distingue nota rejeitada (fixture sem SEFAZ)
+[19/21] e2e\erros.spec.ts:91:3 › F3.13: contrato UI distingue nota pendente (fixture sem SEFAZ)
+[20/21] e2e\erros.spec.ts:91:3 › F3.13: contrato UI distingue nota contingencia (fixture sem SEFAZ)
+[21/21] e2e\erros.spec.ts:91:3 › F3.13: contrato UI distingue nota autorizada (fixture sem SEFAZ)
+  21 passed (46.2s)

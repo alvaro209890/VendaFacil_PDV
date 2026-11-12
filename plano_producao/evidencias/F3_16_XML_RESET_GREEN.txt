@@ -1,0 +1,18 @@
+[WebServer] INFO:     Started server process [32016]
+
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+
+Running 4 tests using 1 worker
+
+[1/4] e2e\xml-locale.spec.ts:38:1 › U06 XML: cancelar e reabrir nao herda textos da previa anterior
+[WebServer] INFO: http_error request_id=382b35693aa2 status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+[2/4] e2e\xml-locale.spec.ts:48:1 › U06 XML: recalculo de fator descarta textos derivados antigos
+[3/4] e2e\xml-locale.spec.ts:65:1 › U06 XML: texto invalido nao importa o custo anterior escondido
+[4/4] e2e\xml-locale.spec.ts:81:1 › U06 XML: virgula nos cinco campos preserva texto, payload e estoque
+  4 passed (45.0s)

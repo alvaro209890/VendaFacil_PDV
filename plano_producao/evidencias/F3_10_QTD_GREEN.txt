@@ -1,0 +1,16 @@
+[WebServer] INFO:     Started server process [17724]
+
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+
+Running 2 tests using 1 worker
+
+[1/2] e2e\teclado.spec.ts:33:1 › U02: F3 foca quantidade e Enter confirma sem vender
+[WebServer] INFO: http_error request_id=2229a55e5704 status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+[2/2] e2e\teclado.spec.ts:45:1 › U02: F6 foca desconto e permite ajustar pelo teclado
+  2 passed (10.3s)

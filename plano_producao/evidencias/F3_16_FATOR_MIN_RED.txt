@@ -1,0 +1,35 @@
+[WebServer] INFO:     Started server process [56272]
+
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+
+Running 1 test using 1 worker
+
+[1/1] e2e\produtos-locale.spec.ts:223:1 › U06: fator abaixo do minimo nao e elevado silenciosamente
+[WebServer] INFO: http_error request_id=343508e565b2 status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+  1) e2e\produtos-locale.spec.ts:223:1 › U06: fator abaixo do minimo nao e elevado silenciosamente ─
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 1
+
+      231 |   const erro = page.getByText('Quantidade por compra inválida.', { exact: true });
+      232 |   await expect.poll(async () => envios > 0 || await erro.isVisible()).toBe(true);
+    > 233 |   expect(envios).toBe(0);
+          |                  ^
+      234 |   await expect(erro).toBeVisible();
+      235 | });
+      236 |
+        at C:\GIS\VendaFacil_PDV\e2e\produtos-locale.spec.ts:233:18
+
+    Error Context: test-results\produtos-locale-U06-fator--45f57-o-e-elevado-silenciosamente\error-context.md
+
+
+  1 failed
+    e2e\produtos-locale.spec.ts:223:1 › U06: fator abaixo do minimo nao e elevado silenciosamente ──

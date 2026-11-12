@@ -1,0 +1,44 @@
+
+Running 1 test using 1 worker
+
+[WebServer] INFO:     Started server process [22396]
+
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+[1/1] e2e\teclado.spec.ts:33:1 › U02: F3 foca quantidade e Enter confirma sem vender
+[WebServer] INFO: http_error request_id=4996ec5881f0 status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+  1) e2e\teclado.spec.ts:33:1 › U02: F3 foca quantidade e Enter confirma sem vender ────────────────
+
+    Error: expect(locator).toBeFocused() failed
+
+    Locator:  locator('input[type="number"][max="20"]')
+    Expected: focused
+    Received: inactive
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toBeFocused" locator('input[type="number"][max="20"]') with timeout 5000ms
+      - waiting for locator('input[type="number"][max="20"]')
+        14 × locator resolved to <input min="1" max="20" step="1" value="1" type="number" class="w-14 bg-transparent text-white text-xs font-bold text-center focus:outline-none"/>
+           - unexpected value "inactive"
+
+
+      34 |   const quantidade = page.locator('input[type="number"][max="20"]');
+      35 |   await page.keyboard.press('F3');
+    > 36 |   await expect(quantidade).toBeFocused();
+         |                            ^
+      37 |   await page.keyboard.press('ControlOrMeta+A');
+      38 |   await page.keyboard.type('3');
+      39 |   await page.keyboard.press('Enter');
+        at C:\GIS\VendaFacil_PDV\e2e\teclado.spec.ts:36:28
+
+    Error Context: test-results\teclado-U02-F3-foca-quantidade-e-Enter-confirma-sem-vender\error-context.md
+
+
+  1 failed
+    e2e\teclado.spec.ts:33:1 › U02: F3 foca quantidade e Enter confirma sem vender ─────────────────

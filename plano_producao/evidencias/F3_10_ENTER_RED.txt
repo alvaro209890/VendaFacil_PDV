@@ -1,0 +1,42 @@
+[WebServer] INFO:     Started server process [37208]
+
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+
+Running 1 test using 1 worker
+
+[1/1] e2e\teclado.spec.ts:56:1 › U02: Enter no dinheiro recebido confirma a venda
+[WebServer] INFO: http_error request_id=ec19fd34b94b status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+  1) e2e\teclado.spec.ts:56:1 › U02: Enter no dinheiro recebido confirma a venda ───────────────────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText(/Venda finalizada!/)
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByText(/Venda finalizada!/) with timeout 5000ms
+      - waiting for getByText(/Venda finalizada!/)
+
+
+      58 |   await page.keyboard.type('5');
+      59 |   await page.keyboard.press('Enter');
+    > 60 |   await expect(page.getByText(/Venda finalizada!/)).toBeVisible();
+         |                                                     ^
+      61 | });
+      62 |
+      63 | test('U02: F6 foca desconto e permite ajustar pelo teclado', async ({ page }) => {
+        at C:\GIS\VendaFacil_PDV\e2e\teclado.spec.ts:60:53
+
+    Error Context: test-results\teclado-U02-Enter-no-dinheiro-recebido-confirma-a-venda\error-context.md
+
+
+  1 failed
+    e2e\teclado.spec.ts:56:1 › U02: Enter no dinheiro recebido confirma a venda ────────────────────

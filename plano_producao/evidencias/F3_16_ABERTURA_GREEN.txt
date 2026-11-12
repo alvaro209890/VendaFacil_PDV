@@ -1,0 +1,16 @@
+[WebServer] INFO:     Started server process [24776]
+
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+
+Running 2 tests using 1 worker
+
+[1/2] e2e\locale.spec.ts:34:3 › U06: abertura de caixa 1,50 preserva decimal e persiste valor
+[WebServer] INFO: http_error request_id=494c994feeb8 status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+[2/2] e2e\locale.spec.ts:34:3 › U06: abertura de caixa 1.50 preserva decimal e persiste valor
+  2 passed (12.2s)

@@ -1,0 +1,50 @@
+[WebServer] INFO:     Started server process [51848]
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+
+Running 37 tests using 1 worker
+
+[1/37] e2e\carrinho.spec.ts:40:1 › U01: F5 preserva o carrinho e finalizar apaga o rascunho
+[WebServer] INFO: http_error request_id=fa2fe87cb1b5 status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+[2/37] e2e\carrinho.spec.ts:54:1 › U01: cancelar a venda apaga o rascunho sem baixar estoque
+[3/37] e2e\carrinho.spec.ts:65:1 › U01: rascunho corrompido não derruba a tela
+[4/37] e2e\carrinho.spec.ts:77:1 › U01: outro usuário não recebe o carrinho anterior
+[5/37] e2e\carrinho.spec.ts:94:1 › U01: recarga atualiza o preço do rascunho pelo cadastro atual
+[6/37] e2e\decimais.spec.ts:28:3 › U03: desconto 0,50 preserva digitacao e valor enviado
+[7/37] e2e\decimais.spec.ts:28:3 › U03: desconto 0.50 preserva digitacao e valor enviado
+[8/37] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "0" nao vende por F2
+[9/37] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "0" nao vende por botao
+[10/37] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "" nao vende por F2
+[11/37] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "" nao vende por botao
+[12/37] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "11" nao vende por F2
+[13/37] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "11" nao vende por botao
+[14/37] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "0,00001" nao vende por F2
+[15/37] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "0,00001" nao vende por botao
+[16/37] e2e\decimais.spec.ts:55:5 › U03: desconto invalido "abc" nao vende por F2
+[17/37] e2e\decimais.spec.ts:55:5 › U03: desconto invalido "abc" nao vende por botao
+[18/37] e2e\decimais.spec.ts:55:5 › U03: desconto invalido "-1" nao vende por F2
+[19/37] e2e\decimais.spec.ts:55:5 › U03: desconto invalido "-1" nao vende por botao
+[20/37] e2e\decimais.spec.ts:55:5 › U03: desconto invalido "0,001" nao vende por F2
+[21/37] e2e\decimais.spec.ts:55:5 › U03: desconto invalido "0,001" nao vende por botao
+[22/37] e2e\decimais.spec.ts:71:3 › U03: quantidade 0,5 preserva etapas e valor enviado
+[23/37] e2e\decimais.spec.ts:71:3 › U03: quantidade 0.5 preserva etapas e valor enviado
+[24/37] e2e\decimais.spec.ts:71:3 › U03: quantidade 0,125 preserva etapas e valor enviado
+[25/37] e2e\foco.spec.ts:27:1 › U04: adicionar pelo botao devolve foco ao leitor
+[26/37] e2e\foco.spec.ts:35:3 › U04: fechar PIX por botao devolve foco ao leitor
+[27/37] e2e\foco.spec.ts:35:3 › U04: fechar PIX por Escape devolve foco ao leitor
+[28/37] e2e\foco.spec.ts:56:3 › U04: finalizar por botao devolve foco ao leitor
+[29/37] e2e\foco.spec.ts:56:3 › U04: finalizar por F2 devolve foco ao leitor
+[30/37] e2e\teclado.spec.ts:34:1 › U02: F3 foca quantidade e Enter confirma sem vender
+[31/37] e2e\teclado.spec.ts:46:1 › U02: F7 seleciona pagamento com Tab e Enter, F2 vende
+[32/37] e2e\teclado.spec.ts:57:1 › U02: Enter no dinheiro recebido confirma a venda
+[33/37] e2e\teclado.spec.ts:64:1 › U02: Escape fecha PIX sem finalizar nem apagar carrinho
+[34/37] e2e\teclado.spec.ts:81:1 › U02: F2 e atalhos nao atravessam PIX ainda carregando
+[35/37] e2e\teclado.spec.ts:107:1 › U02: leitor e F4 nao alteram carrinho sob janela PIX
+[36/37] e2e\teclado.spec.ts:130:1 › U02: tres produtos distintos e venda inteira so com teclado
+[37/37] e2e\teclado.spec.ts:156:1 › U02: F6 foca desconto e permite ajustar pelo teclado
+  37 passed (1.2m)

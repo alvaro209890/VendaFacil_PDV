@@ -1,0 +1,15 @@
+[WebServer] INFO:     Started server process [6912]
+
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+
+Running 1 test using 1 worker
+
+[1/1] e2e\teclado.spec.ts:33:1 › U02: F6 foca desconto e permite ajustar pelo teclado
+[WebServer] INFO: http_error request_id=f512bd9c90c6 status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+  1 passed (8.6s)

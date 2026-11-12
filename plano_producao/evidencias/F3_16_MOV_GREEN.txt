@@ -1,0 +1,37 @@
+[WebServer] INFO:     Started server process [2132]
+
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+
+Running 4 tests using 1 worker
+
+[1/4] e2e\locale.spec.ts:34:3 › U06: suprimento 0,50 persiste sem truncar
+[WebServer] INFO: http_error request_id=9d0f525cd9ed status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+[2/4] e2e\locale.spec.ts:34:3 › U06: suprimento 0.50 persiste sem truncar
+[3/4] e2e\locale.spec.ts:50:3 › U06: abertura de caixa 1,50 preserva decimal e persiste valor
+[4/4] e2e\locale.spec.ts:50:3 › U06: abertura de caixa 1.50 preserva decimal e persiste valor
+  1) e2e\locale.spec.ts:50:3 › U06: abertura de caixa 1.50 preserva decimal e persiste valor ───────
+
+    Error: response.json: Protocol error (Network.getResponseBody): No resource with given identifier found
+    Response body is not available for a response that was navigated away from. Read response.body() before triggering any navigation.
+
+      60 |     const numero = Number(valor.replace(',', '.'));
+      61 |     expect(resposta.request().postDataJSON().valor_abertura).toBe(numero);
+    > 62 |     expect((await resposta.json()).sessao.valor_abertura).toBe(numero);
+         |                            ^
+      63 |     await expect(page.getByRole('heading', { name: 'Fechar caixa', exact: true })).toBeVisible();
+      64 |   });
+      65 | }
+        at C:\GIS\VendaFacil_PDV\e2e\locale.spec.ts:62:28
+
+    Error Context: test-results\locale-U06-abertura-de-cai-91117-va-decimal-e-persiste-valor\error-context.md
+
+
+  1 failed
+    e2e\locale.spec.ts:50:3 › U06: abertura de caixa 1.50 preserva decimal e persiste valor ────────
+  3 passed (11.8s)

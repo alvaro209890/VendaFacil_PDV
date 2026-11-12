@@ -1,0 +1,104 @@
+FFFFFF.                                                                  [100%]
+================================== FAILURES ===================================
+______________ test_fiscal_get_mascarado_put_preserva_5_segredos ______________
+backend\tests\test_config_mascarada.py:90: in test_fiscal_get_mascarado_put_preserva_5_segredos
+    assert gw_ok is True, "gateway_token foi apagado"
+E   AssertionError: gateway_token foi apagado
+E   assert False is True
+---------------------------- Captured stderr call -----------------------------
+INFO: HTTP Request: PUT http://testserver/api/fiscal/config "HTTP/1.1 200 OK"
+INFO: HTTP Request: GET http://testserver/api/fiscal/config "HTTP/1.1 200 OK"
+INFO: HTTP Request: PUT http://testserver/api/fiscal/config "HTTP/1.1 200 OK"
+------------------------------ Captured log call ------------------------------
+INFO     httpx:_client.py:1025 HTTP Request: PUT http://testserver/api/fiscal/config "HTTP/1.1 200 OK"
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/fiscal/config "HTTP/1.1 200 OK"
+INFO     httpx:_client.py:1025 HTTP Request: PUT http://testserver/api/fiscal/config "HTTP/1.1 200 OK"
+___________ test_maquininha_get_mascarado_put_preserva_access_token ___________
+backend\tests\test_config_mascarada.py:131: in test_maquininha_get_mascarado_put_preserva_access_token
+    assert tok_ok is True, "access_token foi apagado"
+E   AssertionError: access_token foi apagado
+E   assert False is True
+---------------------------- Captured stderr call -----------------------------
+INFO: HTTP Request: PUT http://testserver/api/maquininha/config "HTTP/1.1 200 OK"
+INFO: HTTP Request: GET http://testserver/api/maquininha/config "HTTP/1.1 200 OK"
+INFO: HTTP Request: PUT http://testserver/api/maquininha/config "HTTP/1.1 200 OK"
+------------------------------ Captured log call ------------------------------
+INFO     httpx:_client.py:1025 HTTP Request: PUT http://testserver/api/maquininha/config "HTTP/1.1 200 OK"
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/maquininha/config "HTTP/1.1 200 OK"
+INFO     httpx:_client.py:1025 HTTP Request: PUT http://testserver/api/maquininha/config "HTTP/1.1 200 OK"
+_____________ test_novo_valor_troca_segredo_e_permanece_mascarado _____________
+backend\tests\test_config_mascarada.py:158: in test_novo_valor_troca_segredo_e_permanece_mascarado
+    assert csc_novo_ok is True, "csc não foi atualizado para novo valor"
+E   AssertionError: csc não foi atualizado para novo valor
+E   assert False is True
+---------------------------- Captured stderr call -----------------------------
+INFO: HTTP Request: PUT http://testserver/api/fiscal/config "HTTP/1.1 200 OK"
+INFO: HTTP Request: PUT http://testserver/api/maquininha/config "HTTP/1.1 200 OK"
+INFO: HTTP Request: PUT http://testserver/api/fiscal/config "HTTP/1.1 200 OK"
+INFO: HTTP Request: PUT http://testserver/api/maquininha/config "HTTP/1.1 200 OK"
+------------------------------ Captured log call ------------------------------
+INFO     httpx:_client.py:1025 HTTP Request: PUT http://testserver/api/fiscal/config "HTTP/1.1 200 OK"
+INFO     httpx:_client.py:1025 HTTP Request: PUT http://testserver/api/maquininha/config "HTTP/1.1 200 OK"
+INFO     httpx:_client.py:1025 HTTP Request: PUT http://testserver/api/fiscal/config "HTTP/1.1 200 OK"
+INFO     httpx:_client.py:1025 HTTP Request: PUT http://testserver/api/maquininha/config "HTTP/1.1 200 OK"
+____________________ test_limpar_segredos_explicito_valido ____________________
+backend\tests\test_config_mascarada.py:184: in test_limpar_segredos_explicito_valido
+    assert remover_ok is True, "gateway_token não foi limpo"
+E   AssertionError: gateway_token não foi limpo
+E   assert False is True
+---------------------------- Captured stderr call -----------------------------
+INFO: HTTP Request: PUT http://testserver/api/fiscal/config "HTTP/1.1 200 OK"
+INFO: HTTP Request: PUT http://testserver/api/fiscal/config "HTTP/1.1 200 OK"
+------------------------------ Captured log call ------------------------------
+INFO     httpx:_client.py:1025 HTTP Request: PUT http://testserver/api/fiscal/config "HTTP/1.1 200 OK"
+INFO     httpx:_client.py:1025 HTTP Request: PUT http://testserver/api/fiscal/config "HTTP/1.1 200 OK"
+____________ test_limpar_segredos_recusa_coluna_fora_da_whitelist _____________
+backend\tests\test_config_mascarada.py:206: in test_limpar_segredos_recusa_coluna_fora_da_whitelist
+    assert r1.status_code in (400, 422)
+E   assert 200 in (400, 422)
+E    +  where 200 = <Response [200 OK]>.status_code
+---------------------------- Captured stderr call -----------------------------
+INFO: HTTP Request: PUT http://testserver/api/fiscal/config "HTTP/1.1 200 OK"
+------------------------------ Captured log call ------------------------------
+INFO     httpx:_client.py:1025 HTTP Request: PUT http://testserver/api/fiscal/config "HTTP/1.1 200 OK"
+________________ test_ambiguidade_novo_valor_e_limpeza_recusa _________________
+backend\tests\test_config_mascarada.py:225: in test_ambiguidade_novo_valor_e_limpeza_recusa
+    assert r1.status_code in (400, 422)
+E   assert 200 in (400, 422)
+E    +  where 200 = <Response [200 OK]>.status_code
+---------------------------- Captured stderr call -----------------------------
+INFO: HTTP Request: PUT http://testserver/api/fiscal/config "HTTP/1.1 200 OK"
+------------------------------ Captured log call ------------------------------
+INFO     httpx:_client.py:1025 HTTP Request: PUT http://testserver/api/fiscal/config "HTTP/1.1 200 OK"
+============================== warnings summary ===============================
+backend\.venv\Lib\site-packages\fastapi\testclient.py:1
+  C:\GIS\VendaFacil_PDV\backend\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+backend\main.py:132
+  C:\GIS\VendaFacil_PDV\backend\main.py:132: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("startup")
+
+backend\.venv\Lib\site-packages\fastapi\applications.py:4723
+  C:\GIS\VendaFacil_PDV\backend\.venv\Lib\site-packages\fastapi\applications.py:4723: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED backend/tests/test_config_mascarada.py::test_fiscal_get_mascarado_put_preserva_5_segredos
+FAILED backend/tests/test_config_mascarada.py::test_maquininha_get_mascarado_put_preserva_access_token
+FAILED backend/tests/test_config_mascarada.py::test_novo_valor_troca_segredo_e_permanece_mascarado
+FAILED backend/tests/test_config_mascarada.py::test_limpar_segredos_explicito_valido
+FAILED backend/tests/test_config_mascarada.py::test_limpar_segredos_recusa_coluna_fora_da_whitelist
+FAILED backend/tests/test_config_mascarada.py::test_ambiguidade_novo_valor_e_limpeza_recusa
+6 failed, 1 passed, 3 warnings in 1.06s

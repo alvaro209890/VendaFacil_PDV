@@ -1,0 +1,15 @@
+[WebServer] INFO:     Started server process [51312]
+
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+
+Running 1 test using 1 worker
+
+[1/1] e2e\foco.spec.ts:27:1 › U04: adicionar pelo botao devolve foco ao leitor
+[WebServer] INFO: http_error request_id=000cfe4044d4 status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+  1 passed (8.7s)

@@ -1,0 +1,142 @@
+TAP version 13
+# Subtest: parser "1,5" casas=2
+ok 1 - parser "1,5" casas=2
+  ---
+  duration_ms: 1.9251
+  type: 'test'
+  ...
+# Subtest: parser "1.5" casas=2
+ok 2 - parser "1.5" casas=2
+  ---
+  duration_ms: 0.3137
+  type: 'test'
+  ...
+# Subtest: parser "0,50" casas=2
+ok 3 - parser "0,50" casas=2
+  ---
+  duration_ms: 0.1109
+  type: 'test'
+  ...
+# Subtest: parser "0.50" casas=2
+ok 4 - parser "0.50" casas=2
+  ---
+  duration_ms: 0.1057
+  type: 'test'
+  ...
+# Subtest: parser " 1,50 " casas=2
+ok 5 - parser " 1,50 " casas=2
+  ---
+  duration_ms: 0.1214
+  type: 'test'
+  ...
+# Subtest: parser ",5" casas=2
+ok 6 - parser ",5" casas=2
+  ---
+  duration_ms: 0.1045
+  type: 'test'
+  ...
+# Subtest: parser ".5" casas=2
+ok 7 - parser ".5" casas=2
+  ---
+  duration_ms: 0.1104
+  type: 'test'
+  ...
+# Subtest: parser "0" casas=2
+ok 8 - parser "0" casas=2
+  ---
+  duration_ms: 0.0849
+  type: 'test'
+  ...
+# Subtest: parser "0," casas=2
+ok 9 - parser "0," casas=2
+  ---
+  duration_ms: 0.3354
+  type: 'test'
+  ...
+# Subtest: parser "1," casas=2
+ok 10 - parser "1," casas=2
+  ---
+  duration_ms: 0.4191
+  type: 'test'
+  ...
+# Subtest: parser "0,125" casas=3
+ok 11 - parser "0,125" casas=3
+  ---
+  duration_ms: 0.1574
+  type: 'test'
+  ...
+# Subtest: parser "0,0001" casas=undefined
+ok 12 - parser "0,0001" casas=undefined
+  ---
+  duration_ms: 0.7436
+  type: 'test'
+  ...
+# Subtest: parser "" casas=2
+ok 13 - parser "" casas=2
+  ---
+  duration_ms: 0.0635
+  type: 'test'
+  ...
+# Subtest: parser " " casas=2
+ok 14 - parser " " casas=2
+  ---
+  duration_ms: 0.0701
+  type: 'test'
+  ...
+# Subtest: parser "1,005" casas=2
+ok 15 - parser "1,005" casas=2
+  ---
+  duration_ms: 0.0555
+  type: 'test'
+  ...
+# Subtest: parser "0,0001" casas=3
+ok 16 - parser "0,0001" casas=3
+  ---
+  duration_ms: 0.0487
+  type: 'test'
+  ...
+# Subtest: parser "1,2,3" casas=2
+ok 17 - parser "1,2,3" casas=2
+  ---
+  duration_ms: 0.0462
+  type: 'test'
+  ...
+# Subtest: parser "1.2.3" casas=2
+ok 18 - parser "1.2.3" casas=2
+  ---
+  duration_ms: 0.0439
+  type: 'test'
+  ...
+# Subtest: parser "12abc" casas=2
+ok 19 - parser "12abc" casas=2
+  ---
+  duration_ms: 0.0438
+  type: 'test'
+  ...
+# Subtest: parser "Infinity" casas=undefined
+ok 20 - parser "Infinity" casas=undefined
+  ---
+  duration_ms: 0.0456
+  type: 'test'
+  ...
+# Subtest: parser "1e3" casas=undefined
+ok 21 - parser "1e3" casas=undefined
+  ---
+  duration_ms: 0.0772
+  type: 'test'
+  ...
+# Subtest: parser "-1" casas=2
+ok 22 - parser "-1" casas=2
+  ---
+  duration_ms: 0.0698
+  type: 'test'
+  ...
+1..22
+# tests 22
+# suites 0
+# pass 22
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 275.8634

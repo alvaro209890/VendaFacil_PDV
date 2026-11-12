@@ -1,0 +1,18 @@
+[WebServer] INFO:     Started server process [22020]
+
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+
+Running 4 tests using 1 worker
+
+[1/4] e2e\teclado.spec.ts:33:1 › U02: F3 foca quantidade e Enter confirma sem vender
+[WebServer] INFO: http_error request_id=917c970410ba status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+[2/4] e2e\teclado.spec.ts:45:1 › U02: F7 seleciona pagamento com Tab e Enter, F2 vende
+[3/4] e2e\teclado.spec.ts:56:1 › U02: Enter no dinheiro recebido confirma a venda
+[4/4] e2e\teclado.spec.ts:63:1 › U02: F6 foca desconto e permite ajustar pelo teclado
+  4 passed (14.1s)

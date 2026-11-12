@@ -1,0 +1,34 @@
+[WebServer] INFO:     Started server process [4660]
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+
+Running 1 test using 1 worker
+
+[1/1] e2e\xml-locale.spec.ts:39:1 › U06 XML: recalculo de fator descarta textos derivados antigos
+[WebServer] INFO: http_error request_id=111d61f2669a status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+  1) e2e\xml-locale.spec.ts:39:1 › U06 XML: recalculo de fator descarta textos derivados antigos ───
+
+    Error: page.goto: net::ERR_ABORTED at http://127.0.0.1:5173/produtos
+    Call log:
+      - navigating to "http://127.0.0.1:5173/produtos", waiting until "load"
+
+
+      16 |   await page.goto('/login');
+      17 |   await page.evaluate(t => localStorage.setItem('vf_token', t), token);
+    > 18 |   await page.goto('/produtos');
+         |              ^
+      19 |   await expect(page.getByRole('button', { name: '+ Novo', exact: true })).toBeVisible();
+      20 | });
+      21 |
+        at C:\GIS\VendaFacil_PDV\e2e\xml-locale.spec.ts:18:14
+
+    Error Context: test-results\xml-locale-U06-XML-recalcu-2be38-ta-textos-derivados-antigos\error-context.md
+
+
+  1 failed
+    e2e\xml-locale.spec.ts:39:1 › U06 XML: recalculo de fator descarta textos derivados antigos ────

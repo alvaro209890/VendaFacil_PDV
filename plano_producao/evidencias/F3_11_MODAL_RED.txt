@@ -1,0 +1,74 @@
+[WebServer] INFO:     Started server process [49948]
+
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+
+Running 2 tests using 1 worker
+
+[1/2] e2e\foco.spec.ts:35:3 › U04: fechar PIX por botao devolve foco ao leitor
+[WebServer] INFO: http_error request_id=56910eeba5eb status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+  1) e2e\foco.spec.ts:35:3 › U04: fechar PIX por botao devolve foco ao leitor ──────────────────────
+
+    Error: expect(locator).toBeFocused() failed
+
+    Locator:  getByPlaceholder(/Bipe o código/)
+    Expected: focused
+    Received: inactive
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toBeFocused" getByPlaceholder(/Bipe o código/) with timeout 5000ms
+      - waiting for getByPlaceholder(/Bipe o código/)
+        14 × locator resolved to <input value="" type="text" placeholder="Bipe o código de barras ou busque por nome  ·  Enter adiciona" class="w-full pl-12 pr-4 py-4 bg-slate-900/50 backdrop-blur-md border border-slate-800 rounded-2xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm shadow-xl"/>
+           - unexpected value "inactive"
+
+
+      49 |     else await fechar.click();
+      50 |     await expect(titulo).toHaveCount(0);
+    > 51 |     await expect(page.getByPlaceholder(/Bipe o código/)).toBeFocused();
+         |                                                          ^
+      52 |   });
+      53 | }
+      54 |
+        at C:\GIS\VendaFacil_PDV\e2e\foco.spec.ts:51:58
+
+    Error Context: test-results\foco-U04-fechar-PIX-por-botao-devolve-foco-ao-leitor\error-context.md
+
+
+[2/2] e2e\foco.spec.ts:35:3 › U04: fechar PIX por Escape devolve foco ao leitor
+  2) e2e\foco.spec.ts:35:3 › U04: fechar PIX por Escape devolve foco ao leitor ─────────────────────
+
+    Error: expect(locator).toBeFocused() failed
+
+    Locator:  getByPlaceholder(/Bipe o código/)
+    Expected: focused
+    Received: inactive
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toBeFocused" getByPlaceholder(/Bipe o código/) with timeout 5000ms
+      - waiting for getByPlaceholder(/Bipe o código/)
+        14 × locator resolved to <input value="" type="text" placeholder="Bipe o código de barras ou busque por nome  ·  Enter adiciona" class="w-full pl-12 pr-4 py-4 bg-slate-900/50 backdrop-blur-md border border-slate-800 rounded-2xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm shadow-xl"/>
+           - unexpected value "inactive"
+
+
+      49 |     else await fechar.click();
+      50 |     await expect(titulo).toHaveCount(0);
+    > 51 |     await expect(page.getByPlaceholder(/Bipe o código/)).toBeFocused();
+         |                                                          ^
+      52 |   });
+      53 | }
+      54 |
+        at C:\GIS\VendaFacil_PDV\e2e\foco.spec.ts:51:58
+
+    Error Context: test-results\foco-U04-fechar-PIX-por-Escape-devolve-foco-ao-leitor\error-context.md
+
+
+  2 failed
+    e2e\foco.spec.ts:35:3 › U04: fechar PIX por botao devolve foco ao leitor ───────────────────────
+    e2e\foco.spec.ts:35:3 › U04: fechar PIX por Escape devolve foco ao leitor ──────────────────────

@@ -1,0 +1,44 @@
+[WebServer] INFO:     Started server process [23308]
+
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+
+Running 1 test using 1 worker
+
+[1/1] e2e\teclado.spec.ts:107:1 › U02: leitor e F4 nao alteram carrinho sob janela PIX
+[WebServer] INFO: http_error request_id=25fdb00657cd status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+  1) e2e\teclado.spec.ts:107:1 › U02: leitor e F4 nao alteram carrinho sob janela PIX ──────────────
+
+    Error: expect(locator).toHaveValue(expected) failed
+
+    Locator:  getByRole('spinbutton', { name: /^Quantidade de KEY-/ })
+    Expected: "1"
+    Received: "2"
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveValue" getByRole('spinbutton', { name: /^Quantidade de KEY-/ }) with timeout 5000ms
+      - waiting for getByRole('spinbutton', { name: /^Quantidade de KEY-/ })
+        14 × locator resolved to <input min="1" max="20" step="1" value="2" type="number" aria-label="Quantidade de KEY-ec784e5462f422b1e709-220c400a1d4bc114a408" class="w-14 bg-transparent text-white text-xs font-bold text-center focus:outline-none"/>
+           - unexpected value "2"
+
+
+      122 |   await page.keyboard.type(codigo);
+      123 |   await page.keyboard.press('Enter');
+    > 124 |   await expect(quantidade).toHaveValue('1');
+          |                            ^
+      125 |   await page.getByRole('heading', { name: 'PAGAMENTO PIX' }).locator('..').getByRole('button').focus();
+      126 |   await page.keyboard.press('F4');
+      127 |   await expect(busca).not.toBeFocused();
+        at C:\GIS\VendaFacil_PDV\e2e\teclado.spec.ts:124:28
+
+    Error Context: test-results\teclado-U02-leitor-e-F4-nao-alteram-carrinho-sob-janela-PIX\error-context.md
+
+
+  1 failed
+    e2e\teclado.spec.ts:107:1 › U02: leitor e F4 nao alteram carrinho sob janela PIX ───────────────

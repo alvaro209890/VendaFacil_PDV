@@ -1,0 +1,33 @@
+
+Running 3 tests using 1 worker
+
+[1/3] e2e\teclado.spec.ts:33:1 › U02: F3 foca quantidade e Enter confirma sem vender
+  1) e2e\teclado.spec.ts:33:1 › U02: F3 foca quantidade e Enter confirma sem vender ────────────────
+
+    Error: apiRequestContext.post: connect ECONNREFUSED 127.0.0.1:3121
+    Call log:
+      - → POST http://127.0.0.1:3121/api/auth/login
+        - user-agent: Playwright/1.65.0 (x64; windows 10.0) node/22.22
+        - accept: */*
+        - accept-encoding: gzip,deflate,br
+        - content-type: application/json
+        - content-length: 85
+
+
+       7 |
+       8 | test.beforeAll(async ({ request }) => {
+    >  9 |   let login = await request.post(`${api}/api/auth/login`, { data: fixture });
+         |                             ^
+      10 |   if (login.status() === 401) login = await request.post(`${api}/api/auth/registro`, { data: fixture });
+      11 |   expect(login.status()).toBe(200);
+      12 |   token = (await login.json()).token;
+        at C:\GIS\VendaFacil_PDV\e2e\teclado.spec.ts:9:29
+
+    Error Context: test-results\teclado-U02-F3-foca-quantidade-e-Enter-confirma-sem-vender\error-context.md
+
+
+[2/3] e2e\teclado.spec.ts:45:1 › U02: F7 seleciona pagamento com Tab e Enter, F2 vende
+[3/3] e2e\teclado.spec.ts:56:1 › U02: F6 foca desconto e permite ajustar pelo teclado
+  1 failed
+    e2e\teclado.spec.ts:33:1 › U02: F3 foca quantidade e Enter confirma sem vender ─────────────────
+  2 did not run

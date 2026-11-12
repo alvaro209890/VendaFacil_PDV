@@ -1,0 +1,16 @@
+[WebServer] INFO:     Started server process [53156]
+
+[WebServer] INFO:     Waiting for application startup.
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+
+Running 1 test using 1 worker
+
+[1/1] e2e\xml-idempotencia.spec.ts:16:1 › I08: reimportar a mesma chave pela tela recusa duplicacao sem alterar estoque
+[WebServer] INFO: http_error request_id=b5dd794a8632 status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+[WebServer] INFO: http_error request_id=356ddf8e9377 status=409 method=POST path=/api/produtos/importar-xml/confirmar detail="NF-e já importada."
+
+  1 passed (10.9s)

@@ -1,0 +1,104 @@
+[WebServer] INFO:     Started server process [52308]
+
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+
+Running 3 tests using 1 worker
+
+[1/3] e2e\decimais.spec.ts:46:3 › U03: quantidade 0,5 preserva etapas e valor enviado
+[WebServer] INFO: http_error request_id=0a484a3eab3f status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+  1) e2e\decimais.spec.ts:46:3 › U03: quantidade 0,5 preserva etapas e valor enviado ───────────────
+
+    Error: expect(locator).toHaveValue(expected) failed
+
+    Locator:  getByLabel(/^Quantidade de DEC-/)
+    Expected: "0"
+    Received: "0.001"
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveValue" getByLabel(/^Quantidade de DEC-/) with timeout 5000ms
+      - waiting for getByLabel(/^Quantidade de DEC-/)
+        14 × locator resolved to <input max="10" min="0.1" value="1" step="0.1" type="number" aria-label="Quantidade de DEC-dc58ab9264cbef59ff42-7542d82b7ceced5eb2f1" class="w-14 bg-transparent text-white text-xs font-bold text-center focus:outline-none"/>
+           - unexpected value "0.001"
+
+
+      52 |       prefixo += caractere;
+      53 |       await page.keyboard.type(caractere);
+    > 54 |       await expect(quantidade).toHaveValue(prefixo);
+         |                                ^
+      55 |     }
+      56 |     const numero = Number(valor.replace(',', '.'));
+      57 |     await expect(page.getByText(`Falta R$ ${(10 * numero).toFixed(2)}`, { exact: true })).toBeVisible();
+        at C:\GIS\VendaFacil_PDV\e2e\decimais.spec.ts:54:32
+
+    Error Context: test-results\decimais-U03-quantidade-0-5-preserva-etapas-e-valor-enviado\error-context.md
+
+
+[2/3] e2e\decimais.spec.ts:46:3 › U03: quantidade 0.5 preserva etapas e valor enviado
+  2) e2e\decimais.spec.ts:46:3 › U03: quantidade 0.5 preserva etapas e valor enviado ───────────────
+
+    Error: expect(locator).toHaveValue(expected) failed
+
+    Locator:  getByLabel(/^Quantidade de DEC-/)
+    Expected: "0"
+    Received: "0.001"
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveValue" getByLabel(/^Quantidade de DEC-/) with timeout 5000ms
+      - waiting for getByLabel(/^Quantidade de DEC-/)
+        14 × locator resolved to <input max="10" min="0.1" value="1" step="0.1" type="number" aria-label="Quantidade de DEC-dc58ab9264cbef59ff42-baf14d1bdfe632c5fd0c" class="w-14 bg-transparent text-white text-xs font-bold text-center focus:outline-none"/>
+           - unexpected value "0.001"
+
+
+      52 |       prefixo += caractere;
+      53 |       await page.keyboard.type(caractere);
+    > 54 |       await expect(quantidade).toHaveValue(prefixo);
+         |                                ^
+      55 |     }
+      56 |     const numero = Number(valor.replace(',', '.'));
+      57 |     await expect(page.getByText(`Falta R$ ${(10 * numero).toFixed(2)}`, { exact: true })).toBeVisible();
+        at C:\GIS\VendaFacil_PDV\e2e\decimais.spec.ts:54:32
+
+    Error Context: test-results\decimais-U03-quantidade-0-5-preserva-etapas-e-valor-enviado\error-context.md
+
+
+[3/3] e2e\decimais.spec.ts:46:3 › U03: quantidade 0,125 preserva etapas e valor enviado
+  3) e2e\decimais.spec.ts:46:3 › U03: quantidade 0,125 preserva etapas e valor enviado ─────────────
+
+    Error: expect(locator).toHaveValue(expected) failed
+
+    Locator:  getByLabel(/^Quantidade de DEC-/)
+    Expected: "0"
+    Received: "0.001"
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveValue" getByLabel(/^Quantidade de DEC-/) with timeout 5000ms
+      - waiting for getByLabel(/^Quantidade de DEC-/)
+        14 × locator resolved to <input max="10" min="0.1" value="1" step="0.1" type="number" aria-label="Quantidade de DEC-dc58ab9264cbef59ff42-60638f964d18c147ccd5" class="w-14 bg-transparent text-white text-xs font-bold text-center focus:outline-none"/>
+           - unexpected value "0.001"
+
+
+      52 |       prefixo += caractere;
+      53 |       await page.keyboard.type(caractere);
+    > 54 |       await expect(quantidade).toHaveValue(prefixo);
+         |                                ^
+      55 |     }
+      56 |     const numero = Number(valor.replace(',', '.'));
+      57 |     await expect(page.getByText(`Falta R$ ${(10 * numero).toFixed(2)}`, { exact: true })).toBeVisible();
+        at C:\GIS\VendaFacil_PDV\e2e\decimais.spec.ts:54:32
+
+    Error Context: test-results\decimais-U03-quantidade-0--a2133-erva-etapas-e-valor-enviado\error-context.md
+
+
+  3 failed
+    e2e\decimais.spec.ts:46:3 › U03: quantidade 0,5 preserva etapas e valor enviado ────────────────
+    e2e\decimais.spec.ts:46:3 › U03: quantidade 0.5 preserva etapas e valor enviado ────────────────
+    e2e\decimais.spec.ts:46:3 › U03: quantidade 0,125 preserva etapas e valor enviado ──────────────

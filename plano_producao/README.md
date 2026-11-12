@@ -17,7 +17,9 @@ Criado em 10/11/2026 sobre o commit `6da6899`, com pré-análise real do código
 | `06_DIARIO.md` | Registro corrido do que foi feito (só acrescenta) | agente |
 | `FASE_0` … `FASE_7` | Tarefas, testes e portão de saída de cada fase | agente |
 | `RELATORIO_FINAL.md` | Relatório de entrega | agente, na Fase 7 |
-| `GOAL.md` | O goal enviado ao agente | ninguém |
+| `RETOMADA.md` | Onde parou em 12/11/2026, provas e próximos passos | atualizado a cada retomada |
+| `GOAL_RETOMADA.md` | Texto de disparo para o próximo chat | ninguém |
+| `GOAL.md` | O goal enviado ao agente (plano completo) | ninguém |
 
 ## Marcação
 
@@ -46,7 +48,7 @@ Nunca marcar `[x]` sem a evidência na linha. Nunca apagar item. Tarefa nova des
 
 ## Retomada (perdeu contexto, sessão nova, goal reenviado)
 
-Ler nesta ordem: `00_PAINEL.md` → últimas 30 linhas de `06_DIARIO.md` → arquivo da fase atual → `git log --oneline -15` e `git status --porcelain`. Continue do primeiro `[~]` ou `[ ]`. Não refaça o que está `[x]`; se desconfiar de um `[x]`, rode o teste citado na linha.
+Ler nesta ordem: `00_PAINEL.md` → `RETOMADA.md` → últimas 30 linhas de `06_DIARIO.md` → arquivo da fase atual → `git log --oneline -15` e `git status --porcelain`. Continue do primeiro `[~]` ou `[ ]`. Não refaça o que está `[x]`; se desconfiar de um `[x]`, rode o teste citado na linha.
 
 ## Quando o trabalho acaba
 

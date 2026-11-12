@@ -1,0 +1,59 @@
+[WebServer] INFO:     Started server process [32608]
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+
+Running 44 tests using 1 worker
+
+[1/44] e2e\carrinho.spec.ts:40:1 › U01: F5 preserva o carrinho e finalizar apaga o rascunho
+[WebServer] INFO: http_error request_id=63e115451301 status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+[2/44] e2e\carrinho.spec.ts:54:1 › U01: cancelar a venda apaga o rascunho sem baixar estoque
+[3/44] e2e\carrinho.spec.ts:65:1 › U01: rascunho corrompido não derruba a tela
+[4/44] e2e\carrinho.spec.ts:77:1 › U01: outro usuário não recebe o carrinho anterior
+[5/44] e2e\carrinho.spec.ts:94:1 › U01: recarga atualiza o preço do rascunho pelo cadastro atual
+[6/44] e2e\decimais.spec.ts:28:3 › U03: desconto 0,50 preserva digitacao e valor enviado
+[7/44] e2e\decimais.spec.ts:28:3 › U03: desconto 0.50 preserva digitacao e valor enviado
+[8/44] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "0" nao vende por F2
+[9/44] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "0" nao vende por botao
+[10/44] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "" nao vende por F2
+[11/44] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "" nao vende por botao
+[12/44] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "11" nao vende por F2
+[13/44] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "11" nao vende por botao
+[14/44] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "0,00001" nao vende por F2
+[15/44] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "0,00001" nao vende por botao
+[16/44] e2e\decimais.spec.ts:55:5 › U03: desconto invalido "abc" nao vende por F2
+[17/44] e2e\decimais.spec.ts:55:5 › U03: desconto invalido "abc" nao vende por botao
+[18/44] e2e\decimais.spec.ts:55:5 › U03: desconto invalido "-1" nao vende por F2
+[19/44] e2e\decimais.spec.ts:55:5 › U03: desconto invalido "-1" nao vende por botao
+[20/44] e2e\decimais.spec.ts:55:5 › U03: desconto invalido "0,001" nao vende por F2
+[21/44] e2e\decimais.spec.ts:55:5 › U03: desconto invalido "0,001" nao vende por botao
+[22/44] e2e\decimais.spec.ts:71:3 › U03: quantidade 0,5 preserva etapas e valor enviado
+[23/44] e2e\decimais.spec.ts:71:3 › U03: quantidade 0.5 preserva etapas e valor enviado
+[24/44] e2e\decimais.spec.ts:71:3 › U03: quantidade 0,125 preserva etapas e valor enviado
+[25/44] e2e\erros.spec.ts:36:1 › F3.13: estoque alterado no backend mostra motivo e preserva carrinho
+[WebServer] INFO: http_error request_id=801ec52edfdf status=400 method=POST path=/api/vendas/checkout detail={"erros": ["Estoque insuficiente de 'ERRO-f84e50dac733a22d8dad-3a8676532a6fc0ee1e3e': tem 0.0 UN, pedido 1.0."]}
+
+[26/44] e2e\erros.spec.ts:56:1 › F3.13: caixa fechado avisa sem impedir venda conforme D4
+[27/44] e2e\erros.spec.ts:67:1 › F3.13: falha fiscal real local aparece sem alegar nota emitida ou repetir venda
+[28/44] e2e\erros.spec.ts:91:3 › F3.13: contrato UI distingue nota rejeitada (fixture sem SEFAZ)
+[29/44] e2e\erros.spec.ts:91:3 › F3.13: contrato UI distingue nota pendente (fixture sem SEFAZ)
+[30/44] e2e\erros.spec.ts:91:3 › F3.13: contrato UI distingue nota contingencia (fixture sem SEFAZ)
+[31/44] e2e\erros.spec.ts:91:3 › F3.13: contrato UI distingue nota autorizada (fixture sem SEFAZ)
+[32/44] e2e\foco.spec.ts:27:1 › U04: adicionar pelo botao devolve foco ao leitor
+[33/44] e2e\foco.spec.ts:35:3 › U04: fechar PIX por botao devolve foco ao leitor
+[34/44] e2e\foco.spec.ts:35:3 › U04: fechar PIX por Escape devolve foco ao leitor
+[35/44] e2e\foco.spec.ts:56:3 › U04: finalizar por botao devolve foco ao leitor
+[36/44] e2e\foco.spec.ts:56:3 › U04: finalizar por F2 devolve foco ao leitor
+[37/44] e2e\teclado.spec.ts:34:1 › U02: F3 foca quantidade e Enter confirma sem vender
+[38/44] e2e\teclado.spec.ts:46:1 › U02: F7 seleciona pagamento com Tab e Enter, F2 vende
+[39/44] e2e\teclado.spec.ts:57:1 › U02: Enter no dinheiro recebido confirma a venda
+[40/44] e2e\teclado.spec.ts:64:1 › U02: Escape fecha PIX sem finalizar nem apagar carrinho
+[41/44] e2e\teclado.spec.ts:81:1 › U02: F2 e atalhos nao atravessam PIX ainda carregando
+[42/44] e2e\teclado.spec.ts:107:1 › U02: leitor e F4 nao alteram carrinho sob janela PIX
+[43/44] e2e\teclado.spec.ts:130:1 › U02: tres produtos distintos e venda inteira so com teclado
+[44/44] e2e\teclado.spec.ts:156:1 › U02: F6 foca desconto e permite ajustar pelo teclado
+  44 passed (1.3m)

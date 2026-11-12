@@ -1,0 +1,56 @@
+[WebServer] INFO:     Started server process [29412]
+
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+
+Running 33 tests using 1 worker
+
+[1/33] e2e\decimais.spec.ts:28:3 › U03: desconto 0,50 preserva digitacao e valor enviado
+[WebServer] INFO: http_error request_id=292ee8574e5a status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+[2/33] e2e\decimais.spec.ts:28:3 › U03: desconto 0.50 preserva digitacao e valor enviado
+[3/33] e2e\decimais.spec.ts:28:3 › U03: desconto 1,5 preserva digitacao e valor enviado
+[4/33] e2e\decimais.spec.ts:28:3 › U03: desconto 1.5 preserva digitacao e valor enviado
+[5/33] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "0" nao vende por F2
+[6/33] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "0" nao vende por botao
+[7/33] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "" nao vende por F2
+[8/33] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "" nao vende por botao
+[9/33] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "11" nao vende por F2
+[10/33] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "11" nao vende por botao
+[11/33] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "0,00001" nao vende por F2
+[12/33] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "0,00001" nao vende por botao
+[13/33] e2e\decimais.spec.ts:55:5 › U03: desconto invalido "abc" nao vende por F2
+[14/33] e2e\decimais.spec.ts:55:5 › U03: desconto invalido "abc" nao vende por botao
+[15/33] e2e\decimais.spec.ts:55:5 › U03: desconto invalido "-1" nao vende por F2
+[16/33] e2e\decimais.spec.ts:55:5 › U03: desconto invalido "-1" nao vende por botao
+[17/33] e2e\decimais.spec.ts:55:5 › U03: desconto invalido "0,001" nao vende por F2
+[18/33] e2e\decimais.spec.ts:55:5 › U03: desconto invalido "0,001" nao vende por botao
+[19/33] e2e\decimais.spec.ts:71:3 › U03: quantidade 0,5 preserva etapas e valor enviado
+[20/33] e2e\decimais.spec.ts:71:3 › U03: quantidade 0.5 preserva etapas e valor enviado
+[21/33] e2e\decimais.spec.ts:71:3 › U03: quantidade 0,125 preserva etapas e valor enviado
+[22/33] e2e\decimais.spec.ts:71:3 › U03: quantidade 1,5 preserva etapas e valor enviado
+[23/33] e2e\decimais.spec.ts:71:3 › U03: quantidade 1.5 preserva etapas e valor enviado
+[24/33] e2e\locale.spec.ts:34:3 › U06: fechamento 1,50 persiste valor contado correto
+[25/33] e2e\locale.spec.ts:34:3 › U06: fechamento 1.50 persiste valor contado correto
+[26/33] e2e\locale.spec.ts:62:3 › U06: criar fiado 1,50 persiste decimal
+[WebServer] ERROR: Exception in callback _ProactorBasePipeTransport._call_connection_lost(None)
+[WebServer] handle: <Handle _ProactorBasePipeTransport._call_connection_lost(None)>
+[WebServer] Traceback (most recent call last):
+[WebServer]   File "C:\Users\Usuario\AppData\Local\Programs\Python\Python311\Lib\asyncio\events.py", line 80, in _run
+[WebServer]     self._context.run(self._callback, *self._args)
+[WebServer]   File "C:\Users\Usuario\AppData\Local\Programs\Python\Python311\Lib\asyncio\proactor_events.py", line 165, in _call_connection_lost
+[WebServer]     self._sock.shutdown(socket.SHUT_RDWR)
+[WebServer] ConnectionResetError: [WinError 10054] Foi forçado o cancelamento de uma conexão existente pelo host remoto
+
+[27/33] e2e\locale.spec.ts:85:3 › U06: receber fiado 1,50 nao trunca centavos
+[28/33] e2e\locale.spec.ts:62:3 › U06: criar fiado 1.50 persiste decimal
+[29/33] e2e\locale.spec.ts:85:3 › U06: receber fiado 1.50 nao trunca centavos
+[30/33] e2e\locale.spec.ts:109:3 › U06: suprimento 0,50 persiste sem truncar
+[31/33] e2e\locale.spec.ts:109:3 › U06: suprimento 0.50 persiste sem truncar
+[32/33] e2e\locale.spec.ts:125:3 › U06: abertura de caixa 1,50 preserva decimal e persiste valor
+[33/33] e2e\locale.spec.ts:125:3 › U06: abertura de caixa 1.50 preserva decimal e persiste valor
+  33 passed (55.9s)

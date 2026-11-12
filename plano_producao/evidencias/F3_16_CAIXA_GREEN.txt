@@ -1,0 +1,28 @@
+[WebServer] INFO:     Started server process [22216]
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+
+Running 6 tests using 1 worker
+
+[1/6] e2e\locale.spec.ts:34:3 › U06: fechamento 1,50 persiste valor contado correto
+[WebServer] INFO: http_error request_id=c9d9c4e5aa27 status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+[2/6] e2e\locale.spec.ts:34:3 › U06: fechamento 1.50 persiste valor contado correto
+[3/6] e2e\locale.spec.ts:62:3 › U06: suprimento 0,50 persiste sem truncar
+[4/6] e2e\locale.spec.ts:62:3 › U06: suprimento 0.50 persiste sem truncar
+[WebServer] ERROR: Exception in callback _ProactorBasePipeTransport._call_connection_lost(None)
+[WebServer] handle: <Handle _ProactorBasePipeTransport._call_connection_lost(None)>
+[WebServer] Traceback (most recent call last):
+[WebServer]   File "C:\Users\Usuario\AppData\Local\Programs\Python\Python311\Lib\asyncio\events.py", line 80, in _run
+[WebServer]     self._context.run(self._callback, *self._args)
+[WebServer]   File "C:\Users\Usuario\AppData\Local\Programs\Python\Python311\Lib\asyncio\proactor_events.py", line 165, in _call_connection_lost
+[WebServer]     self._sock.shutdown(socket.SHUT_RDWR)
+[WebServer] ConnectionResetError: [WinError 10054] Foi forçado o cancelamento de uma conexão existente pelo host remoto
+
+[5/6] e2e\locale.spec.ts:78:3 › U06: abertura de caixa 1,50 preserva decimal e persiste valor
+[6/6] e2e\locale.spec.ts:78:3 › U06: abertura de caixa 1.50 preserva decimal e persiste valor
+  6 passed (24.9s)

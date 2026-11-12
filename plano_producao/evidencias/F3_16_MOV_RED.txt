@@ -1,0 +1,37 @@
+[WebServer] INFO:     Started server process [58032]
+
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+
+Running 2 tests using 1 worker
+
+[1/2] e2e\locale.spec.ts:34:3 › U06: suprimento 0,50 persiste sem truncar
+[WebServer] INFO: http_error request_id=25486ddb3cbc status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+  1) e2e\locale.spec.ts:34:3 › U06: suprimento 0,50 persiste sem truncar ───────────────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0.5
+    Received: null
+
+      42 |     await expect.poll(async () => enviado !== null || await page.getByText('Valor inválido.', { exact: true }).isVisible()).toBe(true);
+      43 |     const numero = Number(valor.replace(',', '.'));
+    > 44 |     expect(enviado).toBe(numero);
+         |                     ^
+      45 |     await expect.poll(async () => (await (await request.get(`${api}/api/caixa/atual`, { headers })).json()).resumo.suprimentos).toBe(numero);
+      46 |   });
+      47 | }
+        at C:\GIS\VendaFacil_PDV\e2e\locale.spec.ts:44:21
+
+    Error Context: test-results\locale-U06-suprimento-0-50-persiste-sem-truncar\error-context.md
+
+
+[2/2] e2e\locale.spec.ts:34:3 › U06: suprimento 0.50 persiste sem truncar
+  1 failed
+    e2e\locale.spec.ts:34:3 › U06: suprimento 0,50 persiste sem truncar ────────────────────────────
+  1 passed (12.4s)

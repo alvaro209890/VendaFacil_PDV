@@ -1,0 +1,18 @@
+[WebServer] INFO:     Started server process [55044]
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+
+Running 5 tests using 1 worker
+
+[1/5] e2e\foco.spec.ts:27:1 › U04: adicionar pelo botao devolve foco ao leitor
+[WebServer] INFO: http_error request_id=96d005ad2ad5 status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+[2/5] e2e\foco.spec.ts:35:3 › U04: fechar PIX por botao devolve foco ao leitor
+[3/5] e2e\foco.spec.ts:35:3 › U04: fechar PIX por Escape devolve foco ao leitor
+[4/5] e2e\foco.spec.ts:56:3 › U04: finalizar por botao devolve foco ao leitor
+[5/5] e2e\foco.spec.ts:56:3 › U04: finalizar por F2 devolve foco ao leitor
+  5 passed (20.0s)

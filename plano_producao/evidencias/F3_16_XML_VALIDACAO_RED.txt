@@ -1,0 +1,35 @@
+[WebServer] INFO:     Started server process [32244]
+
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+
+Running 1 test using 1 worker
+
+[1/1] e2e\xml-locale.spec.ts:39:1 › U06 XML: texto invalido nao importa o custo anterior escondido
+[WebServer] INFO: http_error request_id=b53055847bd1 status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+  1) e2e\xml-locale.spec.ts:39:1 › U06 XML: texto invalido nao importa o custo anterior escondido ──
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 1
+
+      45 |   await page.getByRole('button', { name: 'Confirmar importação', exact: true }).click();
+      46 |   await expect.poll(async () => envios > 0 || await page.getByRole('alert').isVisible()).toBe(true);
+    > 47 |   expect(envios).toBe(0);
+         |                  ^
+      48 |   await expect(page.getByRole('alert')).toContainText('Custo R$');
+      49 |   const resposta = await request.get(`${api}/api/produtos`, { headers: { Authorization: `Bearer ${token}` } });
+      50 |   expect(resposta.status()).toBe(200);
+        at C:\GIS\VendaFacil_PDV\e2e\xml-locale.spec.ts:47:18
+
+    Error Context: test-results\xml-locale-U06-XML-texto-i-7c079--o-custo-anterior-escondido\error-context.md
+
+
+  1 failed
+    e2e\xml-locale.spec.ts:39:1 › U06 XML: texto invalido nao importa o custo anterior escondido ───

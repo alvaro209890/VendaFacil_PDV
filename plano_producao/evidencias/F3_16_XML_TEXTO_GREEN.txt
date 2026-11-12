@@ -1,0 +1,15 @@
+[WebServer] INFO:     Started server process [2340]
+
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+
+Running 1 test using 1 worker
+
+[1/1] e2e\xml-locale.spec.ts:39:1 › U06 XML: virgula nos cinco campos preserva texto, payload e estoque
+[WebServer] INFO: http_error request_id=b045fd6bf7e5 status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+  1 passed (14.2s)

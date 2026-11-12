@@ -1,0 +1,31 @@
+[WebServer] INFO:     Started server process [38276]
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+
+Running 18 tests using 1 worker
+
+[1/18] e2e\teclado.spec.ts:34:1 › U02: F3 foca quantidade e Enter confirma sem vender
+[WebServer] INFO: http_error request_id=71a3db5c6296 status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+[2/18] e2e\teclado.spec.ts:46:1 › U02: F7 seleciona pagamento com Tab e Enter, F2 vende
+[3/18] e2e\teclado.spec.ts:57:1 › U02: Enter no dinheiro recebido confirma a venda
+[4/18] e2e\teclado.spec.ts:64:1 › U02: Escape fecha PIX sem finalizar nem apagar carrinho
+[5/18] e2e\teclado.spec.ts:81:1 › U02: F2 e atalhos nao atravessam PIX ainda carregando
+[6/18] e2e\teclado.spec.ts:107:1 › U02: F6 foca desconto e permite ajustar pelo teclado
+[7/18] e2e\teclado.spec.ts:34:1 › U02: F3 foca quantidade e Enter confirma sem vender
+[8/18] e2e\teclado.spec.ts:46:1 › U02: F7 seleciona pagamento com Tab e Enter, F2 vende
+[9/18] e2e\teclado.spec.ts:57:1 › U02: Enter no dinheiro recebido confirma a venda
+[10/18] e2e\teclado.spec.ts:64:1 › U02: Escape fecha PIX sem finalizar nem apagar carrinho
+[11/18] e2e\teclado.spec.ts:81:1 › U02: F2 e atalhos nao atravessam PIX ainda carregando
+[12/18] e2e\teclado.spec.ts:107:1 › U02: F6 foca desconto e permite ajustar pelo teclado
+[13/18] e2e\teclado.spec.ts:34:1 › U02: F3 foca quantidade e Enter confirma sem vender
+[14/18] e2e\teclado.spec.ts:46:1 › U02: F7 seleciona pagamento com Tab e Enter, F2 vende
+[15/18] e2e\teclado.spec.ts:57:1 › U02: Enter no dinheiro recebido confirma a venda
+[16/18] e2e\teclado.spec.ts:64:1 › U02: Escape fecha PIX sem finalizar nem apagar carrinho
+[17/18] e2e\teclado.spec.ts:81:1 › U02: F2 e atalhos nao atravessam PIX ainda carregando
+[18/18] e2e\teclado.spec.ts:107:1 › U02: F6 foca desconto e permite ajustar pelo teclado
+  18 passed (38.8s)

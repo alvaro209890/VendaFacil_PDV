@@ -1,0 +1,19 @@
+[WebServer] INFO:     Started server process [31496]
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+SyntaxError: C:\GIS\VendaFacil_PDV\e2e\xml-locale.spec.ts: Unexpected token (145:88)
+
+   at xml-locale.spec.ts:145
+
+  143 |   expect(confirmacao.status()).toBe(200);
+  144 |   expect(confirmacao.request().postDataJSON().itens[0]).toMatchObject({ quantidade_xml: 1.5, quantidade_por_embalagem: 1.5, quantidade: 2.5, preco_custo: 3.25, preco_venda: 5.5 });
+> 145 |   const consulta = await request.get(`${api}/api/produtos`, { headers: { Authorization: *** ${token}` } });
+      |                                                                                         ^
+  146 |   expect(consulta.status()).toBe(200);
+  147 |   const produtos = (await consulta.json()).produtos as Array<{ nome: string; estoque: number }>;
+  148 |   const salvos = produtos.filter(p => p.nome === nome);
+

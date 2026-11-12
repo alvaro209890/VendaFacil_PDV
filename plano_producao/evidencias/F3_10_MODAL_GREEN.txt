@@ -1,0 +1,20 @@
+[WebServer] INFO:     Started server process [12444]
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+
+Running 7 tests using 1 worker
+
+[1/7] e2e\teclado.spec.ts:34:1 › U02: F3 foca quantidade e Enter confirma sem vender
+[WebServer] INFO: http_error request_id=8d46cbfad8c3 status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+[2/7] e2e\teclado.spec.ts:46:1 › U02: F7 seleciona pagamento com Tab e Enter, F2 vende
+[3/7] e2e\teclado.spec.ts:57:1 › U02: Enter no dinheiro recebido confirma a venda
+[4/7] e2e\teclado.spec.ts:64:1 › U02: Escape fecha PIX sem finalizar nem apagar carrinho
+[5/7] e2e\teclado.spec.ts:81:1 › U02: F2 e atalhos nao atravessam PIX ainda carregando
+[6/7] e2e\teclado.spec.ts:107:1 › U02: leitor e F4 nao alteram carrinho sob janela PIX
+[7/7] e2e\teclado.spec.ts:130:1 › U02: F6 foca desconto e permite ajustar pelo teclado
+  7 passed (17.5s)

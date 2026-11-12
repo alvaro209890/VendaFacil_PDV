@@ -1,0 +1,321 @@
+[WebServer] INFO:     Started server process [51992]
+
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+
+Running 14 tests using 1 worker
+
+[1/14] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "0" nao vende por F2
+[WebServer] INFO: http_error request_id=841d7c22da8d status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+  1) e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "0" nao vende por F2 ─────────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 1
+
+      62 |       else await page.getByRole('button', { name: /finalizar venda/i }).click();
+      63 |       await expect.poll(async () => envios > 0 || await page.getByText(/^Corrija /).isVisible()).toBe(true);
+    > 64 |       expect(envios).toBe(0);
+         |                      ^
+      65 |       await expect(page.getByText(/^Corrija /)).toBeVisible();
+      66 |     });
+      67 |   }
+        at C:\GIS\VendaFacil_PDV\e2e\decimais.spec.ts:64:22
+
+    Error Context: test-results\decimais-U03-quantidade-invalido-0-nao-vende-por-F2\error-context.md
+
+
+[2/14] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "0" nao vende por botao
+  2) e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "0" nao vende por botao ──────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 1
+
+      62 |       else await page.getByRole('button', { name: /finalizar venda/i }).click();
+      63 |       await expect.poll(async () => envios > 0 || await page.getByText(/^Corrija /).isVisible()).toBe(true);
+    > 64 |       expect(envios).toBe(0);
+         |                      ^
+      65 |       await expect(page.getByText(/^Corrija /)).toBeVisible();
+      66 |     });
+      67 |   }
+        at C:\GIS\VendaFacil_PDV\e2e\decimais.spec.ts:64:22
+
+    Error Context: test-results\decimais-U03-quantidade-invalido-0-nao-vende-por-botao\error-context.md
+
+
+[3/14] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "" nao vende por F2
+  3) e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "" nao vende por F2 ──────────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 1
+
+      62 |       else await page.getByRole('button', { name: /finalizar venda/i }).click();
+      63 |       await expect.poll(async () => envios > 0 || await page.getByText(/^Corrija /).isVisible()).toBe(true);
+    > 64 |       expect(envios).toBe(0);
+         |                      ^
+      65 |       await expect(page.getByText(/^Corrija /)).toBeVisible();
+      66 |     });
+      67 |   }
+        at C:\GIS\VendaFacil_PDV\e2e\decimais.spec.ts:64:22
+
+    Error Context: test-results\decimais-U03-quantidade-invalido-nao-vende-por-F2\error-context.md
+
+
+[4/14] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "" nao vende por botao
+  4) e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "" nao vende por botao ───────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 1
+
+      62 |       else await page.getByRole('button', { name: /finalizar venda/i }).click();
+      63 |       await expect.poll(async () => envios > 0 || await page.getByText(/^Corrija /).isVisible()).toBe(true);
+    > 64 |       expect(envios).toBe(0);
+         |                      ^
+      65 |       await expect(page.getByText(/^Corrija /)).toBeVisible();
+      66 |     });
+      67 |   }
+        at C:\GIS\VendaFacil_PDV\e2e\decimais.spec.ts:64:22
+
+    Error Context: test-results\decimais-U03-quantidade-invalido-nao-vende-por-botao\error-context.md
+
+
+[5/14] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "11" nao vende por F2
+  5) e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "11" nao vende por F2 ────────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 1
+
+      62 |       else await page.getByRole('button', { name: /finalizar venda/i }).click();
+      63 |       await expect.poll(async () => envios > 0 || await page.getByText(/^Corrija /).isVisible()).toBe(true);
+    > 64 |       expect(envios).toBe(0);
+         |                      ^
+      65 |       await expect(page.getByText(/^Corrija /)).toBeVisible();
+      66 |     });
+      67 |   }
+        at C:\GIS\VendaFacil_PDV\e2e\decimais.spec.ts:64:22
+
+    Error Context: test-results\decimais-U03-quantidade-invalido-11-nao-vende-por-F2\error-context.md
+
+
+[6/14] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "11" nao vende por botao
+  6) e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "11" nao vende por botao ─────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 1
+
+      62 |       else await page.getByRole('button', { name: /finalizar venda/i }).click();
+      63 |       await expect.poll(async () => envios > 0 || await page.getByText(/^Corrija /).isVisible()).toBe(true);
+    > 64 |       expect(envios).toBe(0);
+         |                      ^
+      65 |       await expect(page.getByText(/^Corrija /)).toBeVisible();
+      66 |     });
+      67 |   }
+        at C:\GIS\VendaFacil_PDV\e2e\decimais.spec.ts:64:22
+
+    Error Context: test-results\decimais-U03-quantidade-invalido-11-nao-vende-por-botao\error-context.md
+
+
+[7/14] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "0,00001" nao vende por F2
+  7) e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "0,00001" nao vende por F2 ───────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 1
+
+      62 |       else await page.getByRole('button', { name: /finalizar venda/i }).click();
+      63 |       await expect.poll(async () => envios > 0 || await page.getByText(/^Corrija /).isVisible()).toBe(true);
+    > 64 |       expect(envios).toBe(0);
+         |                      ^
+      65 |       await expect(page.getByText(/^Corrija /)).toBeVisible();
+      66 |     });
+      67 |   }
+        at C:\GIS\VendaFacil_PDV\e2e\decimais.spec.ts:64:22
+
+    Error Context: test-results\decimais-U03-quantidade-invalido-0-00001-nao-vende-por-F2\error-context.md
+
+
+[8/14] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "0,00001" nao vende por botao
+  8) e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "0,00001" nao vende por botao ────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 1
+
+      62 |       else await page.getByRole('button', { name: /finalizar venda/i }).click();
+      63 |       await expect.poll(async () => envios > 0 || await page.getByText(/^Corrija /).isVisible()).toBe(true);
+    > 64 |       expect(envios).toBe(0);
+         |                      ^
+      65 |       await expect(page.getByText(/^Corrija /)).toBeVisible();
+      66 |     });
+      67 |   }
+        at C:\GIS\VendaFacil_PDV\e2e\decimais.spec.ts:64:22
+
+    Error Context: test-results\decimais-U03-quantidade-invalido-0-00001-nao-vende-por-botao\error-context.md
+
+
+[9/14] e2e\decimais.spec.ts:55:5 › U03: desconto invalido "abc" nao vende por F2
+[WebServer] ERROR: Exception in callback _ProactorBasePipeTransport._call_connection_lost(None)
+[WebServer] handle: <Handle _ProactorBasePipeTransport._call_connection_lost(None)>
+[WebServer] Traceback (most recent call last):
+[WebServer]   File "C:\Users\Usuario\AppData\Local\Programs\Python\Python311\Lib\asyncio\events.py", line 80, in _run
+[WebServer]     self._context.run(self._callback, *self._args)
+[WebServer]   File "C:\Users\Usuario\AppData\Local\Programs\Python\Python311\Lib\asyncio\proactor_events.py", line 165, in _call_connection_lost
+[WebServer]     self._sock.shutdown(socket.SHUT_RDWR)
+[WebServer] ConnectionResetError: [WinError 10054] Foi forçado o cancelamento de uma conexão existente pelo host remoto
+
+  9) e2e\decimais.spec.ts:55:5 › U03: desconto invalido "abc" nao vende por F2 ─────────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 1
+
+      62 |       else await page.getByRole('button', { name: /finalizar venda/i }).click();
+      63 |       await expect.poll(async () => envios > 0 || await page.getByText(/^Corrija /).isVisible()).toBe(true);
+    > 64 |       expect(envios).toBe(0);
+         |                      ^
+      65 |       await expect(page.getByText(/^Corrija /)).toBeVisible();
+      66 |     });
+      67 |   }
+        at C:\GIS\VendaFacil_PDV\e2e\decimais.spec.ts:64:22
+
+    Error Context: test-results\decimais-U03-desconto-invalido-abc-nao-vende-por-F2\error-context.md
+
+
+[10/14] e2e\decimais.spec.ts:55:5 › U03: desconto invalido "abc" nao vende por botao
+  10) e2e\decimais.spec.ts:55:5 › U03: desconto invalido "abc" nao vende por botao ─────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 1
+
+      62 |       else await page.getByRole('button', { name: /finalizar venda/i }).click();
+      63 |       await expect.poll(async () => envios > 0 || await page.getByText(/^Corrija /).isVisible()).toBe(true);
+    > 64 |       expect(envios).toBe(0);
+         |                      ^
+      65 |       await expect(page.getByText(/^Corrija /)).toBeVisible();
+      66 |     });
+      67 |   }
+        at C:\GIS\VendaFacil_PDV\e2e\decimais.spec.ts:64:22
+
+    Error Context: test-results\decimais-U03-desconto-invalido-abc-nao-vende-por-botao\error-context.md
+
+
+[11/14] e2e\decimais.spec.ts:55:5 › U03: desconto invalido "-1" nao vende por F2
+[WebServer] WARNING: validation_error request_id=0a2eca5fc122 method=POST path=/api/vendas/checkout errors=[{"campo": "desconto", "mensagem": "Desconto deve ser maior ou igual a 0.0.", "tipo": "greater_than_equal"}] body={"itens": [{"produto_id": 11, "quantidade": 1}], "desconto": -1, "forma_pagamento": "dinheiro", "observacao": "Dinheiro recebido: R$ 1000.00 | Troco: R$ 989.00", "emitir_nota": false}
+
+  11) e2e\decimais.spec.ts:55:5 › U03: desconto invalido "-1" nao vende por F2 ─────────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 1
+
+      62 |       else await page.getByRole('button', { name: /finalizar venda/i }).click();
+      63 |       await expect.poll(async () => envios > 0 || await page.getByText(/^Corrija /).isVisible()).toBe(true);
+    > 64 |       expect(envios).toBe(0);
+         |                      ^
+      65 |       await expect(page.getByText(/^Corrija /)).toBeVisible();
+      66 |     });
+      67 |   }
+        at C:\GIS\VendaFacil_PDV\e2e\decimais.spec.ts:64:22
+
+    Error Context: test-results\decimais-U03-desconto-invalido--1-nao-vende-por-F2\error-context.md
+
+
+[12/14] e2e\decimais.spec.ts:55:5 › U03: desconto invalido "-1" nao vende por botao
+[WebServer] WARNING: validation_error request_id=7456589c0b40 method=POST path=/api/vendas/checkout errors=[{"campo": "desconto", "mensagem": "Desconto deve ser maior ou igual a 0.0.", "tipo": "greater_than_equal"}] body={"itens": [{"produto_id": 12, "quantidade": 1}], "desconto": -1, "forma_pagamento": "dinheiro", "observacao": "Dinheiro recebido: R$ 1000.00 | Troco: R$ 989.00", "emitir_nota": false}
+
+  12) e2e\decimais.spec.ts:55:5 › U03: desconto invalido "-1" nao vende por botao ──────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 1
+
+      62 |       else await page.getByRole('button', { name: /finalizar venda/i }).click();
+      63 |       await expect.poll(async () => envios > 0 || await page.getByText(/^Corrija /).isVisible()).toBe(true);
+    > 64 |       expect(envios).toBe(0);
+         |                      ^
+      65 |       await expect(page.getByText(/^Corrija /)).toBeVisible();
+      66 |     });
+      67 |   }
+        at C:\GIS\VendaFacil_PDV\e2e\decimais.spec.ts:64:22
+
+    Error Context: test-results\decimais-U03-desconto-invalido--1-nao-vende-por-botao\error-context.md
+
+
+[13/14] e2e\decimais.spec.ts:55:5 › U03: desconto invalido "0,001" nao vende por F2
+  13) e2e\decimais.spec.ts:55:5 › U03: desconto invalido "0,001" nao vende por F2 ──────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 1
+
+      62 |       else await page.getByRole('button', { name: /finalizar venda/i }).click();
+      63 |       await expect.poll(async () => envios > 0 || await page.getByText(/^Corrija /).isVisible()).toBe(true);
+    > 64 |       expect(envios).toBe(0);
+         |                      ^
+      65 |       await expect(page.getByText(/^Corrija /)).toBeVisible();
+      66 |     });
+      67 |   }
+        at C:\GIS\VendaFacil_PDV\e2e\decimais.spec.ts:64:22
+
+    Error Context: test-results\decimais-U03-desconto-invalido-0-001-nao-vende-por-F2\error-context.md
+
+
+[14/14] e2e\decimais.spec.ts:55:5 › U03: desconto invalido "0,001" nao vende por botao
+  14) e2e\decimais.spec.ts:55:5 › U03: desconto invalido "0,001" nao vende por botao ───────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 1
+
+      62 |       else await page.getByRole('button', { name: /finalizar venda/i }).click();
+      63 |       await expect.poll(async () => envios > 0 || await page.getByText(/^Corrija /).isVisible()).toBe(true);
+    > 64 |       expect(envios).toBe(0);
+         |                      ^
+      65 |       await expect(page.getByText(/^Corrija /)).toBeVisible();
+      66 |     });
+      67 |   }
+        at C:\GIS\VendaFacil_PDV\e2e\decimais.spec.ts:64:22
+
+    Error Context: test-results\decimais-U03-desconto-invalido-0-001-nao-vende-por-botao\error-context.md
+
+
+  14 failed
+    e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "0" nao vende por F2 ──────────────────────
+    e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "0" nao vende por botao ───────────────────
+    e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "" nao vende por F2 ───────────────────────
+    e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "" nao vende por botao ────────────────────
+    e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "11" nao vende por F2 ─────────────────────
+    e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "11" nao vende por botao ──────────────────
+    e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "0,00001" nao vende por F2 ────────────────
+    e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "0,00001" nao vende por botao ─────────────
+    e2e\decimais.spec.ts:55:5 › U03: desconto invalido "abc" nao vende por F2 ──────────────────────
+    e2e\decimais.spec.ts:55:5 › U03: desconto invalido "abc" nao vende por botao ───────────────────
+    e2e\decimais.spec.ts:55:5 › U03: desconto invalido "-1" nao vende por F2 ───────────────────────
+    e2e\decimais.spec.ts:55:5 › U03: desconto invalido "-1" nao vende por botao ────────────────────
+    e2e\decimais.spec.ts:55:5 › U03: desconto invalido "0,001" nao vende por F2 ────────────────────
+    e2e\decimais.spec.ts:55:5 › U03: desconto invalido "0,001" nao vende por botao ─────────────────

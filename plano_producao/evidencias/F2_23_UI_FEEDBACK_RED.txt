@@ -1,0 +1,131 @@
+[WebServer] INFO:     Started server process [59148]
+
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+
+Running 67 tests using 1 worker
+
+[1/67] e2e\carrinho.spec.ts:40:1 › U01: F5 preserva o carrinho e finalizar apaga o rascunho
+[WebServer] INFO: http_error request_id=2447a6ea8485 status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+[2/67] e2e\carrinho.spec.ts:54:1 › U01: cancelar a venda apaga o rascunho sem baixar estoque
+[3/67] e2e\carrinho.spec.ts:65:1 › U01: rascunho corrompido não derruba a tela
+[4/67] e2e\carrinho.spec.ts:77:1 › U01: outro usuário não recebe o carrinho anterior
+[WebServer] ERROR: Exception in callback _ProactorBasePipeTransport._call_connection_lost(None)
+[WebServer] handle: <Handle _ProactorBasePipeTransport._call_connection_lost(None)>
+[WebServer] Traceback (most recent call last):
+[WebServer]   File "C:\Users\Usuario\AppData\Local\Programs\Python\Python311\Lib\asyncio\events.py", line 80, in _run
+[WebServer]     self._context.run(self._callback, *self._args)
+[WebServer]   File "C:\Users\Usuario\AppData\Local\Programs\Python\Python311\Lib\asyncio\proactor_events.py", line 165, in _call_connection_lost
+[WebServer]     self._sock.shutdown(socket.SHUT_RDWR)
+[WebServer] ConnectionResetError: [WinError 10054] Foi forçado o cancelamento de uma conexão existente pelo host remoto
+
+[5/67] e2e\carrinho.spec.ts:94:1 › U01: recarga atualiza o preço do rascunho pelo cadastro atual
+[6/67] e2e\decimais.spec.ts:28:3 › U03: desconto 0,50 preserva digitacao e valor enviado
+[7/67] e2e\decimais.spec.ts:28:3 › U03: desconto 0.50 preserva digitacao e valor enviado
+[8/67] e2e\decimais.spec.ts:28:3 › U03: desconto 1,5 preserva digitacao e valor enviado
+[9/67] e2e\decimais.spec.ts:28:3 › U03: desconto 1.5 preserva digitacao e valor enviado
+[10/67] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "0" nao vende por F2
+[11/67] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "0" nao vende por botao
+[12/67] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "" nao vende por F2
+[13/67] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "" nao vende por botao
+[14/67] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "11" nao vende por F2
+[15/67] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "11" nao vende por botao
+[16/67] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "0,00001" nao vende por F2
+[17/67] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "0,00001" nao vende por botao
+[18/67] e2e\decimais.spec.ts:55:5 › U03: desconto invalido "abc" nao vende por F2
+[19/67] e2e\decimais.spec.ts:55:5 › U03: desconto invalido "abc" nao vende por botao
+[20/67] e2e\decimais.spec.ts:55:5 › U03: desconto invalido "-1" nao vende por F2
+[21/67] e2e\decimais.spec.ts:55:5 › U03: desconto invalido "-1" nao vende por botao
+[22/67] e2e\decimais.spec.ts:55:5 › U03: desconto invalido "0,001" nao vende por F2
+[23/67] e2e\decimais.spec.ts:55:5 › U03: desconto invalido "0,001" nao vende por botao
+[24/67] e2e\decimais.spec.ts:71:3 › U03: quantidade 0,5 preserva etapas e valor enviado
+[25/67] e2e\decimais.spec.ts:71:3 › U03: quantidade 0.5 preserva etapas e valor enviado
+[26/67] e2e\decimais.spec.ts:71:3 › U03: quantidade 0,125 preserva etapas e valor enviado
+[27/67] e2e\decimais.spec.ts:71:3 › U03: quantidade 1,5 preserva etapas e valor enviado
+[28/67] e2e\decimais.spec.ts:71:3 › U03: quantidade 1.5 preserva etapas e valor enviado
+[29/67] e2e\erros.spec.ts:36:1 › F3.13: estoque alterado no backend mostra motivo e preserva carrinho
+[WebServer] INFO: http_error request_id=6fd4ee4c7924 status=400 method=POST path=/api/vendas/checkout detail={"erros": ["Estoque insuficiente de 'ERRO-f84e50dac733a22d8dad-3a8676532a6fc0ee1e3e': tem 0.0 UN, pedido 1.0."]}
+
+[30/67] e2e\erros.spec.ts:56:1 › F3.13: caixa fechado avisa sem impedir venda conforme D4
+[31/67] e2e\erros.spec.ts:67:1 › F3.13: falha fiscal real local aparece sem alegar nota emitida ou repetir venda
+[32/67] e2e\erros.spec.ts:91:3 › F3.13: contrato UI distingue nota rejeitada (fixture sem SEFAZ)
+[33/67] e2e\erros.spec.ts:91:3 › F3.13: contrato UI distingue nota pendente (fixture sem SEFAZ)
+[34/67] e2e\erros.spec.ts:91:3 › F3.13: contrato UI distingue nota contingencia (fixture sem SEFAZ)
+[35/67] e2e\erros.spec.ts:91:3 › F3.13: contrato UI distingue nota autorizada (fixture sem SEFAZ)
+[36/67] e2e\foco.spec.ts:27:1 › U04: adicionar pelo botao devolve foco ao leitor
+[37/67] e2e\foco.spec.ts:35:3 › U04: fechar PIX por botao devolve foco ao leitor
+[38/67] e2e\foco.spec.ts:35:3 › U04: fechar PIX por Escape devolve foco ao leitor
+[39/67] e2e\foco.spec.ts:56:3 › U04: finalizar por botao devolve foco ao leitor
+[40/67] e2e\foco.spec.ts:56:3 › U04: finalizar por F2 devolve foco ao leitor
+[41/67] e2e\locale.spec.ts:34:3 › U06: fechamento 1,50 persiste valor contado correto
+[42/67] e2e\locale.spec.ts:34:3 › U06: fechamento 1.50 persiste valor contado correto
+[43/67] e2e\locale.spec.ts:62:3 › U06: criar fiado 1,50 persiste decimal
+[WebServer] ERROR: Exception in callback _ProactorBasePipeTransport._call_connection_lost(None)
+[WebServer] handle: <Handle _ProactorBasePipeTransport._call_connection_lost(None)>
+[WebServer] Traceback (most recent call last):
+[WebServer]   File "C:\Users\Usuario\AppData\Local\Programs\Python\Python311\Lib\asyncio\events.py", line 80, in _run
+[WebServer]     self._context.run(self._callback, *self._args)
+[WebServer]   File "C:\Users\Usuario\AppData\Local\Programs\Python\Python311\Lib\asyncio\proactor_events.py", line 165, in _call_connection_lost
+[WebServer]     self._sock.shutdown(socket.SHUT_RDWR)
+[WebServer] ConnectionResetError: [WinError 10054] Foi forçado o cancelamento de uma conexão existente pelo host remoto
+
+[44/67] e2e\locale.spec.ts:85:3 › U06: receber fiado 1,50 nao trunca centavos
+[45/67] e2e\locale.spec.ts:62:3 › U06: criar fiado 1.50 persiste decimal
+[46/67] e2e\locale.spec.ts:85:3 › U06: receber fiado 1.50 nao trunca centavos
+[47/67] e2e\locale.spec.ts:109:3 › U06: suprimento 0,50 persiste sem truncar
+[48/67] e2e\locale.spec.ts:109:3 › U06: suprimento 0.50 persiste sem truncar
+[49/67] e2e\locale.spec.ts:125:3 › U06: abertura de caixa 1,50 preserva decimal e persiste valor
+[50/67] e2e\locale.spec.ts:125:3 › U06: abertura de caixa 1.50 preserva decimal e persiste valor
+[51/67] e2e\produtos-locale.spec.ts:21:1 › U01: cadastro de produto com virgula em todos os campos decimais
+[52/67] e2e\produtos-locale.spec.ts:77:1 › U02: cadastro de produto com ponto em todos os campos decimais
+[53/67] e2e\produtos-locale.spec.ts:132:1 › U03: edicao de produto atualiza com virgula e ponto
+[54/67] e2e\produtos-locale.spec.ts:196:1 › U04: validacao impede envio de texto invalido e nao usa fallback silencioso 0/1
+[55/67] e2e\produtos-locale.spec.ts:223:1 › U06: fator abaixo do minimo nao e elevado silenciosamente
+[56/67] e2e\produtos-locale.spec.ts:237:1 › U05: campos vazios conservam defaults legitimos (0 e 1 no fator)
+[57/67] e2e\produtos-locale.spec.ts:282:1 › U06: entrada rapida de estoque aceita virgula e ponto
+[58/67] e2e\produtos-locale.spec.ts:337:1 › U07: ajuste rapido aceita perda com virgula e inventario com zero e fracionario
+[59/67] e2e\teclado.spec.ts:34:1 › U02: F3 foca quantidade e Enter confirma sem vender
+[60/67] e2e\teclado.spec.ts:46:1 › U02: F7 seleciona pagamento com Tab e Enter, F2 vende
+[61/67] e2e\teclado.spec.ts:57:1 › U02: Enter no dinheiro recebido confirma a venda
+[62/67] e2e\teclado.spec.ts:64:1 › U02: Escape fecha PIX sem finalizar nem apagar carrinho
+[63/67] e2e\teclado.spec.ts:81:1 › U02: F2 e atalhos nao atravessam PIX ainda carregando
+[64/67] e2e\teclado.spec.ts:107:1 › U02: leitor e F4 nao alteram carrinho sob janela PIX
+[65/67] e2e\teclado.spec.ts:130:1 › U02: tres produtos distintos e venda inteira so com teclado
+[66/67] e2e\teclado.spec.ts:156:1 › U02: F6 foca desconto e permite ajustar pelo teclado
+[67/67] e2e\xml-idempotencia.spec.ts:16:1 › I08: reimportar a mesma chave pela tela recusa duplicacao sem alterar estoque
+[WebServer] INFO: http_error request_id=8cdfa32dbb58 status=409 method=POST path=/api/produtos/importar-xml/confirmar detail="NF-e já importada."
+
+  1) e2e\xml-idempotencia.spec.ts:16:1 › I08: reimportar a mesma chave pela tela recusa duplicacao sem alterar estoque 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText('NF-e já importada.', { exact: true })
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByText('NF-e já importada.', { exact: true }) with timeout 5000ms
+      - waiting for getByText('NF-e já importada.', { exact: true })
+
+
+      48 |   const erro = await repetida.json();
+      49 |   expect(typeof erro.detail).toBe('string');
+    > 50 |   await expect(page.getByText(erro.detail, { exact: true })).toBeVisible();
+         |                                                              ^
+      51 |
+      52 |   const respostaLista = await request.get(`${api}/api/produtos`, { headers: { Authorization: `Bearer ${token}` } });
+      53 |   expect(respostaLista.status()).toBe(200);
+        at C:\GIS\VendaFacil_PDV\e2e\xml-idempotencia.spec.ts:50:62
+
+    Error Context: test-results\xml-idempotencia-I08-reimp-e22b9-licacao-sem-alterar-estoque\error-context.md
+
+
+  1 failed
+    e2e\xml-idempotencia.spec.ts:16:1 › I08: reimportar a mesma chave pela tela recusa duplicacao sem alterar estoque 
+  66 passed (1.9m)

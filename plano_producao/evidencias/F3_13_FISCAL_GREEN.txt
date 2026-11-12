@@ -1,0 +1,21 @@
+[WebServer] INFO:     Started server process [52788]
+
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+
+Running 5 tests using 1 worker
+
+[1/5] e2e\erros.spec.ts:36:1 › F3.13: estoque alterado no backend mostra motivo e preserva carrinho
+[WebServer] INFO: http_error request_id=c1171fc739e3 status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+[WebServer] INFO: http_error request_id=44b87f796435 status=400 method=POST path=/api/vendas/checkout detail={"erros": ["Estoque insuficiente de 'ERRO-f84e50dac733a22d8dad-3a8676532a6fc0ee1e3e': tem 0.0 UN, pedido 1.0."]}
+
+[2/5] e2e\erros.spec.ts:56:1 › F3.13: caixa fechado avisa sem impedir venda conforme D4
+[3/5] e2e\erros.spec.ts:67:1 › F3.13: falha fiscal real local aparece sem alegar nota emitida ou repetir venda
+[4/5] e2e\erros.spec.ts:91:3 › F3.13: contrato UI rejeitada nao e apresentado como nota emitida (fixture sem SEFAZ)
+[5/5] e2e\erros.spec.ts:91:3 › F3.13: contrato UI pendente nao e apresentado como nota emitida (fixture sem SEFAZ)
+  5 passed (16.8s)

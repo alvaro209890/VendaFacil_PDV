@@ -12,22 +12,24 @@ Ao fechar: preencha **Onde** (`arquivo::função`) e **Commit**. Teste novo que 
 |---|---|---|---|---|
 | V14 | P23: Validar todas as referências e retornos por usuário | ✅ | `backend/tests/test_referencias.py` | c7e3991 |
 | I06 | P24: Importação atômica/idempotente e validar GTIN/modelo/embalagem | ✅ | `test_importacao_atomica.py` + `test_importacao_parser.py` + `test_importacao_regras.py`; falhas/concorrência/schema e HTTP400 | 00e709d/5b8f0f2 |
-| S09 | P25: Nunca registrar corpo bruto; sanitizar erros e exceções | ⬜ | | |
-| S10 | P26: Preservar segredo omitido/vazio; remoção precisa ser explícita | ⬜ | | |
+| S09 | P25: Nunca registrar corpo bruto; sanitizar erros e exceções | ✅ | 10casos corpo/log/API;315backend/9painel;review deleg_0911d189 aprovada,recheck10 | 5da31fa |
+| S10 | P26: Preservar segredo omitido/vazio; remoção precisa ser explícita | ✅ | 31casos preservação/máscaras/valoresopacos;305backend/9painel;revisão deleg_cb9b8f05 | 6535b18 |
 | L05 | P27: Persistir pagamento pendente e impedir segunda cobrança/venda | ✅ | `backend/tests/test_cobranca_pendente.py` | b633307 |
 | L06 | P28: Normalização ASCII, comprimento em bytes, CRC provado | ✅ | `backend/tests/test_pix_emv.py` | 3227373 |
 | L07 | P29: Conferir contrato de ACK e preservar pendências em resposta inválida | ✅ | `test_sync_ack.py` + `test_sync_ack_invalido.py`: parcial, inválidos/schema, retry e legado | 46244a9/40f49e7 |
 | L08 | P30: Validar datas, recusar inválidas e usar fim do dia local de MT | ✅ | `painel/tests/test_licenca_data.py` | f1aeec4 |
-| U06 | P31: Parser numérico pt-BR compartilhado, sem truncamento silencioso | ⬜ | | |
-| S11 | P32: Escape completo de texto/atributos; QR Base64 validado | ⬜ | | |
+| U06 | P31: Parser numérico pt-BR compartilhado, sem truncamento silencioso | ✅ | `src/lib/numeros.ts`; 22 unitários + 14 XML/locale + 8 Produtos + 10 fiado/caixa; E2E 81/81 em 4 lotes | a6a90d5 |
+| S11 | P32: Escape completo de texto/atributos; QR Base64 validado | ✅ | frontend-tests/recibo-xss.test.mjs:4RED→7GREEN;recheckpai;review deleg_ab6c44fc aprovado;DOM58/80,nãofiscalreal | 95e2322 |
 | E10 | P33: Esperar imagens e afterprint, ciclo testável | ⬜ | | |
 | U07 | P34: Total diário pelo backend, excluindo canceladas e fuso MT | ⬜ | | |
+| U08 | P44: API pronta antes do Vite, mesmo com backend atrasado4s | ✅ | `e2e/atrasar-api.cjs`; F3_READY_PARENT_RECHECK.txt verde | ba47db4 |
+| U09 | P45: erro de estoque, aviso D4 e resultado fiscal sem falsa autorização | ✅ | bd6013e ·7casos/21repetições;44Chromium;revisão deleg_30bc8fc6/recheck7 | bd6013e |
 | X14 | P35: Reserva persistente/concorrente e tratamento de falhas antes da transmissão | ⬜ | | |
 | X15 | P36: Basear prazo em dhRecbto; datas fiscais em MT | ⬜ | | |
 | C09 | P37: Preservar fiado visível e validar referência/estado da conta | ✅ | `backend/tests/test_cliente_divida.py + test_adversario_caixa.py` | e1ad5e2/be78390 |
 | I07 | P38: Cadastro do produto inteiro em uma transação | ✅ | `backend/tests/test_produto_atomico.py` | 7dee50a |
 | R10 | P39: Encerrar com segurança e identificar serviço antes de reutilizar porta | ⬜ | | |
-| S12 | P40: Atualizar dependências compatíveis e validar build/lint/audit | ⬜ | | |
+| S12 | P40: Atualizar dependências compatíveis e validar build/lint/audit | ✅ | npm audit21→0; npm_ls/build/lint e Chromium verdes; F3_20_RECHECK_AUDIT.json | fa736aa |
 | S13 | P41: Bootstrap atômico, validação de senha e versão de credencial | ⬜ | | |
 | S14 | P42: Validar owner antes de qualquer leitura ou transmissão | ⬜ | | |
 
@@ -86,6 +88,7 @@ Ao fechar: preencha **Onde** (`arquivo::função`) e **Commit**. Teste novo que 
 | I03 | XML malformado ou que não é NF-e → 400, nada gravado | ✅ | `backend/tests/test_importacao_regras.py::test_i03_xml_invalido_nao_grava` | 18c590d |
 | I04 | Código de barras duplicado → recusado ou unificado, sem dois produtos iguais | ✅ | `backend/tests/test_importacao_regras.py::test_i04_codigo_repetido_nao_cria_outro_produto` | 18c590d |
 | I05 | Item com `cEAN` "SEM GTIN" importa sem código de barras falso | ✅ | `backend/tests/test_importacao_regras.py::test_i05_sem_gtin_nao_grava_codigo_falso` | 18c590d |
+| I08 | UI encaminha chave e reimportação recusa sem mudar estoque | ✅ | 67Chromium/315backend/9painel;review deleg_d6e39f23 aprovado;recheckUIverde | 41c9265 |
 
 ## L — Licença e sincronização (Fase 2)
 
@@ -114,10 +117,10 @@ Ao fechar: preencha **Onde** (`arquivo::função`) e **Commit**. Teste novo que 
 | ID | O que prova | Status | Onde | Commit |
 |---|---|---|---|---|
 | U01 | Carrinho sobrevive ao F5 e é limpo ao finalizar | ✅ | `e2e/carrinho.spec.ts` (5 casos Chromium real, `F3_09_E2E.txt`) | 1a23906 |
-| U02 | Venda inteira só com teclado: código + Enter (3 itens), F2, confirmar | ⬜ | | |
-| U03 | Quantidade e desconto aceitam `1,5` e `1.5` | ⬜ | | |
-| U04 | Foco volta ao campo de código depois de adicionar, finalizar e fechar janela | ⬜ | | |
-| U05 | `npm run build` e `npx eslint .` sem erro | ⬜ | | |
+| U02 | Venda inteira só com teclado: código + Enter (3 itens), F2, confirmar | ✅ | `e2e/teclado.spec.ts`: três SKUs distintos e oito casos de teclado/guardas; pós-deps verificado | dc0858d |
+| U03 | Quantidade e desconto aceitam `1,5` e `1.5` | ✅ | 19casos de decimais,38repetições;37Chromium;revisão completa/recheck parent | bb36365 |
+| U04 | Foco volta ao código depois de adicionar, finalizar e fechar janela | ✅ | `e2e/foco.spec.ts`:5casos e15repetições; revisão aprovada, recheck parent | b480a4a |
+| U05 | `npm run build` e `npx eslint .` sem erro | ✅ | F3_15_BUILD.txt/F3_15_LINT.txt ambos0,sem alteração de produção | c3cc1a3 |
 
 ## X — Fiscal offline, sem SEFAZ (Fase 4, bloco A)
 

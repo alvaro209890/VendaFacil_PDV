@@ -1,0 +1,103 @@
+[WebServer] INFO:     Started server process [52172]
+
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+
+Running 5 tests using 1 worker
+
+[1/5] e2e\erros.spec.ts:36:1 › F3.13: estoque alterado no backend mostra motivo e preserva carrinho
+[WebServer] INFO: http_error request_id=e0deee729950 status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+[WebServer] INFO: http_error request_id=6733e59c4aaf status=400 method=POST path=/api/vendas/checkout detail={"erros": ["Estoque insuficiente de 'ERRO-f84e50dac733a22d8dad-3a8676532a6fc0ee1e3e': tem 0.0 UN, pedido 1.0."]}
+
+[2/5] e2e\erros.spec.ts:56:1 › F3.13: caixa fechado avisa sem impedir venda conforme D4
+[3/5] e2e\erros.spec.ts:67:1 › F3.13: falha fiscal real local aparece sem alegar nota emitida ou repetir venda
+  1) e2e\erros.spec.ts:67:1 › F3.13: falha fiscal real local aparece sem alegar nota emitida ou repetir venda 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText('Emissão fiscal desativada (ative em Configurações Fiscais).')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByText('Emissão fiscal desativada (ative em Configurações Fiscais).') with timeout 5000ms
+      - waiting for getByText('Emissão fiscal desativada (ative em Configurações Fiscais).')
+
+
+      78 |   expect(typeof corpo.erro_nota).toBe('string');
+      79 |   expect(corpo.erro_nota.length).toBeGreaterThan(0);
+    > 80 |   await expect(page.getByText(corpo.erro_nota, { exact: false })).toBeVisible();
+         |                                                                   ^
+      81 |   await expect(page.getByText(/Nota emitida/)).toHaveCount(0);
+      82 |   await expect(page.getByLabel(/^Quantidade de ERRO-/)).toHaveCount(0);
+      83 |   const venda = await request.get(`${api}/api/vendas/${corpo.venda.id}`, { headers: { Authorization: `Bearer ${token}` } });
+        at C:\GIS\VendaFacil_PDV\e2e\erros.spec.ts:80:67
+
+    Error Context: test-results\erros-F3-13-falha-fiscal-r-81de1-ta-emitida-ou-repetir-venda\error-context.md
+
+
+[4/5] e2e\erros.spec.ts:91:3 › F3.13: contrato UI rejeitada nao e apresentado como nota emitida (fixture sem SEFAZ)
+  2) e2e\erros.spec.ts:91:3 › F3.13: contrato UI rejeitada nao e apresentado como nota emitida (fixture sem SEFAZ) 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText('Simulação local de apresentação: nota rejeitada (sem SEFAZ).')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByText('Simulação local de apresentação: nota rejeitada (sem SEFAZ).') with timeout 5000ms
+      - waiting for getByText('Simulação local de apresentação: nota rejeitada (sem SEFAZ).')
+
+
+      110 |     await page.getByRole('checkbox', { name: /Emitir NFC-e/ }).check();
+      111 |     await page.keyboard.press('F2');
+    > 112 |     await expect(page.getByText(mensagem, { exact: false })).toBeVisible();
+          |                                                              ^
+      113 |     await expect(page.getByText(/Nota emitida/)).toHaveCount(0);
+      114 |     await expect(page.getByLabel(/^Quantidade de ERRO-/)).toHaveCount(0);
+      115 |   });
+        at C:\GIS\VendaFacil_PDV\e2e\erros.spec.ts:112:62
+
+    Error Context: test-results\erros-F3-13-contrato-UI-re-ba852--emitida-fixture-sem-SEFAZ-\error-context.md
+
+
+[5/5] e2e\erros.spec.ts:91:3 › F3.13: contrato UI pendente nao e apresentado como nota emitida (fixture sem SEFAZ)
+  3) e2e\erros.spec.ts:91:3 › F3.13: contrato UI pendente nao e apresentado como nota emitida (fixture sem SEFAZ) 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText('Simulação local de apresentação: nota pendente (sem SEFAZ).')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByText('Simulação local de apresentação: nota pendente (sem SEFAZ).') with timeout 5000ms
+      - waiting for getByText('Simulação local de apresentação: nota pendente (sem SEFAZ).')
+
+
+      110 |     await page.getByRole('checkbox', { name: /Emitir NFC-e/ }).check();
+      111 |     await page.keyboard.press('F2');
+    > 112 |     await expect(page.getByText(mensagem, { exact: false })).toBeVisible();
+          |                                                              ^
+      113 |     await expect(page.getByText(/Nota emitida/)).toHaveCount(0);
+      114 |     await expect(page.getByLabel(/^Quantidade de ERRO-/)).toHaveCount(0);
+      115 |   });
+        at C:\GIS\VendaFacil_PDV\e2e\erros.spec.ts:112:62
+
+    Error Context: test-results\erros-F3-13-contrato-UI-pe-df7e1--emitida-fixture-sem-SEFAZ-\error-context.md
+
+
+  3 failed
+    e2e\erros.spec.ts:67:1 › F3.13: falha fiscal real local aparece sem alegar nota emitida ou repetir venda 
+    e2e\erros.spec.ts:91:3 › F3.13: contrato UI rejeitada nao e apresentado como nota emitida (fixture sem SEFAZ) 
+    e2e\erros.spec.ts:91:3 › F3.13: contrato UI pendente nao e apresentado como nota emitida (fixture sem SEFAZ) 
+  2 passed (34.9s)

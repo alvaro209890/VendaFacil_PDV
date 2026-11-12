@@ -1,0 +1,4 @@
+[WebServer] Backend E2E não respondeu ao health em 45 segundos.
+
+Error: Process from config.webServer was not able to start. Exit code: 1
+

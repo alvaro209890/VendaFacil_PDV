@@ -1,0 +1,18 @@
+[WebServer] INFO:     Started server process [23616]
+
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+
+Running 4 tests using 1 worker
+
+[1/4] e2e\locale.spec.ts:34:3 › U06: suprimento 0,50 persiste sem truncar
+[WebServer] INFO: http_error request_id=bd8221640c11 status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+[2/4] e2e\locale.spec.ts:34:3 › U06: suprimento 0.50 persiste sem truncar
+[3/4] e2e\locale.spec.ts:50:3 › U06: abertura de caixa 1,50 preserva decimal e persiste valor
+[4/4] e2e\locale.spec.ts:50:3 › U06: abertura de caixa 1.50 preserva decimal e persiste valor
+  4 passed (15.9s)

@@ -1,0 +1,35 @@
+[WebServer] INFO:     Started server process [56796]
+
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+
+Running 1 test using 1 worker
+
+[1/1] e2e\xml-idempotencia.spec.ts:16:1 › I08: reimportar a mesma chave pela tela recusa duplicacao sem alterar estoque
+[WebServer] INFO: http_error request_id=a9a953526426 status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+  1) e2e\xml-idempotencia.spec.ts:16:1 › I08: reimportar a mesma chave pela tela recusa duplicacao sem alterar estoque 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 409
+    Received: 200
+
+      43 |   await abrirXml();
+      44 |   const repetida = await confirmar();
+    > 45 |   expect(repetida.status()).toBe(409);
+         |                             ^
+      46 |   expect(primeira.request().postDataJSON().chave).toBe(chave);
+      47 |   expect(repetida.request().postDataJSON().chave).toBe(chave);
+      48 |   const erro = await repetida.json();
+        at C:\GIS\VendaFacil_PDV\e2e\xml-idempotencia.spec.ts:45:29
+
+    Error Context: test-results\xml-idempotencia-I08-reimp-e22b9-licacao-sem-alterar-estoque\error-context.md
+
+
+  1 failed
+    e2e\xml-idempotencia.spec.ts:16:1 › I08: reimportar a mesma chave pela tela recusa duplicacao sem alterar estoque 
