@@ -261,6 +261,17 @@ def _liberar_reserva_local(nota: dict, mensagem: str) -> None:
     }, _agora())
 
 
+def _carimbar_autorizacao(dados: dict) -> dict:
+    """Grava o instante da autorização (dhRecbto efetivo do nosso lado).
+
+    O prazo de cancelamento em MT conta da autorização, não da criação da venda:
+    uma nota emitida em contingência pode ser autorizada horas depois.
+    """
+    if dados.get("status") == "autorizada" and not dados.get("autorizado_em"):
+        dados["autorizado_em"] = _agora()
+    return dados
+
+
 def _concluir_reserva(nota_id: int, resultado: dict, config: dict,
                       extra: dict | None = None) -> dict:
     """Atualiza a reserva já gravada; nunca cria uma segunda nota."""
@@ -303,6 +314,7 @@ def _concluir_reserva(nota_id: int, resultado: dict, config: dict,
                 dados[campo] = sefaz[campo]
     if extra:
         dados.update(extra)
+    _carimbar_autorizacao(dados)
     return db.atualizar_nota(nota_id, dados, agora)
 
 
@@ -425,6 +437,7 @@ def consultar_nfce(nota_id: int) -> dict:
             for campo in ("protocolo", "xml_autorizado", "motivo_rejeicao"):
                 if campo in sefaz:
                     dados[campo] = sefaz[campo]
+            _carimbar_autorizacao(dados)
             return db.atualizar_nota(nota_id, dados, _agora())
         except fiscal_direto.FiscalDiretoError as e:
             raise FiscalError(str(e))
@@ -445,13 +458,14 @@ _TOLERANCIA_MIN = 5
 
 def _verificar_prazo_cancelamento(nota: dict) -> None:
     limite = _PRAZO_CANCELAMENTO_MIN.get(str(nota.get("modelo") or "65"), 30)
+    referencia = nota.get("autorizado_em") or nota.get("criado_em")
     try:
-        criado = datetime.fromisoformat(str(nota.get("criado_em")))
+        base = datetime.fromisoformat(str(referencia))
     except (TypeError, ValueError):
         return
-    if criado.tzinfo is None:
-        criado = criado.replace(tzinfo=timezone.utc)
-    idade_min = (datetime.now(timezone.utc) - criado).total_seconds() / 60
+    if base.tzinfo is None:
+        base = base.replace(tzinfo=timezone.utc)
+    idade_min = (datetime.now(timezone.utc) - base).total_seconds() / 60
     if idade_min > limite + _TOLERANCIA_MIN:
         doc = "NFC-e" if str(nota.get("modelo") or "65") == "65" else "NF-e"
         prazo = "30 minutos" if doc == "NFC-e" else "2 horas"
@@ -593,6 +607,7 @@ def _processar_pendentes_direto(config: dict) -> int:
             for campo in ("protocolo", "xml_autorizado", "motivo_rejeicao"):
                 if campo in sefaz:
                     dados[campo] = sefaz[campo]
+            _carimbar_autorizacao(dados)
             db.atualizar_nota(nota["id"], dados, _agora())
             feitas += 1
         except Exception:
