@@ -5,8 +5,8 @@
 | Campo | Valor |
 |---|---|
 | Estado geral | 🟨 EM ANDAMENTO |
-| Fase atual | 3 — 24/24; portão de plano/push em curso |
-| Próxima ação | Conferir push da Fase 3 e iniciar F4.1 (schemas oficiais) |
+| Fase atual | 4 — bloco A offline; Fase 3 concluída e publicada |
+| Próxima ação | F4.1 (schemas oficiais), depois XSD/assinatura/QR e simulador |
 | Última atualização | 2026-11-12 — F3.22/F3.21/F3.19 corrigidos e revisados; backend327/painel23/E2E82/Node29/build/lint0 |
 | Commit de partida | `6da6899` |
 | Versão de partida → de entrega | 1.0.12 → 1.0.13 |
@@ -22,7 +22,7 @@ Estados gerais possíveis: ⬜ NÃO INICIADO · 🟨 EM ANDAMENTO · ⏸ AGUARDA
 | 0 | `FASE_0_linha_de_base.md` | ✅ | 9/9 | ✅ | 52c6e1e |
 | 1 | `FASE_1_dinheiro_venda_estoque.md` | ✅ | 15/15 | ✅ | 05c6323 |
 | 2 | `FASE_2_caixa_fiado_importacao_licenca.md` | ✅ | 23/23 | ✅ | 41c9265 |
-| 3 | `FASE_3_seguranca_e_front.md` | 🟨 | 24/24 | ⬜ | — |
+| 3 | `FASE_3_seguranca_e_front.md` | ✅ | 24/24 | ✅ | d9038dc |
 | 4 | `FASE_4_fiscal_mt.md` | ⬜ | 0/27 | ⬜ | — |
 | 5 | `FASE_5_robustez_e_suporte.md` | ⬜ | 0/12 | ⬜ | — |
 | 6 | `FASE_6_build_instalador_e2e.md` | ⬜ | 0/14 | ⬜ | — |

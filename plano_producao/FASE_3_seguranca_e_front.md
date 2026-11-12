@@ -1,6 +1,6 @@
 # Fase 3 — Segurança mínima e front de caixa
 
-**Status:** 🟨 24/24 — itens concluídos; push do portão em curso · **Depende de:** Fase 2
+**Status:** ✅ 24/24 — concluída · **Depende de:** Fase 2
 
 ## Objetivo
 
@@ -47,7 +47,7 @@ Um PDV de balcão seguro o bastante para ficar ligado o dia todo num PC de loja,
 
 - [x] S01–S08 e U01–U05 ✅ em `03_TESTES.md` — U01–U05 em 1a23906/dc0858d/b480a4a/bb36365/c3cc1a3; U06 em a6a90d5.
 - [x] `docs/SEGURANCA.md` existe; `docs/MANUAL.md` lista os atalhos de teclado — SEGURANCA.md desde f9d8ad1 (atualizado em 95e2322); MANUAL.md, seção "Atalhos do caixa".
-- [~] Suítes verdes; pasta do plano commitada e `git push origin master` — backend327/painel23; E2E82 (28+20+19+14+1); Node29/build/lint0. Plano e push em curso.
+- [x] Suítes verdes; pasta do plano commitada e `git push origin master` — d9038dc · backend327/painel23/E2E82/Node29/build/lint0; push conferido por ls-remote: d9038dcfa5a478412a1497aa9e9b89acc4903444.
 
 ## Evidências
 

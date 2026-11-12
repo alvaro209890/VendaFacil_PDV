@@ -1,3 +1,15 @@
+# Retomada — Fase 3 concluída em 12/11/2026
+
+Fases0–3 concluídas e publicadas. Push d9038dc conferido por ls-remote igual ao HEAD. F3.22=342f3d6; F3.21=31541bd/1f52324/f54b125; F3.19=fb9f5b9.
+
+Gate: backend327/painel23, E2E82 (28+20+19+14+1), Node29, build/lint0. Próximo: Fase4 do primeiro item aberto; fases5–7 depois em ordem.
+
+Recursos: a pedido do usuário, apenas uma execução pesada por vez; Chromium1 worker; não encerrar apps alheios. Subagentes autorizados: GPT-6 Luna high (substitui modelo antigo da regra local).
+
+Árvore inicial: executável modificado, rascunho antigo, logsScratch/ e test_fiscal_owner.py não trackeado; teste foi revisado e commitado, demais preservados.
+
+Histórico e instruções operacionais anteriores (o estado abaixo foi superado pelo painel atual):
+
 # Retomada — estado real em 12/11/2026 09:45 BRT
 
 > Leia junto com `00_PAINEL.md` (placar), `01_REGRAS.md` (regras duras) e `06_DIARIO.md` (histórico).
