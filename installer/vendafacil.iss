@@ -17,7 +17,7 @@
 ; ============================================================================
 
 #define AppName "VendaFácil PDV"
-#define AppVersion "1.0.12"
+#define AppVersion "1.0.13"
 #define AppPublisher "SUA EMPRESA LTDA"          ; <-- troque pelo nome/CNPJ da sua empresa
 #define AppURL "https://seudominio.com.br"        ; <-- troque pelo seu site
 #define AppExe "VendaFacilPDV.exe"
@@ -62,27 +62,6 @@ Name: "{autodesktop}\VendaFácil PDV"; Filename: "{app}\{#AppExe}"; Tasks: deskt
 
 [Run]
 Filename: "{app}\{#AppExe}"; Description: "Abrir o VendaFácil PDV agora"; Flags: nowait postinstall skipifsilent
-
-[Code]
-procedure EncerrarVendaFacil();
-var
-  ResultCode: Integer;
-begin
-  Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /T /IM {#AppExe}', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-  Sleep(1000);
-end;
-
-function PrepareToInstall(var NeedsRestart: Boolean): String;
-begin
-  EncerrarVendaFacil();
-  Result := '';
-end;
-
-function InitializeUninstall(): Boolean;
-begin
-  EncerrarVendaFacil();
-  Result := True;
-end;
 
 [UninstallDelete]
 ; Remove os dados do usuário ao desinstalar? Por padrão NÃO apagamos o banco,
