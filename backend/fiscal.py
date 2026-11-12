@@ -492,12 +492,14 @@ def cancelar_nfce(nota_id: int, justificativa: str) -> dict:
             retorno = r.get("retorno") or {}
             sefaz = fiscal_direto.normalizar_retorno_evento(retorno.get("texto"), retorno.get("status_code"))
             dados = {
-                "status": sefaz.get("status") or "processando",
+                # O evento tem situação própria; uma rejeição/indisponibilidade
+                # não revoga a autorização da nota nem seu protocolo original.
+                "status": "cancelada" if sefaz.get("status") == "cancelada" else nota["status"],
                 "mensagem": sefaz.get("mensagem") or "Evento de cancelamento enviado para SEFAZ-MT.",
                 "recibo": retorno.get("texto", "")[:4000],
             }
             for campo in ("protocolo", "motivo_rejeicao"):
-                if campo in sefaz:
+                if campo in sefaz and (campo != "protocolo" or sefaz.get("status") == "cancelada"):
                     dados[campo] = sefaz[campo]
             return db.atualizar_nota(nota_id, dados, _agora())
         except fiscal_direto.FiscalDiretoError as e:
