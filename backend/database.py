@@ -321,6 +321,7 @@ class Database:
                 recibo TEXT,
                 motivo_rejeicao TEXT,
                 destinatario_snapshot TEXT,
+                autorizado_em TEXT,
                 criado_em TEXT NOT NULL,
                 atualizado_em TEXT NOT NULL
             );
@@ -438,6 +439,7 @@ class Database:
             "recibo": "TEXT",
             "motivo_rejeicao": "TEXT",
             "destinatario_snapshot": "TEXT",
+            "autorizado_em": "TEXT",
         }
         for col, ddl in nota_cols.items():
             if col not in ncols:
@@ -601,6 +603,27 @@ class Database:
             ).fetchone()
             if existente:
                 return dict(existente), False
+            # Reserva que nunca chegou à SEFAZ (falha local de assinatura/montagem
+            # antes de transmitir) não tem chave. Ela é retomada com o MESMO
+            # número: consumir outro abriria buraco de numeração que só se
+            # resolve com inutilização na SEFAZ (P35).
+            falha_local = self._conn.execute(
+                "SELECT * FROM notas_fiscais WHERE venda_id = ? AND modelo = ? "
+                "AND status = 'rejeitada' AND (chave IS NULL OR chave = '') "
+                "ORDER BY id DESC LIMIT 1",
+                (venda_id, modelo),
+            ).fetchone()
+            if falha_local:
+                self._conn.execute(
+                    "UPDATE notas_fiscais SET status = 'processando', mensagem = ?, "
+                    "motivo_rejeicao = NULL, atualizado_em = ? WHERE id = ?",
+                    ("Retomando o mesmo número reservado; a tentativa anterior "
+                     "falhou antes de transmitir.", agora, falha_local["id"]),
+                )
+                retomada = self._conn.execute(
+                    "SELECT * FROM notas_fiscais WHERE id = ?", (falha_local["id"],)
+                ).fetchone()
+                return dict(retomada), True
             if modelo == "55":
                 row = self._conn.execute(
                     "SELECT serie_nfe AS serie, proximo_numero_nfe AS proximo "
@@ -611,14 +634,21 @@ class Database:
                     "SELECT serie_nfce AS serie, proximo_numero_nfce AS proximo "
                     "FROM config_fiscal WHERE id = 1"
                 ).fetchone()
-            serie = int(row["serie"] or 1) if row else 1
-            numero = int(row["proximo"] or 1) if row else 1
-            if row and modelo == "55":
+            if not row:
+                # Sem a linha de configuração não há numeração confiável: série e
+                # número cairiam sempre em 1 e a primeira nota de cada venda
+                # repetiria a chave de acesso (P35).
+                raise ValueError(
+                    "Configuração fiscal do emitente não cadastrada; salve as "
+                    "Configurações Fiscais antes de emitir.")
+            serie = int(row["serie"] or 1)
+            numero = int(row["proximo"] or 1)
+            if modelo == "55":
                 self._conn.execute(
                     "UPDATE config_fiscal SET proximo_numero_nfe = ? WHERE id = 1",
                     (numero + 1,),
                 )
-            elif row:
+            else:
                 self._conn.execute(
                     "UPDATE config_fiscal SET proximo_numero_nfce = ? WHERE id = 1",
                     (numero + 1,),
@@ -642,7 +672,8 @@ class Database:
         cols = ("venda_id", "user_id", "ref", "modelo", "numero", "serie", "ambiente",
                 "status", "chave", "protocolo", "mensagem", "xml_url", "danfe_url",
                 "qrcode_url", "payload", "xml_assinado", "xml_autorizado", "tipo_emissao",
-                "recibo", "motivo_rejeicao", "destinatario_snapshot", "criado_em", "atualizado_em")
+                "recibo", "motivo_rejeicao", "destinatario_snapshot", "autorizado_em",
+                "criado_em", "atualizado_em")
         with self._lock, self._conn:
             cur = self._conn.execute(
                 f"INSERT INTO notas_fiscais ({', '.join(cols)}) "
@@ -683,7 +714,7 @@ class Database:
         permitidos = {"numero", "serie", "ambiente", "status", "chave", "protocolo",
                       "mensagem", "xml_url", "danfe_url", "qrcode_url", "payload",
                       "xml_assinado", "xml_autorizado", "tipo_emissao", "recibo",
-                      "motivo_rejeicao", "destinatario_snapshot"}
+                      "motivo_rejeicao", "destinatario_snapshot", "autorizado_em"}
         dados = {k: v for k, v in campos.items() if k in permitidos}
         if not dados:
             return self.get_nota(nota_id)

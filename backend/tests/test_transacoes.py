@@ -66,7 +66,10 @@ def checkout_local(loja, monkeypatch):
     import vendas
     local, user, agora = loja
     monkeypatch.setattr(vendas, 'db', local)
-    produto = local.create_produto(user, 'Transação', 1, 2, 5, 0, '', 'UN', agora)
+    produto = local.create_produto(
+        user, 'Transação', 1, 2, 5, 0, '', 'UN', agora,
+        fiscais={'ncm': '22021000', 'cfop': '5102', 'cst_csosn': '102'},
+    )
     cliente = local.create_cliente(user, 'Cliente', '', '', '', '', agora)
     usuario = local.get_user_by_usuario('transacao')
     headers = {'Authorization': 'Bearer ' + _gerar_jwt(_token_user(usuario))}

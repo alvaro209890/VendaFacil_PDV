@@ -242,6 +242,24 @@ def _validar_config(config: dict) -> None:
     if faltando:
         raise FiscalError(f"Configuração fiscal incompleta: {', '.join(faltando)}.")
 
+def _liberar_reserva_local(nota: dict, mensagem: str) -> None:
+    """Desfaz a reserva de uma nota que falhou ANTES de transmitir.
+
+    Nada saiu para a SEFAZ, então o número não existe lá e pode ser reaproveitado
+    pela próxima tentativa. Deixar a reserva pendurada consumiria numeração sem
+    documento — buraco que só se corrige com inutilização (P35).
+    """
+    if not nota:
+        return
+    db.atualizar_nota(nota["id"], {
+        "status": "rejeitada",
+        "mensagem": mensagem,
+        "motivo_rejeicao": mensagem,
+        "chave": None,
+        "xml_assinado": None,
+        "payload": None,
+    }, _agora())
+
 
 def _concluir_reserva(nota_id: int, resultado: dict, config: dict,
                       extra: dict | None = None) -> dict:
@@ -293,7 +311,14 @@ def _transmitir_reserva(nota: dict, venda: dict, config: dict, modelo: str,
     try:
         resultado = fiscal_direto.preparar_e_tentar_transmitir(
             venda, config, modelo, serie=nota["serie"], numero=nota["numero"], **preparo)
+    except fiscal_direto.FiscalValidacaoError as exc:
+        # Erro local (configuração, produto, certificado, assinatura): a nota
+        # nunca saiu. Libera a reserva para a próxima tentativa usar o número.
+        _liberar_reserva_local(nota, str(exc))
+        raise FiscalError(str(exc)) from exc
     except fiscal_direto.FiscalDiretoError as exc:
+        # Pode ter saído ou não; sem certeza de documento na SEFAZ a reserva
+        # fica como está (não reaproveitamos número).
         atual = db.get_nota(nota["id"]) or {}
         if not atual.get("chave") and not atual.get("xml_assinado"):
             db.atualizar_nota(nota["id"], {
@@ -312,6 +337,22 @@ def _reservar_ou_reutilizar(venda_id: int, user_id: int, modelo: str, config: di
         raise FiscalError(str(exc)) from exc
 
 
+def _preflight_direto(venda: dict, config: dict, modelo: str) -> None:
+    """Valida certificado, emitente e itens ANTES de reservar numeração.
+
+    Configuração ou produto errado é erro local: se a reserva já existisse, o
+    número ficaria queimado sem documento na SEFAZ (P35).
+    """
+    if (config.get("provedor_fiscal") or "sefaz_mt_direto") != "sefaz_mt_direto":
+        return
+    try:
+        fiscal_direto._validar_certificado(config, modelo)
+        fiscal_direto._validar_emitente(config)
+        fiscal_direto.validar_itens(venda)
+    except fiscal_direto.FiscalDiretoError as exc:
+        raise FiscalError(str(exc)) from exc
+
+
 def emitir_nfce(venda_id: int, user_id: int, cpf: str | None = None) -> dict:
     venda = db.get_venda_completa(venda_id, user_id)
     if not venda:
@@ -327,6 +368,7 @@ def emitir_nfce(venda_id: int, user_id: int, cpf: str | None = None) -> dict:
 
     config = db.get_config_fiscal()
     _validar_config(config)
+    _preflight_direto(venda, config, "65")
     if (config.get("provedor_fiscal") or "sefaz_mt_direto") == "sefaz_mt_direto":
         nota, criada = _reservar_ou_reutilizar(venda_id, user_id, "65", config)
         if not criada:
@@ -469,6 +511,7 @@ def emitir_nfe(venda_id: int, user_id: int, cliente_id: int) -> dict:
         raise FiscalError("Cliente sem dados fiscais para NF-e: " + ", ".join(faltando))
     config = db.get_config_fiscal()
     _validar_config(config)
+    _preflight_direto(venda, config, "55")
     if (config.get("provedor_fiscal") or "sefaz_mt_direto") != "sefaz_mt_direto":
         raise FiscalError("NF-e modelo 55 direta exige provedor fiscal SEFAZ-MT direto.")
     nota, criada = _reservar_ou_reutilizar(venda_id, user_id, "55", config)

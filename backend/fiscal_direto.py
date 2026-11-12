@@ -68,6 +68,22 @@ _SOAP_OP = {
 class FiscalDiretoError(Exception):
     pass
 
+class FiscalPreflightError(FiscalDiretoError):
+    """Falha local de configuração/cadastro, detectada antes de transmitir.
+
+    Diferente de uma falha de assinatura ou de rede, este erro é determinístico e
+    não depende da SEFAZ: a reserva de numeração pode ser desfeita sem risco de
+    deixar documento autorizado órfão.
+    """
+
+class FiscalValidacaoError(FiscalDiretoError):
+    """Falha local de validação/montagem, antes de qualquer transmissão.
+
+    Quem reservou numeração e recebe este erro pode desfazer a reserva com
+    segurança: nada saiu do computador, então não existe documento na SEFAZ.
+    """
+    pass
+
 
 @dataclass
 class DocumentoMontado:
@@ -264,18 +280,18 @@ def _validar_emitente(config: dict) -> None:
              "municipio", "uf", "logradouro", "numero", "bairro", "cep")
     faltando = [c for c in obrig if not str(config.get(c) or "").strip()]
     if faltando:
-        raise FiscalDiretoError(f"Configuração fiscal incompleta: {', '.join(faltando)}.")
+        raise FiscalValidacaoError(f"Configuração fiscal incompleta: {', '.join(faltando)}.")
     if (config.get("uf") or "").upper() != "MT":
-        raise FiscalDiretoError("Emissão direta configurada para Mato Grosso: UF do emitente deve ser MT.")
+        raise FiscalValidacaoError("Emissão direta configurada para Mato Grosso: UF do emitente deve ser MT.")
     if not validar_cnpj(config.get("cnpj")):
-        raise FiscalDiretoError("CNPJ do emitente inválido (confira os 14 dígitos em Configurações Fiscais).")
+        raise FiscalValidacaoError("CNPJ do emitente inválido (confira os 14 dígitos em Configurações Fiscais).")
     cmun = so_digitos(config.get("codigo_municipio"))
     if len(cmun) != 7 or not cmun.startswith("51"):
-        raise FiscalDiretoError(
+        raise FiscalValidacaoError(
             "Código IBGE do município inválido: use os 7 dígitos do município de MT "
             "(começa com 51 — ex.: Cuiabá 5103403).")
     if len(so_digitos(config.get("cep"))) != 8:
-        raise FiscalDiretoError("CEP do emitente inválido (8 dígitos).")
+        raise FiscalValidacaoError("CEP do emitente inválido (8 dígitos).")
     # O emissor monta os grupos ICMS do Simples Nacional (CSOSN). CRT 2 (excesso
     # de sublimite) usa CST comum e CRT 3 (regime normal) passa a exigir os
     # grupos IBS/CBS da Reforma Tributária a partir de 03/08/2026 (NT 2025.002,
@@ -283,7 +299,7 @@ def _validar_emitente(config: dict) -> None:
     # MEI (CRT 4) só precisam de IBS/CBS a partir de 01/04/2027.
     crt = str(config.get("regime_tributario") or "1").strip()
     if crt not in {"1", "4"}:
-        raise FiscalDiretoError(
+        raise FiscalValidacaoError(
             f"Regime tributário (CRT) {crt} não suportado: o emissor atende Simples "
             "Nacional (CRT 1) e MEI (CRT 4). CRT 2 exige grupos CST e CRT 3 (regime "
             "normal) exige IBS/CBS a partir de 03/08/2026 (NT 2025.002).")
@@ -291,12 +307,12 @@ def _validar_emitente(config: dict) -> None:
 
 def _validar_certificado(config: dict, modelo: str) -> None:
     if not config.get("certificado_a1_b64") or not config.get("certificado_senha"):
-        raise FiscalDiretoError("Informe o certificado A1 da loja e a senha em Configurações Fiscais.")
+        raise FiscalValidacaoError("Informe o certificado A1 da loja e a senha em Configurações Fiscais.")
     # No QR Code 3.0 (NT 2025.001) o CSC deixa de existir — a validação passa a
     # ser por assinatura digital. O CSC/idCSC só é exigido no QR Code 2.0.
     if modelo == "65" and str(config.get("qrcode_versao") or "2") != "3" and (
             not config.get("csc") or not config.get("csc_id")):
-        raise FiscalDiretoError("Informe CSC e ID do CSC para emitir NFC-e (QR Code 2.0).")
+        raise FiscalValidacaoError("Informe CSC e ID do CSC para emitir NFC-e (QR Code 2.0).")
 
 
 def validar_itens(venda: dict) -> None:
@@ -322,10 +338,10 @@ def validar_itens(venda: dict) -> None:
         if cest and len(cest) != 7:
             erros.append(f"{item['nome_produto']}: CEST deve ter 7 dígitos")
     if faltas:
-        raise FiscalDiretoError("Produtos com dados fiscais incompletos: " + "; ".join(faltas[:8]))
+        raise FiscalValidacaoError("Produtos com dados fiscais incompletos: " + "; ".join(faltas[:8]))
     if erros:
-        raise FiscalDiretoError("Dados fiscais inválidos — corrija no cadastro do produto: "
-                                + "; ".join(erros[:8]))
+        raise FiscalValidacaoError("Dados fiscais inválidos — corrija no cadastro do produto: "
+                                   + "; ".join(erros[:8]))
 
 
 # ── Seleção de grupos de imposto (NFC-e/NF-e Simples Nacional) ────────────────
@@ -1125,8 +1141,17 @@ def preparar_e_tentar_transmitir(venda: dict, config: dict, modelo: str = "65",
         serie, numero = db.consumir_numero_fiscal(modelo)
     else:
         serie, numero = int(serie), int(numero)
-    doc = montar_documento(venda, config, modelo, cpf_consumidor, destinatario, serie, numero)
-    xml_assinado = assinar_xml(doc.xml, config)
+    # Montagem e assinatura são locais: qualquer erro aqui acontece sem ter
+    # saído nada para a SEFAZ, logo quem chamou pode liberar a numeração.
+    try:
+        doc = montar_documento(venda, config, modelo, cpf_consumidor, destinatario, serie, numero)
+        xml_assinado = assinar_xml(doc.xml, config)
+    except FiscalValidacaoError:
+        raise
+    except FiscalDiretoError as exc:
+        raise FiscalValidacaoError(str(exc)) from exc
+    except Exception as exc:
+        raise FiscalValidacaoError(f"Falha local ao montar ou assinar o XML: {exc}") from exc
     base = {
         "serie": serie, "numero": numero, "chave": doc.chave, "xml_assinado": xml_assinado,
         "payload": json.dumps(doc.payload, ensure_ascii=False), "qrcode_url": doc.qrcode_url,

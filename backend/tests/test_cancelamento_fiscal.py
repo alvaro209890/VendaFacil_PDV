@@ -95,6 +95,9 @@ _CFG_TESTE = {
     'municipio': 'Cuiaba', 'codigo_municipio': '5103403', 'uf': 'MT', 'cep': '78000000',
     'ambiente': 'homologacao', 'provedor_fiscal': 'sefaz_mt_direto',
     'csc': 'CSCDEHOMOLOGACAO', 'csc_id': '000001',
+    # Certificado sintético: a transmissão é sempre mockada nestes testes; o
+    # preflight do P35 exige presença antes de reservar numeração.
+    'certificado_a1_b64': 'Zml4dHVyZQ==', 'certificado_senha': 'fixture',
 }
 
 
@@ -104,6 +107,7 @@ def test_v09_reserva_antes_da_rede_impede_estorno(checkout_local, monkeypatch, m
     import fiscal
     api, local, user, produto, cliente, headers = checkout_local
     monkeypatch.setattr(fiscal, 'db', local)
+    monkeypatch.setattr(fiscal.fiscal_direto, 'db', local)
     local.salvar_config_fiscal(_CFG_TESTE, _agora())
     if modelo == '55':
         local.update_cliente(cliente['id'], user, documento='12345678909', logradouro='Rua Teste',
@@ -147,6 +151,7 @@ def test_falha_antes_da_rede_nao_prende_cancelamento(checkout_local, monkeypatch
     import fiscal_direto
     api, local, user, produto, _, headers = checkout_local
     monkeypatch.setattr(fiscal, 'db', local)
+    monkeypatch.setattr(fiscal.fiscal_direto, 'db', local)
     local.salvar_config_fiscal(_CFG_TESTE, _agora())
     venda = _vender(checkout_local)
 
