@@ -10,6 +10,8 @@ dist_dir = os.path.join(here, "..", "dist")
 icon_path = os.path.join(here, "..", "installer", "vendafacil.ico")
 
 datas = [(dist_dir, "dist")]
+# Raízes ICP-Brasil usadas no TLS da SEFAZ-MT (certifi não as traz).
+datas += [(os.path.join(here, "certs"), "certs")]
 # qrcode embute fontes/recursos próprios em alguns casos
 datas += collect_data_files("qrcode")
 

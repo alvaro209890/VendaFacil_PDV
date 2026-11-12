@@ -10,14 +10,17 @@ import base64
 import hashlib
 import json
 import secrets
+import unicodedata
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from xml.etree import ElementTree as ET
 
 from database import db
 from dinheiro import arredondar, decimal, moeda, multiplicar, somar
 
 NFE_NS = "http://www.portalfiscal.inf.br/nfe"
+DSIG_NS = "http://www.w3.org/2000/09/xmldsig#"
 ET.register_namespace("", NFE_NS)
 
 C_UF_MT = "51"
@@ -185,6 +188,79 @@ def _tag(parent, name: str, text=None):
     if text is not None:
         el.text = str(text)
     return el
+
+
+# ── Compatibilidade SEFAZ-MT ──────────────────────────────────────────────────
+# O autorizador de NFC-e de MT (MT_A2_NFCe-4.100) re-serializa internamente o
+# XML em ISO-8859-1 e rejeita com cStat 402 qualquer caractere fora do ASCII
+# 7-bit. Textos com acento são transliterados ANTES da assinatura (mudar depois
+# invalidaria o DigestValue).
+_ASCII_MT = {
+    "º": "o", "ª": "a", "§": "S", "°": "o", "–": "-", "—": "-", "´": "'",
+    "`": "'", "“": '"', "”": '"', "‘": "'", "’": "'", "…": ".",
+}
+
+
+def _texto_ascii(valor: str) -> str:
+    decomposto = unicodedata.normalize("NFD", valor)
+    sem_acento = "".join(c for c in decomposto if not unicodedata.combining(c))
+    return "".join(_ASCII_MT.get(c, c if 32 <= ord(c) <= 126 else " ") for c in sem_acento)
+
+
+def _transliterar_ascii(elemento) -> None:
+    for no in elemento.iter():
+        if no.text:
+            no.text = _texto_ascii(no.text)
+        if no.tail:
+            no.tail = _texto_ascii(no.tail)
+
+
+def _ca_bundle() -> str | None:
+    """Bundle de CAs para o TLS da SEFAZ-MT: certifi + raízes ICP-Brasil.
+
+    A SEFAZ-MT usa certificado da AC SOLUTI (ICP-Brasil), cuja raiz não vem no
+    certifi. Sem ela o requests falha com CERTIFICATE_VERIFY_FAILED em qualquer
+    máquina limpa. O bundle é montado uma vez na pasta de dados da loja.
+    """
+    try:
+        import certifi
+
+        from paths import data_dir
+    except Exception:
+        return None
+    try:
+        partes = [Path(certifi.where()).read_text(encoding="utf-8").strip()]
+    except OSError:
+        return None
+    pasta = Path(__file__).resolve().parent / "certs"
+    for nome in ("icpbrasil-raiz-v10.pem", "icpbrasil-raiz-v5.pem"):
+        arquivo = pasta / nome
+        if arquivo.is_file():
+            partes.append(arquivo.read_text(encoding="utf-8").strip())
+    if len(partes) == 1:
+        return None
+    conteudo = "\n".join(partes) + "\n"
+    try:
+        destino = Path(data_dir()) / "ca-bundle.pem"
+        if not destino.is_file() or destino.read_text(encoding="utf-8") != conteudo:
+            destino.write_text(conteudo, encoding="utf-8")
+        return str(destino)
+    except OSError:
+        return None
+
+
+def _c14n_nfe(elemento) -> bytes:
+    """C14N não-exclusiva com a declaração de namespace física no subelemento.
+
+    O lxml, ao canonicalizar um subtree que só HERDA o xmlns do pai, emite
+    ``xmlns=""`` nos filhos — o digest então não confere na SEFAZ (cStat 297).
+    Serializar e reparsear o elemento antes do C14N corrige isso.
+    """
+    from lxml import etree
+
+    bruto = etree.tostring(elemento, encoding="utf-8", xml_declaration=False)
+    return etree.tostring(etree.fromstring(bruto), method="c14n",
+                          exclusive=False, with_comments=False)
 
 
 # ── Pagamento (grupo <pag>/<detPag>/<card>) ───────────────────────────────────
@@ -718,6 +794,10 @@ def montar_documento(venda: dict, config: dict, modelo: str = "65",
         _tag(infsupl, "qrCode", qrcode_url)
         _tag(infsupl, "urlChave", URL_QR_NFCE[ambiente])
 
+    if modelo == "65":
+        # cStat 402: a NFC-e de MT não aceita caractere fora do ASCII 7-bit.
+        _transliterar_ascii(nfe)
+
     xml = ET.tostring(nfe, encoding="utf-8", xml_declaration=True).decode("utf-8")
     payload = {"modelo": modelo, "chave": chave, "ambiente": ambiente,
                "serie": serie, "numero": numero, "tp_emis": tp_emis}
@@ -840,22 +920,27 @@ def inserir_qrcode_offline(xml_assinado: str, config: dict, chave: str,
 
 
 def assinar_xml(xml: str, config: dict) -> str:
+    """Assina com XMLDSig (RSA-SHA1/C14N) usando o namespace xmldsig DEFAULT.
+
+    A SEFAZ-MT rejeita a assinatura com prefixo ``ds:`` (cStat 587), então a
+    Signature é montada aqui em vez de usar o signxml (que sempre prefixa).
+    """
     try:
-        from cryptography.hazmat.primitives.serialization import Encoding, NoEncryption, PrivateFormat, pkcs12
+        from cryptography.hazmat.primitives import hashes, serialization
+        from cryptography.hazmat.primitives.asymmetric import padding
+        from cryptography.hazmat.primitives.serialization import pkcs12
         from lxml import etree
-        from signxml import XMLSigner, methods
     except Exception as e:
-        raise FiscalDiretoError(f"Dependências de assinatura fiscal não instaladas: {e}")
+        raise FiscalDiretoError(f"Dependências de assinatura fiscal não instaladas: {e}") from e
     pfx = base64.b64decode(config.get("certificado_a1_b64") or "")
     senha = (config.get("certificado_senha") or "").encode()
     try:
         key, cert, _cas = pkcs12.load_key_and_certificates(pfx, senha or None)
     except ValueError as e:
-        raise FiscalDiretoError(f"Certificado A1 inválido ou senha incorreta ({e}).")
+        raise FiscalDiretoError(f"Certificado A1 inválido ou senha incorreta ({e}).") from e
     if not key or not cert:
         raise FiscalDiretoError("Certificado A1 inválido ou senha incorreta.")
-    key_pem = key.private_bytes(Encoding.PEM, PrivateFormat.PKCS8, NoEncryption())
-    cert_pem = cert.public_bytes(Encoding.PEM)
+
     root = etree.fromstring(xml.encode("utf-8"))
     inf = root.find(f".//{{{NFE_NS}}}infNFe")
     if inf is None:
@@ -864,20 +949,41 @@ def assinar_xml(xml: str, config: dict) -> str:
         inf = root.find(f".//{{{NFE_NS}}}infInut")
     if inf is None or not inf.get("Id"):
         raise FiscalDiretoError("XML fiscal sem identificador para assinatura.")
-    ref = "#" + inf.get("Id")
-    class NFeXMLSigner(XMLSigner):
-        def check_deprecated_methods(self):
-            return
+    referencia = "#" + inf.get("Id")
 
-    # A NF-e/NFC-e exige C14N **não-exclusiva** (REC-xml-c14n-20010315) tanto no
-    # CanonicalizationMethod quanto no Transform da Reference. O padrão do signxml
-    # é a C14N exclusiva (xml-exc-c14n#), que a SEFAZ rejeita (Rejeição 297).
-    c14n_nfe = "http://www.w3.org/TR/2001/REC-xml-c14n-20010315"
-    signed = NFeXMLSigner(
-        method=methods.enveloped, digest_algorithm="sha1",
-        signature_algorithm="rsa-sha1", c14n_algorithm=c14n_nfe,
-    ).sign(root, key=key_pem, cert=cert_pem, reference_uri=ref)
-    return etree.tostring(signed, encoding="utf-8", xml_declaration=True).decode("utf-8")
+    # Reference/Digest sobre o infNFe (C14N não-exclusiva, exigida pelo MOC).
+    # O C14N do lxml sobre um subtree com xmlns herdado emite xmlns="" nos
+    # filhos e o digest não fecha na SEFAZ (cStat 297); reparsear o elemento
+    # com a declaração física resolve.
+    inf_c14n = _c14n_nfe(inf)
+    digest = base64.b64encode(hashlib.sha1(inf_c14n).digest()).decode("ascii")
+
+    c14n = "http://www.w3.org/TR/2001/REC-xml-c14n-20010315"
+    sig = etree.SubElement(root, f"{{{DSIG_NS}}}Signature", nsmap={None: DSIG_NS})
+    # O xmlns precisa estar no próprio SignedInfo: a SEFAZ canonicaliza o
+    # elemento isolado e, sem a declaração local, o digest do SignatureValue
+    # não fecha (cStat 297).
+    signed_info = etree.SubElement(sig, f"{{{DSIG_NS}}}SignedInfo", nsmap={None: DSIG_NS})
+    etree.SubElement(signed_info, f"{{{DSIG_NS}}}CanonicalizationMethod", Algorithm=c14n)
+    etree.SubElement(signed_info, f"{{{DSIG_NS}}}SignatureMethod",
+                     Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1")
+    ref = etree.SubElement(signed_info, f"{{{DSIG_NS}}}Reference", URI=referencia)
+    transforms = etree.SubElement(ref, f"{{{DSIG_NS}}}Transforms")
+    etree.SubElement(transforms, f"{{{DSIG_NS}}}Transform",
+                     Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature")
+    etree.SubElement(transforms, f"{{{DSIG_NS}}}Transform", Algorithm=c14n)
+    etree.SubElement(ref, f"{{{DSIG_NS}}}DigestMethod",
+                     Algorithm="http://www.w3.org/2000/09/xmldsig#sha1")
+    etree.SubElement(ref, f"{{{DSIG_NS}}}DigestValue").text = digest
+
+    si_c14n = _c14n_nfe(signed_info)
+    assinatura = key.sign(si_c14n, padding.PKCS1v15(), hashes.SHA1())
+    etree.SubElement(sig, f"{{{DSIG_NS}}}SignatureValue").text = base64.b64encode(assinatura).decode("ascii")
+    key_info = etree.SubElement(sig, f"{{{DSIG_NS}}}KeyInfo")
+    x509_data = etree.SubElement(key_info, f"{{{DSIG_NS}}}X509Data")
+    etree.SubElement(x509_data, f"{{{DSIG_NS}}}X509Certificate").text = base64.b64encode(
+        cert.public_bytes(serialization.Encoding.DER)).decode("ascii")
+    return etree.tostring(root, encoding="utf-8", xml_declaration=True).decode("utf-8")
 
 
 def montar_soap(servico: str, conteudo_xml: str) -> tuple[bytes, dict]:
@@ -917,8 +1023,12 @@ def _post_soap(modelo: str, servico: str, conteudo_xml: str, config: dict) -> di
     pfx = base64.b64decode(config.get("certificado_a1_b64") or "")
     senha = config.get("certificado_senha") or ""
     body, headers = montar_soap(servico, conteudo_xml)
+    verify = _ca_bundle()
     with requests.Session() as sess:
         sess.mount("https://", Pkcs12Adapter(pkcs12_data=pfx, pkcs12_password=senha))
+        if verify:
+            # certifi + raízes ICP-Brasil embutidas (AC SOLUTI da SEFAZ-MT)
+            sess.verify = verify
         resp = sess.post(url, data=body, headers=headers, timeout=30)
         return {"status_code": resp.status_code, "texto": resp.text}
 
@@ -1028,6 +1138,11 @@ def normalizar_retorno_sefaz(texto: str | None, xml_assinado: str | None = None,
         return {"status": "processando", "mensagem": motivo, "cstat": cstat}
     if cstat in {"100", "150"}:
         return {"status": "autorizada", "mensagem": motivo, "recibo": recibo, "cstat": cstat}
+    if cstat and cstat not in {"103", "104", "105", "106", "108", "109", "204", "539"}:
+        # Rejeição síncrona do lote chega com HTTP 200; sem este ramo a nota
+        # ficaria "processando" para sempre e o loop reconsultaria sem fim.
+        return {"status": "rejeitada", "mensagem": motivo, "motivo_rejeicao": motivo,
+                "recibo": recibo, "cstat": cstat}
     if http_status and http_status >= 400:
         return {"status": "rejeitada", "mensagem": motivo, "motivo_rejeicao": motivo,
                 "recibo": recibo, "cstat": cstat}
@@ -1096,7 +1211,7 @@ def montar_cancelamento_xml(nota: dict, config: dict, justificativa: str) -> str
         raise FiscalDiretoError("Nota sem chave de acesso para cancelamento.")
     if not protocolo:
         raise FiscalDiretoError("Nota sem protocolo de autorização para cancelamento.")
-    justificativa = _texto_xml(justificativa, 255)
+    justificativa = _texto_ascii(_texto_xml(justificativa, 255))
     if len(justificativa) < 15:
         raise FiscalDiretoError("A justificativa de cancelamento deve ter de 15 a 255 caracteres.")
     ambiente = config.get("ambiente") or "homologacao"
@@ -1141,7 +1256,7 @@ def inutilizar_numeracao(config: dict, modelo: str, ano: int, serie: int,
     if (modelo not in {"55", "65"} or not 2000 <= ano <= datetime.now().year
             or not 0 <= serie <= 999 or not 1 <= inicio <= fim <= 999999999):
         raise FiscalDiretoError("Modelo, ano, série ou intervalo inválido para inutilização.")
-    justificativa = str(justificativa or "").strip()
+    justificativa = _texto_ascii(str(justificativa or "").strip())
     if not 15 <= len(justificativa) <= 255:
         raise FiscalDiretoError("A justificativa deve ter de 15 a 255 caracteres.")
     cnpj = so_digitos(config.get("cnpj"))
