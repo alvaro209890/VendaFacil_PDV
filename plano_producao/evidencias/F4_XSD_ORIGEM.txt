@@ -1,0 +1,4 @@
+﻿URL https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=EQhOQMgipXY%3D&AspxAutoDetectCookieSupport=1 ZIP_SHA256 b329ecbe7e4c05a41bfbc1527f105defb7047328acfeada7c77e1666da485eaf confere True
+XSDs conferidos byte a byte: 8
+URL https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=0Yynu2Ck%2BbM%3D&AspxAutoDetectCookieSupport=1 ZIP_SHA256 71ccd5fcc48f9604a2a8965146df45e3b73e96e87942ab3391be0d55cc0df718 confere True
+XSDs conferidos byte a byte: 8

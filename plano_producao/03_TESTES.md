@@ -126,16 +126,16 @@ Ao fechar: preencha **Onde** (`arquivo::função`) e **Commit**. Teste novo que 
 
 | ID | O que prova | Status | Onde | Commit |
 |---|---|---|---|---|
-| X01 | XML da NFC-e em dinheiro valida no XSD oficial 4.00 | ⬜ | | |
-| X02 | Idem para cartão integrado, PIX, fiado, desconto, CPF na nota e item com ST/monofásico | ⬜ | | |
-| X03 | XML da NF-e modelo 55 valida no XSD | ⬜ | | |
-| X04 | Evento de cancelamento valida no XSD | ⬜ | | |
+| X01 | XML da NFC-e em dinheiro valida no XSD oficial 4.00 | ✅ | `test_fiscal_xsd.py::test_x01` (dinheiro e cartão integrado), schema oficial 4.00 | 08bbffc |
+| X02 | Idem para cartão integrado, PIX, fiado, desconto, CPF na nota e item com ST/monofásico | ✅ | `test_fiscal_xsd.py::test_x02` (PIX e fiado) e `::test_x03_schema_nfce_desconto_cpf_e_st` | 08bbffc |
+| X03 | XML da NF-e modelo 55 valida no XSD | ✅ | `test_fiscal_xsd.py::test_x03_schema_nfe55_destinatario` | 08bbffc |
+| X04 | Evento de cancelamento valida no XSD | ✅ | `test_fiscal_xsd.py::test_x04_schema_cancelamento_assinado` | 08bbffc |
 | X05 | Pedido de inutilização valida no XSD | ⬜ | | |
-| X06 | Assinatura XMLDSig confere com a chave pública; 1 byte alterado invalida; algoritmos iguais aos do MOC | ⬜ | | |
-| X07 | QR Code 2.00 online: hash do CSC recalculado e cada parâmetro conferido | ⬜ | | |
-| X08 | QR Code de contingência: idem, com os campos do modo offline | ⬜ | | |
-| X09 | `dhEmi` em −04:00; chave usa o AAMM do `dhEmi`; virada de mês às 23h30 locais | ⬜ | | |
-| X10 | `tpAmb` vem só da configuração; em homologação o XML leva o texto obrigatório de "sem valor fiscal" exigido pelo MOC | ⬜ | | |
+| X06 | Assinatura XMLDSig confere com a chave pública; 1 byte alterado invalida; algoritmos iguais aos do MOC | ✅ | `test_fiscal_xsd.py::test_x06`; MOC NF-e 7.0 §4.2.4 (RSA-SHA1/SHA-1/C14N) | 08bbffc |
+| X07 | QR Code 2.00 online: hash do CSC recalculado e cada parâmetro conferido | ✅ | `test_fiscal_xsd.py::test_x07_qr2_online_hash_independente` | 08bbffc |
+| X08 | QR Code de contingência: idem, com os campos do modo offline | ✅ | `test_fiscal_xsd.py::test_x08_qr2_contingencia_hash_independente` | 08bbffc |
+| X09 | `dhEmi` em −04:00; chave usa o AAMM do `dhEmi`; virada de mês às 23h30 locais | ✅ | `test_fiscal_xsd.py::test_x09` (31/12 23h30 → `-04:00`, AAMM 2612) | 08bbffc |
+| X10 | `tpAmb` vem só da configuração; em homologação o XML leva o texto obrigatório de "sem valor fiscal" exigido pelo MOC | ✅ | `test_fiscal_xsd.py::test_x10` (tpAmb 1/2 e texto de homologação) | 08bbffc |
 | X11 | Prazo de cancelamento (30 min NFC-e, 2 h NF-e) contado no fuso certo | ⬜ | | |
 | X12 | Numeração sequencial sem buraco sob concorrência; rejeição não queima número sem tratamento | ⬜ | | |
 | X13 | Com `sefaz_mt_direto` configurado, nenhum caminho cai em FocusNFe/PlugNotas | ⬜ | | |
@@ -153,7 +153,7 @@ Ao fechar: preencha **Onde** (`arquivo::função`) e **Commit**. Teste novo que 
 | M07 | Autorização fora de prazo (cStat 150) tratada como autorizada | ⬜ | | |
 | M08 | Cancelamento: evento homologado muda o status; evento rejeitado não muda | ⬜ | | |
 | M09 | Inutilização homologada | ⬜ | | |
-| M10 | `statusServico` em operação (cStat 107) e fora de operação | ⬜ | | |
+| M10 | `statusServico` em operação (cStat 107) e fora de operação | ✅ | `test_fiscal_servicos.py` (6 params de modelo/cStat, rota autenticada e A1 inválida); suíte 335 | 9f28f02 |
 | M11 | Reinício do processo com nota pendente: o loop retoma e não duplica | ⬜ | | |
 | M12 | Três vendas seguidas sem rede → três contingências → três autorizadas ao voltar | ⬜ | | |
 
