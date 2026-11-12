@@ -199,7 +199,7 @@ class Database:
     def _migrar(self) -> None:
         """Migrações leves e idempotentes (adicionar colunas novas)."""
         cols = {r["name"] for r in self._conn.execute("PRAGMA table_info(vendas)")}
-        for col in ("cancelada_em", "motivo_cancelamento"):
+        for col in ("cancelada_em", "motivo_cancelamento", "sincronizado_em"):
             if col not in cols:
                 self._conn.execute(f"ALTER TABLE vendas ADD COLUMN {col} TEXT")
         if "sincronizado" not in cols:
@@ -500,8 +500,21 @@ class Database:
         marcas = ",".join("?" * len(ids))
         with self._lock, self._conn:
             self._conn.execute(
-                f"UPDATE vendas SET sincronizado = 1 WHERE id IN ({marcas})", ids
+                f"UPDATE vendas SET sincronizado = 1, sincronizado_em = ? WHERE id IN ({marcas})",
+                [datetime.now(timezone.utc).isoformat(), *ids],
             )
+
+    def contagens_diagnostico(self, user_id: int) -> tuple[int, int, str | None]:
+        with self._lock:
+            pendentes, contingencia = self._conn.execute(
+                "SELECT COUNT(CASE WHEN status IN ('pendente','processando') THEN 1 END), "
+                "COUNT(CASE WHEN status = 'contingencia' THEN 1 END) "
+                "FROM notas_fiscais WHERE user_id = ?", (user_id,)
+            ).fetchone()
+            ultima = self._conn.execute(
+                "SELECT MAX(sincronizado_em) FROM vendas WHERE user_id = ?", (user_id,)
+            ).fetchone()[0]
+            return pendentes, contingencia, ultima
 
     # ── Fiscal: configuração do emitente ──
     def get_config_fiscal(self) -> dict[str, Any]:

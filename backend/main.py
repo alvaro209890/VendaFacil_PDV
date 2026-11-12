@@ -5,7 +5,7 @@ import threading
 import time
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
@@ -28,6 +28,8 @@ from fiscal_router import router as fiscal_router, nfe_router
 from fiscal_servicos_router import router as fiscal_servicos_router
 from database import db
 from errors import configure_error_logging, register_error_handlers
+from diagnostico import resumo as resumo_diagnostico
+from version import APP_VERSION
 
 configure_error_logging()
 
@@ -57,7 +59,7 @@ async def _servicos_em_background(_app):
                 await asyncio.to_thread(thread.join)
 
 
-app = FastAPI(title="VendaFácil PDV", version="0.1.0", lifespan=_servicos_em_background,
+app = FastAPI(title="VendaFácil PDV", version=APP_VERSION, lifespan=_servicos_em_background,
               **urls_doc(getattr(sys, "frozen", False)))
 _ultimo_heartbeat: float | None = None
 
@@ -149,6 +151,12 @@ def _get_user_id(request: Request) -> int:
     if not payload:
         raise HTTPException(status_code=401, detail="Token inválido ou expirado.")
     return int(payload["sub"])
+
+
+@app.get("/api/diagnostico")
+def diagnostico(request: Request, response: Response) -> dict:
+    response.headers["Cache-Control"] = "no-store"
+    return resumo_diagnostico(_get_user_id(request))
 
 
 @app.get("/health")
