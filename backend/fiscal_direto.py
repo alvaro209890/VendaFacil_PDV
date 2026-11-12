@@ -232,7 +232,7 @@ def _pagamento_detalhe(venda: dict) -> dict:
     return {}
 
 
-def _grupo_pagamento(inf, venda: dict, valor: float) -> None:
+def _grupo_pagamento(inf, venda: dict, valor: float, config: dict | None = None) -> None:
     """Monta <pag>/<detPag> e, p/ cartão/PIX integrado, o grupo <card>.
 
     Vínculo do pagamento eletrônico — obrigatório em MT (Decreto 599/2023 e
@@ -276,6 +276,13 @@ def _grupo_pagamento(inf, venda: dict, valor: float) -> None:
         if tband:
             _tag(card, "tBand", tband)
         _tag(card, "cAut", cAut)
+        if config and config.get("cnpj"):
+            _tag(card, "CNPJReceb", so_digitos(config["cnpj"]))
+        terminal = str(pd.get("terminal") or "").strip()
+        if terminal:
+            if len(terminal) > 40:
+                raise FiscalValidacaoError("Identificador do terminal excede 40 caracteres do leiaute fiscal.")
+            _tag(card, "idTermPag", terminal)
     else:
         _tag(card, "tpIntegra", "2")
 
@@ -693,7 +700,7 @@ def montar_documento(venda: dict, config: dict, modelo: str = "65",
         _tag(icmst, "vTotTrib", f"{v_trib_total:.2f}")
     transp = _tag(inf, "transp")
     _tag(transp, "modFrete", "9")
-    _grupo_pagamento(inf, venda, v_nf)
+    _grupo_pagamento(inf, venda, v_nf, config)
 
     # Lei 12.741/2012 — informação dos tributos no documento ao consumidor.
     if p_ibpt > 0:

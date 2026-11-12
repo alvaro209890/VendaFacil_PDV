@@ -1,5 +1,7 @@
 # Vínculo do pagamento eletrônico na NFC-e (Mato Grosso)
 
+Revisado em 12/11/2026 contra a [Portaria 262/2023 consolidada até 43/2025](https://app1.sefaz.mt.gov.br/Sistema/legislacao/legislacaotribut.nsf/07fa81bed2760c6b84256710004d3940/881a0dd680e02be704258a8c006fd007).
+
 > Em Mato Grosso, a NFC-e/NF-e de **cartão ou PIX** precisa carregar os dados da
 > transação de pagamento **dentro do XML** — é o "vínculo do pagamento
 > eletrônico". Base legal: **Decreto 599/2023** e **Portaria SEFAZ 262/2023**
@@ -69,8 +71,11 @@ Bandeira e autorização são preenchidas **automaticamente** pela maquininha.
   maquininha"**. O PIX é cobrado na telinha da Point e o sistema usa o
   **endToEndId** como `cAut` no grupo `<card>` (`tpIntegra=1`). Depende de a
   Point suportar PIX — **valide em homologação**.
-- **PIX via QR estático no PDV** (sem maquininha, chave configurada em PIX): não
-  é transação integrada → sai como `tpIntegra=2`.
+- **PIX via QR estático no PDV**: `tPag=20`, sem grupo `card`. Não é integração
+  com a Point; o art.1 III da Portaria trata especificamente do QR dinâmico.
+- No fluxo integrado, o XML informa também `CNPJReceb` do emitente configurado e
+  `idTermPag` da transação quando recebido da Point (máximo40 caracteres).
+  Não inventa terminal ausente: confirme a captura na homologação da loja.
 
 ## Limitações conhecidas
 
