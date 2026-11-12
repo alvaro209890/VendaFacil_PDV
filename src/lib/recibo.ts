@@ -190,14 +190,17 @@ export function imprimirRecibo(d: ReciboData, larguraMm: number = getLarguraReci
   iframe.style.height = "0";
   iframe.style.border = "0";
   document.body.appendChild(iframe);
-  const doc = iframe.contentWindow?.document;
-  if (!doc) { document.body.removeChild(iframe); return; }
+  const win = iframe.contentWindow;
+  if (!win) { iframe.remove(); return; }
+  const doc = win.document;
   doc.open();
   doc.write(html);
   doc.close();
-  const win = iframe.contentWindow!;
-  const limpar = () => setTimeout(() => { try { document.body.removeChild(iframe); } catch { /* ok */ } }, 1000);
-  win.onafterprint = limpar;
-  // pequeno atraso para o layout assentar antes de imprimir
-  setTimeout(() => { win.focus(); win.print(); limpar(); }, 250);
+  win.addEventListener("afterprint", () => iframe.remove(), { once: true });
+  const imagens = Array.from(doc.images, (imagem) => imagem.decode().catch(() => undefined));
+  void Promise.all([doc.fonts.ready, ...imagens]).then(() => {
+    if (!iframe.isConnected) return;
+    win.focus();
+    win.print();
+  }).catch(() => iframe.remove());
 }
