@@ -1,0 +1,37 @@
+Commit: 954dac8 + botão Cancelar NFC-e em src/pages/Vendas.tsx
+$ npx playwright test e2e/cancelar-nfce.spec.ts e2e/decimais.spec.ts e2e/total-diario.spec.ts e2e/erros.spec.ts --workers=1 --reporter=line
+Running 32 tests using 1 worker
+[1/32] e2e\cancelar-nfce.spec.ts:8:1 › F7.5: nota autorizada pode ser cancelada pela tela de Vendas
+[2/32] e2e\decimais.spec.ts:28:3 › U03: desconto 0,50 preserva digitacao e valor enviado
+[3/32] e2e\decimais.spec.ts:28:3 › U03: desconto 0.50 preserva digitacao e valor enviado
+[4/32] e2e\decimais.spec.ts:28:3 › U03: desconto 1,5 preserva digitacao e valor enviado
+[5/32] e2e\decimais.spec.ts:28:3 › U03: desconto 1.5 preserva digitacao e valor enviado
+[6/32] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "0" nao vende por F2
+[7/32] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "0" nao vende por botao
+[8/32] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "" nao vende por F2
+[9/32] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "" nao vende por botao
+[10/32] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "11" nao vende por F2
+[11/32] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "11" nao vende por botao
+[12/32] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "0,00001" nao vende por F2
+[13/32] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "0,00001" nao vende por botao
+[14/32] e2e\decimais.spec.ts:55:5 › U03: desconto invalido "abc" nao vende por F2
+[15/32] e2e\decimais.spec.ts:55:5 › U03: desconto invalido "abc" nao vende por botao
+[16/32] e2e\decimais.spec.ts:55:5 › U03: desconto invalido "-1" nao vende por F2
+[17/32] e2e\decimais.spec.ts:55:5 › U03: desconto invalido "-1" nao vende por botao
+[18/32] e2e\decimais.spec.ts:55:5 › U03: desconto invalido "0,001" nao vende por F2
+[19/32] e2e\decimais.spec.ts:55:5 › U03: desconto invalido "0,001" nao vende por botao
+[20/32] e2e\decimais.spec.ts:71:3 › U03: quantidade 0,5 preserva etapas e valor enviado
+[21/32] e2e\decimais.spec.ts:71:3 › U03: quantidade 0.5 preserva etapas e valor enviado
+[22/32] e2e\decimais.spec.ts:71:3 › U03: quantidade 0,125 preserva etapas e valor enviado
+[23/32] e2e\decimais.spec.ts:71:3 › U03: quantidade 1,5 preserva etapas e valor enviado
+[24/32] e2e\decimais.spec.ts:71:3 › U03: quantidade 1.5 preserva etapas e valor enviado
+[25/32] e2e\erros.spec.ts:36:1 › F3.13: estoque alterado no backend mostra motivo e preserva carrinho
+[26/32] e2e\erros.spec.ts:56:1 › F3.13: caixa fechado avisa sem impedir venda conforme D4
+[27/32] e2e\erros.spec.ts:67:1 › F3.13: falha fiscal real local aparece sem alegar nota emitida ou repetir venda
+[28/32] e2e\erros.spec.ts:91:3 › F3.13: contrato UI distingue nota rejeitada (fixture sem SEFAZ)
+[29/32] e2e\erros.spec.ts:91:3 › F3.13: contrato UI distingue nota pendente (fixture sem SEFAZ)
+[30/32] e2e\erros.spec.ts:91:3 › F3.13: contrato UI distingue nota contingencia (fixture sem SEFAZ)
+[31/32] e2e\erros.spec.ts:91:3 › F3.13: contrato UI distingue nota autorizada (fixture sem SEFAZ)
+[32/32] e2e\total-diario.spec.ts:3:1 › U07: historico usa total diario do backend mesmo com pagina de 100 vendas
+  32 passed (1.1m)
+Exit code: 0

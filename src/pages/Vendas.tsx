@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { FileText, ExternalLink, RefreshCw, Download } from "lucide-react";
-import { listarVendas, obterVenda, cancelarVenda, getNotaDaVenda, emitirNfce, consultarNfce, listarClientes, getNfeDaVenda, emitirNfe, consultarNfe, baixarXmlNota } from "../lib/api";
+import { listarVendas, obterVenda, cancelarVenda, getNotaDaVenda, emitirNfce, consultarNfce, cancelarNfce, listarClientes, getNfeDaVenda, emitirNfe, consultarNfe, baixarXmlNota } from "../lib/api";
 import type { Cliente } from "../lib/api";
 import type { Venda, NotaFiscal } from "../lib/api";
 
@@ -72,6 +72,28 @@ export default function VendasPage() {
     setEmitindo(true);
     try {
       const { nota: n } = await consultarNfce(nota.id);
+      setNota(n);
+    } catch (err) {
+      alert((err as Error).message);
+    } finally {
+      setEmitindo(false);
+    }
+  }
+
+  async function handleCancelarNota() {
+    if (!nota || nota.status !== "autorizada") return;
+    const justificativa = window.prompt(
+      "Cancelar a NFC-e na SEFAZ (prazo de 30 minutos após a autorização).\nJustificativa (mínimo 15 caracteres):",
+      "",
+    )?.trim();
+    if (justificativa === undefined) return;
+    if (justificativa.length < 15) {
+      alert("A justificativa precisa ter pelo menos 15 caracteres.");
+      return;
+    }
+    setEmitindo(true);
+    try {
+      const { nota: n } = await cancelarNfce(nota.id, justificativa);
       setNota(n);
     } catch (err) {
       alert((err as Error).message);
@@ -369,6 +391,15 @@ export default function VendasPage() {
                         className="flex-1 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-[10px] font-bold rounded flex items-center justify-center gap-1"
                       >
                         <Download size={12} /> Baixar XML
+                      </button>
+                    )}
+                    {nota.status === "autorizada" && (
+                      <button
+                        onClick={handleCancelarNota}
+                        disabled={emitindo}
+                        className="flex-1 py-1.5 bg-red-600/20 hover:bg-red-600/30 text-red-300 text-[10px] font-bold rounded flex items-center justify-center gap-1 disabled:opacity-60"
+                      >
+                        Cancelar NFC-e
                       </button>
                     )}
                   </div>

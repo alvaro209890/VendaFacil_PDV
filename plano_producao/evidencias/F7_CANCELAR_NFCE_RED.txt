@@ -1,0 +1,21 @@
+Commit: 954dac8 (antes da correção)
+$ npx playwright test e2e/cancelar-nfce.spec.ts --workers=1 --reporter=line --timeout=30000
+Running 1 test using 1 worker
+[1/1] e2e\cancelar-nfce.spec.ts:8:1 › F7.5: nota autorizada pode ser cancelada pela tela de Vendas
+  1) e2e\cancelar-nfce.spec.ts:8:1 › F7.5: nota autorizada pode ser cancelada pela tela de Vendas ──
+    Test timeout of 30000ms exceeded.
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: 'Cancelar NFC-e' })
+      45 |   const justificativa = 'Cliente desistiu da compra no balcão';
+      46 |   page.once('dialog', dialog => dialog.accept(justificativa));
+    > 47 |   await page.getByRole('button', { name: 'Cancelar NFC-e' }).click();
+         |                                                              ^
+      48 |   await expect.poll(() => pedidos).toEqual([{ justificativa }]);
+      49 |   await expect(page.getByText('cancelada', { exact: true })).toBeVisible();
+      50 |   await expect(page.getByRole('button', { name: 'Cancelar NFC-e' })).toHaveCount(0);
+        at C:\GIS\VendaFacil_PDV\e2e\cancelar-nfce.spec.ts:47:62
+    Error Context: test-results\cancelar-nfce-F7-5-nota-au-4c6aa-ncelada-pela-tela-de-Vendas\error-context.md
+  1 failed
+    e2e\cancelar-nfce.spec.ts:8:1 › F7.5: nota autorizada pode ser cancelada pela tela de Vendas ───
+Exit code: 1
