@@ -62,12 +62,11 @@ cd ..
 - **`dist_installer\VendaFacilPDV-Setup-*.exe`** — instalador para entregar ao
   lojista (cria atalhos e desinstalador).
 
-As pastas estão no `.gitignore`, **mas há binários antigos já trackeados**
-(`dist_exe/VendaFacilPDV.exe` e Setups 1.0.3/1.0.10/1.0.11 em `dist_installer/`).
-Por decisão do projeto (D2) eles não são removidos do git, e **nenhum binário
-novo é commitado**: depois de um build, `git status` mostra
-`M dist_exe/VendaFacilPDV.exe` — não faça stage disso. Use sempre
-`git add <caminho>` explícito, nunca `git add -A`/`git add .`.
+As duas pastas estão no `.gitignore` e **nenhum binário fica no git**: por
+decisão do Álvaro (D2, 12/11/2026) os binários antigos (`dist_exe/VendaFacilPDV.exe`
+e Setups 1.0.3/1.0.10/1.0.11) saíram do repositório (continuam só no histórico).
+O instalador é entregue a partir do build local validado ou dos Artifacts/Releases
+do Actions. Use sempre `git add <caminho>` explícito, nunca `git add -A`/`git add .`.
 
 Registre caminho, tamanho e SHA-256 (`Get-FileHash <arquivo> -Algorithm SHA256`).
 
