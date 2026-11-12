@@ -1,4 +1,4 @@
-Commit: a60aa89 + limpeza tolerante em scripts/roteiro_exe.py · exe SHA256 F00D782F2327C3800E01C6FB8F8167C2F5B200D62B4021C4F9FF99497D763DA2 · 2026-11-12T16:48:30-03:00
+Commit: 808c5cb · exe SHA256 E899D8FBD0CD060FA5B2C68010C658B953F413A7CCBD2708A16FA091F1F77683 · 2026-11-12T17:12:58-03:00
 $ backend/.venv/Scripts/python -X utf8 -I scripts/roteiro_exe.py --migracao output/fase6/VendaFacilPDV-anterior.exe
 Executável respondeu /health (versão 0.1.0).
 POST /api/auth/registro 200

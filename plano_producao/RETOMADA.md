@@ -10,7 +10,7 @@ Entrega concluída em 12/11/2026: **⏸ aguardando terceiro**. Todas as fases fe
 | Fase 6 | Portão 954dac8, com E04–E06 em B8 |
 | Fase 7 | Concluída e publicada em 4f6b151; relatório em `RELATORIO_FINAL.md`; vault a40cdae |
 
-Instalador: `C:\GIS\VendaFacil_PDV\dist_installer\VendaFacilPDV-Setup-1.0.13.exe` (39.974.249 bytes, SHA-256 `CF133B009E34D8DDC8DC8AA002583526FDDCE248BB7297F52CE97E9481A07AA8`). Executável: `dist_exe\VendaFacilPDV.exe` (39.688.486 bytes, SHA-256 `F00D782F2327C3800E01C6FB8F8167C2F5B200D62B4021C4F9FF99497D763DA2`). Ambos gerados sobre a60aa89. Evidências F6_ARTEFATOS, F6_ROTEIRO_EXE_CHROMIUM, F6_MIGRACAO, F6_PORTAO_* e F7_E2E_FINAL.
+Instalador: `C:\GIS\VendaFacil_PDV\dist_installer\VendaFacilPDV-Setup-1.0.13.exe` (39.974.387 bytes, SHA-256 `C0B55A78D17C221074F4AE68373B0A283C89A33AE8E923A3A575A05EF86109F9`). Executável: `dist_exe\VendaFacilPDV.exe` (39.688.485 bytes, SHA-256 `E899D8FBD0CD060FA5B2C68010C658B953F413A7CCBD2708A16FA091F1F77683`). Ambos gerados sobre 808c5cb (inclui D3). Evidências F6_ARTEFATOS, F6_ROTEIRO_EXE_CHROMIUM, F6_MIGRACAO, F6_PORTAO_* e F7_E2E_FINAL.
 
 ## Próximo ponto
 

@@ -7,11 +7,11 @@
 | Estado geral | ⏸ AGUARDANDO TERCEIRO (B1–B5, B7, B8, B9) |
 | Fase atual | Todas as fases fechadas |
 | Próxima ação | Álvaro: lista "O que preciso de você" do RELATORIO_FINAL.md; depois rodar H01–H09 e E04–E06 |
-| Última atualização | 2026-11-12 — entrega: Setup 1.0.13 SHA-256 CF133B00…7AA8; backend 460/9, painel 23, Node 36, E2E 90 |
+| Última atualização | 2026-11-12 — entrega: Setup 1.0.13 SHA-256 C0B55A78…09F9; backend 460/9, painel 23, Node 36, E2E 91 |
 | Commit de partida | `6da6899` |
 | Versão de partida → de entrega | 1.0.12 → 1.0.13 |
 | Testes backend (partida → agora) | 76→460, 9 desmarcados (F6_PORTAO_BACKEND.txt sobre 2d062b2) |
-| Testes painel (partida → agora) | 7→23; navegador: 90/90 E2E numa rodada (F7_E2E_FINAL.txt) + 36 Node; build/lint 0 |
+| Testes painel (partida → agora) | 7→23; navegador: 91/91 E2E numa rodada (F7_E2E_FINAL.txt) + 36 Node; build/lint 0 |
 
 Estados gerais possíveis: ⬜ NÃO INICIADO · 🟨 EM ANDAMENTO · ⏸ PAUSADO · ⏸ AGUARDANDO TERCEIRO · ✅ CONCLUÍDO.
 
@@ -35,9 +35,9 @@ Status de fase: ⬜ não iniciada · 🟨 em andamento · ✅ concluída · ⏸ 
 | Controle | Total | Fechados | Bloqueados | Abertos |
 |---|---|---|---|---|
 | Pistas (`02_PISTAS.md`) | 53 | 53 | 0 | 0 |
-| Testes (`03_TESTES.md`) | 133 | 121 | 12 | 0 |
+| Testes (`03_TESTES.md`) | 134 | 122 | 12 | 0 |
 | Bloqueios (`04_BLOQUEIOS.md`) | 9 | — | 6 ativos | — |
-| Decisões do Álvaro (`05_DECISOES_ALVARO.md`) | 9 | padrão aplicado nas 9; 0 respondidas | — | 9 aguardam resposta |
+| Decisões do Álvaro (`05_DECISOES_ALVARO.md`) | 9 | 9 respondidas (D2 e D3 implementadas) | — | 0 |
 
 ## Bloqueios ativos agora
 

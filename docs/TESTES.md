@@ -39,7 +39,7 @@ npx playwright test --workers=1
 `backend/pytest.ini` desmarca os testes `homologacao` (SEFAZ-MT real): eles só
 rodam com `-m homologacao` e com o certificado, o CSC e os dados da própria loja
 no cofre. Em 12/11/2026: backend 460 verdes e 9 desmarcados, painel 23, Node 36,
-E2E 90 (Chromium, 1 worker). O `.exe` é validado por `scripts/roteiro_exe.py`
+E2E 91 (Chromium, 1 worker). O `.exe` é validado por `scripts/roteiro_exe.py`
 (ver `TESTE_WINDOWS.md`).
 
 > Rode em cada pasta separadamente (PDV e Painel têm, cada um, seu próprio

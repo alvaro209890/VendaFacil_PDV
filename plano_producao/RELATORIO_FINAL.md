@@ -2,7 +2,7 @@
 
 > Preenchido pelo agente na Fase 7. Toda prova leva a saída do comando, não a opinião.
 
-**Data:** 2026-11-12 · **Commit final:** `2d062b2` · **Versão:** 1.0.13
+**Data:** 2026-11-12 · **Commit final:** `701c5bc` · **Versão:** 1.0.13
 
 ## Veredito
 
@@ -27,19 +27,18 @@ Lista única, em ordem de prioridade. É a única coisa que o Álvaro precisa le
 | 8 | Testar em **papel**: impressora térmica, leitor e gaveta reais (B7) | Loja | 20 min | Teste físico do cupom |
 | 9 | Preencher o contato de suporte em `docs/SUPORTE_LOJA.md` e imprimir | Repositório | 5 min | Folha do balcão |
 | 10 | Implantação presencial seguindo `docs/IMPLANTACAO_MERCEARIA.md` + treinamento (B9) | Loja | 2–3 h | Operação real |
-| 11 | Responder, quando quiser, as decisões D1–D9 (padrões já aplicados) | `plano_producao/05_DECISOES_ALVARO.md` | 10 min | Só muda algo se discordar |
 
 ## Números
 
-| Medida | Partida (`6da6899`) | Entrega (`2d062b2`) |
+| Medida | Partida (`6da6899`) | Entrega (`701c5bc`) |
 |---|---|---|
 | Testes backend | 76 | 460 verdes, 9 desmarcados (`homologacao`, B1–B5) |
 | Testes painel | 7 | 23 |
 | Testes Node do front | 0 | 36 |
-| Testes E2E (Chromium, 1 worker) | 0 | 90/90 numa rodada |
+| Testes E2E (Chromium, 1 worker) | 0 | 91/91 numa rodada |
 | Roteiro do `.exe` | — | 49 requisições, 0 respostas 5xx; 4/4 cupons PDF; migração com contagens iguais |
 | Pistas fechadas | 0/22 | 53/53 com status final (0 abertas) |
-| Testes da matriz ✅ | 0/100 | 121/133 |
+| Testes da matriz ✅ | 0/100 | 122/134 |
 | Testes da matriz ⛔ | — | 12 (H01–H09 por B1–B5; E04–E06 por B8) |
 | Build / lint | — | 0 erros |
 
@@ -62,7 +61,7 @@ Lista única, em ordem de prioridade. É a única coisa que o Álvaro precisa le
 | P13 | 🟡 | `main.py:102` | Só existe `/health`; não há diagnóstico para o suporte | Endpoint autenticado + tela | R08 API protegida e clipboard Chromium | f25d05f/aa2ea37 |
 | P14 | 🟡 | `fiscal_config.py:12` | `_SENSIVEIS` mascarados na leitura, em claro no SQLite | ✅ máscara comprovada; D6 documentada | c7ff77c/f9d8ad1 · S05/S06 JSON; caso bytes/log bruto continua aberto em P25 | — |
 | P15 | 🟡 | `auth.py:93`, `fiscal.py:352-376`, `fiscal_direto.py:83` | Timestamps de venda em UTC; fiscal usa `agora_mt()`. MT é UTC−4 | ✅ conferida | 08bbffc/4e52786/fb9f5b9 · X09/X11 e U07, viradas de dia/mês em MT | — |
-| P16 | 🟡 | git | 4 binários trackeados apesar do `.gitignore`; `CLAUDE.md` diz o contrário | 🟦 D2 aplicada | a60aa89 · binários antigos mantidos e relatados; CLAUDE.md corrigido; nenhum binário novo commitado | — |
+| P16 | 🟡 | git | 4 binários trackeados apesar do `.gitignore`; `CLAUDE.md` diz o contrário | Só relatar (decisão D2) | D2 respondida: binários removidos do índice (git ls-files sem .exe); CLAUDE.md atualizado | 808c5cb |
 | P17 | 🟡 | `installer/vendafacil.iss:44` | `PrivilegesRequired=admin`: instalar exige UAC | ✅ teste pronto; execução ⛔ B8 | b41e946 · `scripts/teste_instalador.ps1`; F6_INSTALADOR_B8.txt saída 2 | — |
 | P19 | 🟠 | `fiscal_direto.py` (comentário na linha 1085) | Não há inutilização de numeração (serviço `NfeInutilizacao4` ausente do dicionário de webservices, linhas 37-42) | Conferir no MOC/SEFAZ-MT a exigência atual para NFC-e e implementar; provar que rejeição não deixa buraco | X05/M09/X12, API e 4 testes Chromium | 5980fe4/8c83d0f/31a4e5c/60a99ad |
 | P20 | 🟡 | `fiscal_direto.py:37-42` | Não há `statusServico` (`NfeStatusServico4`) | Implementar; usar no diagnóstico e no harness de homologação | `statusServico` 65/55 homologação e produção, rota + tela Fiscal; M10 | 9f28f02 |
@@ -98,6 +97,7 @@ Lista única, em ordem de prioridade. É a única coisa que o Álvaro precisa le
 | P51 | 🟠 | `fiscal_direto._grupo_pagamento` | Não envia CNPJReceb/idTermPag disponíveis, exigidos no vínculo de MT | Copiar emitente e terminal real da transação, sem inventar identificador | X19, 3 RED→3 verdes focados; suíte 415 | 188ad56 |
 | P52 | 🟡 | `src/lib/recibo.ts:122` | No rolo de 80 mm, `word-break:break-all` partia um bloco de 4 dígitos da chave de acesso do DANFE | `overflow-wrap:anywhere`, quebra só entre blocos | E11 (`e2e/cupom.spec.ts`, F6_CHAVE_RED/GREEN) | ee491d5 |
 | P53 | 🟠 | `src/pages/Vendas.tsx` | Venda com NFC-e autorizada só cancela depois da nota, mas nenhuma tela cancelava a NFC-e (só a API): operador travado | Botão "Cancelar NFC-e" com justificativa de 15+ caracteres | U10 (`e2e/cancelar-nfce.spec.ts`, F7_CANCELAR_NFCE_RED/GREEN) | 074a43a |
+| D3 | 🟡 | `backend/vendas.py`, `src/pages/PDV.tsx` | Produto com preço de venda 0 era vendido pelo custo, sem aviso | Bloquear no checkout (400) e no carrinho (decisão do Álvaro) | V17 | 49dbecc |
 | P46 | 🟠 | `src/lib/api.ts` + `Produtos.tsx` | UI de XML descartava a chave da prévia ao confirmar; reimportação duplicava estoque | Enviar a chave e tratar 409 na tela | I08 | 41c9265 |
 | F6 | 🟠 | `fiscal_direto.py` (proxy) | Proxy recusando conexão não levava a venda à contingência | Tratar recusa do proxy como rede indisponível | F6_PROXY_RED/GREEN | 0d0193e |
 | F6 | 🟠 | `src/pages/PDV.tsx` | Após venda em contingência o botão de imprimir/reimprimir não aparecia | Oferecer a reimpressão também em contingência | F6_REIMPRESSAO_RED/GREEN (7 Chromium) | 054e6d6 |
@@ -113,7 +113,6 @@ Lista única, em ordem de prioridade. É a única coisa que o Álvaro precisa le
 
 | # | Gravidade | Motivo | Impacto na loja |
 |---|---|---|---|
-| P16 | 🟡 | D2: binários antigos seguem trackeados no git | Nenhum; quem baixa do GitHub deve usar o Setup gerado/validado, não o binário antigo |
 | P12 | 🟡 | D5: sem ESC/POS nem gaveta | Impressão pelo navegador (58/80 mm validados em PDF); gaveta abre manualmente |
 | D6 | 🟡 | Cofre fiscal em claro no SQLite (risco aceito, `docs/SEGURANCA.md`) | Proteger o PC da loja (usuário Windows com senha, backup fora do PC) |
 | — | 🟡 | Auto-update do `.exe` | Atualização é reinstalar o Setup por cima (dados preservados) |
@@ -131,7 +130,7 @@ Lista única, em ordem de prioridade. É a única coisa que o Álvaro precisa le
 | 4 C (SEFAZ-MT real) | ⛔ B1–B5 | `scripts/fiscal_precheck.py` | Saída 2: certificado, CSC, empresa e credenciamento ausentes (F4_PRECHECK_REAL.txt) |
 | 5 | ✅ f97eb6a | `pytest -q` | Backup/integrity_check, modo consulta, log rotativo, instância única, diagnóstico; 459/9 e 23 |
 | 6 | ✅ com B8, 954dac8 | `roteiro_exe.py --chromium`, `verificar_cupons_pdf.py`, suítes | 49 req/0 5xx; 4/4 PDFs e 6 QR decodificados; E04–E06 ⛔ B8 (saída 2) |
-| 7 | ✅ `2d062b2` | suítes finais, `git status --porcelain`, `git ls-remote` | Backend 460/9, painel 23, Node 36, E2E 90/90 numa rodada; build/lint 0 |
+| 7 | ✅ `701c5bc` | suítes finais, `git status --porcelain`, `git ls-remote` | Backend 460/9, painel 23, Node 36, E2E 91/91 numa rodada; build/lint 0 |
 
 ## Bloqueado por terceiro
 
@@ -147,27 +146,26 @@ Lista única, em ordem de prioridade. É a única coisa que o Álvaro precisa le
 | B8 | Elevação (UAC) | Álvaro | E04–E06 não executados | Rodar `scripts\teste_instalador.ps1` elevado |
 | B9 | Implantação e 1ª NFC-e | Álvaro + contador | Loja não opera | Seguir `docs/IMPLANTACAO_MERCEARIA.md` |
 
-## Decisões pendentes do Álvaro
+## Decisões do Álvaro (respondidas em 12/11/2026)
 
 | # | Decisão | Padrão adotado | O que muda se ele decidir o contrário |
 |---|---|---|---|
 | D1 | Ir para produção | Homologação | Trocar o ambiente na tela Fiscal após a 1ª NFC-e de homologação |
-| D2 | Tirar binários do git | Não mexer | Um commit de remoção + reescrever histórico se quiser reduzir o repo |
 | D5 | ESC/POS e gaveta | Não construir | Projeto novo de impressão direta |
 | D6 | Criptografar cofre | Não | Chave por máquina e migração do cofre |
 | D7 | Assinar o `.exe` | Não assinar | Comprar certificado de code signing e assinar no build |
 | D9 | Mudar fluxo do lojista | Não mudar | — |
 
-D3, D4 e D8 também seguem o padrão, com o que foi feito em `05_DECISOES_ALVARO.md`.
+**Todas as 9 decisões foram respondidas pelo Álvaro em 12/11/2026** (`05_DECISOES_ALVARO.md`): D2 (binários fora do git, 808c5cb) e D3 (bloqueio de venda sem preço, 49dbecc) foram implementadas; as demais mantêm o padrão da tabela acima.
 
 ## Artefatos
 
 | Artefato | Caminho | Tamanho | sha256 |
 |---|---|---|---|
-| Instalador | `C:\GIS\VendaFacil_PDV\dist_installer\VendaFacilPDV-Setup-1.0.13.exe` | 39.974.249 bytes | `CF133B009E34D8DDC8DC8AA002583526FDDCE248BB7297F52CE97E9481A07AA8` |
-| Executável | `C:\GIS\VendaFacil_PDV\dist_exe\VendaFacilPDV.exe` | 39.688.486 bytes | `F00D782F2327C3800E01C6FB8F8167C2F5B200D62B4021C4F9FF99497D763DA2` |
+| Instalador | `C:\GIS\VendaFacil_PDV\dist_installer\VendaFacilPDV-Setup-1.0.13.exe` | 39.974.387 bytes | `C0B55A78D17C221074F4AE68373B0A283C89A33AE8E923A3A575A05EF86109F9` |
+| Executável | `C:\GIS\VendaFacil_PDV\dist_exe\VendaFacilPDV.exe` | 39.688.485 bytes | `E899D8FBD0CD060FA5B2C68010C658B953F413A7CCBD2708A16FA091F1F77683` |
 
-Gerados sobre `a60aa89` (código igual ao do commit final; depois só docs, plano e o script de teste). Binários fora do git.
+Gerados sobre `808c5cb` (inclui D3; depois só o verificador de testes, docs e plano). Nenhum binário no git (D2).
 
 ## Riscos que ficam
 
@@ -184,4 +182,5 @@ Gerados sobre `a60aa89` (código igual ao do commit final; depois só docs, plan
 - `node --test frontend-tests/` (diretório) falha no Node 22; o comando certo é `node --test frontend-tests/*.test.mjs`.
 - No bash do Git, `cmd.exe /c "build_exe.bat"` não acha o arquivo; use o caminho absoluto entre aspas simples.
 - F7.11 pedia autor `Hermes-windows` no vault; a ficha foi escrita por Claude e assinada como Claude, para não atribuir a outro agente.
+- A pasta `Dados_James/` com o A1, o CSC e o credenciamento reais da loja apareceu na raiz do repositório; foi colocada no `.gitignore` (505ddcb) junto com `*.pfx`/`*.p12`, sem nunca ter sido commitada.
 - A auditoria de docs achou um defeito de produto, não só de texto: o cancelamento da NFC-e não existia na tela (P53, 074a43a).

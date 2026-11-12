@@ -152,3 +152,9 @@ Formato: `AAAA-MM-DD HH:MM | fase | ID | o que aconteceu | commit`
 2026-11-12 16:55 BRT | 7 | Suítes finais | Backend 460/9 desmarcados, painel 23, Node 36, build/lint 0, E2E 90/90 numa rodada (F7_E2E_FINAL.txt). | 2d062b2
 2026-11-12 17:00 BRT | 7 | F7.11 | Ficha do vault §8 e changelog via ssh sd, lock/unlock, autor Claude (o plano pedia Hermes-windows; registrado o autor real). | a40cdae (vault)
 2026-11-12 17:05 BRT | 7 | Publicação | git push origin master: 954dac8..4f6b151; git ls-remote refs/heads/master = 4f6b1516fa11b08f5b20d0a85b038fb0c765b1aa. git status: só o binário, as evidências F3/F4 preexistentes e itens não rastreados fora do escopo. | 4f6b151
+2026-11-12 17:05 BRT | decisões | D1–D9 | Respostas do Álvaro gravadas; D2 e D3 a mudar, demais mantidas. | e77429a
+2026-11-12 17:10 BRT | decisões | D3 / V17 | RED: checkout 201 com preço 0 e produto entrava no carrinho. Correção no backend (400) e no PDV (aviso); backend 460, 21 Chromium. | 49dbecc
+2026-11-12 17:11 BRT | decisões | D2 | git rm --cached dos 4 executáveis antigos; nenhum .exe no índice; CLAUDE.md atualizado. | 808c5cb
+2026-11-12 17:13 BRT | 6 | Rebuild D3 | exe E899D8FB… e Setup C0B55A78… sobre 808c5cb; roteiro 49 req/0 5xx, migração igual. Verificador: QR de contingência 58 mm vazio só no detector padrão a 300 dpi; corrigido para tentar outras resoluções/Aruco, 4/4. | 701c5bc
+2026-11-12 17:20 BRT | 7 | Suítes finais | Backend 460/9, painel 23, Node 36, build/lint 0, E2E 91/91 numa rodada. | 701c5bc
+2026-11-12 17:21 BRT | — | Segurança | Pasta Dados_James/ (A1, CSC, credenciamento, IE da loja) e *.pfx/*.p12 no .gitignore, a pedido do Álvaro; nada disso foi commitado. | 505ddcb

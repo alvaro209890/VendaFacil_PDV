@@ -1,4 +1,4 @@
-Commit: 2d062b2
+Commit: 701c5bc
 $ node --test frontend-tests/*.test.mjs
 1..36
 # tests 36
@@ -8,5 +8,5 @@ $ node --test frontend-tests/*.test.mjs
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 4588.6335
+# duration_ms 2835.176
 Exit code: 0

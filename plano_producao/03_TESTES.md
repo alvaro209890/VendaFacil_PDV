@@ -66,6 +66,7 @@ Ao fechar: preencha **Onde** (`arquivo::função`) e **Commit**. Teste novo que 
 | V15 | PRAGMAs explícitos init/reconexão, FK recusa referência inexistente, cópia legada válida preserva dados | ✅ | `backend/tests/test_transacoes.py` (3 testes P7) | a4f8e69 |
 
 | V16 | Quantidade/desconto infinitos recusados antes de calcular, sem500 nem escrita | ✅ | `backend/tests/test_transacoes.py::test_v16_infinito_recusado_sem_erro_500` | 79e5ccf |
+| V17 | D3: produto sem preço de venda é recusado no checkout (400, estoque intacto) e não entra no carrinho do PDV | ✅ | `test_cancelamento.py::test_d3_preco_zero_bloqueia_venda`, `test_adversario_f113.py::test_preco_e_custo_zero_nao_baixa_estoque`, `e2e/preco-zero.spec.ts`; D3_PRECO_ZERO_RED/GREEN | 49dbecc |
 
 ## C — Caixa e fiado (Fase 2)
 
