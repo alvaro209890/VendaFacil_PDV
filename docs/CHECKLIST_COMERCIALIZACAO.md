@@ -92,7 +92,7 @@ falta é **negócio, distribuição e robustez de produção**, não funcionalid
 - Robustez (12/11/2026): dinheiro em `Decimal`, venda numa transação, backup
   com `integrity_check` e restauração validada, modo consulta com banco
   corrompido, log rotativo, segunda instância e diagnóstico protegido.
-- Testes em 12/11/2026: backend 460, painel 23, Node 36, E2E 89 no navegador.
+- Testes em 12/11/2026: backend 460, painel 23, Node 36, E2E 90 no navegador.
 
 ---
 

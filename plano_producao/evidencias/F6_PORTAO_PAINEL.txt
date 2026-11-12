@@ -1,4 +1,4 @@
-Commit: b41e946 · 2026-11-12T16:31:56-03:00
+Commit: 2d062b2 · 2026-11-12T16:51:18-03:00
 $ cd painel && .venv/Scripts/python -X utf8 -I -m pytest -q --tb=short
 .......................                                                  [100%]
 ============================== warnings summary ===============================
@@ -25,5 +25,5 @@ main.py:193
     return self.router.on_event(event_type)  # ty: ignore[deprecated]
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
-23 passed, 3 warnings in 4.99s
+23 passed, 3 warnings in 5.48s
 Exit code: 0

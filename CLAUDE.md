@@ -110,7 +110,7 @@ npx playwright test --workers=1
 ```
 
 Em 12/11/2026 (1.0.13): backend 460 verdes e 9 desmarcados (`homologacao`,
-exigem os dados reais da loja), painel 23, Node 36, E2E 89. Antes do Playwright,
+exigem os dados reais da loja), painel 23, Node 36, E2E 90. Antes do Playwright,
 aponte `TEMP`/`TMP`/`TMPDIR` para fora do repositório.
 
 ## Plano de produção

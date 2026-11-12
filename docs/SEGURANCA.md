@@ -92,7 +92,7 @@ ser reavaliado quando os consumidores atualizarem seus próprios intervalos;
 não é autorização para forçar versões futuras nem ocultar advisories.
 
 `npm audit`, `npm ls`, build e ESLint foram executados novamente pelo orquestrador,
-assim como os testes Chromium existentes na época (em 12/11/2026 são 15 arquivos em `e2e/`, 89 casos); a revisão independente do patch
+assim como os testes Chromium existentes na época (em 12/11/2026 são 15 arquivos em `e2e/`, 90 casos); a revisão independente do patch
 fica registrada no plano. Zero aqui significa zero avisos conhecidos no relatório
 consultado, não ausência garantida de vulnerabilidades. As credenciais de registro
 npm nunca entram em relatório ou commit.

@@ -16,7 +16,7 @@ Provar que o que foi testado no código também funciona no executável que vai 
 ### Build
 
 - [x] F6.3 Subir a versão para **1.0.13** em `installer/vendafacil.iss` e em todo lugar que a exiba (`grep -rn "1\.0\.12"` antes). A versão aparece na tela de diagnóstico — e41771e · F6_ROTEIRO_EXE.txt; /health informa 1.0.13
-- [x] F6.4 `cmd.exe /c "build_exe.bat"` e `cmd.exe /c "installer\build_installer.bat"`. Registrar caminho, tamanho e sha256 dos dois artefatos. **Não commitar os binários** — e41771e · F6_BUILD_EXE/INSTALADOR/ARTEFATOS.txt; compilações saída 0. Recompilado sobre ee491d5 (inclui 054e6d6): exe 39.687.711 bytes SHA-256 E9C13FFEA6845200ED720943C4ABF23D663A273BE1E357E780A2C8F53E27EC01; Setup 39.973.691 bytes SHA-256 4529904B25C61F55981C5D5C2476B048C6F16A686AA355083E5F99C126293A11
+- [x] F6.4 `cmd.exe /c "build_exe.bat"` e `cmd.exe /c "installer\build_installer.bat"`. Registrar caminho, tamanho e sha256 dos dois artefatos. **Não commitar os binários** — e41771e · F6_BUILD_EXE/INSTALADOR/ARTEFATOS.txt; compilações saída 0. Recompilado sobre a60aa89 (inclui 054e6d6, ee491d5 e 074a43a): exe 39.688.486 bytes SHA-256 F00D782F2327C3800E01C6FB8F8167C2F5B200D62B4021C4F9FF99497D763DA2; Setup 39.974.249 bytes SHA-256 CF133B009E34D8DDC8DC8AA002583526FDDCE248BB7297F52CE97E9481A07AA8
 
 ### Ponta a ponta no `.exe` (pasta de dados temporária, porta 3021)
 
@@ -37,7 +37,7 @@ Provar que o que foi testado no código também funciona no executável que vai 
 
 ### Fechamento
 
-- [x] F6.13 Rodar as duas suítes uma última vez sobre o commit final e registrar os números — b41e946 · F6_PORTAO_BACKEND/PAINEL/FRONT/NODE/E2E(_RERUN).txt; backend 460 verdes e 9 desmarcados, painel 23, Node 36, build/lint 0, E2E 87 verdes na rodada única + as 2 falhas de preparação sob carga verdes ao repetir os arquivos (15/15)
+- [x] F6.13 Rodar as duas suítes uma última vez sobre o commit final e registrar os números — b41e946 · F6_PORTAO_BACKEND/PAINEL/FRONT/NODE/E2E(_RERUN).txt; backend 460 verdes e 9 desmarcados, painel 23, Node 36, build/lint 0, E2E 87 verdes na rodada única + as 2 falhas de preparação sob carga verdes ao repetir os arquivos (15/15). Refeito em 2d062b2: 460/9, 23, 36, build/lint 0 e E2E 90/90 numa rodada (F7_E2E_FINAL.txt)
 
 ## Complementos da auditoria
 
@@ -55,8 +55,8 @@ Provar que o que foi testado no código também funciona no executável que vai 
 
 | Item | Comando | Saída resumida |
 |---|---|---|
-| Instalador (caminho, tamanho, sha256) | `Get-FileHash -Algorithm SHA256` | `dist_installer\VendaFacilPDV-Setup-1.0.13.exe`, 39.973.691 bytes, 4529904B25C61F55981C5D5C2476B048C6F16A686AA355083E5F99C126293A11 |
-| `.exe` (caminho, tamanho, sha256) | `Get-FileHash -Algorithm SHA256` | `dist_exe\VendaFacilPDV.exe`, 39.687.711 bytes, E9C13FFEA6845200ED720943C4ABF23D663A273BE1E357E780A2C8F53E27EC01 |
+| Instalador (caminho, tamanho, sha256) | `Get-FileHash -Algorithm SHA256` | `dist_installer\VendaFacilPDV-Setup-1.0.13.exe`, 39.974.249 bytes, CF133B009E34D8DDC8DC8AA002583526FDDCE248BB7297F52CE97E9481A07AA8 |
+| `.exe` (caminho, tamanho, sha256) | `Get-FileHash -Algorithm SHA256` | `dist_exe\VendaFacilPDV.exe`, 39.688.486 bytes, F00D782F2327C3800E01C6FB8F8167C2F5B200D62B4021C4F9FF99497D763DA2 |
 | Roteiro (E02): requisições, respostas 500 | `scripts/roteiro_exe.py --chromium --cupons ...` | 49 requisições, 0 respostas 5xx, saída 0 |
 | Offline (E03) | mesmo comando, SEFAZ sintética desligada → religada | 2 notas em contingência conciliadas após reinício, mesmo número/chave/XML |
 | Instalador (E04–E06) | `scripts/teste_instalador.ps1` | B8: sessão sem elevação, saída 2 |
