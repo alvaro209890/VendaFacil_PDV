@@ -4,14 +4,14 @@
 
 | Campo | Valor |
 |---|---|
-| Estado geral | ⏸ PAUSADO a pedido do Álvaro |
-| Fase atual | 6 — build e ponta a ponta; 7/14, com B8 |
-| Próxima ação | Ao retomar, recompilar a 1.0.13 após 054e6d6 e validar o roteiro empacotado no Chromium |
-| Última atualização | 2026-11-12 — reimpressão em contingência corrigida; 7 Chromium verdes; artefatos locais antecedem 054e6d6 |
+| Estado geral | 🟨 EM ANDAMENTO |
+| Fase atual | 7 — documentação e entrega |
+| Próxima ação | Fase 7: manuais da loja, revisão dos docs, checklist, CLAUDE.md, relatório final e vault |
+| Última atualização | 2026-11-12 — portão da Fase 6: Setup 1.0.13 SHA-256 4529904B…3A11; roteiro do exe 49 req/0 5xx; PDFs 4/4 |
 | Commit de partida | `6da6899` |
 | Versão de partida → de entrega | 1.0.12 → 1.0.13 |
-| Testes backend (partida → agora) | 76→459, 9 desmarcados (F5_PORTAO_BACKEND.txt) |
-| Testes painel (partida → agora) | 7→23; navegador: 82 E2E (A28/B20/C19/XML14/U07:1) + 29 Node; build/lint 0 |
+| Testes backend (partida → agora) | 76→460, 9 desmarcados (F6_PORTAO_BACKEND.txt) |
+| Testes painel (partida → agora) | 7→23; navegador: 89 E2E (87 na rodada única + 2 repetidos verdes) + 36 Node; build/lint 0 |
 
 Estados gerais possíveis: ⬜ NÃO INICIADO · 🟨 EM ANDAMENTO · ⏸ PAUSADO · ⏸ AGUARDANDO TERCEIRO · ✅ CONCLUÍDO.
 
@@ -25,7 +25,7 @@ Estados gerais possíveis: ⬜ NÃO INICIADO · 🟨 EM ANDAMENTO · ⏸ PAUSADO
 | 3 | `FASE_3_seguranca_e_front.md` | ✅ | 24/24 | ✅ | d9038dc |
 | 4 | `FASE_4_fiscal_mt.md` | ⏸ | 25/27 | ✅ com B1–B5 | 3c388a3 |
 | 5 | `FASE_5_robustez_e_suporte.md` | ✅ | 12/12 | Suítes verdes | f97eb6a |
-| 6 | `FASE_6_build_instalador_e2e.md` | 🟨 | 7/14 | ⬜ | — |
+| 6 | `FASE_6_build_instalador_e2e.md` | ⏸ | 14/15 + 1 [!] B8 | ✅ com B8 | (commit do portão) |
 | 7 | `FASE_7_documentacao_e_entrega.md` | ⬜ | 0/12 | ⬜ | — |
 
 Status de fase: ⬜ não iniciada · 🟨 em andamento · ✅ concluída · ⏸ concluída com item bloqueado por terceiro.
@@ -34,8 +34,8 @@ Status de fase: ⬜ não iniciada · 🟨 em andamento · ✅ concluída · ⏸ 
 
 | Controle | Total | Fechados | Bloqueados | Abertos |
 |---|---|---|---|---|
-| Pistas (`02_PISTAS.md`) | 51 | 46 | 0 | 5 |
-| Testes (`03_TESTES.md`) | 131 | 114 | 12 | 5 |
+| Pistas (`02_PISTAS.md`) | 51 | 49 | 0 | 2 |
+| Testes (`03_TESTES.md`) | 132 | 120 | 12 | 0 |
 | Bloqueios (`04_BLOQUEIOS.md`) | 9 | — | 6 ativos | — |
 | Decisões do Álvaro (`05_DECISOES_ALVARO.md`) | 9 | 0 respondidas | — | 9 |
 

@@ -1,7 +1,7 @@
 # Instalar o VendaFacil PDV em um PC Windows
 
 Este guia e para instalar o sistema no computador do caixa usando o instalador
-`VendaFacilPDV-Setup-1.0.3.exe`.
+`VendaFacilPDV-Setup-1.0.13.exe`.
 
 ## Requisitos do computador
 
@@ -15,8 +15,16 @@ Este guia e para instalar o sistema no computador do caixa usando o instalador
 Entregue ao cliente o instalador:
 
 ```text
-dist_installer\VendaFacilPDV-Setup-1.0.3.exe
+dist_installer\VendaFacilPDV-Setup-1.0.13.exe
 ```
+
+Confira a integridade antes de entregar (PowerShell):
+
+```powershell
+Get-FileHash .\VendaFacilPDV-Setup-1.0.13.exe -Algorithm SHA256
+```
+
+O SHA-256 de cada versão gerada fica em `plano_producao/evidencias/F6_ARTEFATOS.txt`.
 
 O executavel direto tambem existe em:
 
@@ -29,7 +37,7 @@ o desinstalador e usa o icone oficial do VendaFacil PDV.
 
 ## Passo a passo de instalacao
 
-1. Copie ou baixe `VendaFacilPDV-Setup-1.0.3.exe` no PC do caixa.
+1. Copie ou baixe `VendaFacilPDV-Setup-1.0.13.exe` no PC do caixa.
 2. Clique com o botao direito no instalador e escolha `Executar como administrador`.
 3. Se o Windows SmartScreen aparecer, clique em `Mais informacoes` e depois `Executar assim mesmo`.
 4. Avance no instalador e deixe marcada a opcao de criar atalho na Area de Trabalho.
@@ -38,8 +46,9 @@ o desinstalador e usa o icone oficial do VendaFacil PDV.
 
 ## Primeiro uso
 
-- Entre com o usuario e senha cadastrados no painel admin.
+- Entre com o usuario e senha cadastrados no painel admin (ou crie o primeiro usuario, no modo local).
 - Cadastre produtos, configure PIX/maquininha/fiscal se necessario, e faca uma venda de teste.
+- Roteiro completo de implantacao na loja: `IMPLANTACAO_MERCEARIA.md`.
 
 ## Onde ficam os dados
 
@@ -58,6 +67,17 @@ atualizar o sistema por cima nao apaga as vendas.
 2. O instalador encerra automaticamente o `VendaFacilPDV.exe` antigo, se ele estiver aberto.
 3. Instale por cima da versao anterior.
 4. Abra o atalho e confira uma venda/produto existente.
+
+Antes de atualizar, o PDV faz backup automatico ao iniciar. A versao 1.0.13 abre o
+banco das versoes anteriores sem perder dados (migracao aditiva, validada com as
+contagens de usuarios, clientes, produtos, vendas, itens e notas).
+
+Teste automatizado de instalar → atualizar → desinstalar (so em maquina descartavel,
+PowerShell como administrador):
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\teste_instalador.ps1
+```
 
 ## Desinstalar
 

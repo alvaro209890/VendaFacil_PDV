@@ -198,11 +198,12 @@ Marker `homologacao`, fora da execução padrão. Sem os itens da loja: ⛔ com 
 | ID | O que prova | Status | Onde | Commit |
 |---|---|---|---|---|
 | E01 | Smoke no `.exe`: `/` 200 · `/health` 200 · `/api/produtos` 401 | ✅ | F6_ROTEIRO_EXE.txt: três respostas 200/200/401 | e41771e |
-| E02 | Roteiro de `docs/TESTE_WINDOWS.md` em script contra o `.exe`: zero resposta 500 | ⬜ | | |
-| E03 | Mesmo roteiro sem rede: vender, cancelar, fechar caixa, reimprimir; religar e conciliar | ⬜ | | |
+| E02 | Roteiro de `docs/TESTE_WINDOWS.md` em script contra o `.exe`: zero resposta 500 | ✅ | `scripts/roteiro_exe.py`; F6_ROTEIRO_EXE_CHROMIUM.txt: 49 requisições, 0 5xx | b41e946 |
+| E03 | Mesmo roteiro sem rede: vender, cancelar, fechar caixa, reimprimir; religar e conciliar | ✅ | `scripts/roteiro_exe_chromium.mjs`: 2 vendas em contingência pela tela, reimpressão, cancelamento, fechamento, conciliação após reinício | 054e6d6/b41e946 |
 | E04 | Instalação limpa: pasta do programa, atalhos, primeira execução, banco em `%LOCALAPPDATA%` | ⛔ | B8, F6_INSTALADOR_B8.txt, saída 2 | — |
 | E05 | Instalar a 1.0.13 por cima da anterior preserva os dados (contagens iguais) | ⛔ | B8, F6_INSTALADOR_B8.txt, saída 2 | — |
 | E06 | Desinstalar preserva os dados | ⛔ | B8, F6_INSTALADOR_B8.txt, saída 2 | — |
-| E07 | Cupom em 58 mm (PDF): acentuação, QR legível, chave, protocolo | ⬜ | | |
-| E08 | Cupom em 80 mm (PDF) e segunda via | ⬜ | | |
-| E09 | Cupom de contingência com a marcação "emitida em contingência" | ⬜ | | |
+| E07 | Cupom em 58 mm (PDF): acentuação, QR legível, chave, protocolo | ✅ | `scripts/verificar_cupons_pdf.py`: contingência e autorizada 58 mm OK, QR decodificado = qrcode_url | b41e946 |
+| E08 | Cupom em 80 mm (PDF) e segunda via | ✅ | mesmo script: 80 mm OK, reimpressão salva em PDF; bloco da chave corrigido | ee491d5/b41e946 |
+| E09 | Cupom de contingência com a marcação "emitida em contingência" | ✅ | mesmo script: 2 vias, aviso 4× por PDF, 2 QR decodificados, sem protocolo | b41e946 |
+| E11 | Chave do DANFE em blocos de 4 dígitos sem bloco partido (58/80 mm) | ✅ | `e2e/cupom.spec.ts`; F6_CHAVE_RED/GREEN.txt | ee491d5 |

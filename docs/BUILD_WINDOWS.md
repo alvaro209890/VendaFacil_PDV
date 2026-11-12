@@ -1,11 +1,11 @@
 # 🪟 Gerar o VendaFácil PDV no Windows (passo a passo completo)
 
 Guia de ponta a ponta para produzir o que o cliente recebe: do código até o
-**instalador assinado**. Tudo isto roda **no Windows** (o `.exe` não pode ser
+**instalador** (sem assinatura de código, por decisão do projeto). Tudo isto roda **no Windows** (o `.exe` não pode ser
 gerado no Linux/macOS — o PyInstaller não faz cross-compile, e o build do
 frontend exige Node 20+).
 
-> Resumo do pipeline: **build do .exe → empacotar no instalador → assinar →
+> Resumo do pipeline: **build do .exe → empacotar no instalador → validar →
 > distribuir.**
 
 ---
@@ -84,7 +84,7 @@ Dê dois cliques em **`installer\build_installer.bat`** (ou abra
 Antes, edite o topo do `installer\vendafacil.iss` com os seus dados:
 `AppPublisher` (empresa), `AppURL` (site) e, se tiver, `SetupIconFile` (ícone).
 
-**Resultado:** `dist_installer\VendaFacilPDV-Setup-1.0.3.exe` — **este é o
+**Resultado:** `dist_installer\VendaFacilPDV-Setup-1.0.13.exe` — **este é o
 arquivo que você entrega ao lojista.** Ele instala em Program Files, cria
 atalho no Menu Iniciar e na Área de Trabalho, e registra o desinstalador.
 O instalador também usa o mesmo ícone oficial do app.
@@ -129,9 +129,22 @@ Ao instalar, o lojista:
 
 ## 🔁 Lançar uma nova versão
 
-1. Atualize a versão em `installer\vendafacil.iss` (`AppVersion`).
+1. Atualize a versão em `installer\vendafacil.iss` (`AppVersion`) e em todo
+   lugar que a exiba (procure a versão antiga com `git grep`; o `/health` e a
+   tela de diagnóstico mostram a versão).
 2. Refaça os passos 2 → 3 → 4.
-3. Entregue o novo `Setup`. O instalador atualiza por cima, preservando os dados.
+3. Registre caminho, tamanho e SHA-256 dos dois artefatos
+   (`Get-FileHash <arquivo> -Algorithm SHA256`). Os binários **não** vão para o git.
+4. Valide o `.exe` antes de entregar (dados descartáveis, porta 3021):
+   ```bat
+   backend\.venv\Scripts\python -X utf8 -I scripts\roteiro_exe.py --chromium --cupons output\fase6\notas-simuladas.json
+   py -3.12 -X utf8 -I scripts\verificar_cupons_pdf.py output\fase6\notas-simuladas.json
+   backend\.venv\Scripts\python -X utf8 -I scripts\roteiro_exe.py --migracao <VendaFacilPDV.exe anterior>
+   ```
+   Se mudou algo no React (`src/`), recompile: o build do front vai embutido no `.exe`.
+5. Entregue o novo `Setup`. O instalador atualiza por cima, preservando os dados.
+   O teste de instalar/atualizar/desinstalar (`scripts\teste_instalador.ps1`)
+   exige PowerShell como administrador numa máquina descartável.
 
 > Não há auto-update embutido ainda — a atualização é reinstalar por cima com o
 > novo Setup. (Item da lista de evolução em `CHECKLIST_COMERCIALIZACAO.md`.)

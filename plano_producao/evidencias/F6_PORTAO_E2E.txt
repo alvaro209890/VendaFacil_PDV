@@ -1,0 +1,126 @@
+Commit: b41e946 · 2026-11-12T16:32:27-03:00
+$ npx playwright test --workers=1 --reporter=line
+Running 89 tests using 1 worker
+[1/89] e2e\carrinho.spec.ts:40:1 › U01: F5 preserva o carrinho e finalizar apaga o rascunho
+[2/89] e2e\carrinho.spec.ts:54:1 › U01: cancelar a venda apaga o rascunho sem baixar estoque
+[3/89] e2e\carrinho.spec.ts:65:1 › U01: rascunho corrompido não derruba a tela
+[4/89] e2e\carrinho.spec.ts:77:1 › U01: outro usuário não recebe o carrinho anterior
+[5/89] e2e\carrinho.spec.ts:94:1 › U01: recarga atualiza o preço do rascunho pelo cadastro atual
+[6/89] e2e\cupom.spec.ts:8:3 › F6.9: DANFE 58 mm não parte bloco de 4 dígitos da chave
+[7/89] e2e\cupom.spec.ts:8:3 › F6.9: DANFE 80 mm não parte bloco de 4 dígitos da chave
+[8/89] e2e\decimais.spec.ts:28:3 › U03: desconto 0,50 preserva digitacao e valor enviado
+[9/89] e2e\decimais.spec.ts:28:3 › U03: desconto 0.50 preserva digitacao e valor enviado
+[10/89] e2e\decimais.spec.ts:28:3 › U03: desconto 1,5 preserva digitacao e valor enviado
+[11/89] e2e\decimais.spec.ts:28:3 › U03: desconto 1.5 preserva digitacao e valor enviado
+[12/89] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "0" nao vende por F2
+[13/89] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "0" nao vende por botao
+[14/89] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "" nao vende por F2
+[15/89] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "" nao vende por botao
+[16/89] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "11" nao vende por F2
+[17/89] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "11" nao vende por botao
+[18/89] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "0,00001" nao vende por F2
+[19/89] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "0,00001" nao vende por botao
+[20/89] e2e\decimais.spec.ts:55:5 › U03: desconto invalido "abc" nao vende por F2
+[21/89] e2e\decimais.spec.ts:55:5 › U03: desconto invalido "abc" nao vende por botao
+[22/89] e2e\decimais.spec.ts:55:5 › U03: desconto invalido "-1" nao vende por F2
+[23/89] e2e\decimais.spec.ts:55:5 › U03: desconto invalido "-1" nao vende por botao
+[24/89] e2e\decimais.spec.ts:55:5 › U03: desconto invalido "0,001" nao vende por F2
+[25/89] e2e\decimais.spec.ts:55:5 › U03: desconto invalido "0,001" nao vende por botao
+[26/89] e2e\decimais.spec.ts:71:3 › U03: quantidade 0,5 preserva etapas e valor enviado
+[27/89] e2e\decimais.spec.ts:71:3 › U03: quantidade 0.5 preserva etapas e valor enviado
+[28/89] e2e\decimais.spec.ts:71:3 › U03: quantidade 0,125 preserva etapas e valor enviado
+[29/89] e2e\decimais.spec.ts:71:3 › U03: quantidade 1,5 preserva etapas e valor enviado
+[30/89] e2e\decimais.spec.ts:71:3 › U03: quantidade 1.5 preserva etapas e valor enviado
+[31/89] e2e\diagnostico.spec.ts:3:1 › F5.11 copia o diagnóstico autenticado para o suporte
+[32/89] e2e\erros.spec.ts:36:1 › F3.13: estoque alterado no backend mostra motivo e preserva carrinho
+[33/89] e2e\erros.spec.ts:56:1 › F3.13: caixa fechado avisa sem impedir venda conforme D4
+[34/89] e2e\erros.spec.ts:67:1 › F3.13: falha fiscal real local aparece sem alegar nota emitida ou repetir venda
+  1) e2e\erros.spec.ts:67:1 › F3.13: falha fiscal real local aparece sem alegar nota emitida ou repetir venda 
+    Error: page.evaluate: Execution context was destroyed, most likely because of a navigation
+      28 |   expect(fiscal.status()).toBe(200);
+      29 |   await page.goto('/login');
+    > 30 |   await page.evaluate(t => localStorage.setItem('vf_token', t), token);
+         |              ^
+      31 |   await page.goto('/pdv');
+      32 |   await page.getByRole('button', { name: new RegExp(codigo) }).click();
+      33 |   await page.getByPlaceholder('0,00', { exact: true }).fill('5');
+        at C:\GIS\VendaFacil_PDV\e2e\erros.spec.ts:30:14
+    Error Context: test-results\erros-F3-13-falha-fiscal-r-81de1-ta-emitida-ou-repetir-venda\error-context.md
+[35/89] e2e\erros.spec.ts:91:3 › F3.13: contrato UI distingue nota rejeitada (fixture sem SEFAZ)
+[36/89] e2e\erros.spec.ts:91:3 › F3.13: contrato UI distingue nota pendente (fixture sem SEFAZ)
+[37/89] e2e\erros.spec.ts:91:3 › F3.13: contrato UI distingue nota contingencia (fixture sem SEFAZ)
+[38/89] e2e\erros.spec.ts:91:3 › F3.13: contrato UI distingue nota autorizada (fixture sem SEFAZ)
+[39/89] e2e\foco.spec.ts:27:1 › U04: adicionar pelo botao devolve foco ao leitor
+[40/89] e2e\foco.spec.ts:35:3 › U04: fechar PIX por botao devolve foco ao leitor
+[41/89] e2e\foco.spec.ts:35:3 › U04: fechar PIX por Escape devolve foco ao leitor
+[42/89] e2e\foco.spec.ts:56:3 › U04: finalizar por botao devolve foco ao leitor
+[43/89] e2e\foco.spec.ts:56:3 › U04: finalizar por F2 devolve foco ao leitor
+[44/89] e2e\inutilizacao.spec.ts:14:3 › F4.18: faixa e resultado inutilizada na tela (transporte simulado)
+[45/89] e2e\inutilizacao.spec.ts:14:3 › F4.18: faixa e resultado processando na tela (transporte simulado)
+[46/89] e2e\inutilizacao.spec.ts:14:3 › F4.18: faixa e resultado rejeitada na tela (transporte simulado)
+[47/89] e2e\inutilizacao.spec.ts:14:3 › F4.18: faixa e resultado conflito na tela (transporte simulado)
+[48/89] e2e\locale.spec.ts:34:3 › U06: fechamento 1,50 persiste valor contado correto
+[49/89] e2e\locale.spec.ts:34:3 › U06: fechamento 1.50 persiste valor contado correto
+[50/89] e2e\locale.spec.ts:62:3 › U06: criar fiado 1,50 persiste decimal
+[51/89] e2e\locale.spec.ts:85:3 › U06: receber fiado 1,50 nao trunca centavos
+[52/89] e2e\locale.spec.ts:62:3 › U06: criar fiado 1.50 persiste decimal
+[53/89] e2e\locale.spec.ts:85:3 › U06: receber fiado 1.50 nao trunca centavos
+[54/89] e2e\locale.spec.ts:109:3 › U06: suprimento 0,50 persiste sem truncar
+[55/89] e2e\locale.spec.ts:109:3 › U06: suprimento 0.50 persiste sem truncar
+[56/89] e2e\locale.spec.ts:125:3 › U06: abertura de caixa 1,50 preserva decimal e persiste valor
+[57/89] e2e\locale.spec.ts:125:3 › U06: abertura de caixa 1.50 preserva decimal e persiste valor
+[58/89] e2e\produtos-locale.spec.ts:21:1 › U01: cadastro de produto com virgula em todos os campos decimais
+[59/89] e2e\produtos-locale.spec.ts:77:1 › U02: cadastro de produto com ponto em todos os campos decimais
+[60/89] e2e\produtos-locale.spec.ts:132:1 › U03: edicao de produto atualiza com virgula e ponto
+[61/89] e2e\produtos-locale.spec.ts:196:1 › U04: validacao impede envio de texto invalido e nao usa fallback silencioso 0/1
+[62/89] e2e\produtos-locale.spec.ts:223:1 › U06: fator abaixo do minimo nao e elevado silenciosamente
+[63/89] e2e\produtos-locale.spec.ts:237:1 › U05: campos vazios conservam defaults legitimos (0 e 1 no fator)
+[64/89] e2e\produtos-locale.spec.ts:282:1 › U06: entrada rapida de estoque aceita virgula e ponto
+[65/89] e2e\produtos-locale.spec.ts:337:1 › U07: ajuste rapido aceita perda com virgula e inventario com zero e fracionario
+[66/89] e2e\teclado.spec.ts:34:1 › U02: F3 foca quantidade e Enter confirma sem vender
+[67/89] e2e\teclado.spec.ts:46:1 › U02: F7 seleciona pagamento com Tab e Enter, F2 vende
+  2) e2e\teclado.spec.ts:46:1 › U02: F7 seleciona pagamento com Tab e Enter, F2 vende ──────────────
+    Error: expect(locator).toBeVisible() failed
+    Locator: getByText('Total a Pagar', { exact: true })
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+    Call log:
+      - Expect "toBeVisible" getByText('Total a Pagar', { exact: true }) with timeout 5000ms
+      - waiting for getByText('Total a Pagar', { exact: true })
+      29 |   await page.keyboard.type(codigo, { delay: 2 });
+      30 |   await page.keyboard.press('Enter');
+    > 31 |   await expect(page.getByText('Total a Pagar', { exact: true })).toBeVisible();
+         |                                                                  ^
+      32 | });
+      33 |
+      34 | test('U02: F3 foca quantidade e Enter confirma sem vender', async ({ page }) => {
+        at C:\GIS\VendaFacil_PDV\e2e\teclado.spec.ts:31:66
+    Error Context: test-results\teclado-U02-F7-seleciona-pagamento-com-Tab-e-Enter-F2-vende\error-context.md
+[68/89] e2e\teclado.spec.ts:57:1 › U02: Enter no dinheiro recebido confirma a venda
+[69/89] e2e\teclado.spec.ts:64:1 › U02: Escape fecha PIX sem finalizar nem apagar carrinho
+[70/89] e2e\teclado.spec.ts:81:1 › U02: F2 e atalhos nao atravessam PIX ainda carregando
+[71/89] e2e\teclado.spec.ts:107:1 › U02: leitor e F4 nao alteram carrinho sob janela PIX
+[72/89] e2e\teclado.spec.ts:130:1 › U02: tres produtos distintos e venda inteira so com teclado
+[73/89] e2e\teclado.spec.ts:156:1 › U02: F6 foca desconto e permite ajustar pelo teclado
+[74/89] e2e\total-diario.spec.ts:3:1 › U07: historico usa total diario do backend mesmo com pagina de 100 vendas
+[75/89] e2e\xml-idempotencia.spec.ts:16:1 › I08: reimportar a mesma chave pela tela recusa duplicacao sem alterar estoque
+[76/89] e2e\xml-locale.spec.ts:46:3 › U06 XML cobertura: recusa Qtd XML=0 antes da API
+[77/89] e2e\xml-locale.spec.ts:46:3 › U06 XML cobertura: recusa Entra=0 antes da API
+[78/89] e2e\xml-locale.spec.ts:46:3 › U06 XML cobertura: recusa Qtd/emb.=0,00001 antes da API
+[79/89] e2e\xml-locale.spec.ts:46:3 › U06 XML cobertura: recusa Custo R$= antes da API
+[80/89] e2e\xml-locale.spec.ts:46:3 › U06 XML cobertura: recusa Venda R$=Infinity antes da API
+[81/89] e2e\xml-locale.spec.ts:46:3 › U06 XML cobertura: recusa Qtd XML=1e3 antes da API
+[82/89] e2e\xml-locale.spec.ts:46:3 › U06 XML cobertura: recusa Custo R$=1.2.3 antes da API
+[83/89] e2e\xml-locale.spec.ts:46:3 › U06 XML cobertura: recusa Entra=-1 antes da API
+[84/89] e2e\xml-locale.spec.ts:58:1 › U06 XML cobertura: zero selecionado bloqueia lote, exclusao explicita permite o outro
+[85/89] e2e\xml-locale.spec.ts:82:1 › U06 XML: cancelar e reabrir nao herda textos da previa anterior
+[86/89] e2e\xml-locale.spec.ts:92:1 › U06 XML: recalculo de fator descarta textos derivados antigos
+[87/89] e2e\xml-locale.spec.ts:109:1 › U06 XML: texto invalido nao importa o custo anterior escondido
+[88/89] e2e\xml-locale.spec.ts:126:1 › U06 XML: , nos cinco campos preserva texto, payload e estoque
+[89/89] e2e\xml-locale.spec.ts:126:1 › U06 XML: . nos cinco campos preserva texto, payload e estoque
+  2 failed
+    e2e\erros.spec.ts:67:1 › F3.13: falha fiscal real local aparece sem alegar nota emitida ou repetir venda 
+    e2e\teclado.spec.ts:46:1 › U02: F7 seleciona pagamento com Tab e Enter, F2 vende ───────────────
+  87 passed (2.5m)
+Exit code: 1

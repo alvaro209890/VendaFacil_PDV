@@ -1,6 +1,8 @@
+Commit: ee491d5 · 2026-11-12T16:26:56-03:00
+$ cmd.exe /c "build_exe.bat"
 ==> Build do frontend (npm)
 
-up to date, audited 221 packages in 3s
+up to date, audited 221 packages in 1s
 
 48 packages are looking for funding
   run `npm fund` for details
@@ -10,29 +12,29 @@ found 0 vulnerabilities
 > vendafacil-pdv@0.0.0 build
 > tsc -b && vite build
 
-vite v8.3.8 building client environment for production...
+[36mvite v8.3.8 [32mbuilding client environment for production...[36m[39m
 transforming...
 ✓ 2175 modules transformed.
 rendering chunks...
 computing gzip size...
 dist/index.html                   0.59 kB │ gzip:   0.34 kB
 dist/assets/index-D0sX3GQy.css   71.04 kB │ gzip:  11.48 kB
-dist/assets/index-BFDXOHfk.js   576.36 kB │ gzip: 163.25 kB
+dist/assets/index-geGOooZE.js   576.34 kB │ gzip: 163.25 kB
 
-[plugin builtin:vite-reporter]
+[33m[plugin builtin:vite-reporter] 
 (!) Some chunks are larger than 500 kB after minification. Consider:
 - Using dynamic import() to code-split the application
 - Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
-- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
-✓ built in 938ms
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.[39m
+[32m✓ built in 1.00s[39m
 ==> Preparando ambiente Python
 Requirement already satisfied: pip in .\.venv\Lib\site-packages (26.3)
 ==> Empacotando com PyInstaller
-173 INFO: PyInstaller: 6.22.3, contrib hooks: 2026.10
-173 INFO: Python: 3.11.7
-179 INFO: Platform: Windows-10-10.0.19045-SP0
-179 INFO: Python environment: C:\GIS\VendaFacil_PDV\backend\.venv
-1576 INFO: Module search paths (PYTHONPATH):
+166 INFO: PyInstaller: 6.22.3, contrib hooks: 2026.10
+167 INFO: Python: 3.11.7
+173 INFO: Platform: Windows-10-10.0.19045-SP0
+173 INFO: Python environment: C:\GIS\VendaFacil_PDV\backend\.venv
+2065 INFO: Module search paths (PYTHONPATH):
 ['C:\\Users\\Usuario\\AppData\\Local\\Programs\\Python\\Python311\\python311.zip',
  'C:\\Users\\Usuario\\AppData\\Local\\Programs\\Python\\Python311\\DLLs',
  'C:\\Users\\Usuario\\AppData\\Local\\Programs\\Python\\Python311\\Lib',
@@ -40,168 +42,165 @@ Requirement already satisfied: pip in .\.venv\Lib\site-packages (26.3)
  'C:\\GIS\\VendaFacil_PDV\\backend\\.venv',
  'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages',
  'C:\\GIS\\VendaFacil_PDV\\backend']
-1754 INFO: Appending 'datas' from .spec
-1755 INFO: checking Analysis
-1768 INFO: Building because _input_datas changed
-1768 INFO: Looking for Python shared library...
-1768 INFO: Using Python shared library: C:\Users\Usuario\AppData\Local\Programs\Python\Python311\python311.dll
-1768 INFO: Running Analysis Analysis-00.toc
-1768 INFO: Target bytecode optimization level: 0
-1768 INFO: Initializing module dependency graph...
-1769 INFO: Initializing module graph hook caches...
-1841 INFO: Analyzing modules for base_library.zip ...
-2484 INFO: Processing standard module hook 'hook-heapq.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
-2550 INFO: Processing standard module hook 'hook-encodings.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
-4133 INFO: Processing standard module hook 'hook-math.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
-4231 INFO: Processing standard module hook 'hook-pickle.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
-6449 INFO: Caching module dependency graph...
-6485 INFO: Analyzing C:\GIS\VendaFacil_PDV\backend\run.py
-6539 INFO: Processing standard module hook 'hook-webbrowser.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
-6627 INFO: Processing standard module hook 'hook-uvicorn.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
-7424 INFO: Processing standard module hook 'hook-multiprocessing.util.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
-7488 INFO: Processing standard module hook 'hook-xml.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
-7691 INFO: Processing standard module hook 'hook-_ctypes.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
-8432 INFO: Processing pre-safe-import-module hook 'hook-typing_extensions.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
-8435 INFO: SetuptoolsInfo: initializing cached setuptools info...
-9540 INFO: Processing standard module hook 'hook-platform.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
-9829 INFO: Processing standard module hook 'hook-difflib.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
-10098 INFO: Processing standard module hook 'hook-websockets.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
-11114 INFO: Processing standard module hook 'hook-anyio.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
-11916 INFO: Processing standard module hook 'hook-pydantic.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
-12634 INFO: Processing standard module hook 'hook-zoneinfo.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
-12678 INFO: Processing standard module hook 'hook-sysconfig.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
-14073 INFO: Processing standard module hook 'hook-opentelemetry.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
-14610 INFO: Processing standard module hook 'hook-sqlite3.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
-15000 INFO: Processing standard module hook 'hook-xml.etree.cElementTree.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
-15107 INFO: Processing standard module hook 'hook-cryptography.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
-16457 INFO: hook-cryptography: cryptography does not seem to be using dynamically linked OpenSSL.
-16718 INFO: Processing standard module hook 'hook-lxml.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
-16929 INFO: Processing standard module hook 'hook-lxml.etree.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
-16951 INFO: Processing standard module hook 'hook-certifi.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
-17033 INFO: Processing standard module hook 'hook-urllib3.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
-17109 INFO: Processing pre-safe-import-module hook 'hook-backports.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
-17407 INFO: Processing standard module hook 'hook-charset_normalizer.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
-17628 INFO: Processing standard module hook 'hook-PIL.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
-17785 INFO: Processing standard module hook 'hook-PIL.Image.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
-18401 INFO: Processing standard module hook 'hook-PIL.ImageFilter.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
-18823 INFO: Analyzing hidden import 'uvicorn.__main__'
-18824 INFO: Analyzing hidden import 'uvicorn.lifespan'
-18825 INFO: Analyzing hidden import 'uvicorn.lifespan.off'
-18826 INFO: Analyzing hidden import 'uvicorn.lifespan.on'
-18830 INFO: Analyzing hidden import 'uvicorn.loops'
-18830 INFO: Analyzing hidden import 'uvicorn.loops.asyncio'
-18831 INFO: Analyzing hidden import 'uvicorn.loops.auto'
-18833 INFO: Analyzing hidden import 'uvicorn.loops.zuvloop'
-18834 INFO: Analyzing hidden import 'uvicorn.protocols.http.auto'
-18835 INFO: Analyzing hidden import 'uvicorn.protocols.websockets.auto'
-18836 INFO: Analyzing hidden import 'uvicorn.workers'
-18840 INFO: Analyzing hidden import 'signxml.__pyinstaller'
-18841 INFO: Analyzing hidden import 'signxml.__pyinstaller.hook-signxml'
-19274 INFO: Processing pre-safe-import-module hook 'hook-importlib_metadata.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
-19276 INFO: Processing pre-safe-import-module hook 'hook-packaging.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
-19305 INFO: Processing standard module hook 'hook-win32ctypes.core.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
-20126 INFO: Processing standard module hook 'hook-pycparser.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
-20563 INFO: Processing standard module hook 'hook-setuptools.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
-20574 INFO: Processing pre-safe-import-module hook 'hook-distutils.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
-20575 INFO: Processing pre-find-module-path hook 'hook-distutils.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_find_module_path'
-21204 INFO: Processing standard module hook 'hook-distutils.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
-21254 INFO: Processing standard module hook 'hook-distutils.util.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
-21283 INFO: Processing standard module hook 'hook-_osx_support.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
-21456 INFO: Processing standard module hook 'hook-pkg_resources.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
-24563 INFO: Analyzing hidden import 'signxml.schemas'
-24563 INFO: Analyzing hidden import 'signxml.xades'
-24580 INFO: Analyzing hidden import 'signxml.xades.schemas'
-24580 INFO: Analyzing hidden import 'cryptography.cobblestone'
-24581 INFO: Analyzing hidden import 'cryptography.fernet'
-24590 INFO: Analyzing hidden import 'cryptography.hazmat.asn1'
-24600 INFO: Analyzing hidden import 'cryptography.hazmat.primitives.ciphers.aead'
-24602 INFO: Analyzing hidden import 'cryptography.hazmat.primitives.cmac'
-24602 INFO: Analyzing hidden import 'cryptography.hazmat.primitives.hpke'
-24603 INFO: Analyzing hidden import 'cryptography.hazmat.primitives.kdf'
-24604 INFO: Analyzing hidden import 'cryptography.hazmat.primitives.kdf.argon2'
-24606 INFO: Analyzing hidden import 'cryptography.hazmat.primitives.kdf.concatkdf'
-24607 INFO: Analyzing hidden import 'cryptography.hazmat.primitives.kdf.hkdf'
-24608 INFO: Analyzing hidden import 'cryptography.hazmat.primitives.kdf.kbkdf'
-24609 INFO: Analyzing hidden import 'cryptography.hazmat.primitives.kdf.pbkdf2'
-24610 INFO: Analyzing hidden import 'cryptography.hazmat.primitives.kdf.scrypt'
-24611 INFO: Analyzing hidden import 'cryptography.hazmat.primitives.kdf.x963kdf'
-24612 INFO: Analyzing hidden import 'cryptography.hazmat.primitives.keywrap'
-24613 INFO: Analyzing hidden import 'cryptography.hazmat.primitives.poly1305'
-24614 INFO: Analyzing hidden import 'cryptography.hazmat.primitives.serialization.pkcs7'
-24622 INFO: Analyzing hidden import 'cryptography.hazmat.primitives.twofactor'
-24623 INFO: Analyzing hidden import 'cryptography.hazmat.primitives.twofactor.hotp'
-24626 INFO: Analyzing hidden import 'cryptography.hazmat.primitives.twofactor.totp'
-24628 INFO: Analyzing hidden import 'cryptography.x509.ocsp'
-24635 INFO: Analyzing hidden import 'lxml.ElementInclude'
-24641 INFO: Analyzing hidden import 'lxml._elementpath'
-24648 INFO: Analyzing hidden import 'lxml.builder'
-24652 INFO: Analyzing hidden import 'lxml.cssselect'
-24655 INFO: Analyzing hidden import 'lxml.doctestcompare'
-24995 INFO: Analyzing hidden import 'lxml.html'
-25172 INFO: Analyzing hidden import 'lxml.html.ElementSoup'
-25210 INFO: Analyzing hidden import 'lxml.html._diffcommand'
-25469 INFO: Analyzing hidden import 'lxml.html._html5builder'
-25484 INFO: Analyzing hidden import 'lxml.html.builder'
-25497 INFO: Analyzing hidden import 'lxml.html.clean'
-25502 INFO: Analyzing hidden import 'lxml.html.formfill'
-25531 INFO: Analyzing hidden import 'lxml.html.html5parser'
-25550 INFO: Analyzing hidden import 'lxml.html.usedoctest'
-25554 INFO: Analyzing hidden import 'lxml.includes'
-25558 INFO: Analyzing hidden import 'lxml.includes.extlibs'
-25559 INFO: Analyzing hidden import 'lxml.includes.libexslt'
-25561 INFO: Analyzing hidden import 'lxml.includes.libxml'
-25561 INFO: Analyzing hidden import 'lxml.includes.libxslt'
-25562 INFO: Analyzing hidden import 'lxml.isoschematron'
-25579 INFO: Processing standard module hook 'hook-lxml.isoschematron.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
-25603 INFO: Analyzing hidden import 'lxml.objectify'
-25607 INFO: Analyzing hidden import 'lxml.pyclasslookup'
-25611 INFO: Analyzing hidden import 'lxml.sax'
-25758 INFO: Analyzing hidden import 'lxml.usedoctest'
-25761 INFO: Processing module hooks (post-graph stage)...
-26046 INFO: Processing standard module hook 'hook-lxml.objectify.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
-26047 WARNING: Hidden import "pycparser.lextab" not found!
-26048 WARNING: Hidden import "pycparser.yacctab" not found!
-26138 INFO: Processing pre-safe-import-module hook 'hook-tomli.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
-26373 WARNING: Hidden import "tzdata" not found!
-26741 INFO: Processing standard module hook 'hook-PIL.SpiderImagePlugin.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
-26801 INFO: Processing pre-safe-import-module hook 'hook-win32com.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\pre_safe_import_module'
-27424 INFO: Processing standard module hook 'hook-setuptools._vendor.importlib_metadata.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
-27576 INFO: Processing standard module hook 'hook-setuptools._vendor.jaraco.text.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
-28403 INFO: Performing binary vs. data reclassification (37 entries)
-28417 INFO: Looking for ctypes DLLs
-28636 INFO: Analyzing run-time hooks ...
-28659 INFO: Including run-time hook 'pyi_rth_inspect.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
-28664 INFO: Including run-time hook 'pyi_rth_pkgutil.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
-28670 INFO: Including run-time hook 'pyi_rth_multiprocessing.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
-28676 INFO: Including run-time hook 'pyi_rth_cryptography_openssl.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\rthooks'
-28679 INFO: Including run-time hook 'pyi_rth_setuptools.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
-28683 INFO: Including run-time hook 'pyi_rth_pkgres.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
-28733 INFO: Creating base_library.zip...
-28767 INFO: Looking for dynamic libraries
-30615 INFO: Extra DLL search directories (AddDllDirectory): []
-30615 INFO: Extra DLL search directories (PATH): []
-31814 INFO: Warnings written to C:\GIS\VendaFacil_PDV\build\vendafacil\warn-vendafacil.txt
-31964 INFO: Graph cross-reference written to C:\GIS\VendaFacil_PDV\build\vendafacil\xref-vendafacil.html
-32012 INFO: checking PYZ
-32038 INFO: Building because toc changed
-32038 INFO: Building PYZ (ZlibArchive) C:\GIS\VendaFacil_PDV\build\vendafacil\PYZ-00.pyz
-32954 INFO: Building PYZ (ZlibArchive) C:\GIS\VendaFacil_PDV\build\vendafacil\PYZ-00.pyz completed successfully.
-32987 INFO: checking PKG
-32989 INFO: Building because toc changed
-32989 INFO: Building PKG (CArchive) VendaFacilPDV.pkg
-39199 INFO: Building PKG (CArchive) VendaFacilPDV.pkg completed successfully.
-39202 INFO: Bootloader C:\GIS\VendaFacil_PDV\backend\.venv\Lib\site-packages\PyInstaller\bootloader\Windows-64bit-intel\runw.exe
-39202 INFO: checking EXE
-39204 INFO: Building because toc changed
-39204 INFO: Building EXE from EXE-00.toc
-39208 INFO: Copying bootloader EXE to C:\GIS\VendaFacil_PDV\dist_exe\VendaFacilPDV.exe
-39212 INFO: Copying icon to EXE
-39216 INFO: Copying 0 resources to EXE
-39216 INFO: Embedding manifest in EXE
-39218 INFO: Appending PKG archive to EXE
-39472 INFO: Fixing EXE headers
-40225 INFO: Building EXE from EXE-00.toc completed successfully.
-40229 INFO: Build complete! The results are available in: C:\GIS\VendaFacil_PDV\dist_exe
+2323 INFO: Appending 'datas' from .spec
+2324 INFO: checking Analysis
+2341 INFO: Building because _input_datas changed
+2341 INFO: Looking for Python shared library...
+2341 INFO: Using Python shared library: C:\Users\Usuario\AppData\Local\Programs\Python\Python311\python311.dll
+2341 INFO: Running Analysis Analysis-00.toc
+2341 INFO: Target bytecode optimization level: 0
+2341 INFO: Initializing module dependency graph...
+2343 INFO: Initializing module graph hook caches...
+2383 INFO: Analyzing modules for base_library.zip ...
+3248 INFO: Processing standard module hook 'hook-heapq.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+3320 INFO: Processing standard module hook 'hook-encodings.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+4988 INFO: Processing standard module hook 'hook-math.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+5077 INFO: Processing standard module hook 'hook-pickle.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+6547 INFO: Caching module dependency graph...
+6583 INFO: Analyzing C:\GIS\VendaFacil_PDV\backend\run.py
+6629 INFO: Processing standard module hook 'hook-webbrowser.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+6714 INFO: Processing standard module hook 'hook-uvicorn.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+7196 INFO: Processing standard module hook 'hook-multiprocessing.util.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+7262 INFO: Processing standard module hook 'hook-xml.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+7477 INFO: Processing standard module hook 'hook-_ctypes.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+7985 INFO: Processing pre-safe-import-module hook 'hook-typing_extensions.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+7988 INFO: SetuptoolsInfo: initializing cached setuptools info...
+8805 INFO: Processing standard module hook 'hook-platform.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+9150 INFO: Processing standard module hook 'hook-difflib.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+9399 INFO: Processing standard module hook 'hook-websockets.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+10149 INFO: Processing standard module hook 'hook-anyio.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+11024 INFO: Processing standard module hook 'hook-pydantic.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+11782 INFO: Processing standard module hook 'hook-zoneinfo.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+11805 INFO: Processing standard module hook 'hook-sysconfig.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+12987 INFO: Processing standard module hook 'hook-opentelemetry.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+13364 INFO: Processing standard module hook 'hook-sqlite3.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+13679 INFO: Processing standard module hook 'hook-xml.etree.cElementTree.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+13768 INFO: Processing standard module hook 'hook-cryptography.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+14973 INFO: hook-cryptography: cryptography does not seem to be using dynamically linked OpenSSL.
+15239 INFO: Processing standard module hook 'hook-lxml.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+15498 INFO: Processing standard module hook 'hook-lxml.etree.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+15521 INFO: Processing standard module hook 'hook-certifi.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+15603 INFO: Processing standard module hook 'hook-urllib3.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+15677 INFO: Processing pre-safe-import-module hook 'hook-backports.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+15960 INFO: Processing standard module hook 'hook-charset_normalizer.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+16186 INFO: Processing standard module hook 'hook-PIL.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+16307 INFO: Processing standard module hook 'hook-PIL.Image.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+16713 INFO: Processing standard module hook 'hook-PIL.ImageFilter.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+17062 INFO: Analyzing hidden import 'uvicorn.__main__'
+17063 INFO: Analyzing hidden import 'uvicorn.lifespan'
+17063 INFO: Analyzing hidden import 'uvicorn.lifespan.off'
+17065 INFO: Analyzing hidden import 'uvicorn.lifespan.on'
+17069 INFO: Analyzing hidden import 'uvicorn.loops'
+17070 INFO: Analyzing hidden import 'uvicorn.loops.asyncio'
+17070 INFO: Analyzing hidden import 'uvicorn.loops.auto'
+17072 INFO: Analyzing hidden import 'uvicorn.loops.zuvloop'
+17073 INFO: Analyzing hidden import 'uvicorn.protocols.http.auto'
+17074 INFO: Analyzing hidden import 'uvicorn.protocols.websockets.auto'
+17075 INFO: Analyzing hidden import 'uvicorn.workers'
+17078 INFO: Analyzing hidden import 'signxml.__pyinstaller'
+17079 INFO: Analyzing hidden import 'signxml.__pyinstaller.hook-signxml'
+17279 INFO: Processing pre-safe-import-module hook 'hook-importlib_metadata.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+17281 INFO: Processing pre-safe-import-module hook 'hook-packaging.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+17310 INFO: Processing standard module hook 'hook-win32ctypes.core.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+18173 INFO: Processing standard module hook 'hook-pycparser.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+18365 INFO: Processing standard module hook 'hook-setuptools.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+18372 INFO: Processing pre-safe-import-module hook 'hook-distutils.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+18372 INFO: Processing pre-find-module-path hook 'hook-distutils.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_find_module_path'
+18905 INFO: Processing standard module hook 'hook-distutils.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+18958 INFO: Processing standard module hook 'hook-distutils.util.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+18987 INFO: Processing standard module hook 'hook-_osx_support.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+19174 INFO: Processing standard module hook 'hook-pkg_resources.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+21636 INFO: Analyzing hidden import 'signxml.schemas'
+21637 INFO: Analyzing hidden import 'signxml.xades'
+21656 INFO: Analyzing hidden import 'signxml.xades.schemas'
+21656 INFO: Analyzing hidden import 'cryptography.cobblestone'
+21657 INFO: Analyzing hidden import 'cryptography.fernet'
+21668 INFO: Analyzing hidden import 'cryptography.hazmat.asn1'
+21682 INFO: Analyzing hidden import 'cryptography.hazmat.primitives.ciphers.aead'
+21683 INFO: Analyzing hidden import 'cryptography.hazmat.primitives.cmac'
+21684 INFO: Analyzing hidden import 'cryptography.hazmat.primitives.hpke'
+21685 INFO: Analyzing hidden import 'cryptography.hazmat.primitives.kdf'
+21687 INFO: Analyzing hidden import 'cryptography.hazmat.primitives.kdf.argon2'
+21689 INFO: Analyzing hidden import 'cryptography.hazmat.primitives.kdf.concatkdf'
+21689 INFO: Analyzing hidden import 'cryptography.hazmat.primitives.kdf.hkdf'
+21690 INFO: Analyzing hidden import 'cryptography.hazmat.primitives.kdf.kbkdf'
+21692 INFO: Analyzing hidden import 'cryptography.hazmat.primitives.kdf.pbkdf2'
+21692 INFO: Analyzing hidden import 'cryptography.hazmat.primitives.kdf.scrypt'
+21693 INFO: Analyzing hidden import 'cryptography.hazmat.primitives.kdf.x963kdf'
+21694 INFO: Analyzing hidden import 'cryptography.hazmat.primitives.keywrap'
+21695 INFO: Analyzing hidden import 'cryptography.hazmat.primitives.poly1305'
+21696 INFO: Analyzing hidden import 'cryptography.hazmat.primitives.serialization.pkcs7'
+21705 INFO: Analyzing hidden import 'cryptography.hazmat.primitives.twofactor'
+21706 INFO: Analyzing hidden import 'cryptography.hazmat.primitives.twofactor.hotp'
+21712 INFO: Analyzing hidden import 'cryptography.hazmat.primitives.twofactor.totp'
+21715 INFO: Analyzing hidden import 'cryptography.x509.ocsp'
+21722 INFO: Analyzing hidden import 'lxml.ElementInclude'
+21727 INFO: Analyzing hidden import 'lxml._elementpath'
+21734 INFO: Analyzing hidden import 'lxml.builder'
+21738 INFO: Analyzing hidden import 'lxml.cssselect'
+21740 INFO: Analyzing hidden import 'lxml.doctestcompare'
+22009 INFO: Analyzing hidden import 'lxml.html'
+22052 INFO: Analyzing hidden import 'lxml.html.ElementSoup'
+22062 INFO: Analyzing hidden import 'lxml.html._diffcommand'
+22146 INFO: Analyzing hidden import 'lxml.html._html5builder'
+22150 INFO: Analyzing hidden import 'lxml.html.builder'
+22154 INFO: Analyzing hidden import 'lxml.html.clean'
+22155 INFO: Analyzing hidden import 'lxml.html.formfill'
+22163 INFO: Analyzing hidden import 'lxml.html.html5parser'
+22169 INFO: Analyzing hidden import 'lxml.html.usedoctest'
+22170 INFO: Analyzing hidden import 'lxml.includes'
+22170 INFO: Analyzing hidden import 'lxml.includes.extlibs'
+22171 INFO: Analyzing hidden import 'lxml.includes.libexslt'
+22171 INFO: Analyzing hidden import 'lxml.includes.libxml'
+22172 INFO: Analyzing hidden import 'lxml.includes.libxslt'
+22172 INFO: Analyzing hidden import 'lxml.isoschematron'
+22177 INFO: Processing standard module hook 'hook-lxml.isoschematron.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+22185 INFO: Analyzing hidden import 'lxml.objectify'
+22185 INFO: Analyzing hidden import 'lxml.pyclasslookup'
+22186 INFO: Analyzing hidden import 'lxml.sax'
+22229 INFO: Analyzing hidden import 'lxml.usedoctest'
+22230 INFO: Processing module hooks (post-graph stage)...
+22406 INFO: Processing standard module hook 'hook-lxml.objectify.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+22407 WARNING: Hidden import "pycparser.lextab" not found!
+22408 WARNING: Hidden import "pycparser.yacctab" not found!
+22506 INFO: Processing pre-safe-import-module hook 'hook-tomli.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+22759 WARNING: Hidden import "tzdata" not found!
+23061 INFO: Processing standard module hook 'hook-PIL.SpiderImagePlugin.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+23108 INFO: Processing pre-safe-import-module hook 'hook-win32com.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\pre_safe_import_module'
+23743 INFO: Processing standard module hook 'hook-setuptools._vendor.importlib_metadata.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+23920 INFO: Processing standard module hook 'hook-setuptools._vendor.jaraco.text.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+24875 INFO: Performing binary vs. data reclassification (37 entries)
+24889 INFO: Looking for ctypes DLLs
+25026 INFO: Analyzing run-time hooks ...
+25032 INFO: Including run-time hook 'pyi_rth_inspect.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+25035 INFO: Including run-time hook 'pyi_rth_pkgutil.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+25038 INFO: Including run-time hook 'pyi_rth_multiprocessing.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+25040 INFO: Including run-time hook 'pyi_rth_cryptography_openssl.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\rthooks'
+25041 INFO: Including run-time hook 'pyi_rth_setuptools.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+25042 INFO: Including run-time hook 'pyi_rth_pkgres.py' from 'C:\\GIS\\VendaFacil_PDV\\backend\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+25069 INFO: Creating base_library.zip...
+25089 INFO: Looking for dynamic libraries
+26437 INFO: Extra DLL search directories (AddDllDirectory): []
+26437 INFO: Extra DLL search directories (PATH): []
+27891 INFO: Warnings written to C:\GIS\VendaFacil_PDV\build\vendafacil\warn-vendafacil.txt
+28017 INFO: Graph cross-reference written to C:\GIS\VendaFacil_PDV\build\vendafacil\xref-vendafacil.html
+28052 INFO: checking PYZ
+28113 INFO: checking PKG
+28115 INFO: Building because toc changed
+28115 INFO: Building PKG (CArchive) VendaFacilPDV.pkg
+35970 INFO: Building PKG (CArchive) VendaFacilPDV.pkg completed successfully.
+35977 INFO: Bootloader C:\GIS\VendaFacil_PDV\backend\.venv\Lib\site-packages\PyInstaller\bootloader\Windows-64bit-intel\runw.exe
+35977 INFO: checking EXE
+35981 INFO: Building because toc changed
+35981 INFO: Building EXE from EXE-00.toc
+35982 INFO: Copying bootloader EXE to C:\GIS\VendaFacil_PDV\dist_exe\VendaFacilPDV.exe
+35989 INFO: Copying icon to EXE
+35996 INFO: Copying 0 resources to EXE
+35996 INFO: Embedding manifest in EXE
+36000 INFO: Appending PKG archive to EXE
+36035 INFO: Fixing EXE headers
+38090 INFO: Building EXE from EXE-00.toc completed successfully.
+38094 INFO: Build complete! The results are available in: C:\GIS\VendaFacil_PDV\dist_exe
 
 OK! Executavel gerado em: dist_exe\VendaFacilPDV.exe
 Distribua ESSE arquivo. Ao abrir, ele sobe o sistema e abre o navegador.

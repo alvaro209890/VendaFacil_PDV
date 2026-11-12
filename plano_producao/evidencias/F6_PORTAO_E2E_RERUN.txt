@@ -1,0 +1,20 @@
+Commit: b41e946 · 2026-11-12T16:35:13-03:00 — reexecução das duas falhas de preparação
+$ npx playwright test e2e/erros.spec.ts e2e/teclado.spec.ts --workers=1 --reporter=line
+Running 15 tests using 1 worker
+[1/15] e2e\erros.spec.ts:36:1 › F3.13: estoque alterado no backend mostra motivo e preserva carrinho
+[2/15] e2e\erros.spec.ts:56:1 › F3.13: caixa fechado avisa sem impedir venda conforme D4
+[3/15] e2e\erros.spec.ts:67:1 › F3.13: falha fiscal real local aparece sem alegar nota emitida ou repetir venda
+[4/15] e2e\erros.spec.ts:91:3 › F3.13: contrato UI distingue nota rejeitada (fixture sem SEFAZ)
+[5/15] e2e\erros.spec.ts:91:3 › F3.13: contrato UI distingue nota pendente (fixture sem SEFAZ)
+[6/15] e2e\erros.spec.ts:91:3 › F3.13: contrato UI distingue nota contingencia (fixture sem SEFAZ)
+[7/15] e2e\erros.spec.ts:91:3 › F3.13: contrato UI distingue nota autorizada (fixture sem SEFAZ)
+[8/15] e2e\teclado.spec.ts:34:1 › U02: F3 foca quantidade e Enter confirma sem vender
+[9/15] e2e\teclado.spec.ts:46:1 › U02: F7 seleciona pagamento com Tab e Enter, F2 vende
+[10/15] e2e\teclado.spec.ts:57:1 › U02: Enter no dinheiro recebido confirma a venda
+[11/15] e2e\teclado.spec.ts:64:1 › U02: Escape fecha PIX sem finalizar nem apagar carrinho
+[12/15] e2e\teclado.spec.ts:81:1 › U02: F2 e atalhos nao atravessam PIX ainda carregando
+[13/15] e2e\teclado.spec.ts:107:1 › U02: leitor e F4 nao alteram carrinho sob janela PIX
+[14/15] e2e\teclado.spec.ts:130:1 › U02: tres produtos distintos e venda inteira so com teclado
+[15/15] e2e\teclado.spec.ts:156:1 › U02: F6 foca desconto e permite ajustar pelo teclado
+  15 passed (43.5s)
+Exit code: 0

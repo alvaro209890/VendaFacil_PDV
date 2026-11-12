@@ -1,2 +1,16 @@
+﻿Data: 2026-11-12T16:29:09 · commit ee491d5
+$ [Security.Principal.WindowsPrincipal]::new([Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(Administrator)
+False
+$ [System.Management.Automation.Language.Parser]::ParseFile(scripts\teste_instalador.ps1) — erros de sintaxe:
+0
+$ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\teste_instalador.ps1
 B8: a sessao nao esta elevada. Nenhum instalador foi executado.
 Exit code: 2
+
+Setups que o script usa (presentes no disco):
+VendaFacilPDV-Setup-1.0.12.exe  39913034 bytes  SHA256 E151A365BF1A794B78F5BE2ED9BC0BE0F2890283DC25E6A3252C8E16A50C1AAA
+VendaFacilPDV-Setup-1.0.13.exe  39973691 bytes  SHA256 4529904B25C61F55981C5D5C2476B048C6F16A686AA355083E5F99C126293A11
+
+Para destravar (B8): PowerShell como administrador, numa máquina/VM Windows descartável sem o PDV instalado:
+  powershell -NoProfile -ExecutionPolicy Bypass -File scripts\teste_instalador.ps1
+Saída esperada: linhas E04, E05 e E06 e código 0.

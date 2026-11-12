@@ -6,6 +6,28 @@ Marque cada item. "✅ Esperado" descreve o resultado correto.
 > Pré-requisito: já ter gerado o `.exe`/instalador (veja `BUILD_WINDOWS.md`).
 > Dica: deixe o **Console** do app aberto — erros aparecem nele.
 
+## Versão automática (antes do teste manual)
+
+Boa parte deste roteiro roda sozinha contra o `.exe`, com dados descartáveis,
+na porta 3021 (não mexe nos dados reais nem na porta 3020) e com uma SEFAZ
+sintética de homologação:
+
+```bat
+backend\.venv\Scripts\python -X utf8 -I scripts\roteiro_exe.py --chromium --cupons output\fase6\notas-simuladas.json
+py -3.12 -X utf8 -I scripts\verificar_cupons_pdf.py output\fase6\notas-simuladas.json
+```
+
+| Script | O que prova |
+|---|---|
+| `scripts/roteiro_exe.py` | primeiro acesso, produto, XML, cada forma de pagamento, fiado e baixa parcial, cancelamento, sangria/suprimento, fechamento, relatórios, backup/restauração; venda offline em contingência, reinício e conciliação com o mesmo número/chave/XML; zero resposta 5xx |
+| `--chromium` | a tela empacotada: venda em contingência, **reimpressão**, carrinho que volta após reinício, cupons em 58 e 80 mm salvos em PDF |
+| `scripts/verificar_cupons_pdf.py` | largura do PDF, acentos, chave em blocos de 4, protocolo, duas vias e avisos de contingência, e **decodifica os QR Codes** |
+| `--migracao <exe anterior>` | o `.exe` novo abre o banco do anterior sem mudar contagens |
+| `scripts/teste_instalador.ps1` | instala a versão anterior, atualiza, desinstala (precisa de PowerShell **como administrador**, em máquina descartável) |
+
+O teste em papel (impressora térmica real, leitor de código de barras, gaveta) e
+a nota real na SEFAZ continuam manuais (itens 6 e 11 abaixo).
+
 ## 0. Instalação
 - [ ] Rodar `VendaFacilPDV-Setup-*.exe`. ✅ Instala, cria atalho no Menu Iniciar e Área de Trabalho.
 - [ ] (SmartScreen) "Editor desconhecido". ✅ "Mais informações → Executar assim mesmo" abre normal.
@@ -43,6 +65,8 @@ Marque cada item. "✅ Esperado" descreve o resultado correto.
 - [ ] Selecionar largura (80mm/58mm) conforme a impressora. ✅ Salva a escolha.
 - [ ] Marcar "Imprimir recibo ao finalizar" e vender. ✅ Imprime automático na térmica.
 - [ ] Usar **🖨️ Imprimir recibo** para reimprimir. ✅ Sai o cupom com loja, itens, total e forma de pagamento.
+- [ ] Com NFC-e: ✅ chave em 11 blocos de 4 dígitos (nenhum bloco partido), protocolo e QR Code lido pela câmera do celular.
+- [ ] Venda em **contingência** (sem internet): ✅ saem **duas vias** (consumidor e estabelecimento), cada uma com "EMITIDA EM CONTINGÊNCIA" e QR; o botão de reimpressão continua na tela.
 
 ## 7. Caixa
 - [ ] **Abrir caixa** com fundo de troco. ✅ Mostra "dinheiro esperado" = abertura.
@@ -63,13 +87,16 @@ Marque cada item. "✅ Esperado" descreve o resultado correto.
 - [ ] Conferir backups automáticos em `%LOCALAPPDATA%\VendaFacilPDV\dados\backups`.
 
 ## 11. Nota fiscal (NFC-e) — só se for usar
-- [ ] Preencher a tela **Fiscal** (emitente + gateway Focus NFe, ambiente **homologação**).
-- [ ] Emitir NFC-e de uma venda. ✅ Autoriza em homologação (status "autorizada"); links de XML/DANFE aparecem.
-- [ ] Só então mudar para **produção** (exige certificado A1, CSC e credenciamento na SEFAZ).
+- [ ] Preencher a tela **Fiscal** (emitente, provedor **SEFAZ-MT direto**, certificado A1 da própria loja, CSC de homologação, ambiente **homologação**). Roteiro completo: `TESTE_FISCAL_WINDOWS.md`.
+- [ ] Rodar `scripts\fiscal_precheck.py`. ✅ Certificado, CSC e dados da empresa presentes e coerentes.
+- [ ] Emitir NFC-e de uma venda. ✅ Autoriza em homologação (status "autorizada"); XML e DANFE disponíveis.
+- [ ] Só então mudar para **produção**, por decisão do responsável (exige credenciamento na SEFAZ-MT e o contador de acordo).
 
 ## 12. Persistência e offline
 - [ ] Fechar o app e abrir de novo. ✅ Produtos/vendas/caixa continuam lá (banco em `%LOCALAPPDATA%`).
 - [ ] **Desligar a internet** e vender em dinheiro/PIX/fiado. ✅ Funciona normal.
+- [ ] Sem internet, vender com NFC-e. ✅ Nota em **contingência** com duas vias; ao religar a internet (com o programa aberto) ela é autorizada sozinha com o mesmo número e chave.
+- [ ] Fechar o programa com itens no carrinho e abrir de novo. ✅ O carrinho volta.
 - [ ] Com internet de volta (se usar painel): as vendas sincronizam sozinhas em segundo plano.
 
 ## 13. Sinais de problema (o que observar)

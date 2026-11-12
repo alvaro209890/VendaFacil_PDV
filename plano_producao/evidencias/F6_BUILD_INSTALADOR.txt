@@ -1,3 +1,5 @@
+Commit: ee491d5 · 2026-11-12T16:27:46-03:00
+$ cmd.exe /c "installer\build_installer.bat"
 Inno Setup 6 Command-Line Compiler
 Copyright (C) 1997-2025 Jordan Russell. All rights reserved.
 Portions Copyright (C) 2000-2025 Martijn Laan. All rights reserved.
@@ -53,6 +55,7 @@ Parsing [Icons] section, line 60
 Parsing [Icons] section, line 61
 Parsing [Run] section, line 64
 Parsing [Files] section, line 56
+Deleting VendaFacilPDV-Setup-1.0.13.exe from output directory
 Creating setup files
    Verification successful
    Updating icons (Setup.exe)
@@ -62,7 +65,7 @@ Creating setup files
    Updating manifest (Setup.exe)
 
 
-Successful compile (6,063 sec). Resulting Setup program filename is:
+Successful compile (6,625 sec). Resulting Setup program filename is:
 C:\GIS\VendaFacil_PDV\dist_installer\VendaFacilPDV-Setup-1.0.13.exe
 
 OK! Instalador gerado em: ..\dist_installer\VendaFacilPDV-Setup-*.exe
