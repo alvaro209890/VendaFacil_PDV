@@ -119,7 +119,8 @@ def test_x02_schema_nfce_pix_integrado_e_fiado(client, auth, cfg_xsd, cert_teste
         _venda(fiado, forma="fiado"), cfg_xsd, "65", cpf_consumidor="12345678909",
         serie=1, numero=104)
     validar_xml(_validar_nfce(doc_fiado, cfg_xsd, cert_teste), "nfe")
-    assert "<tPag>99</tPag>" in doc_fiado.xml and "<indPag>1</indPag>" in doc_fiado.xml
+    assert "<tPag>05</tPag>" in doc_fiado.xml and "<indPag>1</indPag>" in doc_fiado.xml
+    assert "<xPag>" not in doc_fiado.xml
 
 
 def test_x03_schema_nfce_desconto_cpf_e_st(client, auth, cfg_xsd, cert_teste):

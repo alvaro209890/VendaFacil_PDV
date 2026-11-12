@@ -195,7 +195,7 @@ def _tag(parent, name: str, text=None):
 # parte: 17 = PIX dinâmico (Point integrada, com cAut) e 20 = PIX estático
 # (QR fixo da loja, fluxo do pix.py). Fiado/outros caem em 99 + xPag, que é
 # obrigatório quando tPag=99.
-_TPAG = {"dinheiro": "01", "credito": "03", "debito": "04"}
+_TPAG = {"dinheiro": "01", "credito": "03", "debito": "04", "fiado": "05"}
 
 # Bandeira → tBand (tabela YA06). Aceita o id de bandeira do Mercado Pago
 # (master, visa, elo...) ou o próprio código numérico já pronto.
@@ -257,7 +257,7 @@ def _grupo_pagamento(inf, venda: dict, valor: float, config: dict | None = None)
     if tpag == "99":
         # xPag é obrigatório quando tPag=99 (rejeição por regra YA02); descreve
         # o meio de pagamento real.
-        _tag(detp, "xPag", "Crediario da loja (fiado)" if forma == "fiado" else "Outros")
+        _tag(detp, "xPag", "Outros")
     _tag(detp, "vPag", f"{valor:.2f}")
 
     eletronico = forma in {"credito", "debito"} or (

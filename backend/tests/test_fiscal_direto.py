@@ -576,14 +576,14 @@ def test_conteudo_interno_do_soap_leva_namespace_da_nfe():
     assert "<indSinc>1</indSinc>" in conteudo
 
 
-def test_pag_fiado_usa_99_com_xpag_e_indpag_prazo(client, auth):
+def test_pag_fiado_usa_credito_da_loja_a_prazo(client, auth):
     produto = _produto_simples(client, auth, "Fiado MT")
     v = _venda(produto)
     v["forma_pagamento"] = "fiado"
     doc = fiscal_direto.montar_documento(v, _cfg(), "65", serie=1, numero=1)
     assert "<indPag>1</indPag>" in doc.xml            # a prazo
-    assert "<tPag>99</tPag>" in doc.xml
-    assert "<xPag>Crediario da loja (fiado)</xPag>" in doc.xml   # xPag obrigatório c/ tPag 99
+    assert "<tPag>05</tPag>" in doc.xml
+    assert "<xPag>" not in doc.xml
 
 
 def test_pag_pix_estatico_usa_tpag_20(client, auth):
