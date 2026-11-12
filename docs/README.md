@@ -2,6 +2,12 @@
 
 Índice de toda a documentação, por público.
 
+## 🏪 Implantação e operação na loja
+- [IMPLANTACAO_MERCEARIA.md](IMPLANTACAO_MERCEARIA.md) — roteiro de instalação na loja, item a item, com evidência.
+- [TREINAMENTO_OPERADOR.md](TREINAMENTO_OPERADOR.md) — treinamento de 20 minutos do operador de caixa.
+- [SUPORTE_LOJA.md](SUPORTE_LOJA.md) — folha de 1 página para imprimir: luz, internet, nota pendente, diagnóstico.
+- [SEGURANCA.md](SEGURANCA.md) — o que o PDV protege, riscos aceitos e o que fazer se o PC sair da loja.
+
 ## 📘 Uso do sistema (lojista)
 - [**MANUAL.md**](MANUAL.md) — manual completo (lojista + administrador) e FAQ.
 - [ESTOQUE_E_XML.md](ESTOQUE_E_XML.md) — estoque, entrada manual e importação de XML (NF-e).
@@ -10,7 +16,7 @@
 - [FISCAL_SIMPLES.md](FISCAL_SIMPLES.md) — CSOSN/CST por produto, XML fiscal e relatório para PGDAS-D.
 - [CONTADOR.md](CONTADOR.md) — fluxo com o contador: quem emite, o que entregar (export de XMLs em ZIP) e o que ele configura.
 - [VINCULO_PAGAMENTO_MT.md](VINCULO_PAGAMENTO_MT.md) — vínculo do pagamento eletrônico (cartão/PIX) na NFC-e — obrigatório em MT (Portaria 262/2023).
-- [**LEGISLACAO_FISCAL_MT.md**](LEGISLACAO_FISCAL_MT.md) — revisão de legislação 2026-07: webservices/QR oficiais de MT, prazos de cancelamento (30 min/2 h), contingência, tPag (PIX 17/20, fiado), limites da NFC-e, CRT/Reforma Tributária (IBS/CBS 2027) e Lei 12.741.
+- [**LEGISLACAO_FISCAL_MT.md**](LEGISLACAO_FISCAL_MT.md) — revisão de legislação (2026-07, revisada em 2026-11-12): webservices/QR oficiais de MT, prazos de cancelamento (30 min/2 h), contingência, tPag (PIX 17/20, fiado), limites da NFC-e, CRT/Reforma Tributária (IBS/CBS 2027) e Lei 12.741.
 - [TESTE_FISCAL_WINDOWS.md](TESTE_FISCAL_WINDOWS.md) — roteiro de teste fiscal de ponta a ponta no Windows (A1/CSC/CNPJ, homologação→produção, cartão e PIX).
 - [CONTINGENCIA_OFFLINE.md](CONTINGENCIA_OFFLINE.md) — contingência offline da NFC-e (tpEmis=9) e correções fiscais (QR Code 2.00, assinatura C14N, desconto, cNF, Lei 12.741) + checklist de homologação.
 - [INTEGRACAO_STONE_TEF.md](INTEGRACAO_STONE_TEF.md) — como integrar Stone/outras maquininhas via TEF, esforço e estimativa de valor.
@@ -24,7 +30,7 @@
 - [INSTALACAO_WINDOWS.md](INSTALACAO_WINDOWS.md) — instalar o PDV no computador do cliente.
 - [BUILD_WINDOWS.md](BUILD_WINDOWS.md) — gerar o .exe + instalador (local ou via GitHub Actions).
 - [EMPACOTAMENTO_EXE.md](EMPACOTAMENTO_EXE.md) — detalhes do empacotamento (PyInstaller).
-- [TESTE_WINDOWS.md](TESTE_WINDOWS.md) — roteiro de teste manual antes de vender.
+- [TESTE_WINDOWS.md](TESTE_WINDOWS.md) — roteiro de teste antes de vender (automático contra o `.exe` + manual).
 - [../CLAUDE.md](../CLAUDE.md) — instruções para um agente gerar o .exe (build automatizado).
 
 ## ☁️ Nuvem, licença e finanças
@@ -34,7 +40,9 @@
 - [CUSTOS.md](CUSTOS.md) — quanto você paga (APIs/serviços) e a conta por loja.
 
 ## 🧑‍💻 Desenvolvimento
-- [TESTES.md](TESTES.md) — como rodar a suíte de testes (pytest).
+- [TESTES.md](TESTES.md) — como rodar as suítes de testes (pytest, Node, Playwright).
+- [TESTES_NAVEGADOR.md](TESTES_NAVEGADOR.md) — testes de ponta a ponta no navegador (Playwright).
+- [mobile-refactor.md](mobile-refactor.md) — notas da adaptação das telas para celular.
 
 ## ⚖️ Jurídico (modelos — revisar com advogado)
 - [legal/LEIA-ME.md](legal/LEIA-ME.md) — como usar os modelos e o que preencher.

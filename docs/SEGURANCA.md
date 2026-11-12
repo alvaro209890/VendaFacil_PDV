@@ -17,7 +17,7 @@ O que o caixa da mercearia protege, o que fica de fora de propósito e o que faz
 
 ## O que protege
 
-- Rota `/api/*` sem token válido responde 401. Abertas de propósito: login, registro do primeiro usuário, ativação da licença e o heartbeat do executável.
+- Rota `/api/*` sem token válido responde 401. Abertas de propósito: login, registro do primeiro usuário, ativação da licença (`POST /api/ativacao` e `GET /api/ativacao/status`) e o heartbeat do executável. CORS aceita só a origem local e as listadas em `VENDAFACIL_CORS_ORIGINS`.
 - Depois do primeiro usuário, outro registro só entra com quem já está autenticado.
 - Cinco senhas erradas no login local esperam 30 s, e a espera cresce até 15 min. Não trava para sempre.
 - CORS só aceita `127.0.0.1` e `localhost` na porta do PDV e na 5173 do Vite.
@@ -92,7 +92,7 @@ ser reavaliado quando os consumidores atualizarem seus próprios intervalos;
 não é autorização para forçar versões futuras nem ocultar advisories.
 
 `npm audit`, `npm ls`, build e ESLint foram executados novamente pelo orquestrador,
-assim como os 13 testes Chromium existentes; a revisão independente do patch
+assim como os testes Chromium existentes na época (em 12/11/2026 são 15 arquivos em `e2e/`, 89 casos); a revisão independente do patch
 fica registrada no plano. Zero aqui significa zero avisos conhecidos no relatório
 consultado, não ausência garantida de vulnerabilidades. As credenciais de registro
 npm nunca entram em relatório ou commit.

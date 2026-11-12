@@ -18,7 +18,10 @@ já estão **pré-autorizados** em `.claude/settings.json` (não deve pedir perm
 
 Já existe `.github/workflows/build-exe.yml`: a cada push no `master` (e em tags
 `vX.Y.Z`) a GitHub gera o `.exe` + instalador num runner Windows. Baixe em
-**Actions → Artifacts**, ou em **Releases** (nas tags). Para gerar localmente,
+**Actions → Artifacts**, ou em **Releases** (nas tags). Conferido em 12/11/2026:
+as execuções do workflow "Build Windows EXE" no `master` estão verdes
+(`gh run list --workflow build-exe.yml`). O entregável validado, porém, é o
+gerado localmente e conferido pelo roteiro abaixo. Para gerar localmente,
 siga abaixo.
 
 ## Pré-requisitos (na máquina Windows)
@@ -59,13 +62,28 @@ cd ..
 - **`dist_installer\VendaFacilPDV-Setup-*.exe`** — instalador para entregar ao
   lojista (cria atalhos e desinstalador).
 
-Ambas as pastas são ignoradas pelo git (não commitar binários).
+As pastas estão no `.gitignore`, **mas há binários antigos já trackeados**
+(`dist_exe/VendaFacilPDV.exe` e Setups 1.0.3/1.0.10/1.0.11 em `dist_installer/`).
+Por decisão do projeto (D2) eles não são removidos do git, e **nenhum binário
+novo é commitado**: depois de um build, `git status` mostra
+`M dist_exe/VendaFacilPDV.exe` — não faça stage disso. Use sempre
+`git add <caminho>` explícito, nunca `git add -A`/`git add .`.
 
-## Validar (teste rápido)
+Registre caminho, tamanho e SHA-256 (`Get-FileHash <arquivo> -Algorithm SHA256`).
+
+## Validar
 
 1. Dois cliques em `dist_exe\VendaFacilPDV.exe` → o navegador abre em
    `http://127.0.0.1:3020/`.
-2. Siga o roteiro de teste manual: **`docs/TESTE_WINDOWS.md`**.
+2. Roteiro automático contra o `.exe` (dados descartáveis, porta 3021, SEFAZ
+   sintética de homologação):
+   ```bat
+   backend\.venv\Scripts\python -X utf8 -I scripts\roteiro_exe.py --chromium --cupons output\fase6\notas-simuladas.json
+   py -3.12 -X utf8 -I scripts\verificar_cupons_pdf.py output\fase6\notas-simuladas.json
+   ```
+3. Roteiro manual completo: **`docs/TESTE_WINDOWS.md`**. Instalar/atualizar/
+   desinstalar: `scripts\teste_instalador.ps1` (PowerShell como administrador,
+   máquina descartável).
 
 ## Observações importantes
 
@@ -79,10 +97,28 @@ Ambas as pastas são ignoradas pelo git (não commitar binários).
 
 ## Rodar os testes (opcional, antes de empacotar)
 
+Sem `PYTHONPATH` herdado e com `-X utf8 -I` (outro Python desta máquina injeta
+bibliotecas incompatíveis):
+
 ```bat
-backend\.venv\Scripts\pip install -r requirements-dev.txt
-cd backend && .venv\Scripts\python -m pytest -q && cd ..
+backend\.venv\Scripts\python -X utf8 -I -m pip install -r backend\requirements-dev.txt
+cd backend && .venv\Scripts\python -X utf8 -I -m pytest -q --tb=short && cd ..
+cd painel && .venv\Scripts\python -X utf8 -I -m pytest -q --tb=short && cd ..
+npm run build && npx eslint .
+node --test frontend-tests/*.test.mjs
+npx playwright test --workers=1
 ```
+
+Em 12/11/2026 (1.0.13): backend 460 verdes e 9 desmarcados (`homologacao`,
+exigem os dados reais da loja), painel 23, Node 36, E2E 89. Antes do Playwright,
+aponte `TEMP`/`TMP`/`TMPDIR` para fora do repositório.
+
+## Plano de produção
+
+O estado da entrega, os bloqueios de terceiros (certificado, CSC, elevação do
+Windows…) e o relatório final ficam em **`plano_producao/`**: comece por
+`00_PAINEL.md`, `RETOMADA.md` e `RELATORIO_FINAL.md`. O fiscal fica sempre em
+**homologação** até ordem explícita do Álvaro.
 
 ## Quando terminar
 

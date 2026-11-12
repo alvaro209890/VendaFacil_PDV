@@ -44,7 +44,7 @@ painel**.
 ## Configuração (no build do .exe)
 
 - `VENDAFACIL_PAINEL_URL` (ou `PAINEL_URL` em `backend/painel_config.py`): URL do
-  painel no Render. **Sem isso = modo local** (vende sem controle de licença).
+  painel no Render. Modo local só quando `VENDAFACIL_PAINEL_URL` estiver definida como vazia ou quando `PAINEL_URL` em `backend/painel_config.py` estiver vazio no build. O valor versionado hoje aponta para `https://vendafacil-painel.onrender.com`, então o `.exe` padrão **exige o painel** (licença).
 - `VENDAFACIL_CARENCIA_DIAS`: dias de carência offline (padrão 30).
 - `VENDAFACIL_REVALIDA_HORAS`: intervalo de revalidação online (padrão 12).
 

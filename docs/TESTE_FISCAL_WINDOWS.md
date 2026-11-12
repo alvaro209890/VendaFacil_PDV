@@ -106,12 +106,12 @@ Sem esses campos a emissão é bloqueada com a mensagem de "dados fiscais incomp
 > (a SEFAZ exige — Rejeição 706).
 
 ### Teste A — NFC-e em **dinheiro**
-1. PDV → adicione o produto → forma **Dinheiro** → marque **Emitir nota** → **Finalizar**.
+1. PDV → adicione o produto → forma **Dinheiro** → marque **Emitir NFC-e (Cupom Fiscal)** → **Finalizar**.
 2. ✅ Esperado: nota **autorizada** (cStat 100), recibo com **chave + QR**.
 3. Em **Vendas**, abra a venda → confira **status autorizada** e o **QR de consulta**.
 
 ### Teste B — NFC-e em **cartão** pela maquininha (vínculo de pagamento)
-1. Forma **Crédito** (ou Débito) → **Emitir nota** → **Finalizar**.
+1. Forma **Crédito** (ou Débito) → **Emitir NFC-e** → **Finalizar**.
 2. Passe o cartão na **Point** (em homologação, use cartão de teste do MP se aplicável).
 3. ✅ Esperado: cobrança aprovada → venda criada → **NFC-e autorizada**.
 4. **Conferência do vínculo** — abra o XML autorizado (em Vendas) e verifique o
@@ -133,26 +133,26 @@ Sem esses campos a emissão é bloqueada com a mensagem de "dados fiscais incomp
    ela espera transação integrada (tpIntegra=1) — confirme o vínculo.
 
 ### Teste C — NFC-e em **PIX** (se "PIX integrado" ligado)
-1. Forma **PIX** → **Emitir nota** → **Finalizar** → pague o PIX na **telinha da Point**.
+1. Forma **PIX** → **Emitir NFC-e** → **Finalizar** → pague o PIX na **telinha da Point**.
 2. ✅ Esperado: `tPag=17`, `<card><tpIntegra>1</tpIntegra>` com **cAut = endToEndId**.
 3. Se a Point **não** oferecer PIX: desligue "PIX integrado" → o PDV volta ao **QR
-   estático** (sairá como `tpIntegra=2`).
+   estático** (sairá com `tPag=20` e sem grupo `<card>`).
 
 ### Teste D — Cancelamento
-1. Em **Vendas**, abra uma nota autorizada → **Cancelar** com justificativa (≥15 caracteres).
+1. Em **Vendas**, abra a venda com nota autorizada → **Cancelar NFC-e** com justificativa (≥15 caracteres), em até 30 minutos.
 2. ✅ Esperado: evento de cancelamento **registrado** (cStat 135).
 
 ### Teste E — Contingência offline (caixa sem internet)
 1. **Desligue a internet** da máquina (Wi-Fi/cabo).
-2. PDV → produto → **Dinheiro** → **Emitir nota** → **Finalizar**.
-3. ✅ Esperado: a venda conclui e o **DANFE imprime com "EMITIDA EM CONTINGENCIA
-   OFFLINE"** (chave + QR). Em **Vendas** a nota fica **`contingência`**.
+2. PDV → produto → **Dinheiro** → **Emitir NFC-e** → **Finalizar**.
+3. ✅ Esperado: a venda conclui e o **DANFE imprime em duas vias com "EMITIDA EM
+   CONTINGÊNCIA" e "Pendente de autorização"** (chave + QR). Em **Vendas** a nota fica **`contingência`**.
 4. **Religue a internet** e aguarde ~1 min (o loop transmite sozinho).
 5. ✅ Esperado: a nota vira **`autorizada`** (cStat 100) com protocolo, sem perder
    o número fiscal.
 
 ### Teste F — NFC-e com **desconto**
-1. PDV → adicione 2 itens → informe um **desconto** → **Emitir nota** → **Finalizar**.
+1. PDV → adicione 2 itens → informe um **desconto** → **Emitir NFC-e** → **Finalizar**.
 2. ✅ Esperado: nota **autorizada**. Abra o XML e confira os totais fechando:
    `vProd − vDesc = vNF` (sem **Rejeição 528/610**), com `vDesc` rateado nos itens.
 

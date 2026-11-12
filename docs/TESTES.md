@@ -17,17 +17,30 @@ senha e proteção contra força-bruta (rate limit).
 
 ## Como rodar
 
-Instale as dependências de teste em cada venv e rode o pytest na respectiva pasta:
+Instale as dependências de teste (arquivo `requirements-dev.txt` na raiz) em
+cada venv e rode o pytest na respectiva pasta. No Windows, sem `PYTHONPATH`
+herdado e com `-X utf8 -I`:
 
-```bash
-# PDV
-backend/.venv/bin/pip install -r requirements-dev.txt
-cd backend && .venv/bin/python -m pytest -q
+```bat
+:: PDV
+backend\.venv\Scripts\python.exe -X utf8 -I -m pip install -r requirements-dev.txt
+cd backend && .venv\Scripts\python.exe -X utf8 -I -m pytest -q --tb=short && cd ..
 
-# Painel
-painel/.venv/bin/pip install -r requirements-dev.txt
-cd painel && .venv/bin/python -m pytest -q
+:: Painel
+painel\.venv\Scripts\python.exe -X utf8 -I -m pip install -r requirements-dev.txt
+cd painel && .venv\Scripts\python.exe -X utf8 -I -m pytest -q --tb=short && cd ..
+
+:: Front
+npm run build && npx eslint .
+node --test frontend-tests/*.test.mjs
+npx playwright test --workers=1
 ```
+
+`backend/pytest.ini` desmarca os testes `homologacao` (SEFAZ-MT real): eles só
+rodam com `-m homologacao` e com o certificado, o CSC e os dados da própria loja
+no cofre. Em 12/11/2026: backend 460 verdes e 9 desmarcados, painel 23, Node 36,
+E2E 89 (Chromium, 1 worker). O `.exe` é validado por `scripts/roteiro_exe.py`
+(ver `TESTE_WINDOWS.md`).
 
 > Rode em cada pasta separadamente (PDV e Painel têm, cada um, seu próprio
 > `main.py`).

@@ -16,7 +16,7 @@ Sumário rápido:
 - [9. Caixa (abrir/fechar)](#9-caixa-abrirfechar)
 - [10. Recibo na impressora térmica](#10-recibo-na-impressora-térmica)
 - [11. Relatórios](#11-relatórios)
-- [12. Nota fiscal (NFC-e e NF-e)](#12-nota-fiscal-nfce-e-nf-e)
+- [12. Nota fiscal (NFC-e e NF-e)](#12-nota-fiscal-nfc-e-e-nf-e)
 - [13. Backup](#13-backup)
 - [Parte 2 — Administrador (Painel)](#parte-2--administrador-painel)
 - [FAQ / Problemas comuns](#faq--problemas-comuns)
@@ -26,7 +26,7 @@ Sumário rápido:
 # Parte 1 — Lojista (PDV)
 
 ## 1. Instalar e abrir
-1. Receba o instalador **`VendaFacilPDV-Setup.exe`** e dê dois cliques.
+1. Receba o instalador **`VendaFacilPDV-Setup-1.0.13.exe`** e dê dois cliques.
 2. Avance a instalação (cria atalho no Menu Iniciar e na Área de Trabalho).
 3. Abra pelo atalho **VendaFácil PDV**. O sistema sobe e abre no navegador.
 
@@ -224,10 +224,12 @@ disponível apenas como legado.
    deixe desligado. Veja [`RESPONSAVEL_TECNICO.md`](RESPONSAVEL_TECNICO.md).
 
 ### Emitir e acompanhar
-- No **PDV**, marque **"Emitir nota"** ao finalizar (pode informar o CPF do
+- No **PDV**, marque **"Emitir NFC-e (Cupom Fiscal)"** ao finalizar (pode informar o CPF do
   consumidor). A NFC-e autorizada já imprime no recibo térmico, com QR de consulta.
-- Em **Vendas**, abra uma venda para **emitir**, **consultar status** ou
-  **cancelar** a nota (com justificativa). A NF-e (modelo 55) exige um cliente com
+- Em **Vendas**, abra uma venda para **emitir** a nota, **consultar status**
+  (ícone de atualizar) ou **Cancelar NFC-e** (justificativa com 15+ caracteres,
+  até 30 minutos após a autorização). Uma venda com nota autorizada só pode ser
+  cancelada (**Cancelar venda (F9)**) depois de cancelar a nota. A NF-e (modelo 55) exige um cliente com
   endereço/documento completos.
 
 > Notas que ficarem em **"processando"** são reconsultadas automaticamente em
@@ -287,7 +289,7 @@ por loja) e veja **receita, custo, lucro e ponto de equilíbrio**. Detalhes em
 
 ## Conectar os PDVs ao painel
 Cada `.exe` aponta para o painel pela variável `VENDAFACIL_PAINEL_URL`
-(definida ao gerar o executável). Sem ela, o PDV roda em **modo local**.
+(definida ao gerar o executável). Modo local só quando `VENDAFACIL_PAINEL_URL` estiver definida como vazia ou quando `PAINEL_URL` em `backend/painel_config.py` estiver vazio no build. O valor versionado hoje aponta para `https://vendafacil-painel.onrender.com`, então o `.exe` padrão **exige o painel** (licença).
 
 ---
 

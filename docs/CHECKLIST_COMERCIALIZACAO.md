@@ -1,7 +1,8 @@
 # 🧾 Checklist para comercializar o VendaFácil PDV
 
 Estado honesto do que falta para vender o sistema para lojistas. Dividido por
-prioridade. O **código do produto** está bem encaminhado; a maior parte do que
+prioridade. **Atualizado em 12/11/2026 (versão 1.0.13, plano de produção
+`plano_producao/`).** O **código do produto** está bem encaminhado; a maior parte do que
 falta é **negócio, distribuição e robustez de produção**, não funcionalidade.
 
 ## 🔴 Bloqueadores (sem isso não dá pra vender de verdade)
@@ -10,9 +11,14 @@ falta é **negócio, distribuição e robustez de produção**, não funcionalid
       (PIX/boleto) e, no Painel, define a validade e bloqueia/exclui quem não
       pagar. Fluxo documentado em [`COBRANCA_MANUAL.md`](COBRANCA_MANUAL.md).
       (Cobrança automática fica como evolução futura — ver 🟡.)
-- [ ] **Gerar e testar o .exe no Windows** — você faz isto na sua máquina
-      Windows. Pipeline pronto e documentado em [`BUILD_WINDOWS.md`](BUILD_WINDOWS.md).
-      *(Não dá para gerar no Linux: PyInstaller não faz cross-compile.)*
+- [x] **Gerar e testar o .exe no Windows** — 1.0.13 gerada e validada em
+      12/11/2026: roteiro automático contra o `.exe` (49 requisições, zero erro
+      5xx, contingência, reimpressão, reinício e conciliação) e cupons 58/80 mm
+      em PDF com QR decodificado. Ver [`BUILD_WINDOWS.md`](BUILD_WINDOWS.md) e
+      [`TESTE_WINDOWS.md`](TESTE_WINDOWS.md).
+- [ ] **Teste do instalador com elevação** (instalar → atualizar → desinstalar):
+      script pronto (`scripts/teste_instalador.ps1`), falta rodar como
+      administrador numa máquina descartável (bloqueio B8, 12/11/2026).
 - [x] **Instalador amigável** — **pronto**: script Inno Setup em
       `installer/vendafacil.iss` + `installer/build_installer.bat`. Só compilar
       no Windows (ver [`BUILD_WINDOWS.md`](BUILD_WINDOWS.md)).
@@ -38,13 +44,15 @@ falta é **negócio, distribuição e robustez de produção**, não funcionalid
 - [x] **Proteção de login (anti brute-force)** — **feito**: rate limiting no
       login do admin e na validação de conta do PDV (bloqueia após 5 falhas).
 - [ ] **Testar a maquininha com hardware real** (Point física + conta Mercado
-      Pago de produção). O fluxo está pronto no código, mas o happy-path só se
+      Pago de produção; bloqueios B5/B6, 12/11/2026). O fluxo está pronto no código, mas o happy-path só se
       confirma com aparelho.
 - [x] **Relatório Fiscal (Simples)** — separa receita com ICMS-ST/monofásico da
       tributada integral para apoiar o PGDAS-D do contador.
-- [ ] **NFC-e de ponta a ponta**: o lojista precisa de certificado A1, CSC e
-      credenciamento na SEFAZ do estado. Testar homologação → produção de
-      verdade com pelo menos um estado-alvo (MT/GO já estão no código).
+- [~] **NFC-e de ponta a ponta** (SEFAZ-MT direto): emissão, contingência
+      offline, conciliação, cancelamento e inutilização prontos e testados com
+      simulador local (12/11/2026). **Falta** a homologação real: certificado A1
+      da loja, CSC de homologação, credenciamento e dados da empresa (bloqueios
+      B1–B4). Produção só com o contador de acordo.
 - [x] **Vínculo do pagamento eletrônico (MT)** — NFC-e de cartão/PIX monta o
       grupo `<card>` (tpIntegra/CNPJ/tBand/cAut) com os dados da maquininha
       Mercado Pago. Obrigatório p/ mercearia (CNAE 4712-1) desde 01/07/2024.
@@ -57,10 +65,16 @@ falta é **negócio, distribuição e robustez de produção**, não funcionalid
 - [x] **Testes automatizados** — **feito**: suíte pytest do PDV e do Painel
       (ver [`TESTES.md`](TESTES.md)).
 - [x] **Manual do usuário** — **feito**: [`MANUAL.md`](MANUAL.md) (lojista + admin).
-- [ ] **Onboarding/ativação** simples para a loja (passo a passo no 1º uso).
-- [ ] **Atualização do .exe** (auto-update ou processo claro de nova versão).
+- [x] **Onboarding/ativação** — roteiro de implantação em
+      [`IMPLANTACAO_MERCEARIA.md`](IMPLANTACAO_MERCEARIA.md), treinamento em
+      [`TREINAMENTO_OPERADOR.md`](TREINAMENTO_OPERADOR.md) e folha de suporte em
+      [`SUPORTE_LOJA.md`](SUPORTE_LOJA.md) (12/11/2026).
+- [ ] **Teste em papel** com impressora térmica, leitor e gaveta reais (B7).
+- [~] **Atualização do .exe** — processo claro documentado (Setup novo por cima,
+      backup automático, migração aditiva validada); auto-update segue fora.
 - [ ] **Política de preços e planos** definida.
-- [ ] **Canal de suporte** (WhatsApp/e-mail) e SLA.
+- [~] **Canal de suporte** — folha [`SUPORTE_LOJA.md`](SUPORTE_LOJA.md) e
+      "Copiar diagnóstico" prontos; falta preencher o contato e definir SLA.
 
 ## ✅ Já pronto (não precisa fazer)
 
@@ -75,11 +89,15 @@ falta é **negócio, distribuição e robustez de produção**, não funcionalid
 - Licença offline-first com carência.
 - Deploy: Render (API) + Vercel (painel) + Supabase (banco) documentado.
 - Anti-hibernação no Render free. Suíte de testes (pytest).
+- Robustez (12/11/2026): dinheiro em `Decimal`, venda numa transação, backup
+  com `integrity_check` e restauração validada, modo consulta com banco
+  corrompido, log rotativo, segunda instância e diagnóstico protegido.
+- Testes em 12/11/2026: backend 460, painel 23, Node 36, E2E 89 no navegador.
 
 ---
 
 ### Resumo em uma frase
 O **produto técnico** está quase lá; para **comercializar** faltam, na ordem:
-(1) cobrança recorrente automática, (2) empacotar/assinar o .exe + instalador,
-(3) parte legal (LGPD/Termos/CNPJ). O resto é robustez e operação que dá pra
+(1) homologação fiscal real com os dados da loja (B1–B5), (2) teste do
+instalador elevado e em papel (B7/B8), (3) parte legal (LGPD/Termos/CNPJ). O resto é robustez e operação que dá pra
 evoluir com os primeiros clientes.

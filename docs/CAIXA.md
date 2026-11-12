@@ -6,7 +6,7 @@ conferência do dinheiro na gaveta. Roda no **.exe local** (offline-first).
 ## Como funciona
 
 1. **Abrir caixa** (menu **Caixa**): informe o **fundo de troco** inicial
-   (dinheiro na gaveta ao abrir). Só pode haver **um caixa aberto** por vez.
+   (dinheiro na gaveta ao abrir). Cada usuário pode ter **um caixa aberto** por vez.
 2. Durante o expediente, as **vendas** entram automaticamente na sessão, somadas
    por **forma de pagamento** (dinheiro, PIX, débito, crédito, fiado).
 3. **Suprimento** (reforço de troco) e **Sangria** (retirada de dinheiro) ajustam

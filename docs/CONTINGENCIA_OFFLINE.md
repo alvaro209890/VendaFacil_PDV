@@ -92,7 +92,7 @@ Além de A–E de [`TESTE_FISCAL_WINDOWS.md`](TESTE_FISCAL_WINDOWS.md):
 - [ ] **Desconto**: emitir venda **com desconto** e conferir `vProd`, `vDesc` e
       `vNF` fechando (sem Rejeição 528/610).
 - [ ] **Contingência**: **desligar a internet**, vender com "Emitir nota" →
-      o DANFE imprime "EMITIDA EM CONTINGENCIA OFFLINE" → **religar** → a nota
+      o DANFE imprime em duas vias "EMITIDA EM CONTINGÊNCIA" / "Pendente de autorização" → **religar** → a nota
       vira `autorizada` sozinha em ~1 min.
 - [ ] **cNF ≠ nNF**: abrir o XML e conferir que `cNF` não é igual ao `nNF`.
 

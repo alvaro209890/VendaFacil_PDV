@@ -33,18 +33,21 @@ nível, então funciona com a maioria das térmicas via driver.
 
 ## Quando a venda emite NFC-e
 
-Se a venda for com **"emitir nota"** e a NFC-e for **autorizada** (ou emitida em
+Se a venda for com **"Emitir NFC-e (Cupom Fiscal)"** e a NFC-e for **autorizada** (ou emitida em
 **contingência offline**), o recibo deixa de ser "não fiscal" e vira o
 **DANFE NFC-e** — Documento Auxiliar da NFC-e — com:
 
 - título **"DANFE NFC-e"** (sem o aviso "não fiscal");
-- identificação do **consumidor** (CPF/CNPJ, ou "CONSUMIDOR NAO IDENTIFICADO");
+- identificação do **consumidor** (CPF/CNPJ, ou "CONSUMIDOR NÃO IDENTIFICADO");
 - número/série, **chave de acesso**, **protocolo** e o **QR Code** de consulta;
-- a URL de consulta (`www.sefaz.mt.gov.br/nfce/consultanfce`);
-- a informação de tributos (**Lei 12.741/2012**, IBPT).
+- a URL de consulta do XML (`urlChave`), que depende do ambiente (homologação usa
+  `homologacao.sefaz.mt.gov.br/nfce/consultanfce`);
+- "Tributos aproximados: R$ x (Lei 12.741/2012)" (a fonte IBPT vai nas
+  informações complementares do XML).
 
-Em **contingência offline** o cupom sai com o aviso **"EMITIDA EM CONTINGENCIA
-OFFLINE"** e "aguardando autorização da SEFAZ" — a transmissão acontece
+Em **contingência offline** o cupom sai em **duas vias** (consumidor e
+estabelecimento), cada uma com **"EMITIDA EM CONTINGÊNCIA"** e "Pendente de
+autorização" — a transmissão acontece
 automaticamente quando a internet volta (ver
 [`CONTINGENCIA_OFFLINE.md`](CONTINGENCIA_OFFLINE.md)).
 

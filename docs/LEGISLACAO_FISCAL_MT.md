@@ -1,7 +1,7 @@
 # Legislação fiscal MT aplicada ao PDV — revisão 2026-11-12
 
 Este documento registra a **revisão de conformidade com a legislação de Mato
-Grosso** (e as normas nacionais da NFC-e/NF-e) feita em julho/2026, os **bugs
+Grosso** (e as normas nacionais da NFC-e/NF-e) feita em julho/2026 e revisada em 12/11/2026, os **bugs
 corrigidos** com base nela e o fundamento legal de cada decisão. Vale para o
 fluxo padrão **SEFAZ-MT direto** (`backend/fiscal_direto.py` + `backend/fiscal.py`).
 
@@ -90,7 +90,7 @@ Padrões Técnicos de Contingência Offline da NFC-e (ENCAT):
   "via do estabelecimento — guardar"), como mandam os padrões técnicos, com o
   texto "EMITIDA EM CONTINGÊNCIA — Pendente de autorização".
 - Transmitir assim que a falha cessar; em MT, limite até o primeiro dia útil
-  seguinte à emissão (Portaria177/2021 art.18 §1 II). O loop tenta a cada45s
+  seguinte à emissão (Portaria177/2021 art.18 §1 II). O loop tenta a cada 45 s
   enquanto o programa estiver aberto; isso não garante autorização no prazo.
 - **cStat 204** mantém a nota pendente até a consulta pela chave. **cStat 539**
   indica conflito com outra chave. Se a consulta da chave local ficar inconclusiva,

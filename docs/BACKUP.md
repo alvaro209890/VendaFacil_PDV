@@ -6,7 +6,8 @@ Os dados do lojista (produtos, vendas, estoque, caixa) ficam num arquivo SQLite
 ## O que tem
 
 - **Backup automático**: feito a cada inicialização do sistema e **uma vez por
-  dia**, guardando os **últimos 14** na pasta `dados/backups` ao lado dos dados.
+  dia**, guardando os **14 backups automáticos mais recentes** na pasta `dados/backups`
+  ao lado dos dados (cópias manuais e de pré-restauração não são apagadas).
 - **Baixar backup** (menu **Backup** → "Baixar backup agora"): gera um `.db`
   consistente e baixa pelo navegador. **Guarde fora do PC** (pen drive/nuvem).
 - Cada cópia entra no histórico após o `PRAGMA integrity_check`. O nome usa a
