@@ -394,6 +394,7 @@ class Database:
 
         fcols = {r["name"] for r in self._conn.execute("PRAGMA table_info(config_fiscal)")}
         fiscal_cols = {
+            "cnae": "TEXT DEFAULT ''",
             "provedor_fiscal": "TEXT DEFAULT 'sefaz_mt_direto'",
             "certificado_a1_b64": "TEXT DEFAULT ''",
             "certificado_senha": "TEXT DEFAULT ''",
@@ -490,6 +491,7 @@ class Database:
     def salvar_config_fiscal(self, campos: dict, agora: str) -> dict[str, Any]:
         permitidos = {
             "habilitado", "razao_social", "nome_fantasia", "cnpj", "inscricao_estadual",
+            "cnae",
             "regime_tributario", "logradouro", "numero", "bairro", "municipio",
             "codigo_municipio", "uf", "cep", "csc", "csc_id", "ambiente", "gateway",
             "provedor_fiscal", "gateway_token", "certificado_a1_b64", "certificado_senha",

@@ -1,6 +1,7 @@
 """Configuração fiscal do emitente (dados da loja + SEFAZ-MT direto)."""
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field, field_validator
+import re
 
 from auth import _verificar_jwt, _agora
 from database import db
@@ -25,6 +26,7 @@ class ConfigFiscalInput(BaseModel):
     nome_fantasia: str | None = Field(default=None, max_length=120)
     cnpj: str | None = Field(default=None, max_length=18)
     inscricao_estadual: str | None = Field(default=None, max_length=20)
+    cnae: str | None = Field(default=None, max_length=7, pattern=r'^(?:[0-9]{7})?$')
     regime_tributario: str | None = Field(default=None, max_length=1)  # 1=Simples
     logradouro: str | None = None
     numero: str | None = None
@@ -62,6 +64,16 @@ class ConfigFiscalInput(BaseModel):
     resp_tec_csrt: str | None = Field(default=None, max_length=64)
     resp_tec_id_csrt: str | None = Field(default=None, max_length=10)
     limpar_segredos: list[str] | None = None
+
+    @field_validator("cnae", mode="before")
+    @classmethod
+    def _normalizar_cnae(cls, value):
+        if value is None:
+            return value
+        texto = str(value).strip()
+        if not re.fullmatch(r'[0-9.\s/-]*', texto):
+            raise ValueError('CNAE deve conter sete dígitos.')
+        return re.sub(r'[^0-9]', '', texto)
 
     @field_validator("cep", mode="before")
     @classmethod

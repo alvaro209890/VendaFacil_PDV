@@ -144,6 +144,7 @@ export default function FiscalPage() {
             <div><label className={lbl}>Nome fantasia</label><input className={inputCls} value={cfg.nome_fantasia || ""} onChange={(e) => set("nome_fantasia", e.target.value)} /></div>
             <div><label className={lbl}>CNPJ</label><input className={inputCls} value={cfg.cnpj || ""} onChange={(e) => set("cnpj", e.target.value)} placeholder="00.000.000/0001-00" /></div>
             <div><label className={lbl}>Inscrição Estadual</label><input className={inputCls} value={cfg.inscricao_estadual || ""} onChange={(e) => set("inscricao_estadual", e.target.value)} /></div>
+            <div><label className={lbl}>CNAE principal</label><input aria-label="CNAE principal" className={inputCls} value={cfg.cnae || ""} onChange={(e) => set("cnae", e.target.value)} placeholder="7 dígitos" /></div>
             <div>
               <label className={lbl}>Regime tributário</label>
               <select className={inputCls} value={cfg.regime_tributario || "1"} onChange={(e) => set("regime_tributario", e.target.value)}>

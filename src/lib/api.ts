@@ -763,6 +763,7 @@ export function salvarConfigPix(data: Partial<ConfigPix>): Promise<{ config: Con
 // ── Fiscal (NFC-e) ──
 
 export interface ConfigFiscal {
+  cnae?: string;
   habilitado?: number;
   razao_social?: string;
   nome_fantasia?: string;
