@@ -1031,6 +1031,8 @@ def normalizar_retorno_sefaz(texto: str | None, xml_assinado: str | None = None,
 
 
 def normalizar_retorno_evento(texto: str | None, http_status: int | None = None) -> dict:
+    if http_status and http_status >= 500:
+        return {"status": "processando", "mensagem": f"Evento sem confirmação (HTTP {http_status}); consulte a situação na SEFAZ."}
     if not texto:
         return {
             "status": "rejeitada" if http_status and http_status >= 400 else "processando",

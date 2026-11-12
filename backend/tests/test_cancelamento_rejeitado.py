@@ -8,6 +8,8 @@ import fiscal
      '<retEvento><infEvento><cStat>573</cStat><xMotivo>Duplicidade de evento</xMotivo>'
      '</infEvento></retEvento></retEnvEvento>'),
     (503, ''), (200, '<resposta/>'),
+    (503, '<retEvento xmlns="http://www.portalfiscal.inf.br/nfe"><infEvento>'
+     '<cStat>135</cStat><nProt>151260000000009</nProt></infEvento></retEvento>'),
 ])
 def test_cancelamento_sem_confirmacao_preserva_autorizacao(monkeypatch, codigo, corpo):
     nota = {"id": 7, "status": "autorizada", "protocolo": "151260000000100"}
