@@ -1,0 +1,8 @@
+<nfeProc xmlns="http://www.portalfiscal.inf.br/nfe"><NFe><infNFe>
+<ide><tpAmb>2</tpAmb><dhEmi>2026-11-12T09:00:00-04:00</dhEmi><nNF>7</nNF><serie>1</serie></ide>
+<emit><CNPJ>12345678000195</CNPJ><xNome>Mercearia Açúcar de Teste</xNome><IE>00130000019</IE>
+<enderEmit><xLgr>Rua Teste</xLgr><nro>100</nro><xBairro>Centro</xBairro><xMun>Cuiabá</xMun><UF>MT</UF><CEP>78000000</CEP></enderEmit></emit>
+<dest><CPF>12345678909</CPF></dest><total><ICMSTot><vTotTrib>1.23</vTotTrib></ICMSTot></total>
+<infAdic><infCpl>Trib aprox R$ 1,23 Fonte: IBPT de teste</infCpl></infAdic>
+</infNFe><infNFeSupl><urlChave>http://homologacao.sefaz.mt.gov.br/nfce/consultanfce</urlChave></infNFeSupl></NFe>
+<protNFe><infProt><dhRecbto>2026-11-12T09:00:05-04:00</dhRecbto><nProt>151260000000007</nProt></infProt></protNFe></nfeProc>

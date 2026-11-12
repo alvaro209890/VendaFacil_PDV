@@ -10,6 +10,7 @@ export interface ReciboItem {
   preco: number;
   subtotal: number;
   unidade?: string;
+  codigo?: string;
 }
 
 export interface ReciboNota {
@@ -20,10 +21,12 @@ export interface ReciboNota {
   qrcode_base64?: string | null;
   status?: string | null;   // "autorizada" | "contingencia" | ...
   cpf?: string | null;      // CPF/CNPJ do consumidor, se informado
+  xml?: string | null;
+  ambiente?: string | null;
 }
 
 export interface ReciboData {
-  loja: { nome: string; cnpj?: string; endereco?: string };
+  loja: { nome: string; cnpj?: string; endereco?: string; ie?: string };
   itens: ReciboItem[];
   subtotal: number;
   desconto: number;
@@ -55,16 +58,33 @@ export function setLarguraRecibo(mm: 58 | 80) {
 }
 
 function montarHtml(d: ReciboData, larguraMm: number): string {
-  const dt = new Date(d.data || Date.now()).toLocaleString("pt-BR");
+  // O XML guarda o emitente/consumidor da emissão, mesmo após mudar o cadastro.
+  const documento = d.nota?.xml ? new DOMParser().parseFromString(d.nota.xml, "application/xml") : null;
+  const xml = documento?.getElementsByTagName("parsererror").length ? null : documento;
+  const no = (nome: string, base: Document | Element | null = xml) => base?.getElementsByTagNameNS("*", nome)[0] || null;
+  const texto = (nome: string, base: Document | Element | null = xml): string => no(nome, base)?.textContent?.trim() || "";
+  const emit = no("emit"), endereco = no("enderEmit", emit), dest = no("dest"), prot = no("infProt");
+  const nomeLoja = texto("xNome", emit) || d.loja.nome;
+  const cnpjLoja = texto("CNPJ", emit) || d.loja.cnpj;
+  const ieLoja = texto("IE", emit) || d.loja.ie;
+  const enderecoLoja = endereco ? ['xLgr', 'nro', 'xCpl', 'xBairro', 'xMun', 'UF', 'CEP'].map(n => texto(n, endereco)).filter(Boolean).join(', ') : d.loja.endereco;
+  const ambiente = texto("tpAmb") || d.nota?.ambiente;
+  const homologacao = ambiente === "2" || ambiente === "homologacao";
+  const protocolo = texto("nProt", prot) || d.nota?.protocolo;
+  const consumidorDoc = texto("CPF", dest) || texto("CNPJ", dest) || d.nota?.cpf;
+  const totalTributos = texto("vTotTrib", no("ICMSTot"));
+  const complemento = texto("infCpl");
+  const dt = new Date(texto("dhEmi") || d.data || Date.now()).toLocaleString("pt-BR", { timeZone: "America/Cuiaba" });
   const linhas = d.itens.map((it) => {
     const nome = esc(it.nome);
     const qtd = Number(it.qtd || 0).toLocaleString("pt-BR", { maximumFractionDigits: 3 });
     const calc = `${qtd} ${esc(it.unidade || "UN")} x ${moeda(it.preco)}`;
-    return `<div class="item"><div class="nm">${nome}</div><div class="ln"><span>${calc}</span><span>${moeda(it.subtotal)}</span></div></div>`;
+    return `<div class="item"><div class="nm">${it.codigo ? esc(it.codigo) + " — " : ""}${nome}</div><div class="ln"><span>${calc}</span><span>${moeda(it.subtotal)}</span></div></div>`;
   }).join("");
 
-  const cnpj = d.loja.cnpj ? `<div class="c">CNPJ: ${esc(d.loja.cnpj)}</div>` : "";
-  const end = d.loja.endereco ? `<div class="c">${esc(d.loja.endereco)}</div>` : "";
+  const cnpj = cnpjLoja ? `<div class="c">CNPJ: ${esc(cnpjLoja)}</div>` : "";
+  const ie = ieLoja ? `<div class="c">IE: ${esc(ieLoja)}</div>` : "";
+  const end = enderecoLoja ? `<div class="c">${esc(enderecoLoja)}</div>` : "";
   const desc = d.desconto > 0 ? `<div class="ln"><span>Desconto</span><span>-${moeda(d.desconto)}</span></div>` : "";
   const dinheiro = d.forma === "dinheiro" && d.recebido !== undefined
     ? `<div class="ln"><span>Recebido</span><span>${moeda(d.recebido)}</span></div>
@@ -83,27 +103,31 @@ function montarHtml(d: ReciboData, larguraMm: number): string {
     const qr = /^iVBORw0KGgo[A-Za-z0-9+/]*={0,2}$/.test(qrBase64) && qrBase64.length % 4 === 0
       ? `<div class="c" style="margin-top:4px"><img src="data:image/png;base64,${qrBase64}" style="width:${larguraMm === 58 ? 40 : 50}mm;height:auto" /></div>`
       : "";
-    const consumidor = d.nota.cpf
-      ? `<div class="c">CONSUMIDOR: ${esc(d.nota.cpf)}</div>`
+    const consumidor = consumidorDoc
+      ? `<div class="c">CONSUMIDOR: ${esc(consumidorDoc)}</div>`
       : `<div class="c">CONSUMIDOR NAO IDENTIFICADO</div>`;
     fiscal = `<hr>
       <div class="c b">DANFE NFC-e — Documento Auxiliar da NFC-e</div>
+      ${homologacao ? '<div class="c b">EMITIDA EM AMBIENTE DE HOMOLOGAÇÃO — SEM VALOR FISCAL</div>' : ""}
+      ${d.nota.status === "cancelada" ? '<div class="c b">NOTA CANCELADA</div>' : ""}
       ${contingencia ? `<div class="c b">EMITIDA EM CONTINGENCIA</div><div class="c b">Pendente de autorizacao</div>` : ""}
-      <div class="c">NFC-e no ${esc(String(d.nota.numero ?? "-"))} serie ${esc(String(d.nota.serie ?? "-"))}</div>
+      <div class="c">NFC-e no ${esc(texto("nNF") || String(d.nota.numero ?? "-"))} serie ${esc(texto("serie") || String(d.nota.serie ?? "-"))}</div>
       ${consumidor}
-      ${d.nota.protocolo ? `<div class="c">Protocolo: ${esc(String(d.nota.protocolo))}</div>` : ""}
+      ${protocolo ? `<div class="c">Protocolo: ${esc(String(protocolo))}</div>` : ""}
+      ${texto("dhRecbto", prot) ? `<div class="c">Autorização: ${esc(new Date(texto("dhRecbto", prot)).toLocaleString("pt-BR", { timeZone: "America/Cuiaba" }))}</div>` : ""}
       <div class="c" style="font-size:.85em;margin-top:2px">Chave de acesso</div>
       <div class="c" style="font-size:.8em;word-break:break-all">${chave}</div>
       ${qr}
-      <div class="c" style="font-size:.8em;margin-top:2px">Consulte pela chave de acesso em<br>www.sefaz.mt.gov.br/nfce/consultanfce</div>
-      ${contingencia ? `<div class="c" style="font-size:.8em;margin-top:2px">Transmissao automatica a SEFAZ em ate 24h (quando a internet voltar).</div>` : ""}
-      <div class="c" style="font-size:.8em;margin-top:2px">Tributos aprox. (Lei 12.741/2012) conforme tabela IBPT.</div>`;
+      <div class="c" style="font-size:.8em;margin-top:2px;overflow-wrap:anywhere">Consulte pela chave de acesso em<br>${esc(texto("urlChave") || "www.sefaz.mt.gov.br/nfce/consultanfce")}</div>
+      ${contingencia ? `<div class="c" style="font-size:.8em;margin-top:2px">Transmitir assim que a conexão voltar, até o primeiro dia útil seguinte em MT. Mantenha o programa aberto.</div>` : ""}
+      <div class="c" style="font-size:.8em;margin-top:2px">${totalTributos !== "" && Number.isFinite(Number(totalTributos)) ? `Tributos aproximados: R$ ${moeda(Number(totalTributos))} (Lei 12.741/2012).` : "Tributos aproximados não informados."}</div>
+      ${complemento ? `<div class="c" style="font-size:.8em">${esc(complemento)}</div>` : ""}`;
   }
 
   const corpo = (via: string) => `
   ${via ? `<div class="c b" style="font-size:.85em">${via}</div>` : ""}
-  <div class="c b big">${esc(d.loja.nome || "VendaFácil PDV")}</div>
-  ${cnpj}${end}
+  <div class="c b big">${esc(nomeLoja || "VendaFácil PDV")}</div>
+  ${cnpj}${ie}${end}
   <hr>
   ${temNota ? "" : '<div class="c b">CUPOM NÃO FISCAL</div>'}
   <div class="ln"><span>${dt}</span><span>${d.vendaId ? "#" + esc(String(d.vendaId)) : ""}</span></div>
@@ -112,6 +136,7 @@ function montarHtml(d: ReciboData, larguraMm: number): string {
   <hr>
   <div class="ln"><span>Subtotal</span><span>${moeda(d.subtotal)}</span></div>
   ${desc}
+  <div class="ln"><span>Quantidade de itens</span><span>${d.itens.length}</span></div>
   <div class="ln tot"><span>TOTAL</span><span>R$ ${moeda(d.total)}</span></div>
   <div class="ln"><span>Pagamento</span><span>${esc(String(FORMA_LABEL[d.forma] || d.forma))}</span></div>
   ${dinheiro}

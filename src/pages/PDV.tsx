@@ -514,7 +514,7 @@ export default function PDV() {
           const produto = carrinho.find((p) => p.id === i.produto_id);
           return {
             nome: i.nome_produto, qtd: i.quantidade, preco: i.preco_unitario,
-            subtotal: i.subtotal, unidade: produto?.unidade,
+            subtotal: i.subtotal, unidade: produto?.unidade, codigo: String(i.produto_id),
           };
         }),
         subtotal,
@@ -529,6 +529,8 @@ export default function PDV() {
           numero: resp.nota.numero, serie: resp.nota.serie, chave: resp.nota.chave,
           protocolo: resp.nota.protocolo, qrcode_base64: resp.nota.qrcode_base64,
           status: resp.nota.status, cpf: cpfConsumidor || undefined,
+          xml: resp.nota.xml_autorizado || resp.nota.xml_assinado,
+          ambiente: resp.nota.ambiente,
         } : null,
       };
       setUltimaVenda(recibo);

@@ -1,0 +1,76 @@
+TAP version 13
+# Subtest: F4.19: DANFE 58mm usa dados do XML e avisa homologacao
+ok 1 - F4.19: DANFE 58mm usa dados do XML e avisa homologacao
+  ---
+  duration_ms: 3255.8094
+  type: 'test'
+  ...
+# Subtest: F4.19: DANFE 80mm usa dados do XML e avisa homologacao
+ok 2 - F4.19: DANFE 80mm usa dados do XML e avisa homologacao
+  ---
+  duration_ms: 105.5066
+  type: 'test'
+  ...
+# Subtest: F4.19: tributo ausente nao declara valor nem fonte IBPT inexistente
+ok 3 - F4.19: tributo ausente nao declara valor nem fonte IBPT inexistente
+  ---
+  duration_ms: 2.3946
+  type: 'test'
+  ...
+# Subtest: F4.19: texto do XML nao injeta HTML no recibo
+ok 4 - F4.19: texto do XML nao injeta HTML no recibo
+  ---
+  duration_ms: 4.1575
+  type: 'test'
+  ...
+# Subtest: Controle: cupom normal 58mm não-fiscal renderiza texto e layout sem erros
+ok 5 - Controle: cupom normal 58mm não-fiscal renderiza texto e layout sem erros
+  ---
+  duration_ms: 3019.7
+  type: 'test'
+  ...
+# Subtest: Controle: cupom normal 80mm com DANFE preserva fixture PNG válido e bloco fiscal
+ok 6 - Controle: cupom normal 80mm com DANFE preserva fixture PNG válido e bloco fiscal
+  ---
+  duration_ms: 32.0595
+  type: 'test'
+  ...
+# Subtest: Cobertura: campos protegidos por esc() (loja, itens, chave) são texto inerte
+ok 7 - Cobertura: campos protegidos por esc() (loja, itens, chave) são texto inerte
+  ---
+  duration_ms: 19.0145
+  type: 'test'
+  ...
+# Subtest: RED F3.18: forma de pagamento maliciosa deve ser texto inerte e não executar scripts nem injetar DOM
+ok 8 - RED F3.18: forma de pagamento maliciosa deve ser texto inerte e não executar scripts nem injetar DOM
+  ---
+  duration_ms: 9.2057
+  type: 'test'
+  ...
+# Subtest: RED F3.18: vendaId malicioso deve ser texto inerte e não executar scripts nem injetar DOM
+ok 9 - RED F3.18: vendaId malicioso deve ser texto inerte e não executar scripts nem injetar DOM
+  ---
+  duration_ms: 7.9381
+  type: 'test'
+  ...
+# Subtest: RED F3.18: nota.numero e nota.serie maliciosos devem ser texto inerte no bloco fiscal
+ok 10 - RED F3.18: nota.numero e nota.serie maliciosos devem ser texto inerte no bloco fiscal
+  ---
+  duration_ms: 9.4318
+  type: 'test'
+  ...
+# Subtest: RED F3.18: qrcode_base64 com escape de aspas não pode injetar atributos/eventos nem quebrar tag img
+ok 11 - RED F3.18: qrcode_base64 com escape de aspas não pode injetar atributos/eventos nem quebrar tag img
+  ---
+  duration_ms: 7.708
+  type: 'test'
+  ...
+1..11
+# tests 11
+# suites 0
+# pass 11
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 4950.6191
