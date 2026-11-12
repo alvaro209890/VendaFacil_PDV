@@ -10,10 +10,8 @@ import base64
 import hashlib
 import json
 import secrets
-import tempfile
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 from xml.etree import ElementTree as ET
 
 from database import db
@@ -919,19 +917,10 @@ def _post_soap(modelo: str, servico: str, conteudo_xml: str, config: dict) -> di
     pfx = base64.b64decode(config.get("certificado_a1_b64") or "")
     senha = config.get("certificado_senha") or ""
     body, headers = montar_soap(servico, conteudo_xml)
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".pfx") as fp:
-        fp.write(pfx)
-        pfx_path = fp.name
-    try:
-        sess = requests.Session()
-        sess.mount("https://", Pkcs12Adapter(pkcs12_filename=pfx_path, pkcs12_password=senha))
+    with requests.Session() as sess:
+        sess.mount("https://", Pkcs12Adapter(pkcs12_data=pfx, pkcs12_password=senha))
         resp = sess.post(url, data=body, headers=headers, timeout=30)
         return {"status_code": resp.status_code, "texto": resp.text}
-    finally:
-        try:
-            Path(pfx_path).unlink(missing_ok=True)
-        except Exception:
-            pass
 
 
 def transmitir_autorizacao(modelo: str, xml_assinado: str, config: dict) -> dict:
@@ -1199,7 +1188,8 @@ def preparar_e_tentar_transmitir(venda: dict, config: dict, modelo: str = "65",
                                  cpf_consumidor: str | None = None,
                                  destinatario: dict | None = None,
                                  serie: int | None = None,
-                                 numero: int | None = None) -> dict:
+                                 numero: int | None = None,
+                                 antes_de_enviar=None) -> dict:
     """Monta, assina e tenta transmitir. Trata a queda de internet sem perder o
     número fiscal nem deixar a venda sem nota:
 
@@ -1207,19 +1197,15 @@ def preparar_e_tentar_transmitir(venda: dict, config: dict, modelo: str = "65",
       QR Code offline, para imprimir o DANFE na hora e transmitir depois
       (``contingencia=True``).
     - **Sem resposta** após enviar (ex.: timeout de leitura): grava como
-      ``pendente=True`` para o loop **consultar** pela chave (não retransmite, p/
-      não duplicar — pode ter sido autorizada).
+      ``pendente=True`` para o loop consultar primeiro pela chave.
     """
     # Valida tudo ANTES de reservar a numeração: config/produto errado não pode
     # queimar número fiscal (buraco de numeração exige inutilização na SEFAZ).
     _validar_certificado(config, modelo)
     _validar_emitente(config)
     validar_itens(venda)
-    try:
-        import requests
-        sem_conexao = (requests.exceptions.ConnectionError, requests.exceptions.ConnectTimeout)
-    except Exception:
-        sem_conexao = (OSError,)
+    from requests.exceptions import ConnectionError, ConnectTimeout
+    from urllib3.exceptions import NewConnectionError
 
     if serie is None or numero is None:
         serie, numero = db.consumir_numero_fiscal(modelo)
@@ -1240,13 +1226,16 @@ def preparar_e_tentar_transmitir(venda: dict, config: dict, modelo: str = "65",
         "serie": serie, "numero": numero, "chave": doc.chave, "xml_assinado": xml_assinado,
         "payload": json.dumps(doc.payload, ensure_ascii=False), "qrcode_url": doc.qrcode_url,
     }
+    if antes_de_enviar is not None:
+        antes_de_enviar(base)
     try:
         base["retorno"] = transmitir_autorizacao(modelo, xml_assinado, config)
         return base
     except FiscalDiretoError:
         raise
-    except sem_conexao:
-        if modelo == "65":
+    except ConnectionError as exc:
+        motivo = getattr(exc.args[0], "reason", None) if exc.args else None
+        if modelo == "65" and (isinstance(exc, ConnectTimeout) or isinstance(motivo, NewConnectionError)):
             dh_cont = agora_mt()
             doc9 = montar_documento(venda, config, modelo, cpf_consumidor, destinatario,
                                     serie, numero, tp_emis="9", dh_cont=dh_cont)
@@ -1258,7 +1247,7 @@ def preparar_e_tentar_transmitir(venda: dict, config: dict, modelo: str = "65",
                 "payload": json.dumps(doc9.payload, ensure_ascii=False), "qrcode_url": qr9,
                 "contingencia": True,
             }
-        base["pendente"] = True       # NF-e (55) não usa contingência offline: deixa pendente
+        base["pendente"] = True
         return base
     except Exception:
         base["pendente"] = True       # enviou mas não obteve resposta → consultar depois

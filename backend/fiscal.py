@@ -17,6 +17,8 @@ import fiscal_direto
 
 INTERVALO_SEG = 45
 _TIMEOUT = 25
+_envios_iniciais: set[int] = set()
+_envios_lock = threading.Lock()
 
 # Mapa forma de pagamento interna → código NFC-e (tag tPag)
 _FORMA_PAGTO = {
@@ -320,13 +322,22 @@ def _concluir_reserva(nota_id: int, resultado: dict, config: dict,
 
 def _transmitir_reserva(nota: dict, venda: dict, config: dict, modelo: str,
                         extra: dict | None = None, **preparo) -> dict:
+    nota_id = nota["id"]
+
+    def registrar_envio(base: dict) -> None:
+        _concluir_reserva(nota_id, {**base, "pendente": True}, config, extra)
+
+    with _envios_lock:
+        _envios_iniciais.add(nota_id)
     try:
         resultado = fiscal_direto.preparar_e_tentar_transmitir(
-            venda, config, modelo, serie=nota["serie"], numero=nota["numero"], **preparo)
+            venda, config, modelo, serie=nota["serie"], numero=nota["numero"],
+            antes_de_enviar=registrar_envio, **preparo)
+        return _concluir_reserva(nota_id, resultado, config, extra)
     except fiscal_direto.FiscalValidacaoError as exc:
-        # Erro local (configuração, produto, certificado, assinatura): a nota
-        # nunca saiu. Libera a reserva para a próxima tentativa usar o número.
-        _liberar_reserva_local(nota, str(exc))
+        atual = db.get_nota(nota_id) or {}
+        if not atual.get("chave"):
+            _liberar_reserva_local(nota, str(exc))
         raise FiscalError(str(exc)) from exc
     except fiscal_direto.FiscalDiretoError as exc:
         # Pode ter saído ou não; sem certeza de documento na SEFAZ a reserva
@@ -337,7 +348,14 @@ def _transmitir_reserva(nota: dict, venda: dict, config: dict, modelo: str,
                 "status": "rejeitada", "motivo_rejeicao": str(exc), "mensagem": str(exc),
             }, _agora())
         raise FiscalError(str(exc)) from exc
-    return _concluir_reserva(nota["id"], resultado, config, extra)
+    finally:
+        with _envios_lock:
+            _envios_iniciais.discard(nota_id)
+
+
+def _em_envio_inicial(nota_id: int) -> bool:
+    with _envios_lock:
+        return nota_id in _envios_iniciais
 
 
 def _reservar_ou_reutilizar(venda_id: int, user_id: int, modelo: str, config: dict) -> tuple[dict, bool]:
@@ -419,7 +437,7 @@ def consultar_nfce(nota_id: int) -> dict:
     if not nota:
         raise FiscalError("Nota não encontrada.")
     if (db.get_config_fiscal().get("provedor_fiscal") or "sefaz_mt_direto") == "sefaz_mt_direto":
-        if nota.get("status") in ("cancelada", "rejeitada"):
+        if nota.get("status") in ("cancelada", "rejeitada") or _em_envio_inicial(nota_id):
             return nota
         config = db.get_config_fiscal()
         if not nota.get("chave"):
@@ -583,7 +601,7 @@ def _processar_pendentes_direto(config: dict) -> int:
     feitas = 0
     for nota in db.notas_pendentes():
         chave = nota.get("chave")
-        if not chave:
+        if not chave or _em_envio_inicial(nota["id"]):
             continue
         try:
             modelo = nota.get("modelo") or "65"
