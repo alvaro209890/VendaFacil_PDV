@@ -1,6 +1,6 @@
 # Fase 3 — Segurança mínima e front de caixa
 
-**Status:** 🟨 21/24 — F3.1–F3.18, F3.20 e F3.23/24 concluídos; faltam F3.19 (U07), F3.21 (S13) e F3.22 (S14) · **Depende de:** Fase 2
+**Status:** 🟨 24/24 — itens concluídos; push do portão em curso · **Depende de:** Fase 2
 
 ## Objetivo
 
@@ -34,10 +34,10 @@ Um PDV de balcão seguro o bastante para ficar ligado o dia todo num PC de loja,
 - [x] F3.16 P31: parser pt-BR em caixa, fiado, produtos e PDV; U06 — a6a90d5 · `src/lib/numeros.ts` lendo texto editável em Caixa/ContasReceber/PDV/Produtos/XML; 22 unitários + 14 casos XML/locale + 8 Produtos + 10 fiado/caixa; E2E 81 em 4 lotes verdes (28+20+19+14) e recheck lote A 28/28 em F3_16_LOTE_A_GREEN.txt; backend315/painel9/build/lint0.
 - [x] F3.17 P26: salvar configurações mascaradas preserva segredos; S10 — 6535b18 ·31novoscasos/305backend/9painel;revisão deleg_cb9b8f05 aprovada,recheck31verde.
 - [x] F3.18 P32: fechar XSS na impressão; S11 — 95e2322 ·7ChromiumDOM/controlePNGverdes,recheckpai;review deleg_ab6c44fc aprovado,semhardware/SEFAZ.
-- [ ] F3.19 P34: total diário sem truncamento nas 100 vendas; U07
+- [x] F3.19 P34: total diário sem truncamento nas 100 vendas; U07 — fb9f5b9 · RED2 backend/1 UI; GREEN327 backend/23 painel, 4 casos MT/mês/ano e 1 UI; revisão Luna aprovada.
 - [x] F3.20 P40: dependências sem vulnerabilidades conhecidas corrigíveis; S12 — fa736aa · audit21→0, npm_ls/build/lint/13Chromium pós-deps no parent; revisão deleg_bb3cb8d7 aprovada; audit rechecado0 antes do commit.
-- [ ] F3.21 P41: bootstrap admin concorrente, senha e revogação de token no painel; S13
-- [ ] F3.22 P42: owner fiscal verificado antes de consultar/cancelar/ler nota; S14
+- [x] F3.21 P41: bootstrap admin concorrente, senha e revogação de token no painel; S13 — 31541bd/1f52324/f54b125 · RED1/8/3; painel23 verdes, migração concorrente e revisão Luna aprovadas.
+- [x] F3.22 P42: owner fiscal verificado antes de consultar/cancelar/ler nota; S14 — 342f3d6 · RED 4 falhas; GREEN 323 backend/9 painel; 8 casos S14 e revisão Luna aprovada.
 
 - [x] F3.23 P44/U08: barreira de health da API antes de disponibilizar o Vite no harness E2E; provar com atraso de backend de4s. Corrida ECONNREFUSED reproduzida e correção em revisão deleg_63f791d8. — ba47db4 · atrasoAPI4s RED/GREEN e recheckU01F5; revisão deleg_63f791d8 aprovada, pós-deps validado no parent.
 
@@ -47,7 +47,7 @@ Um PDV de balcão seguro o bastante para ficar ligado o dia todo num PC de loja,
 
 - [x] S01–S08 e U01–U05 ✅ em `03_TESTES.md` — U01–U05 em 1a23906/dc0858d/b480a4a/bb36365/c3cc1a3; U06 em a6a90d5.
 - [x] `docs/SEGURANCA.md` existe; `docs/MANUAL.md` lista os atalhos de teclado — SEGURANCA.md desde f9d8ad1 (atualizado em 95e2322); MANUAL.md, seção "Atalhos do caixa".
-- [~] Suítes verdes; pasta do plano commitada e `git push origin master` — suítes 315/9/build/lint0 e E2E 81/81 em 4 lotes; push de 12/11 feito antes do fim da fase (pedido do Álvaro), falta o push final com os 3 itens restantes.
+- [~] Suítes verdes; pasta do plano commitada e `git push origin master` — backend327/painel23; E2E82 (28+20+19+14+1); Node29/build/lint0. Plano e push em curso.
 
 ## Evidências
 

@@ -1,0 +1,44 @@
+﻿node.exe : [WebServer] (node:39664) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+No linha:1 caractere:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([WebServer] (no... env being set.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[WebServer] INFO:     Started server process [41812]
+
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+[WebServer] (node:42740) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+
+Running 14 tests using 1 worker
+
+(node:42656) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+
+(Use `node --trace-warnings ...` to show where the warning was created)
+[1/14] e2e\xml-locale.spec.ts:46:3 › U06 XML cobertura: recusa Qtd XML=0 antes da API
+
+[WebServer] INFO: http_error request_id=98ca1b8a837b status=401 method=POST path=/api/auth/login detail="Usuário ou 
+senha incorretos."
+[2/14] e2e\xml-locale.spec.ts:46:3 › U06 XML cobertura: recusa Entra=0 antes da API
+[3/14] e2e\xml-locale.spec.ts:46:3 › U06 XML cobertura: recusa Qtd/emb.=0,00001 antes da API
+[4/14] e2e\xml-locale.spec.ts:46:3 › U06 XML cobertura: recusa Custo R$= antes da API
+[5/14] e2e\xml-locale.spec.ts:46:3 › U06 XML cobertura: recusa Venda R$=Infinity antes da API
+[6/14] e2e\xml-locale.spec.ts:46:3 › U06 XML cobertura: recusa Qtd XML=1e3 antes da API
+[7/14] e2e\xml-locale.spec.ts:46:3 › U06 XML cobertura: recusa Custo R$=1.2.3 antes da API
+[8/14] e2e\xml-locale.spec.ts:46:3 › U06 XML cobertura: recusa Entra=-1 antes da API
+[9/14] e2e\xml-locale.spec.ts:58:1 › U06 XML cobertura: zero selecionado bloqueia lote, exclusao explicita permite o outro
+[10/14] e2e\xml-locale.spec.ts:82:1 › U06 XML: cancelar e reabrir nao herda textos da previa anterior
+[11/14] e2e\xml-locale.spec.ts:92:1 › U06 XML: recalculo de fator descarta textos derivados antigos
+[12/14] e2e\xml-locale.spec.ts:109:1 › U06 XML: texto invalido nao importa o custo anterior escondido
+[13/14] e2e\xml-locale.spec.ts:126:1 › U06 XML: , nos cinco campos preserva texto, payload e estoque
+[14/14] e2e\xml-locale.spec.ts:126:1 › U06 XML: . nos cinco campos preserva texto, payload e estoque
+  14 passed (17.8s)

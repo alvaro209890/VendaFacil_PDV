@@ -1,0 +1,184 @@
+TAP version 13
+# Subtest: parser "1,5" casas=2
+ok 1 - parser "1,5" casas=2
+  ---
+  duration_ms: 1.6827
+  type: 'test'
+  ...
+# Subtest: parser "1.5" casas=2
+ok 2 - parser "1.5" casas=2
+  ---
+  duration_ms: 0.2216
+  type: 'test'
+  ...
+# Subtest: parser "0,50" casas=2
+ok 3 - parser "0,50" casas=2
+  ---
+  duration_ms: 0.1036
+  type: 'test'
+  ...
+# Subtest: parser "0.50" casas=2
+ok 4 - parser "0.50" casas=2
+  ---
+  duration_ms: 0.0956
+  type: 'test'
+  ...
+# Subtest: parser " 1,50 " casas=2
+ok 5 - parser " 1,50 " casas=2
+  ---
+  duration_ms: 0.1024
+  type: 'test'
+  ...
+# Subtest: parser ",5" casas=2
+ok 6 - parser ",5" casas=2
+  ---
+  duration_ms: 0.1054
+  type: 'test'
+  ...
+# Subtest: parser ".5" casas=2
+ok 7 - parser ".5" casas=2
+  ---
+  duration_ms: 0.0862
+  type: 'test'
+  ...
+# Subtest: parser "0" casas=2
+ok 8 - parser "0" casas=2
+  ---
+  duration_ms: 0.0823
+  type: 'test'
+  ...
+# Subtest: parser "0," casas=2
+ok 9 - parser "0," casas=2
+  ---
+  duration_ms: 0.3038
+  type: 'test'
+  ...
+# Subtest: parser "1," casas=2
+ok 10 - parser "1," casas=2
+  ---
+  duration_ms: 0.4252
+  type: 'test'
+  ...
+# Subtest: parser "0,125" casas=3
+ok 11 - parser "0,125" casas=3
+  ---
+  duration_ms: 0.1462
+  type: 'test'
+  ...
+# Subtest: parser "0,0001" casas=undefined
+ok 12 - parser "0,0001" casas=undefined
+  ---
+  duration_ms: 0.7135
+  type: 'test'
+  ...
+# Subtest: parser "" casas=2
+ok 13 - parser "" casas=2
+  ---
+  duration_ms: 0.0629
+  type: 'test'
+  ...
+# Subtest: parser " " casas=2
+ok 14 - parser " " casas=2
+  ---
+  duration_ms: 0.0503
+  type: 'test'
+  ...
+# Subtest: parser "1,005" casas=2
+ok 15 - parser "1,005" casas=2
+  ---
+  duration_ms: 0.0506
+  type: 'test'
+  ...
+# Subtest: parser "0,0001" casas=3
+ok 16 - parser "0,0001" casas=3
+  ---
+  duration_ms: 0.0488
+  type: 'test'
+  ...
+# Subtest: parser "1,2,3" casas=2
+ok 17 - parser "1,2,3" casas=2
+  ---
+  duration_ms: 0.0452
+  type: 'test'
+  ...
+# Subtest: parser "1.2.3" casas=2
+ok 18 - parser "1.2.3" casas=2
+  ---
+  duration_ms: 0.0437
+  type: 'test'
+  ...
+# Subtest: parser "12abc" casas=2
+ok 19 - parser "12abc" casas=2
+  ---
+  duration_ms: 0.042
+  type: 'test'
+  ...
+# Subtest: parser "Infinity" casas=undefined
+ok 20 - parser "Infinity" casas=undefined
+  ---
+  duration_ms: 0.0418
+  type: 'test'
+  ...
+# Subtest: parser "1e3" casas=undefined
+ok 21 - parser "1e3" casas=undefined
+  ---
+  duration_ms: 0.0413
+  type: 'test'
+  ...
+# Subtest: parser "-1" casas=2
+ok 22 - parser "-1" casas=2
+  ---
+  duration_ms: 0.0431
+  type: 'test'
+  ...
+# Subtest: Controle: cupom normal 58mm não-fiscal renderiza texto e layout sem erros
+ok 23 - Controle: cupom normal 58mm não-fiscal renderiza texto e layout sem erros
+  ---
+  duration_ms: 1201.2976
+  type: 'test'
+  ...
+# Subtest: Controle: cupom normal 80mm com DANFE preserva fixture PNG válido e bloco fiscal
+ok 24 - Controle: cupom normal 80mm com DANFE preserva fixture PNG válido e bloco fiscal
+  ---
+  duration_ms: 24.2943
+  type: 'test'
+  ...
+# Subtest: Cobertura: campos protegidos por esc() (loja, itens, chave) são texto inerte
+ok 25 - Cobertura: campos protegidos por esc() (loja, itens, chave) são texto inerte
+  ---
+  duration_ms: 15.121
+  type: 'test'
+  ...
+# Subtest: RED F3.18: forma de pagamento maliciosa deve ser texto inerte e não executar scripts nem injetar DOM
+ok 26 - RED F3.18: forma de pagamento maliciosa deve ser texto inerte e não executar scripts nem injetar DOM
+  ---
+  duration_ms: 8.4745
+  type: 'test'
+  ...
+# Subtest: RED F3.18: vendaId malicioso deve ser texto inerte e não executar scripts nem injetar DOM
+ok 27 - RED F3.18: vendaId malicioso deve ser texto inerte e não executar scripts nem injetar DOM
+  ---
+  duration_ms: 7.5261
+  type: 'test'
+  ...
+# Subtest: RED F3.18: nota.numero e nota.serie maliciosos devem ser texto inerte no bloco fiscal
+ok 28 - RED F3.18: nota.numero e nota.serie maliciosos devem ser texto inerte no bloco fiscal
+  ---
+  duration_ms: 8.468
+  type: 'test'
+  ...
+# Subtest: RED F3.18: qrcode_base64 com escape de aspas não pode injetar atributos/eventos nem quebrar tag img
+ok 29 - RED F3.18: qrcode_base64 com escape de aspas não pode injetar atributos/eventos nem quebrar tag img
+  ---
+  duration_ms: 6.5057
+  type: 'test'
+  ...
+1..29
+# tests 29
+# suites 0
+# pass 29
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2264.0615

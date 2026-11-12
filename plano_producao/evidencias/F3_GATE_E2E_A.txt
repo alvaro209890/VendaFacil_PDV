@@ -1,0 +1,58 @@
+node.exe : [WebServer] (node:41732) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+No linha:1 caractere:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([WebServer] (no... env being set.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[WebServer] INFO:     Started server process [40284]
+
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+[WebServer] (node:41672) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+
+Running 28 tests using 1 worker
+
+(node:32920) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+[1/28] e2e\carrinho.spec.ts:40:1 › U01: F5 preserva o carrinho e finalizar apaga o rascunho
+[WebServer] INFO: http_error request_id=5e8224834923 status=401 method=POST path=/api/auth/login detail="Usuário ou
+senha incorretos."
+
+[2/28] e2e\carrinho.spec.ts:54:1 › U01: cancelar a venda apaga o rascunho sem baixar estoque
+[3/28] e2e\carrinho.spec.ts:65:1 › U01: rascunho corrompido não derruba a tela
+[4/28] e2e\carrinho.spec.ts:77:1 › U01: outro usuário não recebe o carrinho anterior
+[5/28] e2e\carrinho.spec.ts:94:1 › U01: recarga atualiza o preço do rascunho pelo cadastro atual
+[6/28] e2e\decimais.spec.ts:28:3 › U03: desconto 0,50 preserva digitacao e valor enviado
+[7/28] e2e\decimais.spec.ts:28:3 › U03: desconto 0.50 preserva digitacao e valor enviado
+[8/28] e2e\decimais.spec.ts:28:3 › U03: desconto 1,5 preserva digitacao e valor enviado
+[9/28] e2e\decimais.spec.ts:28:3 › U03: desconto 1.5 preserva digitacao e valor enviado
+[10/28] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "0" nao vende por F2
+[11/28] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "0" nao vende por botao
+[12/28] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "" nao vende por F2
+[13/28] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "" nao vende por botao
+[14/28] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "11" nao vende por F2
+[15/28] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "11" nao vende por botao
+[16/28] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "0,00001" nao vende por F2
+[17/28] e2e\decimais.spec.ts:55:5 › U03: quantidade invalido "0,00001" nao vende por botao
+[18/28] e2e\decimais.spec.ts:55:5 › U03: desconto invalido "abc" nao vende por F2
+[19/28] e2e\decimais.spec.ts:55:5 › U03: desconto invalido "abc" nao vende por botao
+[20/28] e2e\decimais.spec.ts:55:5 › U03: desconto invalido "-1" nao vende por F2
+[21/28] e2e\decimais.spec.ts:55:5 › U03: desconto invalido "-1" nao vende por botao
+[22/28] e2e\decimais.spec.ts:55:5 › U03: desconto invalido "0,001" nao vende por F2
+[23/28] e2e\decimais.spec.ts:55:5 › U03: desconto invalido "0,001" nao vende por botao
+[24/28] e2e\decimais.spec.ts:71:3 › U03: quantidade 0,5 preserva etapas e valor enviado
+[25/28] e2e\decimais.spec.ts:71:3 › U03: quantidade 0.5 preserva etapas e valor enviado
+[26/28] e2e\decimais.spec.ts:71:3 › U03: quantidade 0,125 preserva etapas e valor enviado
+[27/28] e2e\decimais.spec.ts:71:3 › U03: quantidade 1,5 preserva etapas e valor enviado
+[28/28] e2e\decimais.spec.ts:71:3 › U03: quantidade 1.5 preserva etapas e valor enviado
+  28 passed (53.8s)

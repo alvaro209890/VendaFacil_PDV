@@ -21,7 +21,7 @@ Ao fechar: preencha **Onde** (`arquivo::função`) e **Commit**. Teste novo que 
 | U06 | P31: Parser numérico pt-BR compartilhado, sem truncamento silencioso | ✅ | `src/lib/numeros.ts`; 22 unitários + 14 XML/locale + 8 Produtos + 10 fiado/caixa; E2E 81/81 em 4 lotes | a6a90d5 |
 | S11 | P32: Escape completo de texto/atributos; QR Base64 validado | ✅ | frontend-tests/recibo-xss.test.mjs:4RED→7GREEN;recheckpai;review deleg_ab6c44fc aprovado;DOM58/80,nãofiscalreal | 95e2322 |
 | E10 | P33: Esperar imagens e afterprint, ciclo testável | ⬜ | | |
-| U07 | P34: Total diário pelo backend, excluindo canceladas e fuso MT | ⬜ | | |
+| U07 | P34: Total diário pelo backend, excluindo canceladas e fuso MT | ✅ | `backend/tests/test_total_diario.py` (4 casos), `e2e/total-diario.spec.ts` (1); backend327/painel23 | fb9f5b9 |
 | U08 | P44: API pronta antes do Vite, mesmo com backend atrasado4s | ✅ | `e2e/atrasar-api.cjs`; F3_READY_PARENT_RECHECK.txt verde | ba47db4 |
 | U09 | P45: erro de estoque, aviso D4 e resultado fiscal sem falsa autorização | ✅ | bd6013e ·7casos/21repetições;44Chromium;revisão deleg_30bc8fc6/recheck7 | bd6013e |
 | X14 | P35: Reserva persistente/concorrente e tratamento de falhas antes da transmissão | ⬜ | | |
@@ -30,8 +30,8 @@ Ao fechar: preencha **Onde** (`arquivo::função`) e **Commit**. Teste novo que 
 | I07 | P38: Cadastro do produto inteiro em uma transação | ✅ | `backend/tests/test_produto_atomico.py` | 7dee50a |
 | R10 | P39: Encerrar com segurança e identificar serviço antes de reutilizar porta | ⬜ | | |
 | S12 | P40: Atualizar dependências compatíveis e validar build/lint/audit | ✅ | npm audit21→0; npm_ls/build/lint e Chromium verdes; F3_20_RECHECK_AUDIT.json | fa736aa |
-| S13 | P41: Bootstrap atômico, validação de senha e versão de credencial | ⬜ | | |
-| S14 | P42: Validar owner antes de qualquer leitura ou transmissão | ⬜ | | |
+| S13 | P41: Bootstrap atômico, validação de senha e versão de credencial | ✅ | `painel/tests/test_bootstrap_atomico.py`, `test_senha_painel.py`, `test_revogacao_tokens.py`; painel23 | 31541bd/1f52324/f54b125 |
+| S14 | P42: Validar owner antes de qualquer leitura ou transmissão | ✅ | `backend/tests/test_fiscal_owner.py` (8 casos); backend323/painel9 | 342f3d6 |
 
 ## D — Dinheiro (Fase 1)
 
