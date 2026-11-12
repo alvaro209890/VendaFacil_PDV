@@ -13,13 +13,13 @@ def test_login_errado(client, admin):
 
 def test_conta_crud(client, admin):
     cr = client.post("/api/admin/contas", headers=admin, json={
-        "nome_loja": "Loja Teste", "login": "lojateste", "senha": "1234", "plano": "mensal",
+        "nome_loja": "Loja Teste", "login": "lojateste", "senha": "Loja@2026xy", "plano": "mensal",
     })
     assert cr.status_code == 200, cr.text
     cid = cr.json()["conta"]["id"]
     # login duplicado -> 409
     dup = client.post("/api/admin/contas", headers=admin, json={
-        "nome_loja": "X", "login": "lojateste", "senha": "1234",
+        "nome_loja": "X", "login": "lojateste", "senha": "Loja@2026xy",
     })
     assert dup.status_code == 409
     # consta na lista
@@ -31,9 +31,9 @@ def test_conta_crud(client, admin):
 
 def test_validar_conta_pdv(client, admin):
     client.post("/api/admin/contas", headers=admin, json={
-        "nome_loja": "Mercado Z", "login": "mercadoz", "senha": "senha123", "plano": "mensal",
+        "nome_loja": "Mercado Z", "login": "mercadoz", "senha": "Mercado@2026xy", "plano": "mensal",
     })
-    ok = client.post("/api/conta/validar", json={"login": "mercadoz", "senha": "senha123"})
+    ok = client.post("/api/conta/validar", json={"login": "mercadoz", "senha": "Mercado@2026xy"})
     assert ok.status_code == 200 and ok.json()["ok"] is True and "token" in ok.json()
     bad = client.post("/api/conta/validar", json={"login": "mercadoz", "senha": "x"})
     assert bad.status_code == 401
@@ -51,12 +51,12 @@ def test_financeiro_math(client, admin):
 
 def test_trocar_senha(client, admin):
     # token do fixture continua válido; troca a senha e valida login novo/antigo
-    r = client.put("/api/admin/senha", headers=admin, json={"senha_atual": "admin123", "nova_senha": "novaSenha1"})
+    r = client.put("/api/admin/senha", headers=admin, json={"senha_atual": "Loja@2026xy", "nova_senha": "novaSenha1"})
     assert r.status_code == 200
     assert client.post("/api/admin/login", json={"login": "admin", "senha": "novaSenha1"}).status_code == 200
-    assert client.post("/api/admin/login", json={"login": "admin", "senha": "admin123"}).status_code == 401
+    assert client.post("/api/admin/login", json={"login": "admin", "senha": "Loja@2026xy"}).status_code == 401
     # volta ao original para não afetar outros testes
-    client.put("/api/admin/senha", headers=admin, json={"senha_atual": "novaSenha1", "nova_senha": "admin123"})
+    client.put("/api/admin/senha", headers=admin, json={"senha_atual": "novaSenha1", "nova_senha": "Loja@2026xy"})
 
 
 def test_rate_limit(client):

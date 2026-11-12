@@ -29,6 +29,14 @@ def _resolver_jwt_secret() -> bytes:
 JWT_SECRET = _resolver_jwt_secret()
 
 
+def validar_senha(senha: str) -> str:
+    fracas = {"12345678", "123456789", "password", "admin123", "senha123",
+              "vendafacil", "00000000", "11111111", "qwerty123"}
+    if len(senha.strip()) < 8 or senha.strip().casefold() in fracas:
+        raise ValueError("Use uma senha com pelo menos 8 caracteres e evite senhas comuns.")
+    return senha
+
+
 def hash_senha(senha: str) -> str:
     salt = secrets.token_hex(16)
     h = hashlib.pbkdf2_hmac("sha256", senha.encode(), salt.encode(), 200_000)

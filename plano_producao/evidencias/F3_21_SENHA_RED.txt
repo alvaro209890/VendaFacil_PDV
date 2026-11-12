@@ -1,0 +1,84 @@
+﻿FFFFFFFF                                                                 [100%]
+================================== FAILURES ===================================
+__________________ test_s13_setup_recusa_senha_fraca[abc123] __________________
+tests\test_senha_painel.py:21: in test_s13_setup_recusa_senha_fraca
+    assert r.status_code == 422
+E   assert 200 == 422
+E    +  where 200 = <Response [200 OK]>.status_code
+_________________ test_s13_setup_recusa_senha_fraca[12345678] _________________
+tests\test_senha_painel.py:21: in test_s13_setup_recusa_senha_fraca
+    assert r.status_code == 422
+E   assert 200 == 422
+E    +  where 200 = <Response [200 OK]>.status_code
+_________________ test_s13_setup_recusa_senha_fraca[admin123] _________________
+tests\test_senha_painel.py:21: in test_s13_setup_recusa_senha_fraca
+    assert r.status_code == 422
+E   assert 200 == 422
+E    +  where 200 = <Response [200 OK]>.status_code
+_________________ test_s13_setup_recusa_senha_fraca[        ] _________________
+tests\test_senha_painel.py:21: in test_s13_setup_recusa_senha_fraca
+    assert r.status_code == 422
+E   assert 200 == 422
+E    +  where 200 = <Response [200 OK]>.status_code
+____________ test_s13_trocas_e_contas_recusam_senha_fraca[abc123] _____________
+tests\test_senha_painel.py:42: in test_s13_trocas_e_contas_recusam_senha_fraca
+    assert [r.status_code for r in respostas] == [422, 422, 422]
+E   assert [200, 200, 200] == [422, 422, 422]
+E     
+E     At index 0 diff: 200 != 422
+E     Use -v to get more diff
+___________ test_s13_trocas_e_contas_recusam_senha_fraca[12345678] ____________
+tests\test_senha_painel.py:42: in test_s13_trocas_e_contas_recusam_senha_fraca
+    assert [r.status_code for r in respostas] == [422, 422, 422]
+E   assert [200, 200, 200] == [422, 422, 422]
+E     
+E     At index 0 diff: 200 != 422
+E     Use -v to get more diff
+___________ test_s13_trocas_e_contas_recusam_senha_fraca[admin123] ____________
+tests\test_senha_painel.py:42: in test_s13_trocas_e_contas_recusam_senha_fraca
+    assert [r.status_code for r in respostas] == [422, 422, 422]
+E   assert [200, 200, 200] == [422, 422, 422]
+E     
+E     At index 0 diff: 200 != 422
+E     Use -v to get more diff
+___________ test_s13_trocas_e_contas_recusam_senha_fraca[        ] ____________
+tests\test_senha_painel.py:42: in test_s13_trocas_e_contas_recusam_senha_fraca
+    assert [r.status_code for r in respostas] == [422, 422, 422]
+E   assert [200, 200, 200] == [422, 422, 422]
+E     
+E     At index 0 diff: 200 != 422
+E     Use -v to get more diff
+============================== warnings summary ===============================
+.venv\Lib\site-packages\fastapi\testclient.py:1
+  C:\GIS\VendaFacil_PDV\painel\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+main.py:167
+  C:\GIS\VendaFacil_PDV\painel\main.py:167: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("startup")
+
+.venv\Lib\site-packages\fastapi\applications.py:4723
+  C:\GIS\VendaFacil_PDV\painel\.venv\Lib\site-packages\fastapi\applications.py:4723: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_senha_painel.py::test_s13_setup_recusa_senha_fraca[abc123]
+FAILED tests/test_senha_painel.py::test_s13_setup_recusa_senha_fraca[12345678]
+FAILED tests/test_senha_painel.py::test_s13_setup_recusa_senha_fraca[admin123]
+FAILED tests/test_senha_painel.py::test_s13_setup_recusa_senha_fraca[        ]
+FAILED tests/test_senha_painel.py::test_s13_trocas_e_contas_recusam_senha_fraca[abc123]
+FAILED tests/test_senha_painel.py::test_s13_trocas_e_contas_recusam_senha_fraca[12345678]
+FAILED tests/test_senha_painel.py::test_s13_trocas_e_contas_recusam_senha_fraca[admin123]
+FAILED tests/test_senha_painel.py::test_s13_trocas_e_contas_recusam_senha_fraca[        ]
+8 failed, 3 warnings in 3.99s

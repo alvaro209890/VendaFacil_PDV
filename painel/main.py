@@ -12,7 +12,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from database import db
 import security
@@ -84,7 +84,9 @@ class AdminSetup(BaseModel):
     login: str | None = Field(default=None, min_length=3, max_length=120)
     email: str | None = Field(default=None, min_length=3, max_length=120)
     nome: str = Field(min_length=1, max_length=80)
-    senha: str = Field(min_length=6, max_length=128)
+    senha: str = Field(min_length=8, max_length=128)
+
+    _senha = field_validator("senha")(security.validar_senha)
 
 
 class AdminLogin(BaseModel):
@@ -95,13 +97,17 @@ class AdminLogin(BaseModel):
 
 class AdminSenha(BaseModel):
     senha_atual: str
-    nova_senha: str = Field(min_length=6, max_length=128)
+    nova_senha: str = Field(min_length=8, max_length=128)
+
+    _senha = field_validator("nova_senha")(security.validar_senha)
 
 
 class ContaInput(BaseModel):
     nome_loja: str = Field(min_length=1, max_length=120)
     login: str = Field(min_length=3, max_length=60)
-    senha: str = Field(min_length=4, max_length=128)
+    senha: str = Field(min_length=8, max_length=128)
+
+    _senha = field_validator("senha")(security.validar_senha)
     plano: str = "mensal"
     licenca_expira_em: Optional[str] = None
     observacao: Optional[str] = None
@@ -114,6 +120,15 @@ class ContaUpdate(BaseModel):
     licenca_expira_em: Optional[str] = None
     observacao: Optional[str] = None
     nova_senha: Optional[str] = None
+
+    @field_validator("nova_senha")
+    @classmethod
+    def validar_nova_senha(cls, valor: str | None) -> str | None:
+        if valor is not None:
+            if len(valor) > 128:
+                raise ValueError("Senha deve ter no máximo 128 caracteres.")
+            return security.validar_senha(valor)
+        return valor
 
 
 class ContaValidar(BaseModel):

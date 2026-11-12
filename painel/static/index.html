@@ -97,7 +97,7 @@
         <form id="f" class="space-y-3">
           <input name="nome" placeholder="Seu nome" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2" />
           <input name="login" type="text" placeholder="Usuário" required autocomplete="username" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2" />
-          <input name="senha" type="password" placeholder="Senha (mín. 6)" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2" />
+          <input name="senha" type="password" placeholder="Senha (mín. 8)" required minlength="8" maxlength="128" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2" />
           <button class="w-full bg-emerald-600 hover:bg-emerald-500 rounded-lg py-2 font-bold">Criar admin</button>
           <p id="erro" class="text-red-400 text-sm"></p>
         </form>`);
@@ -299,7 +299,7 @@
             <h3 class="font-black text-lg mb-4">Trocar senha</h3>
             <form id="fs" class="space-y-3">
               <input name="atual" type="password" placeholder="Senha atual" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2" />
-              <input name="nova" type="password" placeholder="Nova senha (mín. 6)" required minlength="6" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2" />
+              <input name="nova" type="password" placeholder="Nova senha (mín. 8)" required minlength="8" maxlength="128" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2" />
               <div class="flex gap-2 pt-2">
                 <button type="button" id="cancel" class="flex-1 bg-slate-800 rounded-lg py-2">Cancelar</button>
                 <button class="flex-1 bg-emerald-600 hover:bg-emerald-500 rounded-lg py-2 font-bold">Salvar</button>
@@ -329,7 +329,7 @@
             <form id="fc" class="space-y-3">
               <input name="nome_loja" value="${ed ? conta.nome_loja : ''}" placeholder="Nome da loja" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2" />
               <input name="login" value="${ed ? conta.login : ''}" placeholder="Login da loja" ${ed ? 'disabled' : 'required'} class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 ${ed ? 'opacity-50' : ''}" />
-              <input name="senha" type="text" placeholder="${ed ? 'Nova senha (deixe vazio p/ manter)' : 'Senha'}" ${ed ? '' : 'required'} class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2" />
+              <input name="senha" type="password" minlength="8" maxlength="128" placeholder="${ed ? 'Nova senha (deixe vazio p/ manter)' : 'Senha (mín. 8)'}" ${ed ? '' : 'required'} class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2" />
               <label class="block text-xs text-slate-500">Licença válida até</label>
               <input name="licenca" type="date" value="${ed && conta.licenca_expira_em ? conta.licenca_expira_em.slice(0,10) : ''}" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2" />
               <input name="plano" value="${ed ? conta.plano : 'mensal'}" placeholder="Plano" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2" />
