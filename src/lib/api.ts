@@ -94,8 +94,9 @@ export interface EstadoRecuperacao {
   ultimo_backup: string | null;
 }
 
-export function getRecuperacao(): Promise<EstadoRecuperacao> {
-  return request("/api/recuperacao");
+export async function getRecuperacao(): Promise<EstadoRecuperacao | undefined> {
+  const saude = await request("/health");
+  return saude.recuperacao;
 }
 
 export interface DiagnosticoLocal {

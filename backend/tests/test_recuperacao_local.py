@@ -34,12 +34,13 @@ sys.path.insert(0, sys.argv[1])
 from fastapi.testclient import TestClient
 from main import app
 with TestClient(app) as api:
-    assert api.get('/health').status_code == 200
-    modo = api.get('/api/recuperacao').json()
+    saude = api.get('/health')
+    assert saude.status_code == 200
+    modo = saude.json()['recuperacao']
     assert modo['somente_consulta'] is True
     login = api.post('/api/auth/login', json={'usuario': 'operador', 'senha': 'Fixture@2026'})
     if sys.argv[2] == 'True':
-        assert modo['ultimo_backup'].endswith('vendafacil-auto-bom.db')
+        assert modo['ultimo_backup'] == 'backups/vendafacil-auto-bom.db'
         assert login.status_code == 200
         auth = {'Authorization': 'Bearer ' + login.json()['token']}
         produtos = api.get('/api/produtos', headers=auth)

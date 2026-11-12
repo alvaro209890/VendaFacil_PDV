@@ -96,7 +96,6 @@ _ROTAS_PUBLICAS = {
     ("GET", "/api/ativacao/status"),
     ("POST", "/api/ativacao"),
     ("POST", "/api/heartbeat"),
-    ("GET", "/api/recuperacao"),
 }
 
 _GETS_COM_EFEITOS = {"/api/backup/exportar", "/api/maquininha/dispositivos",
@@ -161,7 +160,13 @@ def diagnostico(request: Request, response: Response) -> dict:
 
 @app.get("/health")
 async def health() -> dict:
-    return {"status": "ok", "app": "vendafacil-pdv", "version": app.version}
+    dados = {"status": "ok", "app": "vendafacil-pdv", "version": app.version}
+    if db.modo_consulta:
+        dados["recuperacao"] = {
+            "somente_consulta": True,
+            "ultimo_backup": f"backups/{db.backup_recuperacao.name}" if db.backup_recuperacao else None,
+        }
+    return dados
 
 
 @app.post("/api/heartbeat", include_in_schema=False)
@@ -181,12 +186,6 @@ class AtivacaoInput(BaseModel):
 @app.get("/api/ativacao/status")
 async def ativacao_status() -> dict:
     return conta_mod.status(online=False) if db.modo_consulta else conta_mod.status()
-
-
-@app.get("/api/recuperacao", include_in_schema=False)
-async def recuperacao() -> dict:
-    return {"somente_consulta": db.modo_consulta,
-            "ultimo_backup": str(db.backup_recuperacao) if db.backup_recuperacao else None}
 
 
 @app.post("/api/ativacao")
