@@ -271,12 +271,24 @@ class Database:
     def create_admin(self, login: str, nome: str, senha_hash: str) -> Optional[dict]:
         usuario = login.strip().lower()
         email = usuario if "@" in usuario else f"{usuario}@local"
-        new_id = self._insert_id(
-            "INSERT INTO admins (email, login, nome, senha_hash, criado_em) VALUES (?,?,?,?,?)",
-            (email.lower(), usuario, nome, senha_hash, agora()),
-        )
-        if new_id is None:
-            return None
+        # A trava precisa ser do banco: RLock só protege esta conexão/processo.
+        transacao = self._conn.transaction() if self.pg else self._conn
+        with self._lock, transacao:
+            cur = self._conn.cursor()
+            try:
+                if self.pg:
+                    cur.execute("LOCK TABLE admins IN EXCLUSIVE MODE")
+                else:
+                    cur.execute("BEGIN IMMEDIATE")
+                cur.execute("SELECT COUNT(*) AS c FROM admins")
+                if cur.fetchone()["c"]:
+                    return None
+                sql = "INSERT INTO admins (email, login, nome, senha_hash, criado_em) VALUES (?,?,?,?,?)"
+                cur.execute(self._ph(sql) + (" RETURNING id" if self.pg else ""),
+                            (email.lower(), usuario, nome, senha_hash, agora()))
+                new_id = cur.fetchone()["id"] if self.pg else cur.lastrowid
+            finally:
+                cur.close()
         return {"id": new_id, "login": usuario, "email": email.lower(), "nome": nome}
 
     def get_admin(self, admin_id: int) -> Optional[dict]:
