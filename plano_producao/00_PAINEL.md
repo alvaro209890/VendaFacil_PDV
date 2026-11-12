@@ -7,7 +7,7 @@
 | Estado geral | 🟨 EM ANDAMENTO |
 | Fase atual | 3 — 21/24; faltam F3.19 (U07), F3.21 (S13) e F3.22 (S14) |
 | Próxima ação | F3.22 (owner fiscal) → F3.21 (bootstrap/revogação no painel) → F3.19 (total diário), depois portão da fase e push |
-| Última atualização | 2026-11-12 10:00 BRT — b265950 publicado; F3.16/U06/P31 e Fase 2 fechados, E2E 81/81 em 4 lotes |
+| Última atualização | 2026-11-12 10:05 BRT — push verificado (HEAD = remoto); F3.16/U06/P31 e Fase 2 fechados, E2E 81/81 em 4 lotes |
 | Commit de partida | `6da6899` |
 | Versão de partida → de entrega | 1.0.12 → 1.0.13 |
 | Testes backend (partida → agora) | 76→315 (`pytest -q`, 12/11 09:12 BRT) |
