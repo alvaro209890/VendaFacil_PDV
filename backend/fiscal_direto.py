@@ -991,6 +991,16 @@ def normalizar_retorno_sefaz(texto: str | None, xml_assinado: str | None = None,
             "mensagem": texto[:500],
         }
 
+    consulta = root if root.tag.split('}')[-1] == 'retConsSitNFe' else root.find('.//{*}retConsSitNFe')
+    if consulta is not None and _texto(consulta, 'cStat') in {'101', '151'}:
+        # A consulta traz o protocolo original autorizado junto do status atual.
+        # A situação atual cancelada prevalece sobre o cStat100 do infProt.
+        dados = {'status': 'cancelada', 'cstat': _texto(consulta, 'cStat'),
+                 'mensagem': _texto(consulta, 'xMotivo') or 'Cancelamento homologado.'}
+        protocolo_atual = _texto(consulta, 'nProt')
+        if protocolo_atual:
+            dados['protocolo'] = protocolo_atual
+        return dados
     inf_prot = root.find(".//{*}infProt")
     prot = root.find(".//{*}protNFe")
     if inf_prot is not None:

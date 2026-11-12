@@ -419,7 +419,7 @@ def consultar_nfce(nota_id: int) -> dict:
     if not nota:
         raise FiscalError("Nota não encontrada.")
     if (db.get_config_fiscal().get("provedor_fiscal") or "sefaz_mt_direto") == "sefaz_mt_direto":
-        if nota.get("status") in ("autorizada", "cancelada", "rejeitada"):
+        if nota.get("status") in ("cancelada", "rejeitada"):
             return nota
         config = db.get_config_fiscal()
         if not nota.get("chave"):
