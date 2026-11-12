@@ -23,6 +23,7 @@ from caixa import router as caixa_router
 from backup import router as backup_router
 from fiscal_config import router as fiscal_config_router
 from fiscal_router import router as fiscal_router, nfe_router
+from fiscal_servicos_router import router as fiscal_servicos_router
 from database import db
 from errors import configure_error_logging, register_error_handlers
 
@@ -108,6 +109,7 @@ app.include_router(auth_router, prefix="/api/auth", tags=["auth"])
 app.include_router(categorias_router, prefix="/api/categorias", tags=["categorias"])
 app.include_router(produtos_router, prefix="/api/produtos", tags=["produtos"])
 app.include_router(vendas_router, prefix="/api/vendas", tags=["vendas"])
+app.include_router(fiscal_servicos_router, prefix="/api/fiscal/servicos", tags=["fiscal"])
 app.include_router(clientes_router, prefix="/api/clientes", tags=["clientes"])
 app.include_router(contas_receber_router, prefix="/api/contas-receber", tags=["contas-receber"])
 app.include_router(pix_router, prefix="/api/pix", tags=["pix"])

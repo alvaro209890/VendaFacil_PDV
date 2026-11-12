@@ -47,6 +47,10 @@ WS = {
     ("55", "producao", "consulta"): "https://nfe.sefaz.mt.gov.br/nfews/v2/services/NfeConsulta4",
     ("55", "homologacao", "evento"): "https://homologacao.sefaz.mt.gov.br/nfews/v2/services/RecepcaoEvento4",
     ("55", "producao", "evento"): "https://nfe.sefaz.mt.gov.br/nfews/v2/services/RecepcaoEvento4",
+    ("65", "homologacao", "status"): "https://homologacao.sefaz.mt.gov.br/nfcews/services/NfeStatusServico4",
+    ("65", "producao", "status"): "https://nfce.sefaz.mt.gov.br/nfcews/services/NfeStatusServico4",
+    ("55", "homologacao", "status"): "https://homologacao.sefaz.mt.gov.br/nfews/v2/services/NfeStatusServico4",
+    ("55", "producao", "status"): "https://nfe.sefaz.mt.gov.br/nfews/v2/services/NfeStatusServico4",
 }
 # Operação/método SOAP por serviço. O elemento <nfeDadosMsg> fica no namespace
 # do WSDL da operação (portalfiscal/nfe/wsdl/<Operação>) e o Content-Type SOAP
@@ -57,6 +61,7 @@ _SOAP_OP = {
     "autorizacao": ("NFeAutorizacao4", "nfeAutorizacaoLote"),
     "consulta": ("NFeConsultaProtocolo4", "nfeConsultaNF"),
     "evento": ("NFeRecepcaoEvento4", "nfeRecepcaoEvento"),
+    "status": ("NFeStatusServico4", "nfeStatusServicoNF"),
 }
 
 
@@ -1024,6 +1029,24 @@ def consultar_chave(modelo: str, chave: str, config: dict) -> dict:
     cons = (f'<consSitNFe xmlns="{NFE_NS}" versao="{VERSAO}"><tpAmb>{tp_amb}</tpAmb>'
             f'<xServ>CONSULTAR</xServ><chNFe>{so_digitos(chave)}</chNFe></consSitNFe>')
     return _post_soap(modelo, "consulta", cons, config)
+
+
+def status_servico(modelo: str, config: dict) -> dict:
+    """Consulta explícita de suporte; nunca é pré-condição para vender."""
+    if modelo not in {"55", "65"}:
+        raise FiscalDiretoError("Modelo fiscal inválido.")
+    tp_amb = "1" if config.get("ambiente") == "producao" else "2"
+    xml = (f'<consStatServ xmlns="{NFE_NS}" versao="{VERSAO}">'
+           f'<tpAmb>{tp_amb}</tpAmb><cUF>{C_UF_MT}</cUF><xServ>STATUS</xServ></consStatServ>')
+    try:
+        retorno = _post_soap(modelo, "status", xml, config)
+        root = ET.fromstring(retorno.get("texto") or "")
+        cstat = _texto(root, "cStat")
+        return {"cstat": cstat, "em_operacao": cstat == "107" and retorno["status_code"] == 200,
+                "mensagem": _texto(root, "xMotivo") or "Resposta sem motivo.",
+                "ambiente": config.get("ambiente") or "homologacao", "modelo": modelo}
+    except (ET.ParseError, OSError, ValueError) as exc:
+        raise FiscalDiretoError("Não foi possível consultar o serviço SEFAZ-MT.") from exc
 
 
 def montar_cancelamento_xml(nota: dict, config: dict, justificativa: str) -> str:

@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { FileText, Save, CheckCircle2, AlertCircle } from "lucide-react";
-import { getConfigFiscal, salvarConfigFiscal } from "../lib/api";
+import { getConfigFiscal, salvarConfigFiscal, consultarStatusFiscal } from "../lib/api";
 import type { ConfigFiscal } from "../lib/api";
 
 export default function FiscalPage() {
   const [cfg, setCfg] = useState<ConfigFiscal>({ ambiente: "homologacao", provedor_fiscal: "sefaz_mt_direto", uf: "MT" });
   const [loading, setLoading] = useState(true);
   const [salvando, setSalvando] = useState(false);
+  const [consultando, setConsultando] = useState(false);
   const [msg, setMsg] = useState<{ tipo: "ok" | "erro"; texto: string } | null>(null);
 
   const carregar = useCallback(async () => {
@@ -77,6 +78,18 @@ export default function FiscalPage() {
           <p className="text-slate-500 text-xs">Dados da loja, certificado A1 e emissão direta SEFAZ-MT.</p>
         </div>
       </div>
+
+      <button type="button" disabled={consultando} className="mb-4 px-4 py-2 rounded-lg bg-slate-800 text-white disabled:opacity-50"
+        onClick={async () => {
+          setConsultando(true);
+          try {
+            const r = await consultarStatusFiscal();
+            setMsg({ tipo: r.em_operacao ? "ok" : "erro", texto: `SEFAZ-MT: ${r.cstat || "sem código"} — ${r.mensagem}` });
+          } catch (erro) { setMsg({ tipo: "erro", texto: (erro as Error).message }); }
+          finally { setConsultando(false); }
+        }}>
+        {consultando ? "Consultando SEFAZ…" : "Consultar serviço SEFAZ-MT"}
+      </button>
 
       {msg && (
         <div className={`mb-4 px-4 py-2 rounded-lg text-sm flex items-center gap-2 ${msg.tipo === "ok" ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"}`}>

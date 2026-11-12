@@ -559,6 +559,12 @@ export function cancelarVenda(id: number, motivo: string): Promise<{ venda: Vend
 
 // ── Dashboard ──
 
+export function consultarStatusFiscal(modelo: "55" | "65" = "65"): Promise<{
+  cstat: string | null; em_operacao: boolean; mensagem: string;
+}> {
+  return request(`/api/fiscal/servicos/status?modelo=${modelo}`);
+}
+
 export interface DashboardData {
   total_produtos: number;
   alertas_estoque: number;
