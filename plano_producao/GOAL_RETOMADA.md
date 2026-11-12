@@ -4,7 +4,7 @@
 
 ---
 
-**Objetivo:** continuar o VendaFácil PDV (`C:\GIS\VendaFacil_PDV`, branch `master`, HEAD `a6a90d5`) do ponto em que parou e executar até o fim o plano de `C:\GIS\VendaFacil_PDV\plano_producao\`.
+**Objetivo:** continuar o VendaFácil PDV (`C:\GIS\VendaFacil_PDV`, branch `master`, HEAD `b265950`) do ponto em que parou e executar até o fim o plano de `C:\GIS\VendaFacil_PDV\plano_producao\`.
 
 **Antes de escrever qualquer linha**
 

@@ -7,8 +7,8 @@
 
 | Campo | Valor |
 |---|---|
-| HEAD local | `a6a90d5` (+ commit de docs desta retomada) |
-| Remoto | `origin/master` — push de 12/11 a pedido do Álvaro (exceção consciente à regra 4; o portão da Fase 3 continua aberto) |
+| HEAD local | `b265950` (publicado e verificado) |
+| Remoto | `origin/master` = `b265950` — push de 12/11 a pedido do Álvaro (exceção consciente à regra 4; o portão da Fase 3 continua aberto) |
 | Fases 0–2 | ✅ concluídas e publicadas |
 | Fase 3 | 🟨 21/24 — faltam **F3.19**, **F3.21**, **F3.22** |
 | Fases 4–7 | ⬜ não iniciadas (27 + 12 + 14 + 12 itens) |
