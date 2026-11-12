@@ -147,6 +147,14 @@ def test_x03_schema_nfe55_destinatario(client, auth, cfg_xsd, cert_teste):
     assinado = _assinar(doc, cfg_xsd, cert_teste)
     validar_xml(assinado, "nfe")
     assert "<mod>55</mod>" in doc.xml
+    assert "<indIEDest>9</indIEDest>" in doc.xml
+    assert "<indFinal>1</indFinal>" in doc.xml
+
+    destinatario.update(indicador_ie="1", inscricao_estadual="130000019")
+    contribuinte = fiscal_direto.montar_documento(
+        _venda(produto), cfg_xsd, "55", destinatario=destinatario, serie=2, numero=107)
+    assert "<indIEDest>1</indIEDest>" in contribuinte.xml
+    assert "<indFinal>0</indFinal>" in contribuinte.xml
 
 
 def test_x04_schema_cancelamento_assinado(cfg_xsd, cert_teste):

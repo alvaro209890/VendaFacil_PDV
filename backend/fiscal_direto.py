@@ -521,7 +521,10 @@ def montar_documento(venda: dict, config: dict, modelo: str = "65",
     # (idDest=1 com destinatário de outra UF é a Rejeição 694).
     uf_dest = ((destinatario or {}).get("uf") or "MT").strip().upper()
     id_dest = "1" if (modelo == "65" or uf_dest == "MT") else "2"
+    ie_dest = so_digitos((destinatario or {}).get("inscricao_estadual"))
+    indicador = "9"
     if modelo == "55":
+        indicador = str(destinatario.get("indicador_ie") or "").strip() or ("1" if ie_dest else "9")
         cfops = {str(db.get_produto(i["produto_id"]).get("cfop") or "").strip()
                  for i in venda.get("itens", []) if db.get_produto(i["produto_id"])}
         if id_dest == "2" and any(c.startswith("5") for c in cfops):
@@ -539,7 +542,7 @@ def montar_documento(venda: dict, config: dict, modelo: str = "65",
     _tag(ide, "cDV", chave[-1])
     _tag(ide, "tpAmb", tp_amb)
     _tag(ide, "finNFe", "1")
-    _tag(ide, "indFinal", "1" if modelo == "65" else "0")
+    _tag(ide, "indFinal", "1" if indicador == "9" else "0")
     _tag(ide, "indPres", "1")
     _tag(ide, "procEmi", "0")
     _tag(ide, "verProc", "VendaFacilPDV")
@@ -600,12 +603,6 @@ def montar_documento(venda: dict, config: dict, modelo: str = "65",
         # indIEDest e IE precisam ser coerentes: IE só pode ir no XML quando o
         # destinatário é contribuinte (indIEDest=1) — IE com indIEDest=9 é
         # rejeitado. NFC-e é sempre não-contribuinte (9).
-        ie_dest = so_digitos((destinatario or {}).get("inscricao_estadual"))
-        indicador = str((destinatario or {}).get("indicador_ie") or "").strip()
-        if modelo != "55":
-            indicador = "9"
-        elif not indicador:
-            indicador = "1" if ie_dest else "9"
         _tag(dest, "indIEDest", indicador)
         if modelo == "55" and indicador == "1":
             if not ie_dest:
