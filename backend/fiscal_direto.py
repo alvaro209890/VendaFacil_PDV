@@ -1150,10 +1150,14 @@ def inutilizar_numeracao(config: dict, modelo: str, ano: int, serie: int,
                         ("nNFIni", inicio), ("nNFFin", fim), ("xJust", justificativa)):
         _tag(inf, nome, valor)
     xml = assinar_xml(ET.tostring(raiz, encoding="unicode"), config)
-    retorno = _post_soap(modelo, "inutilizacao", _sem_declaracao_xml(xml), config)
     resultado = {"status": "processando", "xml_pedido": xml,
-                 "xml_retorno": retorno.get("texto") or "", "cstat": None,
+                 "xml_retorno": "", "cstat": None,
                  "protocolo": None, "mensagem": "Pedido sem confirmação; consulte antes de reutilizar a faixa."}
+    try:
+        retorno = _post_soap(modelo, "inutilizacao", _sem_declaracao_xml(xml), config)
+    except OSError:
+        return resultado
+    resultado["xml_retorno"] = retorno.get("texto") or ""
     if retorno.get("status_code") != 200:
         return resultado
     try:

@@ -1,20 +1,25 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { FileText, Save, CheckCircle2, AlertCircle } from "lucide-react";
-import { getConfigFiscal, salvarConfigFiscal, consultarStatusFiscal } from "../lib/api";
-import type { ConfigFiscal } from "../lib/api";
+import { getConfigFiscal, salvarConfigFiscal, consultarStatusFiscal, listarInutilizacoes, inutilizarNumeracao } from "../lib/api";
+import type { ConfigFiscal, PedidoInutilizacao, InutilizacaoFiscal } from "../lib/api";
 
 export default function FiscalPage() {
   const [cfg, setCfg] = useState<ConfigFiscal>({ ambiente: "homologacao", provedor_fiscal: "sefaz_mt_direto", uf: "MT" });
   const [loading, setLoading] = useState(true);
   const [salvando, setSalvando] = useState(false);
   const [consultando, setConsultando] = useState(false);
+  const [inutilizando, setInutilizando] = useState(false);
+  const [historico, setHistorico] = useState<InutilizacaoFiscal[]>([]);
+  const [pedido, setPedido] = useState<PedidoInutilizacao>({ modelo: "65", ano: new Date().getFullYear(), serie: 1, inicio: 1, fim: 1, justificativa: "" });
   const [msg, setMsg] = useState<{ tipo: "ok" | "erro"; texto: string } | null>(null);
 
   const carregar = useCallback(async () => {
     try {
       const { config } = await getConfigFiscal();
       setCfg({ ambiente: "homologacao", provedor_fiscal: "sefaz_mt_direto", uf: "MT", ...config });
+      const { inutilizacoes } = await listarInutilizacoes();
+      setHistorico(inutilizacoes);
     } catch {
       setMsg({ tipo: "erro", texto: "Erro ao carregar configuração." });
     } finally {
@@ -96,6 +101,32 @@ export default function FiscalPage() {
           {msg.tipo === "ok" ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />} {msg.texto}
         </div>
       )}
+
+      <details className="mb-5 bg-slate-900 border border-slate-800 rounded-xl p-4 text-slate-300">
+        <summary className="cursor-pointer font-bold text-sm">Inutilizar numeração sem uso</summary>
+        <p className="text-xs mt-3 text-slate-400">Somente para quebra de sequência já ocorrida. Notas autorizadas, pendentes ou emitidas em contingência não podem ser inutilizadas. Confira a faixa com o contador.</p>
+        <form className="mt-3 space-y-3" onSubmit={async (e) => {
+          e.preventDefault();
+          if (inutilizando) return;
+          setInutilizando(true);
+          try {
+            const { inutilizacao: r } = await inutilizarNumeracao(pedido);
+            setMsg({ tipo: r.status === "inutilizada" ? "ok" : "erro", texto: `${r.status}: ${r.mensagem || "Confira a situação na SEFAZ."}${r.protocolo ? ` · Protocolo ${r.protocolo}` : ""}` });
+            setHistorico((await listarInutilizacoes()).inutilizacoes);
+          } catch (erro) { setMsg({ tipo: "erro", texto: (erro as Error).message }); }
+          finally { setInutilizando(false); }
+        }}>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <label className={lbl}>Modelo<select aria-label="Modelo da inutilização" className={inputCls} value={pedido.modelo} onChange={(e) => setPedido({ ...pedido, modelo: e.target.value as "55" | "65" })}><option value="65">NFC-e 65</option><option value="55">NF-e 55</option></select></label>
+            {([['ano', 'Ano'], ['serie', 'Série'], ['inicio', 'Número inicial'], ['fim', 'Número final']] as const).map(([campo, titulo]) => (
+              <label key={campo} className={lbl}>{titulo}<input aria-label={`${titulo} da inutilização`} type="number" required min={campo === 'serie' ? 0 : campo === 'ano' ? 2000 : 1} max={campo === 'serie' ? 999 : campo === 'ano' ? new Date().getFullYear() : 999999999} className={inputCls} value={pedido[campo]} onChange={(e) => setPedido({ ...pedido, [campo]: Number(e.target.value) })} /></label>
+            ))}
+          </div>
+          <label className={lbl}>Justificativa<textarea aria-label="Justificativa da inutilização" required minLength={15} maxLength={255} className={inputCls} value={pedido.justificativa} onChange={(e) => setPedido({ ...pedido, justificativa: e.target.value })} /></label>
+          <button type="submit" disabled={inutilizando} className="px-4 py-2 rounded-lg bg-amber-800 text-white disabled:opacity-50">{inutilizando ? "Solicitando…" : "Solicitar inutilização da faixa"}</button>
+        </form>
+        {historico.length > 0 && <div className="mt-4 space-y-2 text-xs" aria-label="Histórico de inutilizações">{historico.map((r) => <p key={r.id}>{r.modelo} · {r.ano} · Série {r.serie} · {r.inicio}–{r.fim}: {r.status} {r.cstat || ""} {r.protocolo ? `· Protocolo ${r.protocolo}` : ""}</p>)}</div>}
+      </details>
 
       <form onSubmit={salvar} className="space-y-5">
         <label className="flex items-center gap-3 bg-slate-900 border border-slate-800 rounded-xl p-4 cursor-pointer">

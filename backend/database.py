@@ -444,6 +444,14 @@ class Database:
         for col, ddl in nota_cols.items():
             if col not in ncols:
                 self._conn.execute(f"ALTER TABLE notas_fiscais ADD COLUMN {col} {ddl}")
+        self._conn.execute("""CREATE TABLE IF NOT EXISTS inutilizacoes_fiscais (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL,
+            cnpj TEXT NOT NULL, modelo TEXT NOT NULL, ambiente TEXT NOT NULL,
+            ano INTEGER NOT NULL, serie INTEGER NOT NULL, inicio INTEGER NOT NULL,
+            fim INTEGER NOT NULL, justificativa TEXT NOT NULL, status TEXT NOT NULL,
+            cstat TEXT, protocolo TEXT, mensagem TEXT, xml_pedido TEXT, xml_retorno TEXT,
+            criado_em TEXT NOT NULL, atualizado_em TEXT NOT NULL,
+            FOREIGN KEY(user_id) REFERENCES users(id))""")
 
     # ── Sincronização ──
     def vendas_pendentes_sync(self, limite: int = 100) -> list[dict[str, Any]]:
@@ -610,6 +618,10 @@ class Database:
             falha_local = self._conn.execute(
                 "SELECT * FROM notas_fiscais WHERE venda_id = ? AND modelo = ? "
                 "AND status = 'rejeitada' AND (chave IS NULL OR chave = '') "
+                "AND NOT EXISTS (SELECT 1 FROM inutilizacoes_fiscais i WHERE i.modelo=notas_fiscais.modelo "
+                "AND i.serie=notas_fiscais.serie AND i.ambiente=notas_fiscais.ambiente "
+                "AND notas_fiscais.numero BETWEEN i.inicio AND i.fim "
+                "AND i.status IN ('processando','inutilizada')) "
                 "ORDER BY id DESC LIMIT 1",
                 (venda_id, modelo),
             ).fetchone()
@@ -643,6 +655,12 @@ class Database:
                     "Configurações Fiscais antes de emitir.")
             serie = int(row["serie"] or 1)
             numero = int(row["proximo"] or 1)
+            ocupado = self._conn.execute(
+                "SELECT 1 FROM inutilizacoes_fiscais WHERE modelo=? AND serie=? AND ambiente=? "
+                "AND ? BETWEEN inicio AND fim AND status IN ('processando','inutilizada') LIMIT 1",
+                (modelo, serie, ambiente or "homologacao", numero)).fetchone()
+            if ocupado:
+                raise ValueError("Número reservado para inutilização; confira a numeração fiscal com o contador.")
             if modelo == "55":
                 self._conn.execute(
                     "UPDATE config_fiscal SET proximo_numero_nfe = ? WHERE id = 1",
@@ -666,6 +684,60 @@ class Database:
                 "SELECT * FROM notas_fiscais WHERE id = ?", (cur.lastrowid,)
             ).fetchone()
             return dict(criada), True
+
+    def reservar_inutilizacao(self, user_id: int, cnpj: str, pedido: dict, agora: str) -> tuple[dict, bool]:
+        """Reserva faixa antes da rede; emissões concorrentes respeitam a reserva."""
+        modelo, serie = pedido["modelo"], pedido["serie"]
+        ambiente = pedido["ambiente"]
+        inicio, fim, ano = pedido["inicio"], pedido["fim"], pedido["ano"]
+        with self._lock, self._conn:
+            self._conn.execute("BEGIN IMMEDIATE")
+            existente = self._conn.execute(
+                "SELECT * FROM inutilizacoes_fiscais WHERE cnpj=? AND modelo=? AND ambiente=? "
+                "AND ano=? AND serie=? AND inicio=? AND fim=? "
+                "AND status IN ('processando','inutilizada') ORDER BY id DESC LIMIT 1",
+                (cnpj, modelo, ambiente, ano, serie, inicio, fim)).fetchone()
+            if existente:
+                if existente["user_id"] != user_id:
+                    raise ValueError("Faixa já solicitada por outro operador; consulte o responsável fiscal.")
+                return dict(existente), False
+            ativa = self._conn.execute(
+                "SELECT 1 FROM notas_fiscais WHERE modelo=? AND serie=? AND ambiente=? "
+                "AND numero BETWEEN ? AND ? AND (status<>'rejeitada' OR tipo_emissao='9') LIMIT 1",
+                (modelo, serie, ambiente, inicio, fim)).fetchone()
+            sobreposta = self._conn.execute(
+                "SELECT 1 FROM inutilizacoes_fiscais WHERE cnpj=? AND modelo=? AND ambiente=? "
+                "AND serie=? AND inicio<=? AND fim>=? AND status IN ('processando','inutilizada') LIMIT 1",
+                (cnpj, modelo, ambiente, serie, fim, inicio)).fetchone()
+            if ativa or sobreposta:
+                raise ValueError("Faixa contém nota ativa, contingência ou pedido de inutilização em andamento.")
+            cfg = self.get_config_fiscal()
+            sufixo = "nfe" if modelo == "55" else "nfce"
+            if serie == cfg.get("serie_" + sufixo, 1):
+                proximo = int(cfg.get("proximo_numero_" + sufixo) or 1)
+            else:
+                proximo = self._conn.execute(
+                    "SELECT COALESCE(MAX(numero),0)+1 FROM notas_fiscais WHERE modelo=? AND serie=? AND ambiente=?",
+                    (modelo, serie, ambiente)).fetchone()[0]
+            if fim >= proximo:
+                raise ValueError("Não é permitido inutilizar numeração futura; informe uma quebra de sequência existente.")
+            cur = self._conn.execute(
+                "INSERT INTO inutilizacoes_fiscais (user_id,cnpj,modelo,ambiente,ano,serie,inicio,fim,"
+                "justificativa,status,criado_em,atualizado_em) VALUES (?,?,?,?,?,?,?,?,?,'processando',?,?)",
+                (user_id, cnpj, modelo, ambiente, ano, serie, inicio, fim, pedido["justificativa"], agora, agora))
+            return dict(self._conn.execute("SELECT * FROM inutilizacoes_fiscais WHERE id=?", (cur.lastrowid,)).fetchone()), True
+
+    def concluir_inutilizacao(self, ident: int, resultado: dict, agora: str) -> dict:
+        campos = {k: resultado.get(k) for k in ("status", "cstat", "protocolo", "mensagem", "xml_pedido", "xml_retorno")}
+        with self._lock, self._conn:
+            self._conn.execute("UPDATE inutilizacoes_fiscais SET " + ",".join(k + "=?" for k in campos)
+                               + ",atualizado_em=? WHERE id=?", [*campos.values(), agora, ident])
+            return dict(self._conn.execute("SELECT * FROM inutilizacoes_fiscais WHERE id=?", (ident,)).fetchone())
+
+    def listar_inutilizacoes(self, user_id: int) -> list[dict]:
+        with self._lock:
+            return [dict(r) for r in self._conn.execute(
+                "SELECT * FROM inutilizacoes_fiscais WHERE user_id=? ORDER BY id DESC LIMIT 100", (user_id,))]
 
     # ── Fiscal: notas ──
     def criar_nota(self, dados: dict) -> dict[str, Any]:

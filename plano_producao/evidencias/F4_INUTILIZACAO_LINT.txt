@@ -1,0 +1,3 @@
+Comando: npx eslint .
+Código de saída observado: 0
+Saída: vazia.

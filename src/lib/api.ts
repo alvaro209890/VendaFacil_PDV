@@ -565,6 +565,19 @@ export function consultarStatusFiscal(modelo: "55" | "65" = "65"): Promise<{
   return request(`/api/fiscal/servicos/status?modelo=${modelo}`);
 }
 
+export interface PedidoInutilizacao {
+  modelo: "55" | "65"; ano: number; serie: number; inicio: number; fim: number; justificativa: string;
+}
+export interface InutilizacaoFiscal extends PedidoInutilizacao {
+  id: number; status: string; cstat?: string; protocolo?: string; mensagem?: string;
+}
+export function listarInutilizacoes(): Promise<{ inutilizacoes: InutilizacaoFiscal[] }> {
+  return request('/api/fiscal/servicos/inutilizacoes');
+}
+export function inutilizarNumeracao(pedido: PedidoInutilizacao): Promise<{ inutilizacao: InutilizacaoFiscal }> {
+  return request('/api/fiscal/servicos/inutilizacoes', { method: 'POST', body: JSON.stringify(pedido) });
+}
+
 export interface DashboardData {
   total_produtos: number;
   alertas_estoque: number;
