@@ -42,6 +42,16 @@ novo valor e pedir limpeza do mesmo campo também é recusado, antes de gravar.
 Campos comuns e flags continuam atualizáveis. A resposta permanece mascarada.
 Esse contrato de armazenamento não valida certificado nem prova homologação.
 
+## Impressão de recibos
+
+Forma de pagamento, identificador da venda, número e série da nota são texto
+escapado no HTML da impressão. O atributo da imagem só recebe Base64 com
+caracteres permitidos, tamanho compatível e prefixo de PNG; dados inválidos não
+viram atributos ou eventos. Isso não valida conteúdo de QR fiscal nem autorização.
+
+Os testes usam Chromium isolado, sem rede nem impressora, e canários benignos
+para conferir o DOM em 58/80 mm. Não substituem teste físico ou homologação SEFAZ.
+
 ## Token de 30 dias
 
 O token local dura 720 horas. A loja abre e fecha no mesmo PC, muitas vezes sem internet. Um token curto trancaria o caixa no meio do expediente se o painel não respondesse. Trinta dias cobrem o mês sem pedir senha todo dia, e o bloqueio da licença continua valendo na revalidação. Não é sessão de banco: é o caixa da loja.

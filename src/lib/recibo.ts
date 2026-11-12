@@ -79,8 +79,9 @@ function montarHtml(d: ReciboData, larguraMm: number): string {
   let fiscal = "";
   if (temNota && d.nota) {
     const chave = esc(d.nota.chave!).replace(/(.{4})/g, "$1 ").trim();
-    const qr = d.nota.qrcode_base64
-      ? `<div class="c" style="margin-top:4px"><img src="data:image/png;base64,${d.nota.qrcode_base64}" style="width:${larguraMm === 58 ? 40 : 50}mm;height:auto" /></div>`
+    const qrBase64 = d.nota.qrcode_base64 || "";
+    const qr = /^iVBORw0KGgo[A-Za-z0-9+/]*={0,2}$/.test(qrBase64) && qrBase64.length % 4 === 0
+      ? `<div class="c" style="margin-top:4px"><img src="data:image/png;base64,${qrBase64}" style="width:${larguraMm === 58 ? 40 : 50}mm;height:auto" /></div>`
       : "";
     const consumidor = d.nota.cpf
       ? `<div class="c">CONSUMIDOR: ${esc(d.nota.cpf)}</div>`
@@ -88,7 +89,7 @@ function montarHtml(d: ReciboData, larguraMm: number): string {
     fiscal = `<hr>
       <div class="c b">DANFE NFC-e — Documento Auxiliar da NFC-e</div>
       ${contingencia ? `<div class="c b">EMITIDA EM CONTINGENCIA</div><div class="c b">Pendente de autorizacao</div>` : ""}
-      <div class="c">NFC-e no ${d.nota.numero ?? "-"} serie ${d.nota.serie ?? "-"}</div>
+      <div class="c">NFC-e no ${esc(String(d.nota.numero ?? "-"))} serie ${esc(String(d.nota.serie ?? "-"))}</div>
       ${consumidor}
       ${d.nota.protocolo ? `<div class="c">Protocolo: ${esc(String(d.nota.protocolo))}</div>` : ""}
       <div class="c" style="font-size:.85em;margin-top:2px">Chave de acesso</div>
@@ -105,14 +106,14 @@ function montarHtml(d: ReciboData, larguraMm: number): string {
   ${cnpj}${end}
   <hr>
   ${temNota ? "" : '<div class="c b">CUPOM NÃO FISCAL</div>'}
-  <div class="ln"><span>${dt}</span><span>${d.vendaId ? "#" + d.vendaId : ""}</span></div>
+  <div class="ln"><span>${dt}</span><span>${d.vendaId ? "#" + esc(String(d.vendaId)) : ""}</span></div>
   <hr>
   ${linhas}
   <hr>
   <div class="ln"><span>Subtotal</span><span>${moeda(d.subtotal)}</span></div>
   ${desc}
   <div class="ln tot"><span>TOTAL</span><span>R$ ${moeda(d.total)}</span></div>
-  <div class="ln"><span>Pagamento</span><span>${FORMA_LABEL[d.forma] || d.forma}</span></div>
+  <div class="ln"><span>Pagamento</span><span>${esc(String(FORMA_LABEL[d.forma] || d.forma))}</span></div>
   ${dinheiro}
   ${fiscal}
   <hr>
