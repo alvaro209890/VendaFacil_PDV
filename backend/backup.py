@@ -11,7 +11,6 @@ import logging
 import os
 import tempfile
 import threading
-import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -118,15 +117,17 @@ def _restaurar_bytes(raw: bytes) -> dict:
 
 
 # ── Backup automático em segundo plano ──
-def _loop() -> None:
-    while True:
+def _loop(parar: threading.Event) -> None:
+    while not parar.is_set():
         try:
             _gerar_backup("auto")
             _limpar_antigos()
         except Exception as exc:
             log.error("Backup automático falhou (%s).", type(exc).__name__)
-        time.sleep(INTERVALO_SEG)
+        parar.wait(INTERVALO_SEG)
 
 
-def iniciar_em_background() -> None:
-    threading.Thread(target=_loop, daemon=True, name="vf-backup").start()
+def iniciar_em_background(parar: threading.Event) -> threading.Thread:
+    tarefa = threading.Thread(target=_loop, args=(parar,), daemon=True, name="vf-backup")
+    tarefa.start()
+    return tarefa

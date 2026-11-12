@@ -7,7 +7,6 @@ tem um UUID e o painel ignora duplicadas).
 """
 import json
 import threading
-import time
 import urllib.error
 import urllib.request
 import uuid as uuidlib
@@ -79,17 +78,18 @@ def enviar_pendentes() -> int:
     return 0
 
 
-def _loop() -> None:
-    while True:
+def _loop(parar: threading.Event) -> None:
+    while not parar.is_set():
         try:
             enviar_pendentes()
         except Exception:
             pass
-        time.sleep(INTERVALO_SEG)
+        parar.wait(INTERVALO_SEG)
 
 
-def iniciar_em_background() -> None:
+def iniciar_em_background(parar: threading.Event) -> threading.Thread | None:
     if not conta_mod.licenca_obrigatoria():
         return
-    t = threading.Thread(target=_loop, daemon=True, name="vf-sync")
+    t = threading.Thread(target=_loop, args=(parar,), daemon=True, name="vf-sync")
     t.start()
+    return t

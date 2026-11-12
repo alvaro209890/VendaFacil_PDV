@@ -20,7 +20,7 @@ from http.client import HTTPConnection, HTTPException
 
 import uvicorn
 
-from main import app
+from main import app, heartbeat_expirou
 
 HOST = os.environ.get("VENDAFACIL_HOST", "127.0.0.1")
 PORT = int(os.environ.get("VENDAFACIL_PORT", "3020"))
@@ -63,6 +63,13 @@ def _abrir_navegador() -> None:
     webbrowser.open(f"http://{HOST}:{PORT}/")
 
 
+def _vigiar_heartbeat(servidor: uvicorn.Server, parar: threading.Event) -> None:
+    while not parar.wait(5):
+        if heartbeat_expirou():
+            servidor.should_exit = True
+            return
+
+
 def main() -> int:
     _preparar_saida_sem_console()
     abrir = os.environ.get("VENDAFACIL_NO_BROWSER") != "1"
@@ -90,12 +97,16 @@ def main() -> int:
         servidor = uvicorn.Server(uvicorn.Config(
             app, host=HOST, port=PORT, log_level="info", log_config=log_config,
         ))
+        parar = threading.Event()
         navegador = threading.Timer(1.5, _abrir_navegador)
         if abrir:
             navegador.start()
+        if empacotado and abrir:
+            threading.Thread(target=_vigiar_heartbeat, args=(servidor, parar), daemon=True).start()
         try:
             servidor.run(sockets=[porta])
         finally:
+            parar.set()
             navegador.cancel()
     return 0
 

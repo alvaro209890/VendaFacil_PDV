@@ -1,10 +1,14 @@
 """Cópias locais só entram no histórico depois de validadas."""
 import os
 import sqlite3
+import subprocess
+import sys
+import time
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import closing
 from datetime import datetime, timedelta, timezone
-from threading import Barrier
+from pathlib import Path
+from threading import Barrier, Event
 from types import SimpleNamespace
 
 import pytest
@@ -72,16 +76,14 @@ def test_r02_retem_automaticos_mais_recentes_e_preserva_manual(armazenamento, mo
 
 
 def test_r02_loop_registra_falha_sem_detalhe_sensivel(monkeypatch, caplog):
+    parar = Event()
+
     def falhar(*args):
+        parar.set()
         raise OSError('sentinela que não deve ir para o log')
 
-    def parar(*args):
-        raise StopIteration
-
     monkeypatch.setattr(backup, '_gerar_backup', falhar)
-    monkeypatch.setattr(backup, 'time', SimpleNamespace(sleep=parar))
-    with pytest.raises(StopIteration):
-        backup._loop()
+    backup._loop(parar)
     assert 'Backup automático falhou (OSError)' in caplog.text
     assert 'sentinela' not in caplog.text
 
@@ -169,3 +171,44 @@ def test_r06_backup_durante_checkouts_preserva_estoque_e_itens(armazenamento):
         assert conn.execute('SELECT estoque FROM produtos').fetchone()[0] == 20 - total
         assert conn.execute('PRAGMA integrity_check').fetchone()[0] == 'ok'
     assert local.get_produto(produto['id'])['estoque'] == 10
+
+
+def test_backup_interrompido_nao_publica_copia_parcial(armazenamento, tmp_path):
+    local, pasta = armazenamento
+    bom = backup._gerar_backup('auto')
+    antes = bom.read_bytes()
+    marcador = tmp_path / 'copia-iniciada'
+    programa = r'''
+import sqlite3, sys, time
+from pathlib import Path
+sys.path.insert(0, sys.argv[1])
+import backup
+db = sqlite3.connect(backup.db.caminho_db())
+db.execute('BEGIN IMMEDIATE')
+db.execute("INSERT INTO users(email,nome,senha_hash,criado_em) VALUES ('fixture','Nome','hash','2026-11-12')")
+def copia_interrompida(destino):
+    destino.write_bytes(b'paginas parciais')
+    Path(sys.argv[2]).touch()
+    time.sleep(30)
+backup.db.backup_para = copia_interrompida
+backup._gerar_backup('auto')
+'''
+    ambiente = {**os.environ, 'VENDAFACIL_DATA_DIR': str(tmp_path)}
+    ambiente.pop('PYTHONPATH', None)
+    proc = subprocess.Popen([sys.executable, '-X', 'utf8', '-I', '-c', programa,
+                             str(Path(__file__).resolve().parents[1]), str(marcador)],
+                            env=ambiente)
+    try:
+        limite = time.monotonic() + 10
+        while not marcador.exists() and proc.poll() is None and time.monotonic() < limite:
+            time.sleep(0.025)
+        assert marcador.exists()
+    finally:
+        if proc.poll() is None:
+            proc.kill()
+        proc.wait(timeout=5)
+    assert list(pasta.glob('*.db')) == [bom]
+    assert bom.read_bytes() == antes
+    assert local._conn.execute('SELECT COUNT(*) FROM users').fetchone()[0] == 0
+    assert local._conn.execute('PRAGMA journal_mode').fetchone()[0] == 'wal'
+    database.verificar_integridade(Path(local.caminho_db()))

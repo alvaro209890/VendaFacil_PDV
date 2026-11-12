@@ -7,7 +7,6 @@ apenas como legado para instalações antigas que ainda usem token.
 import base64
 import json
 import threading
-import time
 import urllib.error
 import urllib.request
 from datetime import datetime, timedelta, timezone
@@ -562,7 +561,7 @@ def emitir_nfe(venda_id: int, user_id: int, cliente_id: int) -> dict:
     )
 
 
-def processar_pendentes() -> int:
+def processar_pendentes(parar: threading.Event | None = None) -> int:
     """Reenvia/consulta notas pendentes (contingência)."""
     config = db.get_config_fiscal()
     if not config.get("habilitado"):
@@ -570,12 +569,14 @@ def processar_pendentes() -> int:
 
     direto = (config.get("provedor_fiscal") or "sefaz_mt_direto") == "sefaz_mt_direto"
     if direto:
-        return _processar_pendentes_direto(config)
+        return _processar_pendentes_direto(config, parar)
 
     if not config.get("gateway_token"):
         return 0
     feitas = 0
     for nota in db.notas_pendentes():
+        if parar is not None and parar.is_set():
+            break
         try:
             payload = json.loads(nota.get("payload") or "{}")
             gw = _gateway(config)
@@ -594,12 +595,14 @@ def _conflito_de_chave(nota: dict) -> bool:
     return fiscal_direto.normalizar_retorno_sefaz(nota.get("recibo")).get("cstat") == "539"
 
 
-def _processar_pendentes_direto(config: dict) -> int:
+def _processar_pendentes_direto(config: dict, parar: threading.Event | None = None) -> int:
     """Concilia notas pendentes pela chave e reaproveita o XML assinado."""
     if not config.get("certificado_a1_b64") or not config.get("certificado_senha"):
         return 0
     feitas = 0
     for nota in db.notas_pendentes():
+        if parar is not None and parar.is_set():
+            break
         chave = nota.get("chave")
         if not chave or _em_envio_inicial(nota["id"]):
             continue
@@ -651,15 +654,16 @@ def _processar_pendentes_direto(config: dict) -> int:
     return feitas
 
 
-def _loop() -> None:
-    while True:
+def _loop(parar: threading.Event) -> None:
+    while not parar.is_set():
         try:
-            processar_pendentes()
+            processar_pendentes(parar)
         except Exception:
             pass
-        time.sleep(INTERVALO_SEG)
+        parar.wait(INTERVALO_SEG)
 
 
-def iniciar_em_background() -> None:
-    t = threading.Thread(target=_loop, daemon=True, name="vf-fiscal")
+def iniciar_em_background(parar: threading.Event) -> threading.Thread:
+    t = threading.Thread(target=_loop, args=(parar,), daemon=True, name="vf-fiscal")
     t.start()
+    return t

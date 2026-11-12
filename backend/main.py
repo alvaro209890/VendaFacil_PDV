@@ -1,7 +1,9 @@
+import asyncio
 import os
 import sys
 import threading
 import time
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -36,26 +38,34 @@ def urls_doc(empacotado: bool) -> dict:
     return {"docs_url": "/docs", "redoc_url": "/redoc", "openapi_url": "/openapi.json"}
 
 
-app = FastAPI(title="VendaFácil PDV", version="0.1.0", **urls_doc(getattr(sys, "frozen", False)))
+@asynccontextmanager
+async def _servicos_em_background(_app):
+    import backup
+    import fiscal
+    import sync_client
 
-# ── Watchdog: encerra o processo quando a aba do navegador é fechada ──
-# Só ativo no .exe empacotado (sys.frozen). Em dev, o Uvicorn já cuida disso.
-_HEARTBEAT_TIMEOUT = 30   # segundos sem ping → encerra
-_HEARTBEAT_INTERVAL = 5   # frequência de verificação do watchdog
-_ultimo_heartbeat: float = time.monotonic()
+    parar = threading.Event()
+    servicos = []
+    if not db.modo_consulta:
+        servicos = [mod.iniciar_em_background(parar) for mod in (backup, fiscal, sync_client)]
+    try:
+        yield
+    finally:
+        parar.set()
+        for thread in servicos:
+            if thread is not None:
+                await asyncio.to_thread(thread.join)
 
 
-def _watchdog_loop() -> None:
-    """Thread daemon: mata o processo se não receber heartbeat por TIMEOUT segundos."""
-    while True:
-        time.sleep(_HEARTBEAT_INTERVAL)
-        if time.monotonic() - _ultimo_heartbeat > _HEARTBEAT_TIMEOUT:
-            os._exit(0)
+app = FastAPI(title="VendaFácil PDV", version="0.1.0", lifespan=_servicos_em_background,
+              **urls_doc(getattr(sys, "frozen", False)))
+_ultimo_heartbeat: float | None = None
 
 
-if getattr(sys, "frozen", False):
-    _t = threading.Thread(target=_watchdog_loop, daemon=True, name="heartbeat-watchdog")
-    _t.start()
+def heartbeat_expirou() -> bool:
+    return _ultimo_heartbeat is not None and time.monotonic() - _ultimo_heartbeat > 30
+
+
 register_error_handlers(app)
 
 def _origens_pdv() -> list[str]:
@@ -139,18 +149,6 @@ def _get_user_id(request: Request) -> int:
     if not payload:
         raise HTTPException(status_code=401, detail="Token inválido ou expirado.")
     return int(payload["sub"])
-
-
-@app.on_event("startup")
-async def _iniciar_servicos() -> None:
-    if db.modo_consulta:
-        return
-    import sync_client
-    import fiscal
-    import backup
-    sync_client.iniciar_em_background()
-    fiscal.iniciar_em_background()
-    backup.iniciar_em_background()
 
 
 @app.get("/health")
