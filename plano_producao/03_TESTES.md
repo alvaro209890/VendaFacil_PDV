@@ -24,8 +24,8 @@ Ao fechar: preencha **Onde** (`arquivo::função`) e **Commit**. Teste novo que 
 | U07 | P34: Total diário pelo backend, excluindo canceladas e fuso MT | ✅ | `backend/tests/test_total_diario.py` (4 casos), `e2e/total-diario.spec.ts` (1); backend327/painel23 | fb9f5b9 |
 | U08 | P44: API pronta antes do Vite, mesmo com backend atrasado4s | ✅ | `e2e/atrasar-api.cjs`; F3_READY_PARENT_RECHECK.txt verde | ba47db4 |
 | U09 | P45: erro de estoque, aviso D4 e resultado fiscal sem falsa autorização | ✅ | bd6013e ·7casos/21repetições;44Chromium;revisão deleg_30bc8fc6/recheck7 | bd6013e |
-| X14 | P35: Reserva persistente/concorrente e tratamento de falhas antes da transmissão | ⬜ | | |
-| X15 | P36: Basear prazo em dhRecbto; datas fiscais em MT | ⬜ | | |
+| X14 | P35: Reserva persistente/concorrente e tratamento de falhas antes da transmissão | ⬜ | `test_fiscal_reserva_regras.py` cobre persistência/retomada (990408c); falta caso concorrente explícito | — |
+| X15 | P36: Basear prazo em dhRecbto; datas fiscais em MT | ✅ | `test_prazo_cancelamento.py`: 4 casos (NFC-e 30 min e NF-e 2 h contados de `autorizado_em`, fallback `criado_em`); suíte 355 | c62400c |
 | C09 | P37: Preservar fiado visível e validar referência/estado da conta | ✅ | `backend/tests/test_cliente_divida.py + test_adversario_caixa.py` | e1ad5e2/be78390 |
 | I07 | P38: Cadastro do produto inteiro em uma transação | ✅ | `backend/tests/test_produto_atomico.py` | 7dee50a |
 | R10 | P39: Encerrar com segurança e identificar serviço antes de reutilizar porta | ⬜ | | |

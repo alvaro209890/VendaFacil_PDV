@@ -56,7 +56,7 @@ Já existe: 49 testes fiscais (`test_fiscal_direto.py`, `test_fiscal_fluxo.py`) 
 
 ## Complementos da auditoria
 
-- [~] F4.27 P35/P36: configuração vazia, assinatura falha e cancelamento após contingência; X14/X15 — em andamento: 4 RED em `test_fiscal_reserva_regras.py` (config vazia, preflight certificado/itens, assinatura), arquivo não commitado; ver F4_27_P35_RED.txt
+- [~] F4.27 P35/P36: configuração vazia, assinatura falha e cancelamento após contingência; X14/X15 — P35 fechado em 990408c (4 casos: config vazia não reserva, preflight de certificado/itens não consome número, falha de assinatura retoma o mesmo número; suíte 351) e X15 em c62400c (4 casos de prazo por `autorizado_em`, suíte 355). Falta o cenário de cancelamento após contingência para fechar o item.
 
 ## Portão de saída
 
