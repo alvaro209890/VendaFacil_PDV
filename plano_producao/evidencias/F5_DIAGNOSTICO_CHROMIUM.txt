@@ -1,0 +1,24 @@
+
+[WebServer] (node:51500) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] INFO:     Started server process [33056]
+
+[WebServer] INFO:     Waiting for application startup.
+[WebServer] INFO:     Application startup complete.
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+
+
+
+[WebServer] (node:62300) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 1 test using 1 worker
+
+
+(node:53980) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[1/1] e2e\diagnostico.spec.ts:3:1 › F5.11 copia o diagnóstico autenticado para o suporte
+[WebServer] INFO: http_error request_id=a83e70876092 status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+
+  1 passed (13.9s)

@@ -98,6 +98,25 @@ export function getRecuperacao(): Promise<EstadoRecuperacao> {
   return request("/api/recuperacao");
 }
 
+export interface DiagnosticoLocal {
+  versao: string;
+  banco: { caminho: string; bytes: number; livre_bytes: number; integro: boolean };
+  ultimo_backup: { nome: string; criado_em: string; integro: boolean } | null;
+  fiscal: {
+    ambiente: string | null;
+    certificado_valido: boolean | null;
+    certificado_vence_em: string | null;
+    sefaz: { situacao: string; cstat: string | null };
+    pendentes: number | null;
+    contingencia: number | null;
+  };
+  ultima_sincronizacao: string | null;
+}
+
+export function getDiagnosticoLocal(): Promise<DiagnosticoLocal> {
+  return request("/api/diagnostico");
+}
+
 export function ativar(login: string, senha: string): Promise<AtivacaoStatus> {
   return request("/api/ativacao", {
     method: "POST",

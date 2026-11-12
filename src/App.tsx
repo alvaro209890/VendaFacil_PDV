@@ -14,6 +14,7 @@ import Fiscal from "./pages/Fiscal";
 import Maquininha from "./pages/Maquininha";
 import Caixa from "./pages/Caixa";
 import Backup from "./pages/Backup";
+import Diagnostico from "./pages/Diagnostico";
 import Relatorios from "./pages/Relatorios";
 import PixConfig from "./pages/PixConfig";
 import Manual from "./pages/Manual";
@@ -36,7 +37,8 @@ import {
   BarChart3,
   Smartphone,
   LogOut,
-  BookOpen
+  BookOpen,
+  Stethoscope
 } from "lucide-react";
 
 const navItems = [
@@ -53,6 +55,7 @@ const navItems = [
   { to: "/maquininha", label: "Maquininha", short: "Cartão", icon: <CreditCard size={20} /> },
   { to: "/pix", label: "PIX", short: "PIX", icon: <Smartphone size={20} /> },
   { to: "/backup", label: "Backup", short: "Backup", icon: <Database size={20} /> },
+  { to: "/diagnostico", label: "Diagnóstico", short: "Suporte", icon: <Stethoscope size={20} /> },
   { to: "/manual", label: "Manual", short: "Manual", icon: <BookOpen size={20} /> },
 ];
 
@@ -274,6 +277,7 @@ export default function App() {
                   <Route path="/maquininha" element={<Maquininha />} />
                   <Route path="/pix" element={<PixConfig />} />
                   <Route path="/backup" element={<Backup />} />
+                  <Route path="/diagnostico" element={<Diagnostico />} />
                   <Route path="/manual" element={<Manual />} />
                   <Route path="/relatorios" element={<Relatorios />} />
                   <Route path="*" element={<Navigate to="/pdv" replace />} />
