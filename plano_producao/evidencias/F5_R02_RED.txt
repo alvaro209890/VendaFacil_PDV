@@ -1,0 +1,44 @@
+.FF                                                                      [100%]
+================================== FAILURES ===================================
+______________ test_r02_loop_registra_falha_sem_detalhe_sensivel ______________
+tests\test_backup_robustez.py:83: in test_r02_loop_registra_falha_sem_detalhe_sensivel
+    assert 'Backup automático falhou (OSError)' in caplog.text
+E   AssertionError: assert 'Backup automático falhou (OSError)' in ''
+E    +  where '' = <_pytest.logging.LogCaptureFixture object at 0x000002798CF6B910>.text
+___________ test_r02_nome_do_backup_usa_hora_local_e_microssegundos ___________
+tests\test_backup_robustez.py:90: in test_r02_nome_do_backup_usa_hora_local_e_microssegundos
+    assert backup._stamp() == '20261112-121559-241032'
+E   AssertionError: assert '20261112-161559' == '20261112-121559-241032'
+E     
+E     - 20261112-121559-241032
+E     ?           ^    -------
+E     + 20261112-161559
+E     ?           ^
+============================== warnings summary ===============================
+.venv\Lib\site-packages\fastapi\testclient.py:1
+  C:\GIS\VendaFacil_PDV\backend\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+main.py:134
+  C:\GIS\VendaFacil_PDV\backend\main.py:134: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("startup")
+
+.venv\Lib\site-packages\fastapi\applications.py:4723
+  C:\GIS\VendaFacil_PDV\backend\.venv\Lib\site-packages\fastapi\applications.py:4723: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_backup_robustez.py::test_r02_loop_registra_falha_sem_detalhe_sensivel
+FAILED tests/test_backup_robustez.py::test_r02_nome_do_backup_usa_hora_local_e_microssegundos
+2 failed, 1 passed, 2 deselected, 3 warnings in 0.43s

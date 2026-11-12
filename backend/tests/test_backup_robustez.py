@@ -1,6 +1,9 @@
 """Cópias locais só entram no histórico depois de validadas."""
+import os
 import sqlite3
 from contextlib import closing
+from datetime import datetime, timedelta, timezone
+from types import SimpleNamespace
 
 import pytest
 
@@ -49,3 +52,39 @@ def test_r01_backup_corrompido_nao_entra_no_historico(armazenamento, monkeypatch
     assert list(pasta.iterdir()) == [bom]
     assert bom.read_bytes() == original
     assert 'integridade' in caplog.text
+
+
+def test_r02_retem_automaticos_mais_recentes_e_preserva_manual(armazenamento, monkeypatch):
+    _, pasta = armazenamento
+    monkeypatch.setattr(backup, 'MANTER', 2)
+    for i in range(4):
+        arquivo = pasta / f'vendafacil-auto-{i}.db'
+        arquivo.touch()
+        os.utime(arquivo, (i + 1, i + 1))
+    manual = pasta / 'vendafacil-manual.db'
+    manual.touch()
+    backup._limpar_antigos()
+    assert sorted(p.name for p in pasta.glob('*.db')) == [
+        'vendafacil-auto-2.db', 'vendafacil-auto-3.db', manual.name,
+    ]
+
+
+def test_r02_loop_registra_falha_sem_detalhe_sensivel(monkeypatch, caplog):
+    def falhar(*args):
+        raise OSError('sentinela que não deve ir para o log')
+
+    def parar(*args):
+        raise StopIteration
+
+    monkeypatch.setattr(backup, '_gerar_backup', falhar)
+    monkeypatch.setattr(backup, 'time', SimpleNamespace(sleep=parar))
+    with pytest.raises(StopIteration):
+        backup._loop()
+    assert 'Backup automático falhou (OSError)' in caplog.text
+    assert 'sentinela' not in caplog.text
+
+
+def test_r02_nome_do_backup_usa_hora_local_e_microssegundos(monkeypatch):
+    local = datetime(2026, 11, 12, 12, 15, 59, 241032, tzinfo=timezone(timedelta(hours=-4)))
+    monkeypatch.setattr(backup, 'datetime', SimpleNamespace(now=lambda fuso=None: local.astimezone(fuso) if fuso else local))
+    assert backup._stamp() == '20261112-121559-241032'

@@ -41,7 +41,7 @@ def _auth(request: Request) -> int:
 
 
 def _stamp() -> str:
-    return datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+    return datetime.now().strftime("%Y%m%d-%H%M%S-%f")
 
 
 def _gerar_backup(prefixo: str = "backup") -> Path:
@@ -63,8 +63,8 @@ def _limpar_antigos() -> None:
     for p in arquivos[MANTER:]:
         try:
             p.unlink()
-        except OSError:
-            pass
+        except OSError as exc:
+            log.warning("Falha na retenção de backup (%s).", type(exc).__name__)
 
 
 # ── Rotas ──
@@ -127,8 +127,8 @@ def _loop() -> None:
         try:
             _gerar_backup("auto")
             _limpar_antigos()
-        except Exception:
-            pass
+        except Exception as exc:
+            log.error("Backup automático falhou (%s).", type(exc).__name__)
         time.sleep(INTERVALO_SEG)
 
 
