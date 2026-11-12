@@ -254,7 +254,7 @@ def main() -> int:
     args.add_argument("--somente-smoke", action="store_true")
     args.add_argument("--chromium", action="store_true", help="também imprime e retoma o carrinho pela UI empacotada")
     op = args.parse_args()
-    with tempfile.TemporaryDirectory(prefix="vf-roteiro-exe-") as temp:
+    with tempfile.TemporaryDirectory(prefix="vf-roteiro-exe-", ignore_cleanup_errors=True) as temp:
         pasta = Path(temp)
         dados = pasta / "pdv"
         if op.migracao:
