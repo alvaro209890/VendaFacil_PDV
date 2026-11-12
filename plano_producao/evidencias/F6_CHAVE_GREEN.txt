@@ -1,0 +1,14 @@
+Commit: e5fd095 + correção em src/lib/recibo.ts
+$ npx playwright test e2e/cupom.spec.ts e2e/erros.spec.ts --workers=1 --reporter=line
+Running 9 tests using 1 worker
+[1/9] e2e\cupom.spec.ts:8:3 › F6.9: DANFE 58 mm não parte bloco de 4 dígitos da chave
+[2/9] e2e\cupom.spec.ts:8:3 › F6.9: DANFE 80 mm não parte bloco de 4 dígitos da chave
+[3/9] e2e\erros.spec.ts:36:1 › F3.13: estoque alterado no backend mostra motivo e preserva carrinho
+[4/9] e2e\erros.spec.ts:56:1 › F3.13: caixa fechado avisa sem impedir venda conforme D4
+[5/9] e2e\erros.spec.ts:67:1 › F3.13: falha fiscal real local aparece sem alegar nota emitida ou repetir venda
+[6/9] e2e\erros.spec.ts:91:3 › F3.13: contrato UI distingue nota rejeitada (fixture sem SEFAZ)
+[7/9] e2e\erros.spec.ts:91:3 › F3.13: contrato UI distingue nota pendente (fixture sem SEFAZ)
+[8/9] e2e\erros.spec.ts:91:3 › F3.13: contrato UI distingue nota contingencia (fixture sem SEFAZ)
+[9/9] e2e\erros.spec.ts:91:3 › F3.13: contrato UI distingue nota autorizada (fixture sem SEFAZ)
+  9 passed (40.7s)
+Exit code: 0

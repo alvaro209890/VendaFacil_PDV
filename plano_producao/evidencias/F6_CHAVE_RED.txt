@@ -1,0 +1,26 @@
+Commit: e5fd095 (antes da correção)
+$ npx playwright test e2e/cupom.spec.ts --workers=1 --reporter=line
+Running 2 tests using 1 worker
+[1/2] e2e\cupom.spec.ts:8:3 › F6.9: DANFE 58 mm não parte bloco de 4 dígitos da chave
+[2/2] e2e\cupom.spec.ts:8:3 › F6.9: DANFE 80 mm não parte bloco de 4 dígitos da chave
+  1) e2e\cupom.spec.ts:8:3 › F6.9: DANFE 80 mm não parte bloco de 4 dígitos da chave ───────────────
+    Error: expect(received).toEqual(expected) // deep equality
+    - Expected  - 1
+    + Received  + 3
+    - Array []
+    + Array [
+    +   "partido:4249",
+    + ]
+      47 |       return pronto;
+      48 |     }, { chave, largura });
+    > 49 |     expect(blocos.flat().filter(b => b.startsWith('partido:'))).toEqual([]);
+         |                                                                 ^
+      50 |     expect(blocos.flat().join('')).toBe(chave);
+      51 |     expect(blocos.length).toBeGreaterThan(1); // a chave de 54 caracteres não cabe numa linha só
+      52 |   });
+        at C:\GIS\VendaFacil_PDV\e2e\cupom.spec.ts:49:65
+    Error Context: test-results\cupom-F6-9-DANFE-80-mm-não-parte-bloco-de-4-dígitos-da-chave\error-context.md
+  1 failed
+    e2e\cupom.spec.ts:8:3 › F6.9: DANFE 80 mm não parte bloco de 4 dígitos da chave ────────────────
+  1 passed (17.9s)
+Exit code: 1

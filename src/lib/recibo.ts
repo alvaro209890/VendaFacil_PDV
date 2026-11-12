@@ -119,7 +119,7 @@ function montarHtml(d: ReciboData, larguraMm: number): string {
       ${avisoContingencia}
       ${mensagemFiscal ? `<div class="c b">${esc(mensagemFiscal)}</div>` : ""}
       <div class="c" style="font-size:.85em;margin-top:2px">Chave de acesso</div>
-      <div class="c" style="font-size:.8em;word-break:break-all">${chave}</div>
+      <div class="c" style="font-size:.8em;overflow-wrap:anywhere">${chave}</div>
       ${qr}
       <div class="c" style="font-size:.8em;margin-top:2px;overflow-wrap:anywhere">Consulte pela chave de acesso em<br>${esc(texto("urlChave") || "www.sefaz.mt.gov.br/nfce/consultanfce")}</div>
       ${contingencia ? `<div class="c" style="font-size:.8em;margin-top:2px">Transmitir assim que a conexão voltar, até o primeiro dia útil seguinte em MT. Mantenha o programa aberto.</div>` : ""}
