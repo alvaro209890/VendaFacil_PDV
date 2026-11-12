@@ -181,6 +181,8 @@ Marker `homologacao`, fora da execução padrão. Sem os itens da loja: ⛔ com 
 | H08 | Consulta do QR Code no portal de homologação abre a nota | ⛔ | Precheck B1–B5, suíte bloqueada em F4_HOMOLOGACAO_BLOQUEADA.txt | e037473 |
 | H09 | Inutilização homologada | ⛔ | Precheck B1–B5, suíte bloqueada em F4_HOMOLOGACAO_BLOQUEADA.txt | e037473 |
 
+> **Nota de 12/11/2026:** o XML da NFC-e passou a ser aceito pelo autorizador depois de corrigir quatro defeitos locais — TLS sem as raízes ICP-Brasil, acentuação na NFC-e de MT (cStat 402), assinatura com prefixo `ds:` (cStat 587) e digest C14N de subtree com `xmlns` herdado (cStat 297). A execução de H01–H09 segue bloqueada em **B3**: a SEFAZ-MT responde **cStat 230 (IE do emitente não cadastrada)** no ambiente de homologação, embora a IE esteja ATIVA no CCE.
+
 ## R — Robustez (Fase 5)
 
 | ID | O que prova | Status | Onde | Commit |

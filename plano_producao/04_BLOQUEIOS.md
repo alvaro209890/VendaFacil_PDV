@@ -30,6 +30,8 @@ O precheck e a execução isolada H01–H09 de e037473 registraram B1–B5. O cr
 
 | 2026-11-12 | B8 | E04–E06 / F6.11 | F6_INSTALADOR_B8.txt: sessão sem elevação, script retornou 2 | Executar scripts/teste_instalador.ps1 em PowerShell elevado numa instalação descartável |
 
+| 2026-11-12 | B3 | H01–H09 | Status 107 OK e XML aceito pelo autorizador depois das correções de TLS, ASCII, assinatura e digest; a autorização para em cStat **230 — IE do emitente não cadastrada** no ambiente de **homologação**. A IE 13.876.189-2 está ATIVA no CCE (emitido 12/11/2026), mas ausente no cadastro do autorizador de homologação. | Contador pedir à SEFAZ-MT a atualização do cadastro do contribuinte no ambiente de homologação |
+
 ## Como destravar
 
 Quando o dono entregar o item (por exemplo, o Álvaro cadastrar o certificado e o CSC na tela Fiscal do PDV), reenvie o goal. O agente relê o painel, roda o `scripts/fiscal_precheck.py` e executa os itens `[!]`.
