@@ -1,0 +1,6 @@
+FAILED tests/test_fiscal_xsd.py::test_x02_schema_nfce_pix_integrado_e_fiado
+FAILED tests/test_fiscal_xsd.py::test_x03_schema_nfe55_destinatario - assert ...
+FAILED tests/test_fiscal_xsd.py::test_indica_operacao_presencial_sem_intermediario[55]
+FAILED tests/test_fiscal_xsd.py::test_indica_operacao_presencial_sem_intermediario[65]
+FAILED tests/test_fiscal_direto.py::test_pag_fiado_usa_credito_da_loja_a_prazo
+5 failed, 49 deselected, 3 warnings in 1.27s

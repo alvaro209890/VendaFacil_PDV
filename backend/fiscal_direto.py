@@ -544,6 +544,7 @@ def montar_documento(venda: dict, config: dict, modelo: str = "65",
     _tag(ide, "finNFe", "1")
     _tag(ide, "indFinal", "1" if indicador == "9" else "0")
     _tag(ide, "indPres", "1")
+    _tag(ide, "indIntermed", "0")
     _tag(ide, "procEmi", "0")
     _tag(ide, "verProc", "VendaFacilPDV")
     if tp_emis == "9":

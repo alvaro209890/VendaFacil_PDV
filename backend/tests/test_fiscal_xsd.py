@@ -157,6 +157,23 @@ def test_x03_schema_nfe55_destinatario(client, auth, cfg_xsd, cert_teste):
     assert "<indFinal>0</indFinal>" in contribuinte.xml
 
 
+@pytest.mark.parametrize("modelo", ["55", "65"])
+def test_indica_operacao_presencial_sem_intermediario(client, auth, cfg_xsd, cert_teste, modelo):
+    produto = _produto(client, auth, "presencial")
+    destino = {
+        "nome": "Cliente sintético", "documento": "11222333000181",
+        "logradouro": "Av Teste", "numero": "2", "bairro": "Centro",
+        "municipio": "Cuiaba", "codigo_municipio": "5103403", "uf": "MT",
+        "cep": "78000000", "indicador_ie": "9",
+    }
+    doc = fiscal_direto.montar_documento(_venda(produto), cfg_xsd, modelo, destinatario=destino)
+    assinado = (_validar_nfce(doc, cfg_xsd, cert_teste) if modelo == "65"
+                else _assinar(doc, cfg_xsd, cert_teste))
+    validar_xml(assinado, "nfe")
+    assert "<indPres>1</indPres><indIntermed>0</indIntermed>" in doc.xml
+    assert "<infIntermed>" not in doc.xml
+
+
 def test_x04_schema_cancelamento_assinado(cfg_xsd, cert_teste):
     nota = {"chave": "51261112345678000195650010000001011000000107",
             "protocolo": "151000000000107", "modelo": "65"}
