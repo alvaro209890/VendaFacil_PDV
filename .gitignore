@@ -20,3 +20,8 @@ skills-lock.json
 # Relatórios descartáveis do navegador; evidências selecionadas ficam no plano.
 test-results/
 playwright-report/
+
+# Dados fiscais reais da loja (certificado A1, CSC, credenciamento). Nunca no git.
+Dados_James/
+*.pfx
+*.p12
