@@ -1,5 +1,13 @@
 # Contingência offline + correções fiscais (NFC-e SEFAZ-MT)
 
+HTTP 5xx e timeout após envio preservam a chave normal para consulta.
+O cancelamento só muda a situação com confirmação da SEFAZ. O prazo usa
+`dhRecbto` da SEFAZ, incluindo a autorização posterior da contingência.
+
+O DANFE lê emitente/IE/consumidor/data/tributos do XML e avisa homologação.
+Contingência imprime duas vias, com os avisos por via; mantenha a via da loja.
+Valor ausente de tributos não é substituído por percentual inventado.
+
 Este documento descreve a **contingência offline da NFC-e** e o pacote de
 **correções fiscais** aplicado à emissão direta SEFAZ-MT (`backend/fiscal_direto.py`).
 Tudo isso vale para o fluxo padrão **SEFAZ-MT direto** (Simples Nacional).
@@ -30,8 +38,8 @@ não era gravada) e o operador via um erro. Agora:
 3. Quando a internet volta, o **loop em segundo plano** (`fiscal._loop`,
    a cada 45 s) **transmite** o XML já assinado e atualiza para `autorizada`.
 4. **Enviou mas não obteve resposta** (ex.: timeout de leitura): a nota fica
-   `processando` e o loop **consulta pela chave** (não retransmite, para não
-   duplicar) — pode já estar autorizada na SEFAZ.
+   `processando` e o loop **consulta pela chave**. Se a consulta responder 217,
+   o PDV pode retransmitir o mesmo XML assinado com a mesma chave e numeração.
 
 Pontos importantes:
 
@@ -39,14 +47,14 @@ Pontos importantes:
   tentativa online e a contingência (muda só o `tpEmis`, logo a chave/`cDV`).
 - **Reemitir a venda não duplica a nota**: `contingencia` conta como nota viva
   na deduplicação de `emitir_nfce`/`emitir_nfe`.
-- **Duplicidade no reenvio (cStat 539)**: se a transmissão anterior tinha
-  chegado à SEFAZ, o loop **consulta pela chave** e grava a situação real (antes
-  marcava `rejeitada` uma nota que na verdade estava autorizada).
+- **Duplicidade**: o cStat 204 pede conciliação pela chave. Se houver conflito
+  539 e a chave local continuar sem confirmação, a nota fica em processamento
+  e o retorno original orienta a conferência pelo contador.
 - A venda **nunca quebra** por causa da nota (o checkout já trata erro de nota).
 - **NF-e modelo 55** não usa contingência offline deste tipo: sem conexão ela
   fica `processando` para reenvio/consulta.
 - Prazo legal: o DANFE de contingência é entregue ao consumidor na hora e a nota
-  deve ser **transmitida em até 24 h** — o que o loop faz automaticamente assim
+  deve ser **transmitida assim que a falha cessar, até o primeiro dia útil seguinte em MT** — o loop tenta assim
   que houver internet (autorização após o prazo volta cStat 150, também tratada
   como autorizada).
 
@@ -88,10 +96,16 @@ Além de A–E de [`TESTE_FISCAL_WINDOWS.md`](TESTE_FISCAL_WINDOWS.md):
       vira `autorizada` sozinha em ~1 min.
 - [ ] **cNF ≠ nNF**: abrir o XML e conferir que `cNF` não é igual ao `nNF`.
 
-## 4. Pendências conhecidas (futuro)
+## 4. Inutilização de numeração
 
-- **Inutilização** de numeração (evento) para justificar quebras de sequência.
+Use o histórico em **Fiscal** para acompanhar pedidos de inutilização de faixas
+sem uso. Documentos emitidos em contingência seguem o fluxo de transmissão e
+conciliação. Consulte o contador antes de tratar uma rejeição de contingência.
+
+## 5. Pendências conhecidas
+
 - **Reforma tributária (IBS/CBS)** — acompanhar a NT 2025.002 para a NFC-e
   (obrigatoriedade plena em 2027; 2026 é fase de transição).
-- **Valor exato** dos tributos (Lei 12.741) via tabela IBPT por NCM (hoje só o texto).
+- **Cálculo de tributos aproximados por NCM** via tabela IBPT. A versão atual
+  usa o percentual cadastrado para informar os valores aproximados no XML e DANFE.
 - **Pagamento dividido** (mais de uma forma na mesma venda) no grupo `pag`.

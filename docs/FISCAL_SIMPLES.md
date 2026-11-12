@@ -52,8 +52,8 @@ Resumo do que a emissão passou a exigir/fazer:
   Rejeição 806 da SEFAZ). Cadastre o CEST na aba fiscal do produto.
 - **NCM com 8 dígitos** (evita a Rejeição 778).
 - **Formas de pagamento** na NFC-e: PIX estático (QR fixo da loja) = `tPag 20`;
-  PIX pela Point = `tPag 17` com grupo `card`; fiado = `tPag 99` com descrição
-  `xPag` e `indPag 1` (a prazo).
+  PIX pela Point = `tPag 17` com grupo `card`; fiado = `tPag 05` (crediário)
+  e `indPag 1` (a prazo).
 - **Lei 12.741/2012**: configure o "% tributos aprox. (IBPT)" em Configurações
   Fiscais (peça ao contador o percentual do CNAE) para o cupom informar o valor
   aproximado dos tributos (`vTotTrib`).

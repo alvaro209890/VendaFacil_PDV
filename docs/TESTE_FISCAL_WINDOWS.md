@@ -3,7 +3,7 @@
 Guia para o agente/operador que vai validar a emissão fiscal na máquina Windows,
 com **certificado A1 real**, **CNPJ/IE da loja** e a **maquininha Mercado Pago**.
 Ordem: gerar o `.exe` → configurar → testar em **homologação** → só então
-**produção**.
+**produção somente com ordem explícita do Álvaro**.
 
 > Regra de ouro: **nunca** comece em produção. Homologação não tem valor fiscal —
 > é onde se erra à vontade.
@@ -11,6 +11,40 @@ Ordem: gerar o `.exe` → configurar → testar em **homologação** → só ent
 ---
 
 ## 0. O que ter em mãos (do contador / da loja)
+
+Antes de qualquer transmissão real, execute na raiz do repositório:
+
+```powershell
+backend\.venv\Scripts\python.exe -X utf8 -I scripts\fiscal_precheck.py
+```
+
+Saída 0 indica requisitos locais presentes. Saída 2 identifica B1–B5. O script
+é somente leitura e mostra presença/validade, sem imprimir A1, senha, CSC ou token.
+Não procure outro certificado no PC. O CNAE principal pode ser cadastrado na tela
+Fiscal e é normalizado para sete dígitos.
+
+Os testes H01–H09 ficam fora da suíte padrão. Depois de preparar os cenários A–G
+abaixo pelo PDV com o cofre da mercearia em homologação, reconfira-os com:
+
+```powershell
+cd backend
+.venv\Scripts\python.exe -X utf8 -I -m pytest -m homologacao tests/test_homologacao_real.py --tb=short -rs -s
+```
+
+Esses testes leem o cofre padrão e consultam a SEFAZ/portal. Não criam vendas nem
+cobranças, não alteram estoque e não consomem numeração automaticamente. Falta de
+pré-requisito resulta em SKIPPED com B1–B5; isso não conta como homologação aprovada.
+Quando houver aprovação real, guardar chave, protocolo e cStat; revisar a saída
+antes de versionar e nunca registrar credenciais.
+
+Em Fiscal, **Consultar serviço SEFAZ-MT** verifica o código 107 (em operação).
+Os testes de autorização verificam se a loja pode emitir.
+
+Para H09, **Inutilizar numeração sem uso**: selecionar modelo/ano/série e uma
+quebra de sequência existente e justificar em 15–255 caracteres. Não usar número
+futuro nem nota ativa/contingente. Protocolo e resultado ficam no histórico.
+Resultado `processando` exige conferir a situação na SEFAZ antes de qualquer
+reutilização; repetir o mesmo pedido pendente não gera novo envio.
 
 - [ ] **Certificado Digital A1** da loja: arquivo **`.pfx`/`.p12`** + **senha**.
 - [ ] **CNPJ**, **Inscrição Estadual (IE)** ativa e **regime** (Simples Nacional = CRT 1).

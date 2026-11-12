@@ -2,6 +2,25 @@
 
 ## Quem faz o quê
 
+Nesta entrega, todos os procedimentos fiscais permanecem em homologação.
+Em **Fiscal**, informe também o CNAE principal da loja (sete dígitos).
+
+| Conferência | Como acompanhar |
+|---|---|
+| Pré-requisitos | `scripts/fiscal_precheck.py`: presença e validade; B1–B5 impedem testes reais |
+| Serviço da SEFAZ | O botão de consulta em Fiscal exibe 107 quando o serviço está em operação. O credenciamento é verificado à parte. |
+| Quebra de numeração | Histórico de inutilizações em Fiscal, com faixa, cStat e protocolo |
+| Pedido de inutilização | Somente faixa sem uso; não inutilizar contingência, nem número futuro |
+| Arquivo fiscal | Pedidos/retornos de inutilização e XMLs das notas são guardados no SQLite local; a exportação ZIP mensal de notas não inclui as inutilizações |
+
+Na rejeição normal, o número anterior é preservado no histórico; a próxima
+emissão recebe o seguinte. O contador deve conferir a rejeição e orientar o
+tratamento da faixa sem uso pela inutilização. Contingência rejeitada mantém
+tratamento separado e não pode ser inutilizada.
+
+Se a nota ficar pendente com cStat 539, confira a chave informada pela SEFAZ
+no portal antes de orientar outra ação sobre a numeração da venda.
+
 - **O sistema (loja) EMITE** a NFC-e automaticamente em cada venda, direto na
   SEFAZ-MT, e **guarda o XML autorizado**. O contador **não** emite as notas.
 - **O contador APURA e DECLARA**: usa os XMLs para a escrita fiscal/SPED, calcula

@@ -89,13 +89,14 @@ Padrões Técnicos de Contingência Offline da NFC-e (ENCAT):
 - **Duas vias**: o cupom de contingência sai em 2 vias ("via do consumidor" e
   "via do estabelecimento — guardar"), como mandam os padrões técnicos, com o
   texto "EMITIDA EM CONTINGÊNCIA — Pendente de autorização".
-- **Prazo de transmissão: 24 horas** (o loop automático tenta a cada 45 s com o
-  sistema aberto; autorização após o prazo volta cStat 150 e também é tratada
-  como autorizada).
-- **Duplicidade no reenvio (cStat 539)**: se a transmissão anterior tinha
-  chegado à SEFAZ, o reenvio da contingência dava "Duplicidade" e a nota era
-  marcada **rejeitada** mesmo estando autorizada. Agora o sistema **consulta
-  pela chave** e grava a situação real.
+- Transmitir assim que a falha cessar; em MT, limite até o primeiro dia útil
+  seguinte à emissão (Portaria177/2021 art.18 §1 II). O loop tenta a cada45s
+  enquanto o programa estiver aberto; isso não garante autorização no prazo.
+- **cStat 204** mantém a nota pendente até a consulta pela chave. **cStat 539**
+  indica conflito com outra chave. Se a consulta da chave local ficar inconclusiva,
+  o PDV conserva o retorno original para o contador conferir no portal.
+- Após timeout ou HTTP 5xx, a consulta precede nova transmissão. O retorno 217
+  permite reenviar o mesmo XML assinado, salvo quando há conflito 539 registrado.
 
 ## 6. Formas de pagamento (IT 2024.002, produção desde 01/07/2024)
 
@@ -105,12 +106,12 @@ Tabela de Meios de Pagamento atualizada + regras do grupo `detPag`:
 | --- | --- | --- |
 | PIX pela maquininha Point (dinâmico, com endToEndId) | `tPag 17` + `card` | igual (correto) |
 | PIX manual pelo QR fixo da loja (estático) | `tPag 17` (errado) | **`tPag 20`** |
-| Fiado (caderneta/crediário) | `tPag 99` sem descrição (rejeição) | **`tPag 99` + `xPag` "Crediario da loja (fiado)" + `indPag 1` (a prazo)** |
+| Fiado (caderneta/crediário) | `tPag 99` com descrição | **`tPag 05` + `indPag 1` (a prazo)** |
 | Demais formas | sem `indPag` | `indPag 0` (à vista) |
 
-`xPag` é obrigatório sempre que `tPag=99`. O vínculo do pagamento eletrônico
-(grupo `card`, Decreto MT 599/2023 + Portaria SEFAZ 262/2023) já estava
-implementado e não mudou — ver [`VINCULO_PAGAMENTO_MT.md`](VINCULO_PAGAMENTO_MT.md).
+`xPag` acompanha `tPag=99`. O IT 2024.002 inclui o crediário no código 05.
+O grupo `card` inclui o CNPJ do beneficiário e o terminal quando disponíveis
+no pagamento integrado. Consulte [`VINCULO_PAGAMENTO_MT.md`](VINCULO_PAGAMENTO_MT.md).
 
 ## 7. Limites da NFC-e em Mato Grosso
 
@@ -123,9 +124,10 @@ implementado e não mudou — ver [`VINCULO_PAGAMENTO_MT.md`](VINCULO_PAGAMENTO_
 
 ## 8. Reforma Tributária (IBS/CBS — NT 2025.002) e CRT
 
-- **Simples Nacional (CRT 1), sublimite (CRT 2) e MEI (CRT 4): os grupos
-  IBS/CBS só passam a ser exigidos em 01/04/2027.** Nada muda na emissão do PDV
-  em 2026 — o público-alvo (mercearia no Simples) está coberto.
+- Em 2026, o escopo do emissor é Simples Nacional (CRT1) e MEI (CRT4).
+  Não usar a data de abril/2027 da revisão anterior como calendário de migração:
+  conferir NT2025.002 e NT2026.005 no [Portal Nacional, notas técnicas vigentes](https://www.nfe.fazenda.gov.br/portal/listaConteudo.aspx?AspxAutoDetectCookieSupport=1&tipoConteudo=04BIflQt1aY%3D)
+  antes de operar em2027. O programa não monta IBS/CBS.
 - **Regime normal (CRT 3): DF-e sem IBS/CBS será rejeitado a partir de
   03/08/2026** (regra UB12-10). O PDV **não** monta esses grupos, então agora
   valida o CRT e recusa 2 e 3 com mensagem explicando o motivo (CRT 2 usa CST
@@ -143,6 +145,7 @@ implementado e não mudou — ver [`VINCULO_PAGAMENTO_MT.md`](VINCULO_PAGAMENTO_
 | NCM com 8 dígitos | 778 |
 | **CEST obrigatório** quando CSOSN 500/CFOP 5405 (ICMS-ST — Conv. ICMS 92/15) | 806 |
 | IE do destinatário só com `indIEDest=1` (e exigida nesse caso) | 490/695 |
+| Venda nacional a não contribuinte em NF-e 55 informa `indFinal=1` | 696 |
 | `idDest` derivado da UF do destinatário; interestadual exige CFOP 6xxx | 694 |
 | Textos normalizados (sem espaços nas pontas, tamanhos máximos: xProd 120, xNome/xLgr/... 60) | 215/588 |
 | AAMM da chave casando com o dhEmi (mesmo instante na virada de mês) | 615 |
@@ -175,13 +178,21 @@ comportamento anterior é mantido.
 
 - **QR Code 2.0 continua o padrão** — é o aceito em produção na SEFAZ-MT; o 3.0
   fica opcional até a SEFAZ-MT exigir.
-- **Grupos IBS/CBS** não são montados — dispensados p/ Simples até 01/04/2027
-  (item 8); planejar a NT 2025.002 para 2027.
+- **Grupos IBS/CBS** não são montados; para2027 é necessária nova revisão normativa
+  e atualização do emissor (item8).
 - **infRespTec** segue opcional/desligado (MT não exige) — ver
   [`RESPONSAVEL_TECNICO.md`](RESPONSAVEL_TECNICO.md).
-- **Cancelamento por substituição (evento 110112)** e **inutilização de
-  numeração** não foram implementados; quando precisar, é pelo portal da
-  SEFAZ-MT/contador.
+- **Cancelamento por substituição (evento110112)** permanece fora do emissor;
+  tratar com o contador.
+
+## 13. Serviços e homologação
+
+- A tela Fiscal consulta a disponibilidade da SEFAZ-MT para NFC-e e NF-e.
+  O retorno 107 informa operação do serviço. O credenciamento depende da loja.
+- A inutilização usa pedido assinado e valida a faixa no SQLite antes do envio.
+  A tela Fiscal preserva a faixa, a situação e o protocolo no histórico.
+- Execute o [roteiro de homologação](TESTE_FISCAL_WINDOWS.md) com o cofre da
+  loja. O precheck registra presença e validade dos requisitos locais.
 
 ## Fontes consultadas (2026-07-13)
 
