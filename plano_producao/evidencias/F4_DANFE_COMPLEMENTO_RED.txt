@@ -1,0 +1,102 @@
+TAP version 13
+# Subtest: F4.19: DANFE 58mm usa dados do XML e avisa homologacao
+not ok 1 - F4.19: DANFE 58mm usa dados do XML e avisa homologacao
+  ---
+  duration_ms: 1932.1374
+  type: 'test'
+  location: 'C:\\GIS\\VendaFacil_PDV\\frontend-tests\\recibo-fiscal.test.mjs:23:3'
+  failureType: 'testCodeFailure'
+  error: 'Campo ausente: CONSUMIDOR CPF:'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///C:/GIS/VendaFacil_PDV/frontend-tests/recibo-fiscal.test.mjs:31:14)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: F4.19: DANFE 80mm usa dados do XML e avisa homologacao
+not ok 2 - F4.19: DANFE 80mm usa dados do XML e avisa homologacao
+  ---
+  duration_ms: 4.405
+  type: 'test'
+  location: 'C:\\GIS\\VendaFacil_PDV\\frontend-tests\\recibo-fiscal.test.mjs:23:3'
+  failureType: 'testCodeFailure'
+  error: 'Campo ausente: CONSUMIDOR CPF:'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///C:/GIS/VendaFacil_PDV/frontend-tests/recibo-fiscal.test.mjs:31:14)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: F4.19: tributo ausente nao declara valor nem fonte IBPT inexistente
+ok 3 - F4.19: tributo ausente nao declara valor nem fonte IBPT inexistente
+  ---
+  duration_ms: 3.0678
+  type: 'test'
+  ...
+# Subtest: F4.19: texto do XML nao injeta HTML no recibo
+ok 4 - F4.19: texto do XML nao injeta HTML no recibo
+  ---
+  duration_ms: 18.6185
+  type: 'test'
+  ...
+# Subtest: MOC3.1.8: duas marcacoes por via de contingencia, sem protocolo
+not ok 5 - MOC3.1.8: duas marcacoes por via de contingencia, sem protocolo
+  ---
+  duration_ms: 4.3084
+  type: 'test'
+  location: 'C:\\GIS\\VendaFacil_PDV\\frontend-tests\\recibo-fiscal.test.mjs:64:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+
+    0 !== 4
+
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 4
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///C:/GIS/VendaFacil_PDV/frontend-tests/recibo-fiscal.test.mjs:69:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: MOC3.1.3: valor pago por forma e separador de milhar
+not ok 6 - MOC3.1.3: valor pago por forma e separador de milhar
+  ---
+  duration_ms: 57.7752
+  type: 'test'
+  location: 'C:\\GIS\\VendaFacil_PDV\\frontend-tests\\recibo-fiscal.test.mjs:73:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The expression evaluated to a falsy value:
+
+      assert.ok(html.includes('1.234,56'))
+
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///C:/GIS/VendaFacil_PDV/frontend-tests/recibo-fiscal.test.mjs:78:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 2
+# fail 4
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3541.6924

@@ -27,7 +27,7 @@ for (const largura of [58, 80]) {
       nota: { chave: '5'.repeat(44), status: 'autorizada', xml }
     }, largura), { xml, largura });
     for (const texto of ['SEM VALOR FISCAL', 'Mercearia Açúcar de Teste', 'IE: 00130000019',
-      'Cuiabá', 'SKU-7', '1,23', '151260000000007', '12345678909', 'homologacao.sefaz.mt.gov.br', '12/11/2026']) {
+      'Cuiabá', 'SKU-7', '1,23', '151260000000007', 'CONSUMIDOR CPF:', 'Protocolo de autorização:', '12345678909', 'homologacao.sefaz.mt.gov.br', '12/11/2026']) {
       assert.ok(html.includes(texto), `Campo ausente: ${texto}`);
     }
     assert.ok(!html.includes('Nome atual diferente do emitente'));
@@ -59,4 +59,22 @@ test('F4.19: texto do XML nao injeta HTML no recibo', async () => {
     return !doc.querySelector('[data-fiscal-injetado]') && doc.body.textContent.includes('<img');
   }, malicioso);
   assert.equal(seguro, true);
+});
+
+test('MOC3.1.8: duas marcacoes por via de contingencia, sem protocolo', async () => {
+  const html = await page.evaluate(xml => window.__htmlFiscal({
+    loja: { nome: 'Loja' }, itens: [], subtotal: 10, desconto: 0, total: 10, forma: 'pix',
+    nota: { chave: '5'.repeat(44), status: 'contingencia', ambiente: 'homologacao', xml }
+  }, 58), xml);
+  assert.equal((html.match(/EMITIDA EM CONTINGÊNCIA/g) || []).length, 4);
+  assert.ok(!html.includes('151260000000007'));
+});
+
+test('MOC3.1.3: valor pago por forma e separador de milhar', async () => {
+  const html = await page.evaluate(() => window.__htmlFiscal({
+    loja: { nome: 'Loja' }, itens: [], subtotal: 1234.56, desconto: 0, total: 1234.56, forma: 'credito',
+    nota: { chave: '5'.repeat(44), status: 'autorizada' }
+  }, 80));
+  assert.ok(html.includes('1.234,56'));
+  assert.ok(html.includes('Valor pago'));
 });

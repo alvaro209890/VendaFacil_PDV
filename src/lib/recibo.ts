@@ -43,7 +43,7 @@ const FORMA_LABEL: Record<string, string> = {
   dinheiro: "Dinheiro", pix: "PIX", debito: "Débito", credito: "Crédito", fiado: "Fiado",
 };
 
-const moeda = (v: number) => (v || 0).toFixed(2).replace(".", ",");
+const moeda = (v: number) => (v || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 function esc(s: string): string {
   return (s || "").replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c] as string));
@@ -74,6 +74,7 @@ function montarHtml(d: ReciboData, larguraMm: number): string {
   const consumidorDoc = texto("CPF", dest) || texto("CNPJ", dest) || d.nota?.cpf;
   const totalTributos = texto("vTotTrib", no("ICMSTot"));
   const complemento = texto("infCpl");
+  const mensagemFiscal = texto("infAdFisco") || texto("xMsg");
   const dt = new Date(texto("dhEmi") || d.data || Date.now()).toLocaleString("pt-BR", { timeZone: "America/Cuiaba" });
   const linhas = d.itens.map((it) => {
     const nome = esc(it.nome);
@@ -96,6 +97,7 @@ function montarHtml(d: ReciboData, larguraMm: number): string {
   // ainda será transmitida automaticamente à SEFAZ.
   const temNota = !!(d.nota && d.nota.chave);
   const contingencia = d.nota?.status === "contingencia";
+  const avisoContingencia = contingencia ? '<div class="c b">EMITIDA EM CONTINGÊNCIA</div><div class="c b">Pendente de autorização</div>' : "";
   let fiscal = "";
   if (temNota && d.nota) {
     const chave = esc(d.nota.chave!).replace(/(.{4})/g, "$1 ").trim();
@@ -104,17 +106,18 @@ function montarHtml(d: ReciboData, larguraMm: number): string {
       ? `<div class="c" style="margin-top:4px"><img src="data:image/png;base64,${qrBase64}" style="width:${larguraMm === 58 ? 40 : 50}mm;height:auto" /></div>`
       : "";
     const consumidor = consumidorDoc
-      ? `<div class="c">CONSUMIDOR: ${esc(consumidorDoc)}</div>`
-      : `<div class="c">CONSUMIDOR NAO IDENTIFICADO</div>`;
+      ? `<div class="c">CONSUMIDOR ${consumidorDoc.replace(/\D/g, "").length === 14 ? "CNPJ" : "CPF"}: ${esc(consumidorDoc)}</div>`
+      : `<div class="c">CONSUMIDOR NÃO IDENTIFICADO</div>`;
     fiscal = `<hr>
       <div class="c b">DANFE NFC-e — Documento Auxiliar da NFC-e</div>
       ${homologacao ? '<div class="c b">EMITIDA EM AMBIENTE DE HOMOLOGAÇÃO — SEM VALOR FISCAL</div>' : ""}
       ${d.nota.status === "cancelada" ? '<div class="c b">NOTA CANCELADA</div>' : ""}
-      ${contingencia ? `<div class="c b">EMITIDA EM CONTINGENCIA</div><div class="c b">Pendente de autorizacao</div>` : ""}
       <div class="c">NFC-e no ${esc(texto("nNF") || String(d.nota.numero ?? "-"))} serie ${esc(texto("serie") || String(d.nota.serie ?? "-"))}</div>
       ${consumidor}
-      ${protocolo ? `<div class="c">Protocolo: ${esc(String(protocolo))}</div>` : ""}
-      ${texto("dhRecbto", prot) ? `<div class="c">Autorização: ${esc(new Date(texto("dhRecbto", prot)).toLocaleString("pt-BR", { timeZone: "America/Cuiaba" }))}</div>` : ""}
+      ${!contingencia && protocolo ? `<div class="c">Protocolo de autorização: ${esc(String(protocolo))}</div>` : ""}
+      ${!contingencia && texto("dhRecbto", prot) ? `<div class="c">Autorização: ${esc(new Date(texto("dhRecbto", prot)).toLocaleString("pt-BR", { timeZone: "America/Cuiaba" }))}</div>` : ""}
+      ${avisoContingencia}
+      ${mensagemFiscal ? `<div class="c b">${esc(mensagemFiscal)}</div>` : ""}
       <div class="c" style="font-size:.85em;margin-top:2px">Chave de acesso</div>
       <div class="c" style="font-size:.8em;word-break:break-all">${chave}</div>
       ${qr}
@@ -129,6 +132,7 @@ function montarHtml(d: ReciboData, larguraMm: number): string {
   <div class="c b big">${esc(nomeLoja || "VendaFácil PDV")}</div>
   ${cnpj}${ie}${end}
   <hr>
+  ${avisoContingencia ? avisoContingencia + '<hr>' : ""}
   ${temNota ? "" : '<div class="c b">CUPOM NÃO FISCAL</div>'}
   <div class="ln"><span>${dt}</span><span>${d.vendaId ? "#" + esc(String(d.vendaId)) : ""}</span></div>
   <hr>
@@ -139,6 +143,7 @@ function montarHtml(d: ReciboData, larguraMm: number): string {
   <div class="ln"><span>Quantidade de itens</span><span>${d.itens.length}</span></div>
   <div class="ln tot"><span>TOTAL</span><span>R$ ${moeda(d.total)}</span></div>
   <div class="ln"><span>Pagamento</span><span>${esc(String(FORMA_LABEL[d.forma] || d.forma))}</span></div>
+  ${temNota ? `<div class="ln"><span>Valor pago</span><span>R$ ${moeda(texto("vPag") !== "" && Number.isFinite(Number(texto("vPag"))) ? Number(texto("vPag")) : d.total)}</span></div>` : ""}
   ${dinheiro}
   ${fiscal}
   <hr>

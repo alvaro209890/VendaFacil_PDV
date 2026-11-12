@@ -222,7 +222,7 @@ test('Controle: cupom normal 80mm com DANFE preserva fixture PNG válido e bloco
   assert.equal(res.canarioAtivado, false);
   assert.match(res.bodyText, /DANFE NFC-e/);
   assert.match(res.bodyText, /NFC-e no 200 serie 1/);
-  assert.match(res.bodyText, /CONSUMIDOR: 000\.111\.222-33/);
+  assert.match(res.bodyText, /CONSUMIDOR CPF: 000\.111\.222-33/);
   assert.ok(res.imgInfo, 'Elemento img deve estar presente');
   assert.equal(res.imgInfo.src, `data:image/png;base64,${PNG_FIXTURE_VALIDO_B64}`);
   assert.match(res.imgInfo.style, /width:50mm/, 'Largura 80mm usa QR de 50mm');
