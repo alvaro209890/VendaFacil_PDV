@@ -633,7 +633,7 @@ def test_nfce_acima_de_10k_exige_consumidor_identificado(client, auth):
         "itens": [{"produto_id": produto["id"], "nome_produto": "Caro",
                    "quantidade": 1, "preco_unitario": 10001, "subtotal": 10001}],
     }
-    with pytest.raises(fiscal_direto.FiscalDiretoError, match="10.000"):
+    with pytest.raises(fiscal_direto.FiscalDiretoError, match="1.000"):
         fiscal_direto.montar_documento(v, _cfg(), "65", serie=1, numero=1)
     # identificando o consumidor, passa
     doc = fiscal_direto.montar_documento(v, _cfg(), "65", cpf_consumidor="12345678909",

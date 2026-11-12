@@ -1,4 +1,4 @@
-# Legislação fiscal MT aplicada ao PDV — revisão 2026-07
+# Legislação fiscal MT aplicada ao PDV — revisão 2026-11-12
 
 Este documento registra a **revisão de conformidade com a legislação de Mato
 Grosso** (e as normas nacionais da NFC-e/NF-e) feita em julho/2026, os **bugs
@@ -112,11 +112,14 @@ Tabela de Meios de Pagamento atualizada + regras do grupo `detPag`:
 (grupo `card`, Decreto MT 599/2023 + Portaria SEFAZ 262/2023) já estava
 implementado e não mudou — ver [`VINCULO_PAGAMENTO_MT.md`](VINCULO_PAGAMENTO_MT.md).
 
-## 7. Limites nacionais da NFC-e (validação nova, com mensagem clara)
+## 7. Limites da NFC-e em Mato Grosso
 
-- NFC-e **acima de R$ 200.000,00 é vedada** → o sistema orienta emitir NF-e 55.
-- NFC-e **acima de R$ 10.000,00 exige consumidor identificado** (CPF/CNPJ) —
-  Rejeição 785. O sistema pede o CPF antes de tentar a SEFAZ.
+- NFC-e **a partir de R$ 200.000,00 é vedada**; emitir NF-e 55.
+- Desde **R$ 1.000,00**, informar CPF/CNPJ do consumidor em MT. A validação usa
+  o total após desconto, antes da transmissão.
+- Base: [Portaria 177/2021-SEFAZ, arts.3 §4 II e 8 II a](https://app1.sefaz.mt.gov.br/Sistema/Legislacao/legislacaotribut.nsf/07fa81bed2760c6b84256710004d3940/14a777e454d23f9f0425874b006641f7),
+  texto consolidado oficial consultado em 12/11/2026. O limite nacional de
+  R$10 mil usado na revisão anterior não atendia à regra estadual.
 
 ## 8. Reforma Tributária (IBS/CBS — NT 2025.002) e CRT
 

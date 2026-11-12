@@ -670,16 +670,14 @@ def montar_documento(venda: dict, config: dict, modelo: str = "65",
         _tag(icmst, tag, "0.00")
     v_nf = moeda(total_prod - desconto)
     if modelo == "65":
-        # Limites nacionais da NFC-e: acima de R$ 200.000,00 a emissão é vedada
-        # (use NF-e mod. 55) e acima de R$ 10.000,00 o consumidor precisa estar
-        # identificado por CPF/CNPJ (Rejeição 785).
-        if v_nf > 200000:
+        # MT: Portaria 177/2021, arts.3 §4 II e 8 II a, limites inclusivos.
+        if v_nf >= 200000:
             raise FiscalDiretoError(
-                "NFC-e não pode ultrapassar R$ 200.000,00 — emita NF-e (modelo 55) "
+                "NFC-e não pode atingir R$ 200.000,00 — emita NF-e (modelo 55) "
                 "para esta venda.")
-        if v_nf > 10000 and not dest_doc:
+        if v_nf >= 1000 and not dest_doc:
             raise FiscalDiretoError(
-                "Venda acima de R$ 10.000,00 exige identificar o consumidor: "
+                "Venda a partir de R$ 1.000,00 em MT exige identificar o consumidor: "
                 "informe CPF ou CNPJ na emissão da NFC-e.")
     _tag(icmst, "vProd", f"{total_prod:.2f}")
     _tag(icmst, "vFrete", "0.00")
