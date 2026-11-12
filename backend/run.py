@@ -8,10 +8,15 @@ do executável. Variáveis de ambiente (opcionais):
   VENDAFACIL_PORT       (padrão 3020)
   VENDAFACIL_NO_BROWSER = 1  → não abre o navegador automaticamente
 """
+import json
+import logging
 import os
+import socket
 import sys
 import threading
+import time
 import webbrowser
+from http.client import HTTPConnection, HTTPException
 
 import uvicorn
 
@@ -34,32 +39,66 @@ def _preparar_saida_sem_console() -> None:
         sys.stderr = _DEVNULL
 
 
-def _porta_em_uso(host: str, port: int) -> bool:
-    import socket
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.settimeout(1)
-        return s.connect_ex((host, port)) == 0
+def _instancia_ativa() -> bool:
+    for _ in range(10):
+        conn = HTTPConnection(HOST, PORT, timeout=0.5)
+        try:
+            conn.request("GET", "/health")
+            resposta = conn.getresponse()
+            if resposta.status != 200:
+                return False
+            dados = json.loads(resposta.read(4096))
+            return (isinstance(dados, dict) and dados.get("app") == "vendafacil-pdv"
+                    and dados.get("status") == "ok" and isinstance(dados.get("version"), str))
+        except (ValueError, HTTPException):
+            return False
+        except OSError:
+            time.sleep(0.15)
+        finally:
+            conn.close()
+    return False
 
 
 def _abrir_navegador() -> None:
     webbrowser.open(f"http://{HOST}:{PORT}/")
 
 
-def main() -> None:
+def main() -> int:
     _preparar_saida_sem_console()
+    abrir = os.environ.get("VENDAFACIL_NO_BROWSER") != "1"
+    empacotado = getattr(sys, "frozen", False)
+    with socket.socket() as porta:
+        if sys.platform == "win32":
+            porta.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        else:
+            porta.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        try:
+            porta.bind((HOST, PORT))
+        except OSError:
+            if _instancia_ativa():
+                if abrir:
+                    _abrir_navegador()
+                return 0
+            mensagem = f"Não foi possível abrir a porta {PORT} para o VendaFácil PDV."
+            logging.getLogger(__name__).error(mensagem)
+            if empacotado and abrir and sys.platform == "win32":
+                import ctypes
+                ctypes.windll.user32.MessageBoxW(None, mensagem, "VendaFácil PDV", 0x10)
+            return 1
 
-    # Se já existe uma instância rodando, apenas abre o navegador na existente
-    # e encerra — evita "duas abas" / conflito de porta.
-    if _porta_em_uso(HOST, PORT):
-        _abrir_navegador()
-        return
-
-    if os.environ.get("VENDAFACIL_NO_BROWSER") != "1":
-        threading.Timer(1.5, _abrir_navegador).start()
-    print(f"VendaFácil PDV rodando em http://{HOST}:{PORT}/  (Ctrl+C para sair)")
-    log_config = None if getattr(sys, "frozen", False) else uvicorn.config.LOGGING_CONFIG
-    uvicorn.run(app, host=HOST, port=PORT, log_level="info", log_config=log_config)
+        log_config = None if empacotado else uvicorn.config.LOGGING_CONFIG
+        servidor = uvicorn.Server(uvicorn.Config(
+            app, host=HOST, port=PORT, log_level="info", log_config=log_config,
+        ))
+        navegador = threading.Timer(1.5, _abrir_navegador)
+        if abrir:
+            navegador.start()
+        try:
+            servidor.run(sockets=[porta])
+        finally:
+            navegador.cancel()
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
