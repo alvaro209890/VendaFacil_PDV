@@ -1,6 +1,6 @@
 # Fase 4 — Fiscal de Mato Grosso (NFC-e 65 e NF-e 55)
 
-**Status:** 🟨 em andamento — 23/27; próximo: regressões de duplicidade e retomada, F4.25/F4.26 · **Depende de:** Fase 1 (dinheiro) · **Pistas:** P9, P15, P19, P20, P22, P49 · **Testes:** X01–X18, M01–M12, H01–H09
+**Status:** ⏸ blocos A/B concluídos — 25/27, H01–H09 aguardam B1–B5 · **Depende de:** Fase 1 (dinheiro) · **Pistas:** P9, P15, P19, P20, P22, P49 · **Testes:** X01–X18, M01–M12, H01–H09
 
 ## Objetivo
 
@@ -27,7 +27,7 @@ Já existe: 49 testes fiscais (`test_fiscal_direto.py`, `test_fiscal_fluxo.py`) 
 - [x] F4.7 Ambiente: `tpAmb` só da configuração; texto obrigatório de homologação conforme o manual (X10). Conferir que nada troca o ambiente sozinho — 08bbffc · X10 com `tpAmb` 1/2 e o texto "SEM VALOR FISCAL"
 - [x] F4.8 (P22) Com `sefaz_mt_direto` configurado, nenhum caminho cai em gateway legado (X13) — 4e52786 · `test_x13_direto_nao_cai_em_gateway_emissao_consulta_loop_cancelamento`: modelos55/65, 2 passes em F4_X13_GREEN.txt
 - [x] F4.9 Numeração sequencial concorrente e tratamento de rejeição normal via inutilização, sem reutilizar número usado/contingente — 4e52786/8c83d0f/60a99ad · X12/X14 em duas conexões; `test_x12_rejeicao_normal_tem_faixa_inutilizavel_sem_reusar_numero`, 1 pass em F4_X12_REJEICAO_GREEN.txt
-- [x] F4.10 Conferência normativa/documental: pagamentos, CRT, CEST/ST, tributos e limites estaduais — 2e43441/188ad56/1139a1a · F4_AUDITORIA_NORMATIVA.md; divergências P49/P51/P52/P53 registradas; em MT o limite de identificação é R$1 mil, não R$10 mil
+- [x] F4.10 Conferência normativa/documental: pagamentos, CRT, CEST/ST, tributos e limites estaduais — 2e43441/188ad56/1139a1a · F4_AUDITORIA_NORMATIVA.md; limites de MT e campos do pagamento integrado
 
 ## Bloco B — simulador local da SEFAZ (obrigatório)
 
@@ -51,8 +51,8 @@ Já existe: 49 testes fiscais (`test_fiscal_direto.py`, `test_fiscal_fluxo.py`) 
 
 ## Fechamento
 
-- [ ] F4.25 Revisor adversário fiscal: um subagente lê o XML gerado contra o manual, campo a campo, atrás de rejeições conhecidas
-- [ ] F4.26 Atualizar `docs/LEGISLACAO_FISCAL_MT.md`, `docs/CONTINGENCIA_OFFLINE.md`, `docs/TESTE_FISCAL_WINDOWS.md` e `docs/CONTADOR.md` com o que mudou (inutilização, status do serviço, precheck)
+- [x] F4.25 Revisão independente do XML, com rechecagem das correções — 3c388a3 · F4_AUDITORIA_NORMATIVA.md; F4_REVISAO_XML_RED.txt (5 falhas) e evidências GREEN de fiado, consumidor final e intermediador
+- [x] F4.26 Atualizar LEGISLACAO_FISCAL_MT, CONTINGENCIA_OFFLINE, TESTE_FISCAL_WINDOWS e CONTADOR — 3c388a3 · git diff --check dos documentos e F4_PORTAO_BACKEND.txt
 
 ## Complementos da auditoria
 
@@ -60,17 +60,17 @@ Já existe: 49 testes fiscais (`test_fiscal_direto.py`, `test_fiscal_fluxo.py`) 
 
 ## Portão de saída
 
-- [ ] X01–X13 e M01–M12 ✅ — **sem exceção**
-- [ ] H01–H09 ✅, ou ⛔ com bloqueio registrado e prova do precheck
-- [ ] Nenhum dado fiscal fictício fora de `backend/tests/`; `ambiente` segue `homologacao`
-- [ ] Suítes verdes; pasta do plano commitada e `git push origin master`
+- [x] X01–X13 e M01–M12 ✅ — b92e3aa · F4_PORTAO_BACKEND.txt, 438 verdes; matriz atualizada
+- [x] H01–H09 ⛔ B1–B5 — e037473/3c388a3 · F4_HOMOLOGACAO_BLOQUEADA.txt (9 skips) e F4_PRECHECK_REVALIDADO.txt (saída 2)
+- [x] Dados da loja em homologação, XMLs sintéticos restritos às fixtures — b92e3aa/3c388a3 · X10 e F4_PRECHECK_REVALIDADO.txt; nenhuma transmissão real executada
+- [x] Suítes verdes, plano commitado e push confirmado — 3c388a3 · F4_PORTAO_BACKEND.txt (438), F4_PORTAO_PAINEL.txt (23); git ls-remote: 3c388a3cbef1932d3f71694835814f1c4c7e2330
 
 ## Evidências
 
 | Item | Comando | Saída resumida |
 |---|---|---|
-| Pacote XSD (versão, URL) | | |
-| Validação XSD (X01–X05) | | |
-| Simulador (M01–M12) | | |
+| Pacote XSD (versão, URL) | Conferência SHA-256 | F4_XSD_ORIGEM.txt |
+| Validação XSD (X01–X05) | pytest tests/test_fiscal_xsd.py tests/test_fiscal_inutilizacao.py | Verdes na suíte registrada em F4_PORTAO_BACKEND.txt |
+| Simulador (M01–M12) | pytest tests/test_sefaz_simulador.py | Verdes em F4_TIMEOUT_217_GREEN.txt e no portão |
 | Precheck | python -X utf8 -I scripts/fiscal_precheck.py | Saída 2, B1–B5 em F4_PRECHECK_REAL.txt |
 | Homologação real (H01–H09) | pytest -m homologacao -rs | 9 skips em F4_HOMOLOGACAO_BLOQUEADA.txt |

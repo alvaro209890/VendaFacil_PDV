@@ -4,13 +4,11 @@
 |---|---|
 | Branch | master; retomada em e037473 |
 | Fases 0–3 | Concluídas e publicadas |
-| Fase 4 | 23/27 fechados, incluindo F4.20–F4.22 |
+| Fase 4 | 25/27 fechados, portão publicado em 3c388a3 |
 | Homologação | F4.23/F4.24 e H01–H09 bloqueados por B1–B5; precheck saída 2 e 9 skips |
-| Suítes registradas | Backend 432 verdes e 9 desmarcados, painel 23 verdes |
+| Suítes registradas | Backend 438 verdes e 9 desmarcados, painel 23 verdes |
 
-1. Validar as regressões de duplicidade 204/539 e retomada após 217 com consulta e XML assinado.
-2. Concluir a revisão independente F4.25, a documentação F4.26 e o portão fiscal.
-3. Executar em ordem as Fases 5–7.
+Retomar pela Fase 5, robustez e suporte. As Fases 6 e 7 seguem pendentes.
 
 O binário, o rascunho, os diretórios scratch e a alteração preexistente em F3_22_RED.txt ficam fora dos commits.
 ## Comandos
