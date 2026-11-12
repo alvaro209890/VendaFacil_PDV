@@ -30,10 +30,26 @@ class EmitirInput(BaseModel):
     cpf_consumidor: str | None = Field(default=None, max_length=14)
 
 
+def _nota_do_usuario(nota_id: int, user_id: int) -> dict:
+    nota = db.get_nota(nota_id)
+    if not nota or nota.get("user_id") != user_id:
+        raise HTTPException(status_code=404, detail="Nota não encontrada.")
+    return nota
+
+
+def _nota_da_venda(venda_id: int, modelo: str, user_id: int) -> dict | None:
+    if not db.get_venda(venda_id, user_id):
+        raise HTTPException(status_code=404, detail="Venda não encontrada.")
+    nota = db.get_nota_por_venda(venda_id, modelo)
+    if nota and nota.get("user_id") != user_id:
+        raise HTTPException(status_code=404, detail="Nota não encontrada.")
+    return nota
+
+
 @router.get("/venda/{venda_id}")
 async def nota_da_venda(venda_id: int, request: Request) -> dict:
-    _user(request)
-    return {"nota": fiscal.anexar_qrcode(db.get_nota_por_venda(venda_id, "65"))}
+    user_id = _user(request)
+    return {"nota": fiscal.anexar_qrcode(_nota_da_venda(venda_id, "65", user_id))}
 
 
 @router.post("/venda/{venda_id}/emitir")
@@ -48,7 +64,7 @@ async def emitir(venda_id: int, data: EmitirInput, request: Request) -> dict:
 
 @router.post("/{nota_id}/consultar")
 async def consultar(nota_id: int, request: Request) -> dict:
-    _user(request)
+    _nota_do_usuario(nota_id, _user(request))
     try:
         return {"nota": fiscal.anexar_qrcode(fiscal.consultar_nfce(nota_id))}
     except fiscal.FiscalError as e:
@@ -57,7 +73,7 @@ async def consultar(nota_id: int, request: Request) -> dict:
 
 @router.post("/{nota_id}/cancelar")
 async def cancelar(nota_id: int, data: CancelarInput, request: Request) -> dict:
-    _user(request)
+    _nota_do_usuario(nota_id, _user(request))
     try:
         return {"nota": fiscal.cancelar_nfce(nota_id, data.justificativa)}
     except fiscal.FiscalError as e:
@@ -68,9 +84,7 @@ async def cancelar(nota_id: int, data: CancelarInput, request: Request) -> dict:
 async def baixar_xml(nota_id: int, request: Request) -> Response:
     """Baixa o XML autorizado de uma nota (para guardar/entregar ao contador)."""
     user_id = _user(request)
-    nota = db.get_nota(nota_id)
-    if not nota or nota.get("user_id") != user_id:
-        raise HTTPException(status_code=404, detail="Nota não encontrada.")
+    nota = _nota_do_usuario(nota_id, user_id)
     xml = nota.get("xml_autorizado") or nota.get("xml_assinado")
     if not xml:
         raise HTTPException(status_code=404, detail="XML ainda não disponível (nota não autorizada).")
@@ -109,8 +123,7 @@ class EmitirNfeInput(BaseModel):
 
 @nfe_router.get("/venda/{venda_id}")
 async def nfe_da_venda(venda_id: int, request: Request) -> dict:
-    _user(request)
-    return {"nota": db.get_nota_por_venda(venda_id, "55")}
+    return {"nota": _nota_da_venda(venda_id, "55", _user(request))}
 
 
 @nfe_router.post("/venda/{venda_id}/emitir")
@@ -124,7 +137,7 @@ async def emitir_nfe(venda_id: int, data: EmitirNfeInput, request: Request) -> d
 
 @nfe_router.post("/{nota_id}/consultar")
 async def consultar_nfe(nota_id: int, request: Request) -> dict:
-    _user(request)
+    _nota_do_usuario(nota_id, _user(request))
     try:
         return {"nota": fiscal.consultar_nfce(nota_id)}
     except fiscal.FiscalError as e:
