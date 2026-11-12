@@ -47,6 +47,11 @@ def retorno_consulta(cstat: str = "100", motivo: str = "Autorizado o uso da NF-e
                      recebido_em: str | None = None) -> str:
     recebido_em = recebido_em or datetime.now(timezone.utc).isoformat(timespec="seconds")
     chave_xml = f"<chNFe>{chave}</chNFe>" if chave else ""
+    if cstat == "217":
+        return _nfe(
+            f'<retConsSitNFe xmlns="{NS}" versao="4.00"><tpAmb>2</tpAmb>'
+            f'<cStat>{cstat}</cStat><xMotivo>{motivo}</xMotivo>{chave_xml}</retConsSitNFe>'
+        )
     return _nfe(
         f'<retConsSitNFe xmlns="{NS}" versao="4.00"><tpAmb>2</tpAmb><cStat>{cstat}</cStat>'
         f'<xMotivo>{motivo}</xMotivo>{chave_xml}<protNFe versao="4.00"><infProt>'

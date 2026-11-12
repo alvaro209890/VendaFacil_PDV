@@ -429,6 +429,10 @@ def consultar_nfce(nota_id: int) -> dict:
             sefaz = fiscal_direto.normalizar_retorno_sefaz(
                 retorno.get("texto"), nota.get("xml_assinado"), retorno.get("status_code")
             )
+            if sefaz.get("cstat") == "217" or (
+                sefaz.get("status") == "processando" and _conflito_de_chave(nota)
+            ):
+                return nota
             dados = {
                 "status": sefaz.get("status") or nota.get("status") or "processando",
                 "mensagem": sefaz.get("mensagem") or nota.get("mensagem"),
@@ -568,11 +572,12 @@ def processar_pendentes() -> int:
     return feitas
 
 
-def _processar_pendentes_direto(config: dict) -> int:
-    """Consulta na SEFAZ-MT as notas que ficaram pendentes/processando.
+def _conflito_de_chave(nota: dict) -> bool:
+    return fiscal_direto.normalizar_retorno_sefaz(nota.get("recibo")).get("cstat") == "539"
 
-    Só faz a consulta quando há chave de acesso e certificado configurado —
-    sem chave não há como localizar o documento na SEFAZ."""
+
+def _processar_pendentes_direto(config: dict) -> int:
+    """Concilia notas pendentes pela chave e reaproveita o XML assinado."""
     if not config.get("certificado_a1_b64") or not config.get("certificado_senha"):
         return 0
     feitas = 0
@@ -581,25 +586,36 @@ def _processar_pendentes_direto(config: dict) -> int:
         if not chave:
             continue
         try:
+            modelo = nota.get("modelo") or "65"
+            xml = nota.get("xml_assinado")
             if nota.get("status") == "contingencia":
                 # Emitida offline e ainda não enviada → transmite o XML já assinado.
-                if not nota.get("xml_assinado"):
+                if not xml:
                     continue
-                retorno = fiscal_direto.transmitir_autorizacao(
-                    nota.get("modelo") or "65", nota["xml_assinado"], config)
+                retorno = fiscal_direto.transmitir_autorizacao(modelo, xml, config)
             else:
-                # Já transmitida (sem resposta) → consulta pela chave, sem reenviar.
-                retorno = fiscal_direto.consultar_chave(nota.get("modelo") or "65", chave, config)
+                retorno = fiscal_direto.consultar_chave(modelo, chave, config)
             sefaz = fiscal_direto.normalizar_retorno_sefaz(
-                retorno.get("texto"), nota.get("xml_assinado"), retorno.get("status_code")
+                retorno.get("texto"), xml, retorno.get("status_code")
             )
-            if sefaz.get("cstat") == "539" or "uplicidade" in (sefaz.get("mensagem") or ""):
-                # Duplicidade no reenvio da contingência = a transmissão anterior
-                # chegou na SEFAZ. A situação REAL vem da consulta pela chave —
-                # marcar rejeitada aqui deixaria uma nota autorizada como morta.
-                retorno = fiscal_direto.consultar_chave(nota.get("modelo") or "65", chave, config)
+            if nota.get("status") == "contingencia" and sefaz.get("cstat") in {"204", "539"}:
+                consulta = fiscal_direto.consultar_chave(modelo, chave, config)
+                situado = fiscal_direto.normalizar_retorno_sefaz(
+                    consulta.get("texto"), xml, consulta.get("status_code")
+                )
+                if situado.get("status") in {"autorizada", "cancelada"}:
+                    retorno, sefaz = consulta, situado
+            elif sefaz.get("status") == "processando" and _conflito_de_chave(nota):
+                # 539 comprova conflito de numeração com outra chave. Preserve
+                # o retorno original para conferência no portal.
+                feitas += 1
+                continue
+            elif sefaz.get("cstat") == "217" and xml:
+                # A chave ainda não consta na base. Transmita exatamente o XML
+                # persistido, com a mesma assinatura e numeração.
+                retorno = fiscal_direto.transmitir_autorizacao(modelo, xml, config)
                 sefaz = fiscal_direto.normalizar_retorno_sefaz(
-                    retorno.get("texto"), nota.get("xml_assinado"), retorno.get("status_code")
+                    retorno.get("texto"), xml, retorno.get("status_code")
                 )
             dados = {
                 "status": sefaz.get("status") or nota.get("status") or "processando",

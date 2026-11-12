@@ -992,6 +992,8 @@ def normalizar_retorno_sefaz(texto: str | None, xml_assinado: str | None = None,
         }
 
     consulta = root if root.tag.split('}')[-1] == 'retConsSitNFe' else root.find('.//{*}retConsSitNFe')
+    if consulta is not None and _texto(consulta, 'cStat') == '217' and (http_status or 200) < 400:
+        return {'status': 'processando', 'cstat': '217', 'mensagem': _texto(consulta, 'xMotivo')}
     if consulta is not None and _texto(consulta, 'cStat') in {'101', '151'}:
         # A consulta traz o protocolo original autorizado junto do status atual.
         # A situação atual cancelada prevalece sobre o cStat100 do infProt.
