@@ -315,7 +315,9 @@
         try {
           await api("/api/admin/senha", { method: "PUT", body: JSON.stringify({ senha_atual: f.get("atual"), nova_senha: f.get("nova") }) });
           $("#modal").innerHTML = "";
-          alert("Senha alterada com sucesso!");
+          clearToken();
+          alert("Senha alterada. Entre novamente com a nova senha.");
+          location.reload();
         } catch (err) { $("#erro").textContent = err.message; }
       };
     }

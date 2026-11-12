@@ -1,0 +1,52 @@
+FFF                                                                      [100%]
+================================== FAILURES ===================================
+__________________ test_s13_troca_admin_revoga_todas_sessoes __________________
+painel\tests\test_revogacao_tokens.py:30: in test_s13_troca_admin_revoga_todas_sessoes
+    assert [client.get('/api/admin/contas', headers=h).status_code for h in (a, b)] == [401, 401]
+E   assert [200, 200] == [401, 401]
+E     
+E     At index 0 diff: 200 != 401
+E     Use -v to get more diff
+________________ test_s13_troca_conta_revoga_sync_e_validacao _________________
+painel\tests\test_revogacao_tokens.py:47: in test_s13_troca_conta_revoga_sync_e_validacao
+    assert client.post('/api/sync/vendas', headers=antigo, json={'vendas': []}).status_code == 401
+E   AssertionError: assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+E    +    where <Response [200 OK]> = post('/api/sync/vendas', headers={'Authorization': 'Bearer [TOKEN_FIXTURE_MASCARADO]'}, json={'vendas': []})
+E    +      where post = <starlette.testclient.TestClient object at 0x00000271DDE8AF90>.post
+____________________ test_s13_conta_excluida_nao_usa_token ____________________
+painel\tests\test_revogacao_tokens.py:61: in test_s13_conta_excluida_nao_usa_token
+    assert client.post('/api/sync/vendas', headers=token, json={'vendas': []}).status_code == 401
+E   AssertionError: assert 404 == 401
+E    +  where 404 = <Response [404 Not Found]>.status_code
+E    +    where <Response [404 Not Found]> = post('/api/sync/vendas', headers={'Authorization': 'Bearer [TOKEN_FIXTURE_MASCARADO]'}, json={'vendas': []})
+E    +      where post = <starlette.testclient.TestClient object at 0x00000271DDE3E210>.post
+============================== warnings summary ===============================
+painel\.venv\Lib\site-packages\fastapi\testclient.py:1
+  C:\GIS\VendaFacil_PDV\painel\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+painel\main.py:182
+  C:\GIS\VendaFacil_PDV\painel\main.py:182: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("startup")
+
+painel\.venv\Lib\site-packages\fastapi\applications.py:4723
+  C:\GIS\VendaFacil_PDV\painel\.venv\Lib\site-packages\fastapi\applications.py:4723: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED painel/tests/test_revogacao_tokens.py::test_s13_troca_admin_revoga_todas_sessoes
+FAILED painel/tests/test_revogacao_tokens.py::test_s13_troca_conta_revoga_sync_e_validacao
+FAILED painel/tests/test_revogacao_tokens.py::test_s13_conta_excluida_nao_usa_token
+3 failed, 3 warnings in 1.93s

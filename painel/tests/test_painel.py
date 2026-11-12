@@ -50,13 +50,18 @@ def test_financeiro_math(client, admin):
 
 
 def test_trocar_senha(client, admin):
-    # token do fixture continua válido; troca a senha e valida login novo/antigo
+    # Troca revoga o token antigo; recuperar sessão com a nova credencial.
     r = client.put("/api/admin/senha", headers=admin, json={"senha_atual": "Loja@2026xy", "nova_senha": "novaSenha1"})
     assert r.status_code == 200
-    assert client.post("/api/admin/login", json={"login": "admin", "senha": "novaSenha1"}).status_code == 200
+    novo = client.post("/api/admin/login", json={"login": "admin", "senha": "novaSenha1"})
+    assert novo.status_code == 200
     assert client.post("/api/admin/login", json={"login": "admin", "senha": "Loja@2026xy"}).status_code == 401
     # volta ao original para não afetar outros testes
-    client.put("/api/admin/senha", headers=admin, json={"senha_atual": "novaSenha1", "nova_senha": "Loja@2026xy"})
+    headers = {"Authorization": "Bearer " + novo.json()["token"]}
+    assert client.put("/api/admin/senha", headers=headers, json={"senha_atual": "novaSenha1", "nova_senha": "Loja@2026xy"}).status_code == 200
+    sessao = client.post("/api/admin/login", json={"login": "admin", "senha": "Loja@2026xy"})
+    assert sessao.status_code == 200
+    admin["Authorization"] = "Bearer " + sessao.json()["token"]
 
 
 def test_rate_limit(client):

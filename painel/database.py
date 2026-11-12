@@ -174,6 +174,16 @@ class Database:
 
     def _migrar(self) -> None:
         """Migrações idempotentes do painel."""
+        for tabela in ("admins", "contas"):
+            with self._lock:
+                if self.pg:
+                    self._exec(f"ALTER TABLE {tabela} ADD COLUMN IF NOT EXISTS token_version INTEGER NOT NULL DEFAULT 0")
+                else:
+                    with self._conn:
+                        self._conn.execute("BEGIN IMMEDIATE")
+                        cols = {r["name"] for r in self._conn.execute(f"PRAGMA table_info({tabela})")}
+                        if "token_version" not in cols:
+                            self._conn.execute(f"ALTER TABLE {tabela} ADD COLUMN token_version INTEGER NOT NULL DEFAULT 0")
         if self.pg:
             with self._lock, self._conn.cursor() as cur:
                 cur.execute("ALTER TABLE admins ADD COLUMN IF NOT EXISTS login TEXT")
@@ -289,14 +299,15 @@ class Database:
                 new_id = cur.fetchone()["id"] if self.pg else cur.lastrowid
             finally:
                 cur.close()
-        return {"id": new_id, "login": usuario, "email": email.lower(), "nome": nome}
+        return {"id": new_id, "login": usuario, "email": email.lower(), "nome": nome, "token_version": 0}
 
     def get_admin(self, admin_id: int) -> Optional[dict]:
         return self._fetchone("SELECT * FROM admins WHERE id = ?", (admin_id,))
 
-    def update_admin_senha(self, admin_id: int, senha_hash: str) -> bool:
+    def update_admin_senha(self, admin_id: int, senha_hash: str, versao: int) -> bool:
         return self._exec(
-            "UPDATE admins SET senha_hash = ? WHERE id = ?", (senha_hash, admin_id)
+            "UPDATE admins SET senha_hash = ?, token_version = token_version + 1 "
+            "WHERE id = ? AND token_version = ?", (senha_hash, admin_id, versao)
         ) > 0
 
     # ── Contas (lojas) ──
@@ -336,6 +347,8 @@ class Database:
             if k in permitidos:
                 sets.append(f"{k} = ?")
                 vals.append(v)
+        if "senha_hash" in campos:
+            sets.append("token_version = token_version + 1")
         if not sets:
             return False
         vals.append(conta_id)

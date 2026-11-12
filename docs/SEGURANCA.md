@@ -1,5 +1,18 @@
 # Segurança do PDV
 
+## Painel administrativo (S13)
+
+O primeiro administrador é criado em transação exclusiva no banco (SQLite ou
+PostgreSQL). Cadastro e troca de senha exigem ao menos 8 caracteres e recusam
+senhas comuns; o login de credenciais antigas continua disponível para permitir
+a troca. O painel encerra a sessão depois da alteração de senha.
+
+Tokens de administrador e de loja carregam a versão persistida da credencial.
+Trocar a senha incrementa essa versão e revoga todas as sessões anteriores na
+API do painel. A atualização exige novo login para tokens legados sem versão.
+Revogação remota depende do próximo contato do PDV com o painel: não altera a
+carência offline nem cria dependência de rede no caminho da venda.
+
 O que o caixa da mercearia protege, o que fica de fora de propósito e o que fazer se o computador sair da loja. Escolhas de 2026-11-10.
 
 ## O que protege

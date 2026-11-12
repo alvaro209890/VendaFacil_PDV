@@ -38,6 +38,7 @@ def _admin_atual(request: Request) -> dict:
     payload = security.verificar_jwt(auth[7:])
     if not payload or payload.get("tipo") != "admin":
         raise HTTPException(status_code=401, detail="Token inválido ou expirado.")
+    _verificar_credencial(payload, db.get_admin)
     return payload
 
 
@@ -48,7 +49,17 @@ def _conta_atual(request: Request) -> dict:
     payload = security.verificar_jwt(auth[7:])
     if not payload or payload.get("tipo") != "conta":
         raise HTTPException(status_code=401, detail="Token inválido ou expirado.")
+    _verificar_credencial(payload, db.get_conta)
     return payload
+
+
+def _verificar_credencial(payload: dict, buscar) -> None:
+    try:
+        atual = buscar(int(payload["sub"]))
+    except (KeyError, ValueError, TypeError):
+        atual = None
+    if not atual or payload.get("ver") != atual["token_version"]:
+        raise HTTPException(status_code=401, detail="Credencial alterada. Entre novamente.")
 
 
 MT = timezone(timedelta(hours=-4))
@@ -199,7 +210,7 @@ async def admin_setup(data: AdminSetup) -> dict:
     admin = db.create_admin(_login_admin(data), data.nome, security.hash_senha(data.senha))
     if not admin:
         raise HTTPException(status_code=409, detail="Usuário já cadastrado.")
-    token = security.gerar_jwt({"sub": str(admin["id"]), "tipo": "admin", "nome": admin["nome"], "login": admin["login"]})
+    token = security.gerar_jwt({"sub": str(admin["id"]), "tipo": "admin", "nome": admin["nome"], "login": admin["login"], "ver": admin["token_version"]})
     return {"token": token, "admin": admin}
 
 
@@ -215,7 +226,7 @@ async def admin_login(data: AdminLogin) -> dict:
         ratelimit.registrar_falha(chave)
         raise HTTPException(status_code=401, detail="Usuário ou senha incorretos.")
     ratelimit.limpar(chave)
-    token = security.gerar_jwt({"sub": str(admin["id"]), "tipo": "admin", "nome": admin["nome"], "login": admin.get("login")})
+    token = security.gerar_jwt({"sub": str(admin["id"]), "tipo": "admin", "nome": admin["nome"], "login": admin.get("login"), "ver": admin["token_version"]})
     return {"token": token, "admin": {"id": admin["id"], "login": admin.get("login") or admin["email"], "email": admin["email"], "nome": admin["nome"]}}
 
 
@@ -225,7 +236,8 @@ async def trocar_senha(data: AdminSenha, request: Request) -> dict:
     admin = db.get_admin(int(payload["sub"]))
     if not admin or not security.verificar_senha(data.senha_atual, admin["senha_hash"]):
         raise HTTPException(status_code=401, detail="Senha atual incorreta.")
-    db.update_admin_senha(admin["id"], security.hash_senha(data.nova_senha))
+    if not db.update_admin_senha(admin["id"], security.hash_senha(data.nova_senha), payload["ver"]):
+        raise HTTPException(status_code=401, detail="Credencial alterada. Entre novamente.")
     return {"ok": True}
 
 
@@ -350,7 +362,7 @@ async def validar_conta(data: ContaValidar) -> dict:
     db.marcar_acesso(conta["id"])
     # Token de conta com validade longa = período de carência offline (30 dias)
     token = security.gerar_jwt(
-        {"sub": str(conta["id"]), "tipo": "conta", "loja": conta["nome_loja"]},
+        {"sub": str(conta["id"]), "tipo": "conta", "loja": conta["nome_loja"], "ver": conta["token_version"]},
         horas=24 * 30,
     )
     return {
