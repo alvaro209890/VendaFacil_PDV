@@ -20,14 +20,22 @@ PT_POR_MM = 72 / 25.4
 
 
 def _qrs(pagina) -> list[str]:
-    """Rasteriza a 300 dpi a região de cada imagem do PDF e decodifica o QR dela."""
-    detector = cv2.QRCodeDetector()
+    """Rasteriza a região de cada imagem do PDF e decodifica o QR dela.
+
+    O detector padrão do OpenCV 5 às vezes não lê um QR legível numa resolução
+    específica; por isso tenta 300/400/200 dpi e o detector Aruco. A comparação
+    com o qrcode_url da nota continua exata."""
+    detectores = (cv2.QRCodeDetector(), cv2.QRCodeDetectorAruco())
     achados = []
     for info in pagina.get_image_info():
         area = fitz.Rect(info["bbox"]) + (-6, -6, 6, 6)  # margem branca em volta
-        imagem = pagina.get_pixmap(dpi=300, clip=area, colorspace=fitz.csGRAY)
-        matriz = np.frombuffer(imagem.samples, dtype=np.uint8).reshape(imagem.height, imagem.width)
-        texto, _, _ = detector.detectAndDecode(matriz)
+        texto = ""
+        for dpi in (300, 400, 200):
+            imagem = pagina.get_pixmap(dpi=dpi, clip=area, colorspace=fitz.csGRAY)
+            matriz = np.frombuffer(imagem.samples, dtype=np.uint8).reshape(imagem.height, imagem.width)
+            texto = next((t for t in (d.detectAndDecode(matriz)[0] for d in detectores) if t), "")
+            if texto:
+                break
         achados.append(texto)
     return achados
 
