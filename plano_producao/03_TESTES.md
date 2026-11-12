@@ -20,7 +20,7 @@ Ao fechar: preencha **Onde** (`arquivo::função`) e **Commit**. Teste novo que 
 | L08 | P30: Validar datas, recusar inválidas e usar fim do dia local de MT | ✅ | `painel/tests/test_licenca_data.py` | f1aeec4 |
 | U06 | P31: Parser numérico pt-BR compartilhado, sem truncamento silencioso | ✅ | `src/lib/numeros.ts`; 22 unitários + 14 XML/locale + 8 Produtos + 10 fiado/caixa; E2E 81/81 em 4 lotes | a6a90d5 |
 | S11 | P32: Escape completo de texto/atributos; QR Base64 validado | ✅ | frontend-tests/recibo-xss.test.mjs:4RED→7GREEN;recheckpai;review deleg_ab6c44fc aprovado;DOM58/80,nãofiscalreal | 95e2322 |
-| E10 | P33: Esperar imagens e afterprint, ciclo testável | ⬜ | | |
+| E10 | P33: Esperar imagens e afterprint, ciclo testável | ✅ | F6_E10_GREEN.txt; 1 Chromium | eb55f20 |
 | U07 | P34: Total diário pelo backend, excluindo canceladas e fuso MT | ✅ | `backend/tests/test_total_diario.py` (4 casos), `e2e/total-diario.spec.ts` (1); backend327/painel23 | fb9f5b9 |
 | U08 | P44: API pronta antes do Vite, mesmo com backend atrasado4s | ✅ | `e2e/atrasar-api.cjs`; F3_READY_PARENT_RECHECK.txt verde | ba47db4 |
 | U09 | P45: erro de estoque, aviso D4 e resultado fiscal sem falsa autorização | ✅ | bd6013e ·7casos/21repetições;44Chromium;revisão deleg_30bc8fc6/recheck7 | bd6013e |
@@ -197,12 +197,12 @@ Marker `homologacao`, fora da execução padrão. Sem os itens da loja: ⛔ com 
 
 | ID | O que prova | Status | Onde | Commit |
 |---|---|---|---|---|
-| E01 | Smoke no `.exe`: `/` 200 · `/health` 200 · `/api/produtos` 401 | ⬜ | | |
+| E01 | Smoke no `.exe`: `/` 200 · `/health` 200 · `/api/produtos` 401 | ✅ | F6_ROTEIRO_EXE.txt: três respostas 200/200/401 | e41771e |
 | E02 | Roteiro de `docs/TESTE_WINDOWS.md` em script contra o `.exe`: zero resposta 500 | ⬜ | | |
 | E03 | Mesmo roteiro sem rede: vender, cancelar, fechar caixa, reimprimir; religar e conciliar | ⬜ | | |
-| E04 | Instalação limpa: pasta do programa, atalhos, primeira execução, banco em `%LOCALAPPDATA%` | ⬜ | | |
-| E05 | Instalar a 1.0.13 por cima da anterior preserva os dados (contagens iguais) | ⬜ | | |
-| E06 | Desinstalar preserva os dados | ⬜ | | |
+| E04 | Instalação limpa: pasta do programa, atalhos, primeira execução, banco em `%LOCALAPPDATA%` | ⛔ | B8, F6_INSTALADOR_B8.txt, saída 2 | — |
+| E05 | Instalar a 1.0.13 por cima da anterior preserva os dados (contagens iguais) | ⛔ | B8, F6_INSTALADOR_B8.txt, saída 2 | — |
+| E06 | Desinstalar preserva os dados | ⛔ | B8, F6_INSTALADOR_B8.txt, saída 2 | — |
 | E07 | Cupom em 58 mm (PDF): acentuação, QR legível, chave, protocolo | ⬜ | | |
 | E08 | Cupom em 80 mm (PDF) e segunda via | ⬜ | | |
 | E09 | Cupom de contingência com a marcação "emitida em contingência" | ⬜ | | |

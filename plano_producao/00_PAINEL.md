@@ -4,16 +4,16 @@
 
 | Campo | Valor |
 |---|---|
-| Estado geral | 🟨 EM ANDAMENTO |
-| Fase atual | 6 — build, instalador e ponta a ponta |
-| Próxima ação | Backup datado, versão 1.0.13, ciclo de impressão e build |
-| Última atualização | 2026-11-12 — robustez e diagnóstico validados; 459 backend e 23 painel |
+| Estado geral | ⏸ PAUSADO a pedido do Álvaro |
+| Fase atual | 6 — build e ponta a ponta; 7/14, com B8 |
+| Próxima ação | Ao retomar, recompilar a 1.0.13 após 054e6d6 e validar o roteiro empacotado no Chromium |
+| Última atualização | 2026-11-12 — reimpressão em contingência corrigida; 7 Chromium verdes; artefatos locais antecedem 054e6d6 |
 | Commit de partida | `6da6899` |
 | Versão de partida → de entrega | 1.0.12 → 1.0.13 |
 | Testes backend (partida → agora) | 76→459, 9 desmarcados (F5_PORTAO_BACKEND.txt) |
 | Testes painel (partida → agora) | 7→23; navegador: 82 E2E (A28/B20/C19/XML14/U07:1) + 29 Node; build/lint 0 |
 
-Estados gerais possíveis: ⬜ NÃO INICIADO · 🟨 EM ANDAMENTO · ⏸ AGUARDANDO TERCEIRO · ✅ CONCLUÍDO.
+Estados gerais possíveis: ⬜ NÃO INICIADO · 🟨 EM ANDAMENTO · ⏸ PAUSADO · ⏸ AGUARDANDO TERCEIRO · ✅ CONCLUÍDO.
 
 ## Fases
 
@@ -24,8 +24,8 @@ Estados gerais possíveis: ⬜ NÃO INICIADO · 🟨 EM ANDAMENTO · ⏸ AGUARDA
 | 2 | `FASE_2_caixa_fiado_importacao_licenca.md` | ✅ | 23/23 | ✅ | 41c9265 |
 | 3 | `FASE_3_seguranca_e_front.md` | ✅ | 24/24 | ✅ | d9038dc |
 | 4 | `FASE_4_fiscal_mt.md` | ⏸ | 25/27 | ✅ com B1–B5 | 3c388a3 |
-| 5 | `FASE_5_robustez_e_suporte.md` | ✅ | 12/12 | Suítes verdes | c387de0 |
-| 6 | `FASE_6_build_instalador_e2e.md` | 🟨 | 0/14 | ⬜ | — |
+| 5 | `FASE_5_robustez_e_suporte.md` | ✅ | 12/12 | Suítes verdes | f97eb6a |
+| 6 | `FASE_6_build_instalador_e2e.md` | 🟨 | 7/14 | ⬜ | — |
 | 7 | `FASE_7_documentacao_e_entrega.md` | ⬜ | 0/12 | ⬜ | — |
 
 Status de fase: ⬜ não iniciada · 🟨 em andamento · ✅ concluída · ⏸ concluída com item bloqueado por terceiro.
@@ -35,10 +35,10 @@ Status de fase: ⬜ não iniciada · 🟨 em andamento · ✅ concluída · ⏸ 
 | Controle | Total | Fechados | Bloqueados | Abertos |
 |---|---|---|---|---|
 | Pistas (`02_PISTAS.md`) | 51 | 46 | 0 | 5 |
-| Testes (`03_TESTES.md`) | 131 | 112 | 9 | 10 |
-| Bloqueios (`04_BLOQUEIOS.md`) | 9 | — | 5 ativos | — |
+| Testes (`03_TESTES.md`) | 131 | 114 | 12 | 5 |
+| Bloqueios (`04_BLOQUEIOS.md`) | 9 | — | 6 ativos | — |
 | Decisões do Álvaro (`05_DECISOES_ALVARO.md`) | 9 | 0 respondidas | — | 9 |
 
 ## Bloqueios ativos agora
 
-B1–B5 bloqueiam H01–H09. Ver F4_PRECHECK_REAL.txt, F4_HOMOLOGACAO_BLOQUEADA.txt e 04_BLOQUEIOS.md.
+B1–B5 bloqueiam H01–H09. B8 bloqueia E04–E06. Evidências no diretório do plano.

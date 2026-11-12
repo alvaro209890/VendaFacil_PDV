@@ -1,0 +1,31 @@
+Portas 3020 e 3021 livres no início da Fase 6.
+
+-------------------------------------------------------------------------------
+   ROBOCOPY     ::     Robust File Copy para Windows
+-------------------------------------------------------------------------------
+
+  Iniciado: quinta-feira, 12 de novembro de 2026 15:59:43
+   Origem : C:\Users\Usuario\AppData\Local\VendaFacilPDV\
+     Dest : C:\Users\Usuario\AppData\Local\VendaFacilPDV-backup-20261112-155943\
+
+    Arquivos: *.*
+
+  Opções: *.* /NDL /NFL /S /E /DCOPY:DA /COPY:DAT /NP /XJ /R:1 /W:1
+
+------------------------------------------------------------------------------
+
+
+------------------------------------------------------------------------------
+
+               Total   Copiada  IgnoradaIncompatibilidade     FALHA    Extras
+Diretórios:         4         4         0         0         0         0
+ Arquivos:         6         6         0         0         0         0
+    Bytes:   780.8 k   780.8 k         0         0         0         0
+N.º de Vezes:   0:00:00   0:00:00                       0:00:00   0:00:00
+
+
+Velocidade:           114226857 Bytes/s.
+Velocidade:            6536.113 MegaBytes/min.
+   Finalizado em: quinta-feira, 12 de novembro de 2026 15:59:43
+
+Código Robocopy: 1

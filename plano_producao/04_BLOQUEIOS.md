@@ -28,6 +28,8 @@ O precheck e a execução isolada H01–H09 de e037473 registraram B1–B5. O cr
 | 2026-11-12 | B4 | H02–H09 | Precheck: campos da empresa ausentes e ambiente não cadastrado | Preencher dados fiscais reais, CNAE e homologação, com orientação do contador |
 | 2026-11-12 | B5 | H03/H04 | Precheck: token Mercado Pago e adquirente ausentes | Configurar conta Point e CNPJ correto da credenciadora |
 
+| 2026-11-12 | B8 | E04–E06 / F6.11 | F6_INSTALADOR_B8.txt: sessão sem elevação, script retornou 2 | Executar scripts/teste_instalador.ps1 em PowerShell elevado numa instalação descartável |
+
 ## Como destravar
 
 Quando o dono entregar o item (por exemplo, o Álvaro cadastrar o certificado e o CSC na tela Fiscal do PDV), reenvie o goal. O agente relê o painel, roda o `scripts/fiscal_precheck.py` e executa os itens `[!]`.

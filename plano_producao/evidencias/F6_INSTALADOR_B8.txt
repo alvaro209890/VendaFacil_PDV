@@ -1,0 +1,2 @@
+B8: a sessao nao esta elevada. Nenhum instalador foi executado.
+Exit code: 2

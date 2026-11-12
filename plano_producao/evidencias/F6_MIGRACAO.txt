@@ -1,0 +1,11 @@
+Executável respondeu /health (versão 0.1.0).
+POST /api/auth/registro 200
+POST /api/auth/login 200
+POST /api/produtos 201
+POST /api/vendas/checkout 201
+Executável respondeu /health (versão 1.0.13).
+POST /api/auth/login 200
+GET /api/produtos/1 200
+Contagens antes: {'users': 1, 'clientes': 0, 'produtos': 1, 'vendas': 1, 'itens_venda': 1, 'notas_fiscais': 0}
+Contagens após migração: {'users': 1, 'clientes': 0, 'produtos': 1, 'vendas': 1, 'itens_venda': 1, 'notas_fiscais': 0}
+Exit code: 0
