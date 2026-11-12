@@ -36,7 +36,7 @@ O que faz a loja não ligar às 18h de sábado: backup que restaura, sistema que
 
 - [x] R01–R10 verdes na matriz — c387de0 · F5_PORTAO_BACKEND.txt
 - [x] docs/BACKUP.md atualizado com restauração pela interface e recuperação após corrupção — c387de0 · R03/R05, F5_R03_R04_GREEN.txt e F5_RECUPERACAO_AUTH_GREEN.txt
-- [ ] Suítes verdes; pasta do plano commitada e `git push origin master`
+- [x] Suítes verdes, plano commitado e push confirmado — 79f790e · F5_PORTAO_BACKEND/PAINEL.txt; git ls-remote: 79f790e92aaf986c822ae7fcdd35b317d3cdc583
 
 ## Evidências
 
