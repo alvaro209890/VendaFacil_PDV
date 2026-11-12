@@ -41,3 +41,21 @@ def test_x15_sem_autorizado_em_cai_para_criado_em():
     with pytest.raises(fiscal.FiscalError):
         fiscal._verificar_prazo_cancelamento(_nota("65", criado=60, autorizado=None))
     fiscal._verificar_prazo_cancelamento(_nota("65", criado=5, autorizado=None))
+
+
+@pytest.mark.parametrize("modelo,idade,permite", [("65", 29, True), ("65", 40, False),
+                                                ("55", 119, True), ("55", 130, False)])
+def test_x11_mesmo_instante_utc_e_mt_na_virada_de_mes(monkeypatch, modelo, idade, permite):
+    class Relogio(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return datetime(2026, 12, 1, 4, 5, tzinfo=timezone.utc).astimezone(tz)
+    monkeypatch.setattr(fiscal, "datetime", Relogio)
+    instante = Relogio.now(timezone.utc) - timedelta(minutes=idade)
+    for referencia in (instante.isoformat(), instante.astimezone(timezone(timedelta(hours=-4))).isoformat()):
+        nota = {"modelo": modelo, "autorizado_em": referencia}
+        if permite:
+            fiscal._verificar_prazo_cancelamento(nota)
+        else:
+            with pytest.raises(fiscal.FiscalError):
+                fiscal._verificar_prazo_cancelamento(nota)

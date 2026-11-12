@@ -142,3 +142,36 @@ def test_p35_falha_de_assinatura_retorna_a_mesma_reserva_sem_consumir_outro_nume
         outra_venda["id"], user["id"], "65", "homologacao", "2026-11-12T12:01:00+00:00")
     assert criada is True
     assert outra["numero"] == primeiro_numero + 1
+
+
+@pytest.mark.parametrize("mesma_venda", [True, False])
+def test_x12_x14_reservas_concorrentes_duas_conexoes_sem_buraco(fiscal_tmp, mesma_venda):
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Barrier
+    db, user, _, criar_venda = fiscal_tmp
+    _config_habilitada(db)
+    vendas = [criar_venda() for _ in range(12)]
+    outra = database.Database()
+    barreira = Barrier(2)
+
+    def reservar(args):
+        conn, indices = args
+        barreira.wait(timeout=10)
+        return [conn.reservar_nota_fiscal(
+            vendas[0 if mesma_venda else i]["id"], user["id"], "65", "homologacao",
+            "2026-11-12T12:00:00+00:00") for i in indices]
+
+    try:
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            grupos = list(pool.map(reservar, [(db, range(0, 12, 2)), (outra, range(1, 12, 2))]))
+        resultados = [r for grupo in grupos for r in grupo]
+        if mesma_venda:
+            assert len({r[0]["id"] for r in resultados}) == 1
+            assert sum(criada for _, criada in resultados) == 1
+            assert db.get_config_fiscal()["proximo_numero_nfce"] == 2
+        else:
+            assert sorted(r[0]["numero"] for r in resultados) == list(range(1, 13))
+            assert all(criada for _, criada in resultados)
+            assert db.get_config_fiscal()["proximo_numero_nfce"] == 13
+    finally:
+        outra.close()
