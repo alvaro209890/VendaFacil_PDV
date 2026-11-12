@@ -1,0 +1,38 @@
+{
+  "banco_presente": true,
+  "banco_legivel": true,
+  "ambiente": "outro_ou_ausente",
+  "certificado_presente": false,
+  "senha_certificado_presente": false,
+  "certificado_valido": false,
+  "titular_presente": false,
+  "cnpj_certificado_confere": false,
+  "vencimento": null,
+  "csc_presente": false,
+  "id_csc_presente": false,
+  "credenciamento_comprovado": false,
+  "token_mp_presente": false,
+  "adquirente_presente": false,
+  "empresa_campos_ausentes": [
+    "razao_social",
+    "cnpj",
+    "inscricao_estadual",
+    "cnae",
+    "logradouro",
+    "numero",
+    "bairro",
+    "municipio",
+    "codigo_municipio",
+    "uf",
+    "cep",
+    "regime_tributario"
+  ],
+  "bloqueios": [
+    "B1",
+    "B2",
+    "B3",
+    "B4",
+    "B5"
+  ],
+  "apto_homologacao": false
+}

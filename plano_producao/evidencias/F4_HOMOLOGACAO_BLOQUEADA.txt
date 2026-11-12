@@ -1,0 +1,36 @@
+sssssssss                                                                [100%]
+============================== warnings summary ===============================
+.venv\Lib\site-packages\fastapi\testclient.py:1
+  C:\GIS\VendaFacil_PDV\backend\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+main.py:134
+  C:\GIS\VendaFacil_PDV\backend\main.py:134: DeprecationWarning:
+          on_event is deprecated, use lifespan event handlers instead.
+
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+
+    @app.on_event("startup")
+
+.venv\Lib\site-packages\fastapi\applications.py:4723
+  C:\GIS\VendaFacil_PDV\backend\.venv\Lib\site-packages\fastapi\applications.py:4723: DeprecationWarning:
+          on_event is deprecated, use lifespan event handlers instead.
+
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+SKIPPED [1] tests\test_homologacao_real.py:74: Precheck da loja bloqueado: B1,B2,B3,B4,B5
+SKIPPED [1] tests\test_homologacao_real.py:82: Precheck da loja bloqueado: B1,B2,B3,B4,B5
+SKIPPED [1] tests\test_homologacao_real.py:97: Precheck da loja bloqueado: B1,B2,B3,B4,B5
+SKIPPED [1] tests\test_homologacao_real.py:101: Precheck da loja bloqueado: B1,B2,B3,B4,B5
+SKIPPED [1] tests\test_homologacao_real.py:105: Precheck da loja bloqueado: B1,B2,B3,B4,B5
+SKIPPED [1] tests\test_homologacao_real.py:109: Precheck da loja bloqueado: B1,B2,B3,B4,B5
+SKIPPED [1] tests\test_homologacao_real.py:115: Precheck da loja bloqueado: B1,B2,B3,B4,B5
+SKIPPED [1] tests\test_homologacao_real.py:121: Precheck da loja bloqueado: B1,B2,B3,B4,B5
+SKIPPED [1] tests\test_homologacao_real.py:134: Precheck da loja bloqueado: B1,B2,B3,B4,B5
+9 skipped, 3 warnings in 0.20s
