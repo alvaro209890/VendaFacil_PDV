@@ -26,7 +26,7 @@ Estados gerais possíveis: ⬜ NÃO INICIADO · 🟨 EM ANDAMENTO · ⏸ PAUSADO
 | 4 | `FASE_4_fiscal_mt.md` | ⏸ | 25/27 | ✅ com B1–B5 | 3c388a3 |
 | 5 | `FASE_5_robustez_e_suporte.md` | ✅ | 12/12 | Suítes verdes | f97eb6a |
 | 6 | `FASE_6_build_instalador_e2e.md` | ⏸ | 14/15 + 1 [!] B8 | ✅ com B8 | 954dac8 |
-| 7 | `FASE_7_documentacao_e_entrega.md` | ✅ | 12/12 | ✅ | (commit de fechamento; ver RETOMADA) |
+| 7 | `FASE_7_documentacao_e_entrega.md` | ✅ | 12/12 | ✅ | 4f6b151 |
 
 Status de fase: ⬜ não iniciada · 🟨 em andamento · ✅ concluída · ⏸ concluída com item bloqueado por terceiro.
 

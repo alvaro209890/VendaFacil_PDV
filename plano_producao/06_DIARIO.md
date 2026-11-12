@@ -151,3 +151,4 @@ Formato: `AAAA-MM-DD HH:MM | fase | ID | o que aconteceu | commit`
 2026-11-12 16:47 BRT | 7 | Rebuild | exe F00D782F… e Setup CF133B00… sobre a60aa89; roteiro 49 req/0 5xx, 4/4 PDFs, migração com contagens iguais. Limpeza da pasta temporária do roteiro falhava com -shm preso: corrigido no script. | 2d062b2
 2026-11-12 16:55 BRT | 7 | Suítes finais | Backend 460/9 desmarcados, painel 23, Node 36, build/lint 0, E2E 90/90 numa rodada (F7_E2E_FINAL.txt). | 2d062b2
 2026-11-12 17:00 BRT | 7 | F7.11 | Ficha do vault §8 e changelog via ssh sd, lock/unlock, autor Claude (o plano pedia Hermes-windows; registrado o autor real). | a40cdae (vault)
+2026-11-12 17:05 BRT | 7 | Publicação | git push origin master: 954dac8..4f6b151; git ls-remote refs/heads/master = 4f6b1516fa11b08f5b20d0a85b038fb0c765b1aa. git status: só o binário, as evidências F3/F4 preexistentes e itens não rastreados fora do escopo. | 4f6b151
