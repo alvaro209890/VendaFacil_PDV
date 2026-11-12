@@ -163,7 +163,9 @@ async def login(data: LoginRequest) -> dict:
     import conta as conta_mod
     usuario = _usuario(data)
 
-    if conta_mod.licenca_obrigatoria():
+    if db.modo_consulta and db.backup_recuperacao is None:
+        raise HTTPException(status_code=503, detail="Nenhum backup válido disponível para consultar.")
+    if conta_mod.licenca_obrigatoria() and not db.modo_consulta:
         try:
             st = conta_mod.ativar(usuario, data.senha)
             if st.get("bloqueado"):
@@ -188,7 +190,8 @@ async def login(data: LoginRequest) -> dict:
             raise HTTPException(status_code=401, detail="Usuário ou senha incorretos.")
         _limpa_falha_login(usuario)
 
-    db.update_last_login(usuario, _agora())
+    if not db.modo_consulta:
+        db.update_last_login(usuario, _agora())
     token = _gerar_jwt(_token_user(user))
     return {"token": token, "user": _user_response(user)}
 

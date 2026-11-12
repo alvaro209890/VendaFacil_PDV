@@ -89,6 +89,15 @@ export function getAtivacaoStatus(): Promise<AtivacaoStatus> {
   return request("/api/ativacao/status");
 }
 
+export interface EstadoRecuperacao {
+  somente_consulta: boolean;
+  ultimo_backup: string | null;
+}
+
+export function getRecuperacao(): Promise<EstadoRecuperacao> {
+  return request("/api/recuperacao");
+}
+
 export function ativar(login: string, senha: string): Promise<AtivacaoStatus> {
   return request("/api/ativacao", {
     method: "POST",

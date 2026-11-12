@@ -9,7 +9,7 @@ import type { AtivacaoStatus } from "../lib/api";
  * bloqueado pelo painel), mostra a tela de ativação. Caso contrário, libera
  * o app normalmente. Se a licença não for obrigatória (modo local), passa direto.
  */
-export default function GateAtivacao({ children }: { children: React.ReactNode }) {
+export default function GateAtivacao({ children, modoConsulta }: { children: React.ReactNode; modoConsulta: boolean }) {
   const [status, setStatus] = useState<AtivacaoStatus | null>(null);
   const [carregando, setCarregando] = useState(true);
 
@@ -25,8 +25,10 @@ export default function GateAtivacao({ children }: { children: React.ReactNode }
   }, []);
 
   useEffect(() => {
-    void checar();
-  }, [checar]);
+    if (!modoConsulta) void checar();
+  }, [checar, modoConsulta]);
+
+  if (modoConsulta) return <>{children}</>;
 
   if (carregando) {
     return (

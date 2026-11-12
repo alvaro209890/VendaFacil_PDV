@@ -84,7 +84,11 @@ _ROTAS_PUBLICAS = {
     ("GET", "/api/ativacao/status"),
     ("POST", "/api/ativacao"),
     ("POST", "/api/heartbeat"),
+    ("GET", "/api/recuperacao"),
 }
+
+_GETS_COM_EFEITOS = {"/api/backup/exportar", "/api/maquininha/dispositivos",
+                    "/api/maquininha/diagnostico", "/api/fiscal/servicos/status"}
 
 
 @app.middleware("http")
@@ -95,6 +99,12 @@ async def exige_token_api(request: Request, call_next):
         token = header[7:] if header.startswith("Bearer ") else ""
         if not token or not _verificar_jwt(token):
             return JSONResponse({"detail": "Token não informado."}, status_code=401)
+    operacao_consulta = request.method == "GET" and path.rstrip("/") not in _GETS_COM_EFEITOS \
+        and not path.startswith("/api/maquininha/cobranca/")
+    if (db.modo_consulta and path.startswith("/api/") and not operacao_consulta
+            and request.method != "OPTIONS"
+            and (request.method, path) not in {("POST", "/api/auth/login"), ("POST", "/api/heartbeat")}):
+        return JSONResponse({"detail": "Modo consulta: restaure o banco para voltar a operar."}, status_code=503)
     return await call_next(request)
 
 
@@ -133,6 +143,8 @@ def _get_user_id(request: Request) -> int:
 
 @app.on_event("startup")
 async def _iniciar_servicos() -> None:
+    if db.modo_consulta:
+        return
     import sync_client
     import fiscal
     import backup
@@ -162,7 +174,13 @@ class AtivacaoInput(BaseModel):
 
 @app.get("/api/ativacao/status")
 async def ativacao_status() -> dict:
-    return conta_mod.status()
+    return conta_mod.status(online=False) if db.modo_consulta else conta_mod.status()
+
+
+@app.get("/api/recuperacao", include_in_schema=False)
+async def recuperacao() -> dict:
+    return {"somente_consulta": db.modo_consulta,
+            "ultimo_backup": str(db.backup_recuperacao) if db.backup_recuperacao else None}
 
 
 @app.post("/api/ativacao")

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate, NavLink, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import PrivateRoute from "./components/PrivateRoute";
@@ -19,7 +19,7 @@ import PixConfig from "./pages/PixConfig";
 import Manual from "./pages/Manual";
 import GateAtivacao from "./pages/Ativacao";
 import Mascote from "./components/Mascote";
-import { clearToken } from "./lib/api";
+import { clearToken, getRecuperacao, type EstadoRecuperacao } from "./lib/api";
 import { useAuthStore } from "./store/authStore";
 import { 
   LayoutDashboard, 
@@ -56,11 +56,12 @@ const navItems = [
   { to: "/manual", label: "Manual", short: "Manual", icon: <BookOpen size={20} /> },
 ];
 
-function Layout({ children }: { children: React.ReactNode }) {
+function Layout({ children, modoConsulta }: { children: React.ReactNode; modoConsulta: boolean }) {
   const location = useLocation();
   const user = useAuthStore((s) => s.user);
   const clearUser = useAuthStore((s) => s.clearUser);
   const currentItem = navItems.find((item) => location.pathname.startsWith(item.to)) ?? navItems[1];
+  const itensVisiveis = modoConsulta ? navItems.filter((item) => item.to !== "/pdv") : navItems;
 
   function handleSair() {
     clearToken();
@@ -88,7 +89,7 @@ function Layout({ children }: { children: React.ReactNode }) {
         </div>
 
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto relative z-10">
-          {navItems.map((item) => {
+          {itensVisiveis.map((item) => {
             const active = location.pathname.startsWith(item.to);
             return (
               <NavLink
@@ -191,7 +192,7 @@ function Layout({ children }: { children: React.ReactNode }) {
         {/* Bottom navigation mobile */}
         <nav className="md:hidden fixed inset-x-0 bottom-0 z-50 bg-slate-900/80 backdrop-blur-xl border-t border-slate-800/50 safe-bottom">
           <div className="flex gap-1 overflow-x-auto px-3 pt-2 pb-3 mobile-scrollbar">
-            {navItems.map((item) => {
+            {itensVisiveis.map((item) => {
               const active = location.pathname.startsWith(item.to);
               return (
                 <NavLink
@@ -236,19 +237,33 @@ function useHeartbeat() {
 
 export default function App() {
   useHeartbeat();
+  const [recuperacao, setRecuperacao] = useState<EstadoRecuperacao>();
+  useEffect(() => {
+    getRecuperacao().then(setRecuperacao).catch(() => {/* backend anterior */});
+  }, []);
+  const modoConsulta = recuperacao?.somente_consulta === true;
   return (
     <BrowserRouter>
-      <GateAtivacao>
+      {modoConsulta && (
+        <aside role="alert" className="border-b border-amber-500/40 bg-amber-950 p-4 text-sm text-amber-100">
+          <p className="font-semibold">Modo consulta. O banco da loja não pôde ser aberto.</p>
+          {recuperacao.ultimo_backup ? (
+            <p>Último backup válido <code className="break-all">{recuperacao.ultimo_backup}</code></p>
+          ) : <p>Nenhum backup válido encontrado.</p>}
+          <p>Para retomar as vendas, feche o PDV e siga o roteiro de restauração do suporte.</p>
+        </aside>
+      )}
+      {(!modoConsulta || recuperacao.ultimo_backup) && <GateAtivacao modoConsulta={modoConsulta}>
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route
           path="/*"
           element={
             <PrivateRoute>
-              <Layout>
+              <Layout modoConsulta={modoConsulta}>
                 <Routes>
                   <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/pdv" element={<PDV />} />
+                  <Route path="/pdv" element={modoConsulta ? <Navigate to="/vendas" replace /> : <PDV />} />
                   <Route path="/produtos" element={<Produtos />} />
                   <Route path="/categorias" element={<Categorias />} />
                   <Route path="/clientes" element={<Clientes />} />
@@ -268,7 +283,7 @@ export default function App() {
           }
         />
       </Routes>
-      </GateAtivacao>
+      </GateAtivacao>}
     </BrowserRouter>
   );
 }

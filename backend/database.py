@@ -35,8 +35,9 @@ DB_DIR = DATA_DIR
 DB_PATH = DB_DIR / "vendafacil.db"
 
 
-def abrir_sqlite_leitura(caminho: Path) -> sqlite3.Connection:
-    return sqlite3.connect(f"{caminho.resolve().as_uri()}?mode=ro", uri=True)
+def abrir_sqlite_leitura(caminho: Path, *, check_same_thread: bool = True) -> sqlite3.Connection:
+    return sqlite3.connect(f"{caminho.resolve().as_uri()}?mode=ro", uri=True,
+                           check_same_thread=check_same_thread)
 
 
 def verificar_integridade(caminho: Path) -> None:
@@ -51,9 +52,18 @@ def verificar_integridade(caminho: Path) -> None:
 
 
 class Database:
-    def __init__(self, caminho: Path | None = None) -> None:
+    def __init__(self, caminho: Path | None = None, *, somente_leitura: bool = False) -> None:
         self._lock = threading.RLock()
         self._caminho = caminho if caminho is not None else DB_PATH
+        self.arquivo_principal = self._caminho
+        self.modo_consulta = somente_leitura
+        self.backup_recuperacao: Path | None = None
+        if somente_leitura:
+            self._conn = abrir_sqlite_leitura(self._caminho, check_same_thread=False)
+            self._conn.row_factory = sqlite3.Row
+            self._conn.create_aggregate("SOMA_DINHEIRO", 1, _SomaDinheiro)
+            self._conn.execute("PRAGMA query_only = ON")
+            return
         self._caminho.parent.mkdir(parents=True, exist_ok=True)
         self.reconectar()
         try:
@@ -1929,7 +1939,7 @@ class Database:
 
     # ── Backup / restauração ──
     def caminho_db(self) -> str:
-        return str(self._caminho)
+        return str(self.arquivo_principal)
 
     def backup_para(self, destino) -> None:
         """Cópia consistente do banco (usa a API de backup do SQLite, segura
@@ -1978,5 +1988,37 @@ class Database:
                 migrada.close()
 
 
+def abrir_banco_local() -> Database:
+    """Mantém o banco original intacto quando a validação na abertura falha."""
+    try:
+        if DB_PATH.is_file():
+            verificar_integridade(DB_PATH)
+        return Database()
+    except (sqlite3.DatabaseError, ValueError):
+        pasta = DB_PATH.parent / "backups"
+        candidatos = sorted(pasta.glob("vendafacil-*.db"), key=lambda p: p.stat().st_mtime_ns,
+                            reverse=True)
+        for arquivo in candidatos:
+            try:
+                verificar_integridade(arquivo)
+                copia = Database(arquivo, somente_leitura=True)
+                try:
+                    copia._conn.execute("SELECT id, email, senha_hash FROM users LIMIT 1")
+                    copia._conn.execute("SELECT id, nome FROM produtos LIMIT 1")
+                except sqlite3.Error:
+                    copia.close()
+                    continue
+                copia.arquivo_principal = DB_PATH
+                copia.backup_recuperacao = arquivo
+                return copia
+            except (ValueError, sqlite3.Error):
+                continue
+        consulta = Database(Path(":memory:"))
+        consulta.arquivo_principal = DB_PATH
+        consulta.modo_consulta = True
+        consulta._conn.execute("PRAGMA query_only = ON")
+        return consulta
+
+
 # Singleton
-db = Database()
+db = abrir_banco_local()
