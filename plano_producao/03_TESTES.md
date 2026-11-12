@@ -24,7 +24,7 @@ Ao fechar: preencha **Onde** (`arquivo::função`) e **Commit**. Teste novo que 
 | U07 | P34: Total diário pelo backend, excluindo canceladas e fuso MT | ✅ | `backend/tests/test_total_diario.py` (4 casos), `e2e/total-diario.spec.ts` (1); backend327/painel23 | fb9f5b9 |
 | U08 | P44: API pronta antes do Vite, mesmo com backend atrasado4s | ✅ | `e2e/atrasar-api.cjs`; F3_READY_PARENT_RECHECK.txt verde | ba47db4 |
 | U09 | P45: erro de estoque, aviso D4 e resultado fiscal sem falsa autorização | ✅ | bd6013e ·7casos/21repetições;44Chromium;revisão deleg_30bc8fc6/recheck7 | bd6013e |
-| X14 | P35: Reserva persistente/concorrente e tratamento de falhas antes da transmissão | ⬜ | `test_fiscal_reserva_regras.py` cobre persistência/retomada (990408c); falta caso concorrente explícito | — |
+| X14 | P35: Reserva persistente/concorrente e tratamento de falhas antes da transmissão | ✅ | `test_fiscal_reserva_regras.py`:6 passes incluindo duas conexões, F4_X12_X14_GREEN.txt | 990408c/4e52786 |
 | X15 | P36: Basear prazo em dhRecbto; datas fiscais em MT | ✅ | `test_prazo_cancelamento.py`: 4 casos (NFC-e 30 min e NF-e 2 h contados de `autorizado_em`, fallback `criado_em`); suíte 355 | c62400c |
 | C09 | P37: Preservar fiado visível e validar referência/estado da conta | ✅ | `backend/tests/test_cliente_divida.py + test_adversario_caixa.py` | e1ad5e2/be78390 |
 | I07 | P38: Cadastro do produto inteiro em uma transação | ✅ | `backend/tests/test_produto_atomico.py` | 7dee50a |
@@ -130,32 +130,38 @@ Ao fechar: preencha **Onde** (`arquivo::função`) e **Commit**. Teste novo que 
 | X02 | Idem para cartão integrado, PIX, fiado, desconto, CPF na nota e item com ST/monofásico | ✅ | `test_fiscal_xsd.py::test_x02` (PIX e fiado) e `::test_x03_schema_nfce_desconto_cpf_e_st` | 08bbffc |
 | X03 | XML da NF-e modelo 55 valida no XSD | ✅ | `test_fiscal_xsd.py::test_x03_schema_nfe55_destinatario` | 08bbffc |
 | X04 | Evento de cancelamento valida no XSD | ✅ | `test_fiscal_xsd.py::test_x04_schema_cancelamento_assinado` | 08bbffc |
-| X05 | Pedido de inutilização valida no XSD | ⬜ | | |
+| X05 | Pedido de inutilização valida no XSD | ✅ | `test_fiscal_inutilizacao.py`:8 casos; XSD oficial SVRS, assinatura verificada | 5980fe4 |
 | X06 | Assinatura XMLDSig confere com a chave pública; 1 byte alterado invalida; algoritmos iguais aos do MOC | ✅ | `test_fiscal_xsd.py::test_x06`; MOC NF-e 7.0 §4.2.4 (RSA-SHA1/SHA-1/C14N) | 08bbffc |
 | X07 | QR Code 2.00 online: hash do CSC recalculado e cada parâmetro conferido | ✅ | `test_fiscal_xsd.py::test_x07_qr2_online_hash_independente` | 08bbffc |
 | X08 | QR Code de contingência: idem, com os campos do modo offline | ✅ | `test_fiscal_xsd.py::test_x08_qr2_contingencia_hash_independente` | 08bbffc |
 | X09 | `dhEmi` em −04:00; chave usa o AAMM do `dhEmi`; virada de mês às 23h30 locais | ✅ | `test_fiscal_xsd.py::test_x09` (31/12 23h30 → `-04:00`, AAMM 2612) | 08bbffc |
 | X10 | `tpAmb` vem só da configuração; em homologação o XML leva o texto obrigatório de "sem valor fiscal" exigido pelo MOC | ✅ | `test_fiscal_xsd.py::test_x10` (tpAmb 1/2 e texto de homologação) | 08bbffc |
-| X11 | Prazo de cancelamento (30 min NFC-e, 2 h NF-e) contado no fuso certo | ⬜ | | |
-| X12 | Numeração sequencial sem buraco sob concorrência; rejeição não queima número sem tratamento | ⬜ | | |
-| X13 | Com `sefaz_mt_direto` configurado, nenhum caminho cai em FocusNFe/PlugNotas | ⬜ | | |
+| X11 | Prazo de cancelamento (30 min NFC-e, 2 h NF-e) contado no fuso certo | ✅ | `test_prazo_cancelamento.py::test_x11_mesmo_instante_utc_e_mt_na_virada_de_mes`; suíte398 | 4e52786 |
+| X12 | Numeração sequencial sem buraco sob concorrência; rejeição não queima número sem tratamento | ✅ | test_fiscal_reserva_regras.py em duas conexões e F4_X12_REJEICAO_GREEN.txt | 4e52786/60a99ad |
+| X13 | Com `sefaz_mt_direto` configurado, nenhum caminho cai em FocusNFe/PlugNotas | ✅ | `test_sefaz_simulador.py::test_x13_direto_nao_cai_em_gateway_emissao_consulta_loop_cancelamento`:55/65; F4_X13_GREEN.txt | 4e52786 |
 
 ## M — Fiscal com simulador local da SEFAZ (Fase 4, bloco B)
 
+| X16 | HTTP 500/502/503/504 com corpo vazio, inválido ou XML não confirma resultado fiscal | ✅ | `test_fiscal_http_indisponivel.py` (12 casos); evidências F4_HTTP_5XX_RED/GREEN.txt | 8d8cc1b |
+| X17 | Cancelamento rejeitado ou sem confirmação preserva autorização e protocolo | ✅ | `test_cancelamento_rejeitado.py` (3 casos); evidências F4_EVENTO_RED/GREEN.txt | a9dc752 |
+| X18 | Limites inclusivos MT: identificação desde R$1 mil e vedação de NFC-e desde R$200 mil | ✅ | `test_limites_nfce_mt.py`:7 casos; F4_LIMITES_MT_RED/GREEN.txt | 2e43441 |
+| X19 | Beneficiário e terminal disponíveis no grupo card integrado de crédito/débito/PIX | ✅ | test_vinculo_mt_campos.py, 3 verdes em F4_VINCULO_MT_FOCADO.txt e suíte 415 | 188ad56 |
+| X20 | Normalizar e persistir dhRecbto efetivo na emissão/consulta/loop | ✅ | `test_autorizacao_dhrecbto.py`:5 casos; F4_DHRECBTO_RED/GREEN.txt | 2945663 |
+
 | ID | O que prova | Status | Onde | Commit |
 |---|---|---|---|---|
-| M01 | Autorizada (cStat 100): nota autorizada, XML com protocolo guardado | ⬜ | | |
-| M02 | Rejeição: venda preservada, nota rejeitada, mensagem clara, reemissão possível | ⬜ | | |
-| M03 | Duplicidade: consulta e concilia sem criar segunda nota | ⬜ | | |
-| M04 | Timeout: vira contingência (`tpEmis` 9), cupom marcado, loop transmite depois | ⬜ | | |
-| M05 | HTTP 500/503: mesmo comportamento do timeout | ⬜ | | |
-| M06 | Lote em processamento: reconsulta até autorizar | ⬜ | | |
-| M07 | Autorização fora de prazo (cStat 150) tratada como autorizada | ⬜ | | |
-| M08 | Cancelamento: evento homologado muda o status; evento rejeitado não muda | ⬜ | | |
-| M09 | Inutilização homologada | ⬜ | | |
+| M01 | Autorizada (cStat 100): nota autorizada, XML com protocolo guardado | ✅ | `test_sefaz_simulador.py::test_m01`; F4_SIMULADOR_FINAL_SUITE.txt | 4e52786 |
+| M02 | Rejeição: venda preservada, nota rejeitada, mensagem clara, reemissão possível | ✅ | `test_sefaz_simulador.py::test_m02`; F4_SIMULADOR_FINAL_SUITE.txt | 4e52786 |
+| M03 | Duplicidade: consulta e concilia sem criar segunda nota | ✅ | `test_sefaz_simulador.py::test_m03`; F4_SIMULADOR_FINAL_SUITE.txt | 4e52786 |
+| M04 | Timeout após envio: preserva chave normal e consulta; conexão recusada gera contingência (art.18 §2 I Portaria177/2021) | ✅ | `test_sefaz_simulador.py::test_m04` e `::test_m12`; F4_SIMULADOR_FINAL_SUITE.txt | 4e52786 |
+| M05 | HTTP 500/503: preserva reserva e consulta a mesma chave | ✅ | `test_sefaz_simulador.py::test_m05` e X16; F4_SIMULADOR_FINAL_SUITE.txt | 8d8cc1b/4e52786 |
+| M06 | Lote em processamento: reconsulta até autorizar | ✅ | `test_sefaz_simulador.py::test_m06`; F4_SIMULADOR_FINAL_SUITE.txt | 4e52786 |
+| M07 | Autorização fora de prazo (cStat 150) tratada como autorizada | ✅ | `test_sefaz_simulador.py::test_m07`; F4_SIMULADOR_FINAL_SUITE.txt | 4e52786 |
+| M08 | Cancelamento: evento homologado muda o status; evento rejeitado não muda | ✅ | `test_sefaz_simulador.py::test_m08`; F4_SIMULADOR_FINAL_SUITE.txt | a9dc752/4e52786 |
+| M09 | Inutilização homologada no simulador | ✅ | `test_sefaz_simulador.py::test_m09`; F4_SIMULADOR_FINAL_SUITE.txt | 5980fe4/4e52786 |
 | M10 | `statusServico` em operação (cStat 107) e fora de operação | ✅ | `test_fiscal_servicos.py` (6 params de modelo/cStat, rota autenticada e A1 inválida); suíte 335 | 9f28f02 |
-| M11 | Reinício do processo com nota pendente: o loop retoma e não duplica | ⬜ | | |
-| M12 | Três vendas seguidas sem rede → três contingências → três autorizadas ao voltar | ⬜ | | |
+| M11 | Reinício do processo com nota pendente: o loop retoma e não duplica | ✅ | `test_sefaz_simulador.py::test_m11`: subprocesso novo; F4_SIMULADOR_FINAL_SUITE.txt | 4e52786 |
+| M12 | Três vendas seguidas sem rede → três contingências → três autorizadas ao voltar | ✅ | `test_sefaz_simulador.py::test_m12`; F4_SIMULADOR_FINAL_SUITE.txt | 4e52786 |
 
 ## H — SEFAZ-MT real, homologação (Fase 4, bloco C) — exige B1, B2, B3 e B4
 
@@ -163,15 +169,15 @@ Marker `homologacao`, fora da execução padrão. Sem os itens da loja: ⛔ com 
 
 | ID | O que prova | Status | Onde | Commit |
 |---|---|---|---|---|
-| H01 | `statusServico` da SEFAZ-MT em homologação responde em operação | ⬜ | | |
-| H02 | NFC-e em dinheiro autorizada | ⬜ | | |
-| H03 | NFC-e em cartão com vínculo de pagamento autorizada | ⬜ | | |
-| H04 | NFC-e em PIX autorizada | ⬜ | | |
-| H05 | NFC-e com desconto autorizada | ⬜ | | |
-| H06 | Cancelamento dentro do prazo homologado | ⬜ | | |
-| H07 | Contingência real (rede cortada) e transmissão ao voltar | ⬜ | | |
-| H08 | Consulta do QR Code no portal de homologação abre a nota | ⬜ | | |
-| H09 | Inutilização homologada | ⬜ | | |
+| H01 | `statusServico` da SEFAZ-MT em homologação responde em operação | ⛔ | Precheck B1–B5, suíte bloqueada em F4_HOMOLOGACAO_BLOQUEADA.txt | e037473 |
+| H02 | NFC-e em dinheiro autorizada | ⛔ | Precheck B1–B5, suíte bloqueada em F4_HOMOLOGACAO_BLOQUEADA.txt | e037473 |
+| H03 | NFC-e em cartão com vínculo de pagamento autorizada | ⛔ | Precheck B1–B5, suíte bloqueada em F4_HOMOLOGACAO_BLOQUEADA.txt | e037473 |
+| H04 | NFC-e em PIX autorizada | ⛔ | Precheck B1–B5, suíte bloqueada em F4_HOMOLOGACAO_BLOQUEADA.txt | e037473 |
+| H05 | NFC-e com desconto autorizada | ⛔ | Precheck B1–B5, suíte bloqueada em F4_HOMOLOGACAO_BLOQUEADA.txt | e037473 |
+| H06 | Cancelamento dentro do prazo homologado | ⛔ | Precheck B1–B5, suíte bloqueada em F4_HOMOLOGACAO_BLOQUEADA.txt | e037473 |
+| H07 | Contingência real (rede cortada) e transmissão ao voltar | ⛔ | Precheck B1–B5, suíte bloqueada em F4_HOMOLOGACAO_BLOQUEADA.txt | e037473 |
+| H08 | Consulta do QR Code no portal de homologação abre a nota | ⛔ | Precheck B1–B5, suíte bloqueada em F4_HOMOLOGACAO_BLOQUEADA.txt | e037473 |
+| H09 | Inutilização homologada | ⛔ | Precheck B1–B5, suíte bloqueada em F4_HOMOLOGACAO_BLOQUEADA.txt | e037473 |
 
 ## R — Robustez (Fase 5)
 

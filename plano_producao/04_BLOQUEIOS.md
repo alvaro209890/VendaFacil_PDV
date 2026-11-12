@@ -18,11 +18,15 @@ Regra: verificar de verdade se o item falta, registrar a prova, e seguir para o 
 
 ## Registro de bloqueios ativos
 
-Preencha quando um item virar `[!]`.
+O precheck e a execução isolada H01–H09 de e037473 registraram B1–B5. O credenciamento ainda precisa de comprovação. Evidências F4_PRECHECK_REAL.txt e F4_HOMOLOGACAO_BLOQUEADA.txt.
 
 | Data | # | Item travado (ID) | Prova de que falta | O que pedir ao dono, em 1 frase |
 |---|---|---|---|---|
-| | | | | |
+| 2026-11-12 | B1 | H01–H09 / F4.23–24 | F4_PRECHECK_REAL.txt: certificado/senha ausentes; saída2 | Cadastrar o A1 da própria mercearia e sua senha no cofre da tela Fiscal |
+| 2026-11-12 | B2 | H02–H09 | Precheck: CSC/ID ausentes | Cadastrar CSC e ID de homologação da loja |
+| 2026-11-12 | B3 | H01–H09 | Precheck: credenciamento não comprovado por autorização real armazenada; nenhum A1 permite verificar agora | Contador conferir o credenciamento e acompanhar a primeira autorização em homologação |
+| 2026-11-12 | B4 | H02–H09 | Precheck: campos da empresa ausentes e ambiente não cadastrado | Preencher dados fiscais reais, CNAE e homologação, com orientação do contador |
+| 2026-11-12 | B5 | H03/H04 | Precheck: token Mercado Pago e adquirente ausentes | Configurar conta Point e CNPJ correto da credenciadora |
 
 ## Como destravar
 
