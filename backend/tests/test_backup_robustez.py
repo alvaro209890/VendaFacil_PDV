@@ -1,8 +1,10 @@
 """Cópias locais só entram no histórico depois de validadas."""
 import os
 import sqlite3
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import closing
 from datetime import datetime, timedelta, timezone
+from threading import Barrier
 from types import SimpleNamespace
 
 import pytest
@@ -136,3 +138,34 @@ def test_r03_restauracao_em_banco_novo_preserva_contagens(armazenamento, tmp_pat
     finally:
         novo.close()
     assert copia.read_bytes() == conteudo
+
+
+def test_r06_backup_durante_checkouts_preserva_estoque_e_itens(armazenamento):
+    local, _ = armazenamento
+    agora = '2026-11-12T16:00:00+00:00'
+    usuario = local.create_user('operador', 'Operador', 'fixture', agora)['id']
+    produto = local.create_produto(usuario, 'Produto', 3, 4, 20, 0, '', 'UN', agora)
+    inicio = Barrier(3, timeout=5)
+
+    def vender():
+        inicio.wait()
+        for _ in range(5):
+            local.checkout_atomico(usuario, None, 4, 0, 'dinheiro', '', [{
+                'produto_id': produto['id'], 'nome_produto': produto['nome'],
+                'quantidade': 1, 'preco_unitario': 4, 'subtotal': 4,
+            }], agora)
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        vendas = [pool.submit(vender) for _ in range(2)]
+        inicio.wait()
+        copia = backup._gerar_backup('auto')
+        for tarefa in vendas:
+            tarefa.result(timeout=5)
+
+    with closing(sqlite3.connect(copia)) as conn:
+        total = conn.execute('SELECT COUNT(*) FROM vendas').fetchone()[0]
+        assert 0 <= total <= 10
+        assert conn.execute('SELECT COUNT(*) FROM itens_venda').fetchone()[0] == total
+        assert conn.execute('SELECT estoque FROM produtos').fetchone()[0] == 20 - total
+        assert conn.execute('PRAGMA integrity_check').fetchone()[0] == 'ok'
+    assert local.get_produto(produto['id'])['estoque'] == 10
