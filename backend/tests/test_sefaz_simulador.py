@@ -173,11 +173,11 @@ def test_m01_autorizacao_cstat_100_pela_api_guarda_protocolo_e_xml(loja, simulad
 
 def test_m02_rejeicao_preserva_venda_e_nota_e_permite_reemissao(loja, simulador):
     venda = _vender(loja)
-    simulador.push("autorizacao", retorno_autorizacao("539", "Duplicidade de NF-e", ""))
+    simulador.push("autorizacao", retorno_autorizacao("225", "Falha no schema XML", ""))
     r = _emitir(loja, venda)
     assert r.status_code == 200, r.text
     assert r.json()["nota"]["status"] == "rejeitada"
-    assert "Duplicidade" in r.json()["nota"]["motivo_rejeicao"]
+    assert "schema" in r.json()["nota"]["motivo_rejeicao"]
     assert db.get_venda(venda["id"], loja["user_id"])["status"] == "concluida"
     # Uma nova tentativa após rejeição permanece vinculada à mesma venda sem
     # apagar o registro anterior nem mudar o estoque do checkout.

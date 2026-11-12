@@ -1019,6 +1019,9 @@ def normalizar_retorno_sefaz(texto: str | None, xml_assinado: str | None = None,
             }
         if cstat in {"101", "135", "155"}:
             return {"status": "cancelada", "protocolo": protocolo, "mensagem": motivo, "cstat": cstat}
+        if cstat in {"204", "539"}:
+            return {"status": "processando", "mensagem": motivo,
+                    "motivo_rejeicao": None, "cstat": cstat}
         return {
             "status": "rejeitada",
             "protocolo": protocolo,
@@ -1032,6 +1035,8 @@ def normalizar_retorno_sefaz(texto: str | None, xml_assinado: str | None = None,
     recibo = _texto(root, "nRec")
     if cstat in {"103", "105", "106"}:
         return {"status": "processando", "mensagem": motivo, "recibo": recibo, "cstat": cstat}
+    if cstat in {"204", "539"}:
+        return {"status": "processando", "mensagem": motivo, "cstat": cstat}
     if cstat in {"100", "150"}:
         return {"status": "autorizada", "mensagem": motivo, "recibo": recibo, "cstat": cstat}
     if http_status and http_status >= 400:

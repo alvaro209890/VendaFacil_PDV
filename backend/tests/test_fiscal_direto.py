@@ -337,14 +337,14 @@ def test_normaliza_retorno_sefaz_rejeitado():
         '<retEnviNFe xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00">'
         "<cStat>104</cStat><xMotivo>Lote processado</xMotivo>"
         '<protNFe versao="4.00"><infProt>'
-        "<cStat>539</cStat><xMotivo>Duplicidade de NF-e</xMotivo>"
+        "<cStat>225</cStat><xMotivo>Falha no schema XML</xMotivo>"
         "</infProt></protNFe></retEnviNFe>"
     )
 
     dados = fiscal_direto.normalizar_retorno_sefaz(retorno, None, 200)
 
     assert dados["status"] == "rejeitada"
-    assert dados["motivo_rejeicao"] == "Duplicidade de NF-e"
+    assert dados["motivo_rejeicao"] == "Falha no schema XML"
 
 
 def test_monta_xml_evento_cancelamento():
