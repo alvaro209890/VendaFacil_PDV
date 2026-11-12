@@ -996,6 +996,7 @@ def normalizar_retorno_sefaz(texto: str | None, xml_assinado: str | None = None,
             return {
                 "status": "autorizada",
                 "protocolo": protocolo,
+                "autorizado_em": _texto(inf_prot, "dhRecbto"),
                 "mensagem": motivo,
                 "xml_autorizado": _xml_autorizado(xml_assinado, prot),
                 "motivo_rejeicao": None,

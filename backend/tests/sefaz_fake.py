@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from collections import defaultdict, deque
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import threading
 import time
@@ -22,7 +23,9 @@ def _nfe(fragment: str) -> str:
 
 
 def retorno_autorizacao(cstat: str = "100", motivo: str = "Autorizado o uso da NF-e",
-                       protocolo: str = "151260000000001", chave: str | None = None) -> str:
+                       protocolo: str = "151260000000001", chave: str | None = None,
+                       recebido_em: str | None = None) -> str:
+    recebido_em = recebido_em or datetime.now(timezone.utc).isoformat(timespec="seconds")
     if cstat in {"103", "105", "106"}:
         recibo = "151260000000000" if cstat in {"103", "105"} else ""
         return _nfe(
@@ -33,19 +36,21 @@ def retorno_autorizacao(cstat: str = "100", motivo: str = "Autorizado o uso da N
     return _nfe(
         f'<retEnviNFe xmlns="{NS}" versao="4.00"><tpAmb>2</tpAmb><cStat>104</cStat>'
         '<xMotivo>Lote processado</xMotivo><protNFe versao="4.00"><infProt>'
-        f'{chave_xml}<dhRecbto>2026-11-12T10:00:00-04:00</dhRecbto><nProt>{protocolo}</nProt>'
+        f'{chave_xml}<dhRecbto>{recebido_em}</dhRecbto><nProt>{protocolo}</nProt>'
         f'<cStat>{cstat}</cStat><xMotivo>{motivo}</xMotivo>'
         '</infProt></protNFe></retEnviNFe>'
     )
 
 
 def retorno_consulta(cstat: str = "100", motivo: str = "Autorizado o uso da NF-e",
-                     protocolo: str = "151260000000001", chave: str | None = None) -> str:
+                     protocolo: str = "151260000000001", chave: str | None = None,
+                     recebido_em: str | None = None) -> str:
+    recebido_em = recebido_em or datetime.now(timezone.utc).isoformat(timespec="seconds")
     chave_xml = f"<chNFe>{chave}</chNFe>" if chave else ""
     return _nfe(
         f'<retConsSitNFe xmlns="{NS}" versao="4.00"><tpAmb>2</tpAmb><cStat>{cstat}</cStat>'
         f'<xMotivo>{motivo}</xMotivo>{chave_xml}<protNFe versao="4.00"><infProt>'
-        f'{chave_xml}<dhRecbto>2026-11-12T10:00:00-04:00</dhRecbto><nProt>{protocolo}</nProt>'
+        f'{chave_xml}<dhRecbto>{recebido_em}</dhRecbto><nProt>{protocolo}</nProt>'
         f'<cStat>{cstat}</cStat><xMotivo>{motivo}</xMotivo>'
         '</infProt></protNFe></retConsSitNFe>'
     )

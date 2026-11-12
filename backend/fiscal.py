@@ -309,7 +309,7 @@ def _concluir_reserva(nota_id: int, resultado: dict, config: dict,
             ),
             "recibo": sefaz.get("recibo") or retorno.get("texto", "")[:4000],
         })
-        for campo in ("protocolo", "xml_autorizado", "motivo_rejeicao"):
+        for campo in ("protocolo", "xml_autorizado", "motivo_rejeicao", "autorizado_em"):
             if campo in sefaz:
                 dados[campo] = sefaz[campo]
     if extra:
@@ -434,7 +434,7 @@ def consultar_nfce(nota_id: int) -> dict:
                 "mensagem": sefaz.get("mensagem") or nota.get("mensagem"),
                 "recibo": sefaz.get("recibo") or retorno.get("texto", "")[:4000],
             }
-            for campo in ("protocolo", "xml_autorizado", "motivo_rejeicao"):
+            for campo in ("protocolo", "xml_autorizado", "motivo_rejeicao", "autorizado_em"):
                 if campo in sefaz:
                     dados[campo] = sefaz[campo]
             _carimbar_autorizacao(dados)
@@ -606,7 +606,7 @@ def _processar_pendentes_direto(config: dict) -> int:
                 "mensagem": sefaz.get("mensagem") or nota.get("mensagem"),
                 "recibo": sefaz.get("recibo") or retorno.get("texto", "")[:4000],
             }
-            for campo in ("protocolo", "xml_autorizado", "motivo_rejeicao"):
+            for campo in ("protocolo", "xml_autorizado", "motivo_rejeicao", "autorizado_em"):
                 if campo in sefaz:
                     dados[campo] = sefaz[campo]
             _carimbar_autorizacao(dados)
