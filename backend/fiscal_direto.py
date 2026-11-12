@@ -1205,7 +1205,7 @@ def preparar_e_tentar_transmitir(venda: dict, config: dict, modelo: str = "65",
     _validar_emitente(config)
     validar_itens(venda)
     from requests.exceptions import ConnectionError, ConnectTimeout
-    from urllib3.exceptions import NewConnectionError
+    from urllib3.exceptions import NewConnectionError, ProxyError
 
     if serie is None or numero is None:
         serie, numero = db.consumir_numero_fiscal(modelo)
@@ -1235,6 +1235,8 @@ def preparar_e_tentar_transmitir(venda: dict, config: dict, modelo: str = "65",
         raise
     except ConnectionError as exc:
         motivo = getattr(exc.args[0], "reason", None) if exc.args else None
+        if isinstance(motivo, ProxyError):
+            motivo = motivo.original_error
         if modelo == "65" and (isinstance(exc, ConnectTimeout) or isinstance(motivo, NewConnectionError)):
             dh_cont = agora_mt()
             doc9 = montar_documento(venda, config, modelo, cpf_consumidor, destinatario,

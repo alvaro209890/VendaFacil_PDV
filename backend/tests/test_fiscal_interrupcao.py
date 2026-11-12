@@ -7,7 +7,7 @@ from pathlib import Path
 
 import fiscal
 import requests
-from urllib3.exceptions import ProtocolError
+from urllib3.exceptions import MaxRetryError, NewConnectionError, ProtocolError, ProxyError
 from sefaz_fake import retorno_consulta
 from test_sefaz_simulador import fiscal_store, client, auth, simulador, emissor, loja, _vender, _emitir
 
@@ -67,3 +67,16 @@ def test_conexao_interrompida_sem_resposta_preserva_chave_normal(loja, simulador
     nota = r.json()['nota']
     assert nota['status'] == 'processando'
     assert nota['tipo_emissao'] == '1'
+
+
+def test_proxy_sem_conexao_permite_contingencia(loja, simulador, monkeypatch):
+    def falhar(*args, **kwargs):
+        motivo = ProxyError('Proxy local inacessível', NewConnectionError(None, 'Conexão recusada'))
+        raise requests.exceptions.ProxyError(MaxRetryError(None, '/', motivo))
+
+    monkeypatch.setattr(requests.Session, 'post', falhar)
+    r = _emitir(loja, _vender(loja))
+    assert r.status_code == 200
+    nota = r.json()['nota']
+    assert nota['status'] == 'contingencia'
+    assert nota['tipo_emissao'] == '9'
