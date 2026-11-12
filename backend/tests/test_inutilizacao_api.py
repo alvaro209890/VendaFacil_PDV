@@ -3,7 +3,7 @@ from datetime import datetime
 import pytest
 from test_sefaz_simulador import (fiscal_store, client, auth, simulador, emissor,
                                   loja, _vender, _emitir)
-from sefaz_fake import retorno_inutilizacao
+from sefaz_fake import retorno_inutilizacao, retorno_autorizacao
 
 
 def _pedido():
@@ -104,3 +104,18 @@ def test_x21_outro_operador_nao_le_historico_nem_retorno(client, auth, emissor, 
     assert repetida.status_code == 409, repetida.text
     assert "151260000000010" not in repetida.text
     assert len(simulador.calls) == 1
+
+
+def test_x12_rejeicao_normal_tem_faixa_inutilizavel_sem_reusar_numero(loja, fiscal_store, simulador):
+    simulador.push("autorizacao", retorno_autorizacao("225", "Falha sintética de schema", ""))
+    rejeitada = _emitir(loja, _vender(loja)).json()["nota"]
+    assert rejeitada["status"] == "rejeitada"
+    autorizada = _emitir(loja, _vender(loja)).json()["nota"]
+    assert autorizada["numero"] == rejeitada["numero"] + 1
+    pedido = {**_pedido(), "inicio": rejeitada["numero"], "fim": rejeitada["numero"]}
+    r = loja["client"].post("/api/fiscal/servicos/inutilizacoes", headers=loja["auth"], json=pedido)
+    assert r.status_code == 200, r.text
+    assert r.json()["inutilizacao"]["status"] == "inutilizada"
+    seguinte = _emitir(loja, _vender(loja)).json()["nota"]
+    assert seguinte["numero"] == autorizada["numero"] + 1
+    assert fiscal_store["db"].get_config_fiscal()["proximo_numero_nfce"] == seguinte["numero"] + 1
