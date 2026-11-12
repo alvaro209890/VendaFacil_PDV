@@ -1,5 +1,7 @@
 import sqlite3
+import tempfile
 import threading
+from collections.abc import Callable
 from contextlib import closing
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -33,11 +35,14 @@ DB_DIR = DATA_DIR
 DB_PATH = DB_DIR / "vendafacil.db"
 
 
+def abrir_sqlite_leitura(caminho: Path) -> sqlite3.Connection:
+    return sqlite3.connect(f"{caminho.resolve().as_uri()}?mode=ro", uri=True)
+
+
 def verificar_integridade(caminho: Path) -> None:
     """Abre sem criar arquivo e exige que o SQLite consiga ler todo o banco."""
     try:
-        uri = f"{caminho.resolve().as_uri()}?mode=ro"
-        with closing(sqlite3.connect(uri, uri=True)) as conn:
+        with closing(abrir_sqlite_leitura(caminho)) as conn:
             if conn.execute("PRAGMA integrity_check").fetchall() == [("ok",)]:
                 return
     except sqlite3.Error:
@@ -46,18 +51,16 @@ def verificar_integridade(caminho: Path) -> None:
 
 
 class Database:
-    def __init__(self) -> None:
+    def __init__(self, caminho: Path | None = None) -> None:
         self._lock = threading.RLock()
-        DB_DIR.mkdir(parents=True, exist_ok=True)
-        self._conn = sqlite3.connect(str(DB_PATH), check_same_thread=False)
-        self._conn.row_factory = sqlite3.Row
-        self._conn.create_aggregate("SOMA_DINHEIRO", 1, _SomaDinheiro)
-        self._conn.execute("PRAGMA busy_timeout = 5000")
-        self._conn.execute("PRAGMA foreign_keys = ON")
-        self._conn.execute("PRAGMA synchronous = FULL")
-        with self._conn:
-            self._conn.execute("PRAGMA journal_mode = WAL")
-        self._init_schema()
+        self._caminho = caminho if caminho is not None else DB_PATH
+        self._caminho.parent.mkdir(parents=True, exist_ok=True)
+        self.reconectar()
+        try:
+            self._init_schema()
+        except Exception:
+            self.close()
+            raise
 
     def _init_schema(self) -> None:
         with self._lock, self._conn:
@@ -1926,7 +1929,7 @@ class Database:
 
     # ── Backup / restauração ──
     def caminho_db(self) -> str:
-        return str(DB_PATH)
+        return str(self._caminho)
 
     def backup_para(self, destino) -> None:
         """Cópia consistente do banco (usa a API de backup do SQLite, segura
@@ -1939,7 +1942,7 @@ class Database:
                 dest.close()
 
     def reconectar(self) -> None:
-        self._conn = sqlite3.connect(str(DB_PATH), check_same_thread=False)
+        self._conn = sqlite3.connect(str(self._caminho), check_same_thread=False)
         self._conn.row_factory = sqlite3.Row
         self._conn.create_aggregate("SOMA_DINHEIRO", 1, _SomaDinheiro)
         self._conn.execute("PRAGMA busy_timeout = 5000")
@@ -1948,33 +1951,31 @@ class Database:
         with self._conn:
             self._conn.execute("PRAGMA journal_mode = WAL")
 
-    def restaurar_de(self, origem) -> None:
-        """Substitui o banco atual por um arquivo de backup, após validar.
-
-        Lança ValueError se o arquivo não for um banco válido do VendaFácil.
-        """
-        from pathlib import Path
-        import shutil
-        # Valida: precisa abrir e ter a tabela 'users'.
-        try:
-            teste = sqlite3.connect(str(origem))
+    def restaurar_de(self, origem: Path, antes_de_trocar: Callable[[], object] | None = None) -> None:
+        """Valida e migra uma cópia antes da troca transacional pelo SQLite."""
+        origem = Path(origem)
+        verificar_integridade(origem)
+        with tempfile.TemporaryDirectory(prefix=".vf-restaurar-", dir=self._caminho.parent) as pasta:
+            copia = Path(pasta) / "restaurar.db"
             try:
-                teste.execute("SELECT 1 FROM users LIMIT 1")
+                with closing(abrir_sqlite_leitura(origem)) as fonte:
+                    tabelas = {linha[0] for linha in fonte.execute(
+                        "SELECT name FROM sqlite_schema WHERE type = 'table'"
+                    )}
+                    if not {"users", "produtos", "clientes", "vendas", "itens_venda"} <= tabelas:
+                        raise ValueError("Arquivo inválido: não é um backup do VendaFácil.")
+                    with closing(sqlite3.connect(copia)) as destino:
+                        fonte.backup(destino)
+                migrada = Database(copia)
+            except sqlite3.Error as exc:
+                raise ValueError("Arquivo incompatível com o banco do VendaFácil.") from exc
+            try:
+                with self._lock:
+                    if antes_de_trocar is not None:
+                        antes_de_trocar()
+                    migrada._conn.backup(self._conn)
             finally:
-                teste.close()
-        except sqlite3.Error:
-            raise ValueError("Arquivo inválido: não é um backup do VendaFácil.")
-        with self._lock:
-            try:
-                self._conn.close()
-            except sqlite3.Error:
-                pass
-            for suf in ("-wal", "-shm"):
-                p = Path(str(DB_PATH) + suf)
-                if p.exists():
-                    p.unlink()
-            shutil.copyfile(str(origem), str(DB_PATH))
-            self.reconectar()
+                migrada.close()
 
 
 # Singleton

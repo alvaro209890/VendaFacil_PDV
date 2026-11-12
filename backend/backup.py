@@ -17,6 +17,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse
+from starlette.concurrency import run_in_threadpool
 
 from auth import _verificar_jwt
 from database import db, verificar_integridade
@@ -69,7 +70,7 @@ def _limpar_antigos() -> None:
 
 # ── Rotas ──
 @router.get("/exportar")
-async def exportar(request: Request):
+def exportar(request: Request):
     """Gera e baixa um backup (.db) consistente do banco."""
     _auth(request)
     caminho = _gerar_backup("manual")
@@ -79,7 +80,7 @@ async def exportar(request: Request):
 
 
 @router.get("/listar")
-async def listar(request: Request) -> dict:
+def listar(request: Request) -> dict:
     _auth(request)
     itens = []
     for p in sorted(BACKUP_DIR.glob("vendafacil-*.db"), key=lambda x: x.stat().st_mtime, reverse=True):
@@ -102,22 +103,17 @@ async def restaurar(request: Request) -> dict:
     raw = await request.body()
     if not raw:
         raise HTTPException(status_code=400, detail="Envie o arquivo de backup (.db).")
-    # Salva o estado atual antes de mexer.
+    return await run_in_threadpool(_restaurar_bytes, raw)
+
+
+def _restaurar_bytes(raw: bytes) -> dict:
     try:
-        _gerar_backup("pre-restauracao")
-    except Exception:
-        pass
-    tmp = BACKUP_DIR / f"_upload-{_stamp()}.db"
-    tmp.write_bytes(raw)
-    try:
-        db.restaurar_de(tmp)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    finally:
-        try:
-            tmp.unlink()
-        except OSError:
-            pass
+        with tempfile.TemporaryDirectory(prefix=".vf-upload-", dir=BACKUP_DIR) as pasta:
+            arquivo = Path(pasta) / "backup.db"
+            arquivo.write_bytes(raw)
+            db.restaurar_de(arquivo, lambda: _gerar_backup("pre-restauracao"))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     return {"ok": True}
 
 
