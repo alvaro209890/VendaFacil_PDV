@@ -65,7 +65,7 @@ export default function PDV() {
   const [pagamento, setPagamento] = useState("dinheiro");
   const [valorRecebido, setValorRecebido] = useState("");
   const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState<{ tipo: "ok" | "erro"; texto: string } | null>(null);
+  const [msg, setMsg] = useState<{ tipo: "ok" | "erro"; texto: string; recibo?: ReciboData } | null>(null);
   const [dash, setDash] = useState<DashboardData | null>(null);
   const [caixaAberto, setCaixaAberto] = useState<boolean | null>(null);
   const [licencaBloqueada, setLicencaBloqueada] = useState(false);
@@ -80,7 +80,6 @@ export default function PDV() {
 
   // Recibo (impressora térmica)
   const [lojaInfo, setLojaInfo] = useState<{ nome: string; cnpj?: string; endereco?: string }>({ nome: "VendaFácil PDV" });
-  const [ultimaVenda, setUltimaVenda] = useState<ReciboData | null>(null);
   const [imprimirAuto, setImprimirAuto] = useState(() => localStorage.getItem("recibo_auto") === "1");
   const [largura, setLargura] = useState<58 | 80>(getLarguraRecibo());
 
@@ -533,7 +532,6 @@ export default function PDV() {
           ambiente: resp.nota.ambiente,
         } : null,
       };
-      setUltimaVenda(recibo);
       if (imprimirAuto) imprimirRecibo(recibo, largura);
 
       // A venda já foi gravada: falha fiscal não deve incentivar repetir a cobrança.
@@ -544,7 +542,7 @@ export default function PDV() {
       const resultadoFiscal = avisoFiscal
         ? ` Venda registrada; não repita a venda. NFC-e ${statusNota || "não emitida"}: ${motivoFiscal}`
         : statusNota === "autorizada" ? " (Nota emitida)" : "";
-      setMsg({ tipo: avisoFiscal ? "erro" : "ok", texto: `Venda finalizada! Total: R$ ${total.toFixed(2)}${resultadoFiscal}` });
+      setMsg({ tipo: avisoFiscal ? "erro" : "ok", texto: `Venda finalizada! Total: R$ ${total.toFixed(2)}${resultadoFiscal}`, recibo });
       maqPagamentoRef.current = null;
       setCarrinho([]); setQuantidadesTexto({});
       setDesconto(0);
@@ -564,6 +562,7 @@ export default function PDV() {
   }
 
   const itensCarrinho = carrinho.length;
+  const reciboDaVenda = msg?.recibo;
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 min-h-full">
@@ -957,9 +956,9 @@ export default function PDV() {
               {msg.tipo === "ok" ? <CheckCircle2 size={18} className="shrink-0" /> : <AlertCircle size={18} className="shrink-0" />}
               <div className="flex-1">
                 <p className="text-xs font-bold leading-tight">{msg.texto}</p>
-                {msg.tipo === "ok" && ultimaVenda && (
+                {reciboDaVenda && (
                   <button
-                    onClick={() => imprimirRecibo(ultimaVenda, largura)}
+                    onClick={() => imprimirRecibo(reciboDaVenda, largura)}
                     className="mt-2 inline-flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 transition-colors"
                   >
                     🖨️ Imprimir recibo

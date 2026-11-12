@@ -1,0 +1,53 @@
+
+[WebServer] (node:41644) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] INFO:     Started server process [49548]
+
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+[WebServer] (node:56920) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 1 test using 1 worker
+
+(node:62208) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+
+(Use `node --trace-warnings ...` to show where the warning was created)
+[1/1] e2e\erros.spec.ts:91:3 › F3.13: contrato UI distingue nota contingencia (fixture sem SEFAZ)
+
+[WebServer] INFO: http_error request_id=9e133a51bb86 status=401 method=POST path=/api/auth/login detail="Usuário ou senha incorretos."
+  1) e2e\erros.spec.ts:91:3 › F3.13: contrato UI distingue nota contingencia (fixture sem SEFAZ) ───
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('button', { name: /Imprimir recibo/ })
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByRole('button', { name: /Imprimir recibo/ }) with timeout 5000ms
+      - waiting for getByRole('button', { name: /Imprimir recibo/ })
+        - waiting for navigation to finish...
+        - navigated to "http://127.0.0.1:5173/pdv"
+
+
+      119 |     }
+      120 |     if (status === 'contingencia') {
+    > 121 |       await expect(page.getByRole('button', { name: /Imprimir recibo/ })).toBeVisible();
+          |                                                                           ^
+      122 |     }
+      123 |     await expect(page.getByLabel(/^Quantidade de ERRO-/)).toHaveCount(0);
+      124 |   });
+        at C:\GIS\VendaFacil_PDV\e2e\erros.spec.ts:121:75
+
+    Error Context: test-results\erros-F3-13-contrato-UI-di-7eff3-ingencia-fixture-sem-SEFAZ-\error-context.md
+
+
+  1 failed
+    e2e\erros.spec.ts:91:3 › F3.13: contrato UI distingue nota contingencia (fixture sem SEFAZ) ────

@@ -108,12 +108,17 @@ for (const status of ['rejeitada', 'pendente', 'contingencia', 'autorizada']) {
       } });
     });
     await page.getByRole('checkbox', { name: /Emitir NFC-e/ }).check();
-    await page.keyboard.press('F2');
+    const checkout = page.waitForResponse(r => r.url().endsWith('/api/vendas/checkout') && r.request().method() === 'POST');
+    await page.getByRole('button', { name: /Finalizar venda/i }).click();
+    expect((await checkout).status()).toBe(201);
     if (status === 'autorizada') {
       await expect(page.getByText(/Nota emitida/)).toBeVisible();
     } else {
       await expect(page.getByText(mensagem, { exact: false })).toBeVisible();
       await expect(page.getByText(/Nota emitida/)).toHaveCount(0);
+    }
+    if (status === 'contingencia') {
+      await expect(page.getByRole('button', { name: /Imprimir recibo/ })).toBeVisible();
     }
     await expect(page.getByLabel(/^Quantidade de ERRO-/)).toHaveCount(0);
   });
