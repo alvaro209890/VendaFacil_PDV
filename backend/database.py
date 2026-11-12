@@ -1,5 +1,6 @@
 import sqlite3
 import threading
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from paths import DATA_DIR
@@ -1163,6 +1164,18 @@ class Database:
                 (user_id, limit, offset),
             ).fetchall()
         return [dict(r) for r in rows]
+
+    def resumo_vendas_hoje(self, user_id: int) -> dict[str, Any]:
+        """Dia comercial de MT, independente do fuso do host e da paginação."""
+        dia = datetime.now(timezone(timedelta(hours=-4))).date().isoformat()
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT COUNT(*) quantidade, COALESCE(SOMA_DINHEIRO(total), 0) total "
+                "FROM vendas WHERE user_id = ? AND status = 'concluida' "
+                "AND date(criado_em, '-4 hours') = ?", (user_id, dia),
+            ).fetchone()
+        return {"data": dia, "fuso": "America/Cuiaba", "quantidade": row["quantidade"],
+                "total": row["total"]}
 
     def get_venda(self, venda_id: int, user_id: int | None = None) -> dict[str, Any] | None:
         with self._lock:

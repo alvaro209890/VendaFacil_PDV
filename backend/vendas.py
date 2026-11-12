@@ -170,7 +170,7 @@ async def checkout(data: CheckoutRequest, request: Request):
 async def listar(request: Request, limit: int = 50, offset: int = 0):
     user_id = _get_user_id(request)
     vendas = db.list_vendas(user_id, limit=limit, offset=offset)
-    return {"vendas": vendas}
+    return {"vendas": vendas, "resumo_hoje": db.resumo_vendas_hoje(user_id)}
 
 
 @router.get("/{venda_id}")

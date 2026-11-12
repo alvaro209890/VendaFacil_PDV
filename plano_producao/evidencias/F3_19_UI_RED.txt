@@ -1,0 +1,57 @@
+node.exe : [WebServer] (node:41244) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+No linha:1 caractere:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([WebServer] (no... env being set.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+
+
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] INFO:     Started server process [41472]
+
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+[WebServer] (node:41940) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+
+Running 1 test using 1 worker
+
+(node:41748) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+[1/1] e2e\total-diario.spec.ts:3:1 › U07: historico usa total diario do backend mesmo com pagina de 100 vendas
+[WebServer] INFO: http_error request_id=fe2d292416e3 status=401 method=POST path=/api/auth/login detail="Usuário ou
+senha incorretos."
+
+  1) e2e\total-diario.spec.ts:3:1 › U07: historico usa total diario do backend mesmo com pagina de 100 vendas
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText('Hoje: R$ 120.27', { exact: true })
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByText('Hoje: R$ 120.27', { exact: true }) with timeout 5000ms
+      - waiting for getByText('Hoje: R$ 120.27', { exact: true })
+
+
+      16 |   } }));
+      17 |   await page.goto('/vendas');
+    > 18 |   await expect(page.getByText('Hoje: R$ 120.27', { exact: true })).toBeVisible();
+         |                                                                    ^
+      19 | });
+      20 |
+        at C:\GIS\VendaFacil_PDV\e2e\total-diario.spec.ts:18:68
+
+    Error Context: test-results\total-diario-U07-historico-7e03a-mo-com-pagina-de-100-vendas\error-context.md
+
+
+  1 failed
+    e2e\total-diario.spec.ts:3:1 › U07: historico usa total diario do backend mesmo com pagina de 100 vendas

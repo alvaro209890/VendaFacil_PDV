@@ -6,6 +6,7 @@ import type { Venda, NotaFiscal } from "../lib/api";
 
 export default function VendasPage() {
   const [vendas, setVendas] = useState<Venda[]>([]);
+  const [totalHoje, setTotalHoje] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [detalhe, setDetalhe] = useState<Venda | null>(null);
   const [nota, setNota] = useState<NotaFiscal | null>(null);
@@ -22,6 +23,7 @@ export default function VendasPage() {
     try {
       const res = await listarVendas(100);
       setVendas(res.vendas);
+      setTotalHoje(res.resumo_hoje.total);
       const cs = await listarClientes();
       setClientes(cs.clientes);
     } catch {
@@ -91,15 +93,6 @@ export default function VendasPage() {
     }
   }
 
-  const totalHoje = vendas
-    .filter((v) => v.status === "concluida" || v.status === undefined)
-    .filter((v) => {
-      const hoje = new Date().toLocaleDateString("pt-BR");
-      const dataVenda = new Date(v.criado_em).toLocaleDateString("pt-BR");
-      return dataVenda === hoje;
-    })
-    .reduce((s, v) => s + v.total, 0);
-
   async function handleCancelar() {
     if (!detalhe || detalhe.status !== "concluida") return;
     const texto = motivo.trim();
@@ -145,7 +138,7 @@ export default function VendasPage() {
       <div className="flex-1 min-h-0 flex flex-col">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-white font-bold text-base sm:text-lg">🧾 Histórico de Vendas</h2>
-          <span className="text-slate-400 text-xs sm:text-sm">Hoje: R$ {totalHoje.toFixed(2)}</span>
+          <span className="text-slate-400 text-xs sm:text-sm">Hoje: R$ {totalHoje === null ? "—" : totalHoje.toFixed(2)}</span>
         </div>
 
         <div className="flex-1 overflow-y-auto rounded-xl bg-slate-900 border border-slate-800">

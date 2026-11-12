@@ -539,7 +539,10 @@ export function checkout(data: CheckoutInput): Promise<{
   });
 }
 
-export function listarVendas(limit = 50, offset = 0): Promise<{ vendas: Venda[] }> {
+export function listarVendas(limit = 50, offset = 0): Promise<{
+  vendas: Venda[];
+  resumo_hoje: { data: string; fuso: string; quantidade: number; total: number };
+}> {
   return request(`/api/vendas?limit=${limit}&offset=${offset}`);
 }
 

@@ -1,0 +1,31 @@
+node.exe : [WebServer] (node:37600) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+No linha:1 caractere:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([WebServer] (no... env being set.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[WebServer] INFO:     Started server process [35404]
+
+[WebServer] INFO:     Waiting for application startup.
+
+[WebServer] INFO:     Application startup complete.
+
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:3121 (Press CTRL+C to quit)
+
+[WebServer] (node:42268) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+
+Running 1 test using 1 worker
+
+(node:32740) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+[1/1] e2e\total-diario.spec.ts:3:1 › U07: historico usa total diario do backend mesmo com pagina de 100 vendas
+[WebServer] INFO: http_error request_id=b62e82ab1401 status=401 method=POST path=/api/auth/login detail="Usuário ou
+senha incorretos."
+
+  1 passed (10.7s)
