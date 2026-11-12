@@ -14,6 +14,7 @@ def schema(nome: str) -> etree.XMLSchema:
     arquivos = {
         "nfe": XSD_DIR / "NFe" / "nfe_v4.00.xsd",
         "cancelamento": XSD_DIR / "Cancelamento" / "envEventoCancNFe_v1.00.xsd",
+        "inutilizacao": XSD_DIR / "Inutilizacao" / "inutNFe_v4.00.xsd",
     }
     try:
         caminho = arquivos[nome]

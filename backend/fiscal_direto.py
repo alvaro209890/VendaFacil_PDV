@@ -51,6 +51,10 @@ WS = {
     ("65", "producao", "status"): "https://nfce.sefaz.mt.gov.br/nfcews/services/NfeStatusServico4",
     ("55", "homologacao", "status"): "https://homologacao.sefaz.mt.gov.br/nfews/v2/services/NfeStatusServico4",
     ("55", "producao", "status"): "https://nfe.sefaz.mt.gov.br/nfews/v2/services/NfeStatusServico4",
+    ("65", "homologacao", "inutilizacao"): "https://homologacao.sefaz.mt.gov.br/nfcews/services/NfeInutilizacao4",
+    ("65", "producao", "inutilizacao"): "https://nfce.sefaz.mt.gov.br/nfcews/services/NfeInutilizacao4",
+    ("55", "homologacao", "inutilizacao"): "https://homologacao.sefaz.mt.gov.br/nfews/v2/services/NfeInutilizacao4",
+    ("55", "producao", "inutilizacao"): "https://nfe.sefaz.mt.gov.br/nfews/v2/services/NfeInutilizacao4",
 }
 # Operação/método SOAP por serviço. O elemento <nfeDadosMsg> fica no namespace
 # do WSDL da operação (portalfiscal/nfe/wsdl/<Operação>) e o Content-Type SOAP
@@ -62,6 +66,7 @@ _SOAP_OP = {
     "consulta": ("NFeConsultaProtocolo4", "nfeConsultaNF"),
     "evento": ("NFeRecepcaoEvento4", "nfeRecepcaoEvento"),
     "status": ("NFeStatusServico4", "nfeStatusServicoNF"),
+    "inutilizacao": ("NFeInutilizacao4", "nfeInutilizacaoNF"),
 }
 
 
@@ -854,6 +859,8 @@ def assinar_xml(xml: str, config: dict) -> str:
     inf = root.find(f".//{{{NFE_NS}}}infNFe")
     if inf is None:
         inf = root.find(f".//{{{NFE_NS}}}infEvento")
+    if inf is None:
+        inf = root.find(f".//{{{NFE_NS}}}infInut")
     if inf is None or not inf.get("Id"):
         raise FiscalDiretoError("XML fiscal sem identificador para assinatura.")
     ref = "#" + inf.get("Id")
@@ -1114,6 +1121,51 @@ def cancelar_documento(nota: dict, config: dict, justificativa: str) -> dict:
     xml_evento_assinado = assinar_xml(xml_evento, config)
     retorno = transmitir_evento(nota.get("modelo") or "65", xml_evento_assinado, config)
     return {"xml_evento": xml_evento_assinado, "retorno": retorno}
+
+
+def inutilizar_numeracao(config: dict, modelo: str, ano: int, serie: int,
+                        inicio: int, fim: int, justificativa: str) -> dict:
+    """Solicita inutilização (MOC 7.0); a aplicação deve reservar a faixa antes."""
+    if (modelo not in {"55", "65"} or not 2000 <= ano <= datetime.now().year
+            or not 0 <= serie <= 999 or not 1 <= inicio <= fim <= 999999999):
+        raise FiscalDiretoError("Modelo, ano, série ou intervalo inválido para inutilização.")
+    justificativa = str(justificativa or "").strip()
+    if not 15 <= len(justificativa) <= 255:
+        raise FiscalDiretoError("A justificativa deve ter de 15 a 255 caracteres.")
+    cnpj = so_digitos(config.get("cnpj"))
+    if not validar_cnpj(cnpj):
+        raise FiscalDiretoError("CNPJ do emitente inválido.")
+    raiz = ET.Element(f"{{{NFE_NS}}}inutNFe", {"versao": VERSAO})
+    inf = _tag(raiz, "infInut")
+    inf.set("Id", f"ID{C_UF_MT}{ano % 100:02d}{cnpj}{modelo}{serie:03d}{inicio:09d}{fim:09d}")
+    for nome, valor in (("tpAmb", "1" if config.get("ambiente") == "producao" else "2"),
+                        ("xServ", "INUTILIZAR"), ("cUF", C_UF_MT), ("ano", f"{ano % 100:02d}"),
+                        ("CNPJ", cnpj), ("mod", modelo), ("serie", serie),
+                        ("nNFIni", inicio), ("nNFFin", fim), ("xJust", justificativa)):
+        _tag(inf, nome, valor)
+    xml = assinar_xml(ET.tostring(raiz, encoding="unicode"), config)
+    retorno = _post_soap(modelo, "inutilizacao", _sem_declaracao_xml(xml), config)
+    resultado = {"status": "processando", "xml_pedido": xml,
+                 "xml_retorno": retorno.get("texto") or "", "cstat": None,
+                 "protocolo": None, "mensagem": "Pedido sem confirmação; consulte antes de reutilizar a faixa."}
+    if retorno.get("status_code") != 200:
+        return resultado
+    try:
+        root = ET.fromstring(resultado["xml_retorno"])
+    except ET.ParseError:
+        return resultado
+    alvo = root.find(".//{*}infInut")
+    if alvo is None:
+        return resultado
+    cstat = _texto(alvo, "cStat")
+    protocolo = _texto(alvo, "nProt")
+    resultado.update(cstat=cstat, protocolo=protocolo,
+                     mensagem=_texto(alvo, "xMotivo") or resultado["mensagem"])
+    if cstat == "102" and protocolo:
+        resultado["status"] = "inutilizada"
+    elif cstat and cstat != "102":
+        resultado["status"] = "rejeitada"
+    return resultado
 
 
 def preparar_e_tentar_transmitir(venda: dict, config: dict, modelo: str = "65",

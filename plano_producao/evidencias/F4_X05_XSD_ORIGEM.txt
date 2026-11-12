@@ -1,0 +1,5 @@
+2026-11-12: fonte oficial SVRS; pedido de inutilizacao 4.00 e dependencias.
+https://dfe-portal.svrs.rs.gov.br/Schemas/PRNFE/inutNFe_v4.00.xsd SHA256 bdb5b01bc77885756f4660bb14f120ae5f8853f962deb50fbf42c96df65b8f29 bytes 606
+https://dfe-portal.svrs.rs.gov.br/Schemas/PRNFE/leiauteInutNFe_v4.00.xsd SHA256 0cbd4a8cf24c0a38a1d26d75cef499fd323273e8b914824c6c462e69be6c271c bytes 7801
+https://dfe-portal.svrs.rs.gov.br/Schemas/PRNFE/tiposBasico_v4.00.xsd SHA256 1ab4a4ebb9580a7efb45c9d545a9d3b7316cc965213345f667c86a5c7e56e33f bytes 21976
+https://dfe-portal.svrs.rs.gov.br/Schemas/PRNFE/xmldsig-core-schema_v1.01.xsd SHA256 f56744a5f51c03f027de13f39f869307091781a9ef1d91b1ebe14719ce28e1ac bytes 3747
