@@ -1,5 +1,10 @@
 # 🚀 Deploy do Painel SaaS na VPS (Linux)
 
+> **Plano em vigor (13/11/2026):** a migração real é
+> [`MIGRACAO_RENDER_SUPABASE.md`](MIGRACAO_RENDER_SUPABASE.md) — `canais-vps`,
+> SQLite, Caddy e o `.exe` 1.0.14. Este README fica como referência genérica;
+> onde os dois divergirem, vale o plano.
+
 O painel é o cérebro do controle: você gerencia as contas (login/senha) de cada
 mercado, ativa/bloqueia e define a validade da licença. Os PDVs (.exe) validam
 aqui e enviam as vendas.
