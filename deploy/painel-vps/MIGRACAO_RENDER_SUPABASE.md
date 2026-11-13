@@ -441,6 +441,11 @@ Execução de 13/11/2026 (autor: Claude), horário da VPS (`America/Cuiaba`, -04
 | 7 | ativação do PDV | `.exe` 1.0.14 com dados descartáveis contra o painel da VPS (túnel SSH, sem TLS público): ativa (`TESTE descartavel`), senha errada 401, conta bloqueada 401 "Conta bloqueada…", liberada ativa de novo. URL embutida → 503 "Sem conexão" até existir DNS | 14:52 | ✅ |
 | 8 | backup + monitor | `/etc/cron.d/vendafacil-backup` 03:00 (usuário vendafacil, `integrity_check ok`, retenção 14 d); monitor externo = timer de usuário `vendafacil-painel-monitor` no `server` (5 min, log `~/logs/vendafacil-painel-monitor.log`) — hoje `ok=0` até abrir 443/DNS | 14:45 | ✅ |
 
-Pendências: liberar **443/tcp** no firewall IPv4 do Lightsail; criar `painel.cursar.space`
+Atualização 13/11 15:11: o Álvaro liberou **443/tcp** no Lightsail (origem `0.0.0.0/0`).
+De fora: `curl https://3-235-84-94.sslip.io/health` → `{"status":"ok",...}`, HTTP → 308 HTTPS, HSTS.
+`.exe` 1.0.14 com `VENDAFACIL_PAINEL_URL=https://3-235-84-94.sslip.io` e dados descartáveis: ativou
+em 0,66 s, senha errada 401, conta bloqueada 401 "Conta bloqueada…", liberada ativa. Monitor `ok=1`.
+
+Pendências: criar `painel.cursar.space`
 (A `3.235.84.94`, **DNS only**) ou túnel com token; snapshot da VPS; Render/Supabase só
 saem após 72 h estáveis no painel novo.
