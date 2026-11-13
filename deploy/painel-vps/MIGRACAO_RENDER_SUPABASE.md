@@ -427,14 +427,20 @@ dados** e imprime a contagem de origem e destino. Senhas continuam válidas
 
 ## 9. Registro de execução (preencher com saída real)
 
+Execução de 13/11/2026 (autor: Claude), horário da VPS (`America/Cuiaba`, -04).
+
 | Fase | Comando | Saída (resumo) | Hora | OK |
 |---|---|---|---|---|
-| 0 | baseline | | | |
-| 1 | venv + pip | | | |
-| 2 | health local | | | |
-| 3 | health HTTPS | | | |
-| 4 | admin + conta + bloqueio | | | |
-| 5 | migração (ou "sem dado real") | | | |
-| 6 | build 1.0.14 + hashes | | | |
-| 7 | ativação do PDV | | | |
-| 8 | backup + monitor | | | |
+| 0 | baseline | IP `3.235.84.94`; RAM 535 MB usados / 1370 MB livres; disco 19%; `xvfb/fluxbox/x11vnc/novnc-canais` e `tailscaled` active; ufw só 22 + tailscale0; snapshot do Lightsail **não** feito (sem acesso ao console) | 14:39 | ✅ |
+| 1 | venv + pip | `painel/` do commit `8692c36` via `git archive` (sem WIP); `caddy 2.6.2`; `ok 0.162.7 0.54.0` (FastAPI, uvicorn) | 14:41 | ✅ |
+| 2 | health local | unit `active (running)`; `{"status":"ok","app":"vendafacil-painel","version":"1.0.0"}`; `{"precisa_setup":true}`; JWT de 64 hex gerado na VPS (`painel.env` 640 root:vendafacil) | 14:41 | ✅ |
+| 3 | health HTTPS | Trilha A/B: sem token e `cert.pem` `unauthorized` (`cloudflared tunnel list`). Trilha C: Caddy obteve LE para `3-235-84-94.sslip.io` (válido até 11/02/2027), HTTP→HTTPS 308 de fora; **443 dá timeout de fora** — firewall do Lightsail (só 22/80). Dentro da VPS: `HTTP/2 200` + HSTS. `painel.cursar.space` já no Caddyfile, aguardando DNS | 14:43 | ⚠️ |
+| 4 | admin + conta + bloqueio | admin criado **antes** de abrir porta (`precisa_setup:false`); contas `james` e `teste-ativacao`; validar → `ok:true` + token; senha errada → 401; bloqueada → `ok:false`, "Conta bloqueada…"; reativada → `ok:true`. Senhas só em `/etc/vendafacil/credenciais-iniciais` (600 root) | 14:42 | ✅ |
+| 5 | migração | sem dado real — não migrado (decisão do Álvaro) | — | ✅ |
+| 6 | build 1.0.14 + hashes | worktree limpo `6bb9821`; `VendaFacilPDV.exe` 39 694 841 B `BCFB3871…8785E`; `Setup-1.0.14.exe` 39 981 107 B `654A270A…FDE97`; backend 466 + 9 desmarcados, painel 23, Node 36, E2E 91, ESLint 0; `roteiro_exe --chromium` 49 req / 0×5xx (v1.0.14); cupons 4/4 | 15:50 | ✅ |
+| 7 | ativação do PDV | `.exe` 1.0.14 com dados descartáveis contra o painel da VPS (túnel SSH, sem TLS público): ativa (`TESTE descartavel`), senha errada 401, conta bloqueada 401 "Conta bloqueada…", liberada ativa de novo. URL embutida → 503 "Sem conexão" até existir DNS | 14:52 | ✅ |
+| 8 | backup + monitor | `/etc/cron.d/vendafacil-backup` 03:00 (usuário vendafacil, `integrity_check ok`, retenção 14 d); monitor externo = timer de usuário `vendafacil-painel-monitor` no `server` (5 min, log `~/logs/vendafacil-painel-monitor.log`) — hoje `ok=0` até abrir 443/DNS | 14:45 | ✅ |
+
+Pendências: liberar **443/tcp** no firewall IPv4 do Lightsail; criar `painel.cursar.space`
+(A `3.235.84.94`, **DNS only**) ou túnel com token; snapshot da VPS; Render/Supabase só
+saem após 72 h estáveis no painel novo.

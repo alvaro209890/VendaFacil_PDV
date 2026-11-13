@@ -1,22 +1,24 @@
 [Unit]
-Description=VendaFacil - Painel SaaS
+Description=VendaFacil Painel SaaS
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=simple
 User=vendafacil
+Group=vendafacil
 WorkingDirectory=/opt/vendafacil/painel
-Environment=PAINEL_HOST=127.0.0.1
-Environment=PAINEL_PORT=8080
-Environment=PAINEL_DATA_DIR=/opt/vendafacil/dados
-# Defina um segredo fixo e forte (gere com: openssl rand -hex 32)
-Environment=PAINEL_JWT_SECRET=TROQUE_POR_UM_SEGREDO_FIXO
-ExecStart=/opt/vendafacil/painel/.venv/bin/uvicorn main:app --host 127.0.0.1 --port 8080
+EnvironmentFile=/etc/vendafacil/painel.env
+ExecStart=/opt/vendafacil/venv/bin/uvicorn main:app --host 127.0.0.1 --port 8080 --workers 1 --proxy-headers --forwarded-allow-ips 127.0.0.1
 Restart=always
 RestartSec=5
-KillSignal=SIGINT
-TimeoutStopSec=30
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/vendafacil/dados
+MemoryMax=512M
+TimeoutStopSec=20
 
 [Install]
 WantedBy=multi-user.target

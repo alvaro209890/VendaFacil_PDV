@@ -1,0 +1,22 @@
+# VendaFacil painel (13/11/2026). Painel so em 127.0.0.1:8080.
+# painel.cursar.space: certificado sai assim que o registro A (DNS only) existir.
+# 3-235-84-94.sslip.io: hostname temporario, sem DNS.
+(painel) {
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "no-referrer"
+		-Server
+	}
+	reverse_proxy 127.0.0.1:8080
+}
+
+3-235-84-94.sslip.io {
+	import painel
+}
+
+painel.cursar.space {
+	import painel
+}
