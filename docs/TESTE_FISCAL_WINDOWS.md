@@ -165,7 +165,9 @@ Sem esses campos a emissão é bloqueada com a mensagem de "dados fiscais incomp
 - **402 — XML utiliza codificação diferente de UTF-8**: o autorizador de NFC-e
   re-serializa o XML em ISO-8859-1; qualquer acento derruba a nota. O PDV
   translitera os textos para ASCII 7-bit antes da assinatura (a tela pode manter
-  o acento no cadastro; o XML sai sem).
+  o acento no cadastro; o XML sai sem). O cupom impresso segue o XML, então o
+  nome do emitente e o município também saem sem acento; `scripts/verificar_cupons_pdf.py`
+  confere o texto nas duas formas.
 - **587 — namespace diverso do padrão**: a assinatura não pode sair com prefixo
   `ds:`; o PDV monta o XMLDSig com o namespace `xmldsig` default.
 - **297 — assinatura difere do calculado**: o C14N de um subelemento que herda o

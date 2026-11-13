@@ -5,11 +5,16 @@ largura da página, acentuação, chave, protocolo, marcação de homologação,
 duas vias e aviso de contingência, e decodifica os QR Codes do próprio PDF,
 comparando com o qrcode_url que o PDV gravou na nota.
 
+A SEFAZ-MT exige o XML em ASCII 7-bit, então nome do emitente e município
+saem sem acento no cupom impresso; o texto esperado é conferido nas duas
+formas (com e sem acento).
+
 Requer PyMuPDF (fitz) e OpenCV (cv2). Uso:
     py -3.12 -X utf8 -I scripts/verificar_cupons_pdf.py output/fase6/notas-simuladas.json
 """
 import json
 import sys
+import unicodedata
 from pathlib import Path
 
 import cv2
@@ -17,6 +22,12 @@ import fitz
 import numpy as np
 
 PT_POR_MM = 72 / 25.4
+
+
+def _sem_acento(texto: str) -> str:
+    """Reproduz a transliteração ASCII que o XML da NFC-e recebe."""
+    return unicodedata.normalize("NFKD", texto).encode("ascii", "ignore").decode("ascii")
+
 
 
 def _qrs(pagina) -> list[str]:
@@ -68,7 +79,8 @@ def conferir(nome: str, pdf: Path, nota: dict) -> list[str]:
         esperados.append(f"Protocolo de autorização: {nota['protocolo']}")
         if "CONTINGÊNCIA" in texto or "VIA DO" in texto:
             falhas.append("marcação de contingência no cupom autorizado")
-    falhas += [f"texto ausente: {e}" for e in esperados if e not in texto]
+    falhas += [f"texto ausente: {e}" for e in esperados
+               if e not in texto and _sem_acento(e) not in texto]
     if texto.count(chave) != (2 if contingencia else 1):
         falhas.append(f"chave {texto.count(chave)}x")
     if qrs != [nota["qrcode_url"]] * (2 if contingencia else 1):
