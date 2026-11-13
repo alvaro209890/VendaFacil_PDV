@@ -1,6 +1,6 @@
 param(
     [string]$SetupAnterior = (Join-Path $PSScriptRoot '..\dist_installer\VendaFacilPDV-Setup-1.0.12.exe'),
-    [string]$SetupAtual = (Join-Path $PSScriptRoot '..\dist_installer\VendaFacilPDV-Setup-1.0.13.exe')
+    [string]$SetupAtual = (Join-Path $PSScriptRoot '..\dist_installer\VendaFacilPDV-Setup-1.0.14.exe')
 )
 
 $ErrorActionPreference = 'Stop'
@@ -74,8 +74,8 @@ function Testar-PrimeiroAcesso([bool]$Criar) {
         if ($Criar) {
             $produto = @{nome='Amostra'; preco_custo=1; preco_venda=2; estoque=3}
             $null = Invoke-RestMethod "$base/api/produtos" -Method Post -Headers $cabecalho -ContentType 'application/json' -Body ($produto | ConvertTo-Json)
-        } elseif ($saude.version -ne '1.0.13') {
-            throw 'A atualizacao nao reportou 1.0.13.'
+        } elseif ($saude.version -ne '1.0.14') {
+            throw 'A atualizacao nao reportou 1.0.14.'
         }
         if (!(Test-Path -LiteralPath $banco)) { throw 'Banco ausente no LOCALAPPDATA isolado.' }
     } finally {
@@ -122,7 +122,7 @@ try {
     if ((Obter-Contagens) -ne $antes -or @(Obter-AtalhosDoTeste).Count -lt 2) {
         throw 'Atualizacao mudou as contagens ou perdeu atalhos.'
     }
-    Write-Output 'E05: versao 1.0.13, atalhos e contagens preservados.'
+    Write-Output 'E05: versao 1.0.14, atalhos e contagens preservados.'
 
     $desinstalador = Get-ChildItem -LiteralPath $programa -Filter 'unins*.exe' -File | Select-Object -First 1
     if (!$desinstalador) { throw 'Desinstalador ausente.' }
