@@ -412,6 +412,7 @@ dados** e imprime a contagem de origem e destino. Senhas continuam válidas
 |---|---|
 | 502 no Caddy | `systemctl status vendafacil-painel`; `curl 127.0.0.1:8080/health` |
 | Certificado não sai | `dig +short painel.<DOMINIO>`; portas 80/443 no ufw **e** no Lightsail; `journalctl -u caddy -n 50` |
+| Monitor do `server` acusa falha de DNS | cache negativo do roteador da casa (NXDOMAIN); conferir com `dig +short @1.1.1.1 painel.cursar.space`. O script já resolve por 1.1.1.1 + `curl --resolve` desde 13/11 16:30 |
 | `permission denied` no banco | dono de `/opt/vendafacil/dados` e `ReadWritePaths` da unit |
 | Painel cria admin sozinho? | `curl /api/admin/precisa-setup` — se `true` e o site está público, criar **agora** |
 | PDV não ativa | `curl -X POST .../api/conta/validar`; conferir relógio da VPS (`timedatectl`) e cadeia do certificado |
@@ -446,6 +447,29 @@ De fora: `curl https://3-235-84-94.sslip.io/health` → `{"status":"ok",...}`, H
 `.exe` 1.0.14 com `VENDAFACIL_PAINEL_URL=https://3-235-84-94.sslip.io` e dados descartáveis: ativou
 em 0,66 s, senha errada 401, conta bloqueada 401 "Conta bloqueada…", liberada ativa. Monitor `ok=1`.
 
-Pendências: criar `painel.cursar.space`
-(A `3.235.84.94`, **DNS only**) ou túnel com token; snapshot da VPS; Render/Supabase só
-saem após 72 h estáveis no painel novo.
+Atualização 13/11 16:30 (execução: OpenCode, a pedido do Álvaro) — **fases 3 e 7
+fechadas no domínio final**:
+
+- Registro criado na Cloudflare pela API: `A painel.cursar.space → 3.235.84.94`,
+  **DNS only** (`proxied=false`, id `0ca92cef…`), TTL automático.
+- Caddy reemitiu: Let's Encrypt `CN=painel.cursar.space`, válido
+  13/11/2026 18:28 → 11/02/2027 18:28 (UTC).
+- De fora (rede do escritório): `https://painel.cursar.space/health` → `200`
+  `{"status":"ok","app":"vendafacil-painel","version":"1.0.0"}`,
+  `Strict-Transport-Security: max-age=31536000`, `http://` → `308`.
+- `/api/admin/precisa-setup` → `{"precisa_setup":false}` (admin já existe).
+- Bloqueio revalidado **pelo domínio**: `teste-ativacao` validar → `ok:true`;
+  bloqueada → `ok:false` "Conta bloqueada…"; reativada → `ok:true`.
+- **`.exe` 1.0.14 puro** (sem `VENDAFACIL_PAINEL_URL`; só a URL embutida) com dados
+  descartáveis: health `{"app":"vendafacil-pdv","version":"1.0.14"}`,
+  `POST /api/ativacao` → `ativado:true | motivo:ok | nome_loja:"Mercearia do James"`;
+  `/api/ativacao/status` igual.
+- Monitor do `server`: o roteador da casa guardou NXDOMAIN e o `curl` não resolvia.
+  O script passou a resolver por `dig @1.1.1.1` e usar `--resolve` (backup em
+  `~/.local/bin/vendafacil-painel-monitor.sh.bak-20261113`); log agora
+  `ok=1 https://painel.cursar.space/health=OK https://3-235-84-94.sslip.io/health=OK`.
+
+Pendências: snapshot do Lightsail (sem acesso ao console); Render e Supabase só saem
+após **72 h estáveis** (contadas de 13/11 16:30); trocar a senha do admin no primeiro
+login; `sslip.io` pode ficar no Caddyfile como espelho, mas o `.exe` distribui só o
+domínio final.
