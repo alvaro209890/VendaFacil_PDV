@@ -14,7 +14,7 @@ Instalador: `C:\GIS\VendaFacil_PDV\dist_installer\VendaFacilPDV-Setup-1.0.13.exe
 
 ## Próximo ponto
 
-1. O A1, o CSC e os dados da empresa já estão no cofre de teste; o precheck acusa apenas B3 (cStat 230 — IE não cadastrada **no ambiente de homologação**) e B5 (Mercado Pago). Pedir ao contador a atualização do cadastro da IE na SEFAZ-MT; depois rodar `scripts/fiscal_precheck.py` e `pytest -m homologacao`.
+1. O A1, o CSC e os dados da empresa já estão no cofre de teste; o precheck acusa apenas B3 (cStat 230 — IE não cadastrada **no ambiente de homologação**) e B5 (Mercado Pago). Pedir ao contador a atualização do cadastro da IE na SEFAZ-MT; depois rodar `scripts/fiscal_precheck.py` e `pytest -m homologacao`. O passo a passo, a explicação e a mensagem pronta para o contador estão em `docs/IE_NFCE_AMBIENTES.md`.
 2. Em máquina descartável, elevado: `scripts/teste_instalador.ps1` (E04–E06).
 3. Se mudar algo no backend ou em `src/`, recompilar exe e Setup e refazer `roteiro_exe.py --chromium` + `verificar_cupons_pdf.py`.
 

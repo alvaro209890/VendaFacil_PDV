@@ -193,6 +193,10 @@ comportamento anterior é mantido.
   A tela Fiscal preserva a faixa, a situação e o protocolo no histórico.
 - Execute o [roteiro de homologação](TESTE_FISCAL_WINDOWS.md) com o cofre da
   loja. O precheck registra presença e validade dos requisitos locais.
+- IE ativa no CCE **não** é IE cadastrada no autorizador de NFC-e: o cadastro é
+  separado por ambiente e o primeiro envio real (12/11/2026) voltou
+  `cStat 230` em homologação. Contexto e o que pedir ao contador:
+  [`IE_NFCE_AMBIENTES.md`](IE_NFCE_AMBIENTES.md).
 
 ## Fontes consultadas (2026-07-13)
 

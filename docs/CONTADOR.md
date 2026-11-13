@@ -46,6 +46,8 @@ no portal antes de orientar outra ação sobre a numeração da venda.
 - **Regime** (Simples/CRT), **CNAE** e confirmação de obrigatoriedades (ex.: o
   vínculo de pagamento em MT — ver [`VINCULO_PAGAMENTO_MT.md`](VINCULO_PAGAMENTO_MT.md)).
 - Apoio para **certificado A1, IE, CSC e credenciamento** na SEFAZ.
+  IE ativa não é o mesmo que IE habilitada no autorizador de NFC-e (que tem
+  cadastro separado por ambiente): ver [`IE_NFCE_AMBIENTES.md`](IE_NFCE_AMBIENTES.md).
 
 ## Resumo
 

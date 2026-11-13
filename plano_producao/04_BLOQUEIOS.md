@@ -8,7 +8,7 @@ Regra: verificar de verdade se o item falta, registrar a prova, e seguir para o 
 |---|---|---|---|---|---|
 | B1 | Certificado A1 (`.pfx`) da mercearia + senha, gravado no cofre do PDV | Lojista | `scripts/fiscal_precheck.py` (criado na Fase 4): presen��a, validade e CNPJ do titular | transmite nota | H01�?"H09 |
 | B2 | CSC + ID do CSC de **homologa��ǜo** | Lojista, no portal da SEFAZ-MT | mesmo script: presen��a | tem QR Code vǭlido | H02�?"H08 |
-| B3 | Credenciamento da loja para NFC-e na SEFAZ-MT — a IE precisa constar no autorizador de **cada** ambiente (homologação e produção); em 12/11 foi rejeitada com **cStat 230** só em homologação | Lojista/contador | resposta do `statusServico`/autorização | tem nota autorizada | H02-H09; teste real (12/11/2026 o Álvaro decidiu que não haverá mais teste simulado) |
+| B3 | Credenciamento da loja para NFC-e na SEFAZ-MT — a IE precisa constar no autorizador de **cada** ambiente (homologação e produção); em 12/11 foi rejeitada com **cStat 230** só em homologação (contexto e texto para o contador em `docs/IE_NFCE_AMBIENTES.md`) | Lojista/contador | resposta do `statusServico`/autorização | tem nota autorizada | H02-H09; teste real (12/11/2026 o Álvaro decidiu que não haverá mais teste simulado) |
 | B4 | Dados da empresa: CNPJ, IE, CNAE, endere��o, regime (CRT) | Lojista | mesmo script: campos preenchidos e CNPJ igual ao do certificado | emite cupom com validade | H02�?"H09 |
 | B5 | CNPJ da credenciadora + conta Mercado Pago de produ��ǜo | Lojista | configura��ǜo da maquininha: presen��a | emite nota de cartǜo/PIX sem rejei��ǜo | H03, H04 |
 | B6 | Maquininha Point f��sica | Lojista | nǜo hǭ aparelho pareado neste PC | prova o fluxo de cartǜo no aparelho | parte f��sica de H03/H04 |
