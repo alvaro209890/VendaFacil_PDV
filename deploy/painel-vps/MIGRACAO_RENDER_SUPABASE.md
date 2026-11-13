@@ -11,7 +11,7 @@
 |---|---|---|
 | Aplicação | Render (free, hiberna) | `canais-vps`, systemd |
 | Banco | Supabase (free, pausa por inatividade) | **SQLite** em `/opt/vendafacil/dados/painel.db` |
-| HTTPS | Render | Caddy + Let's Encrypt |
+| HTTPS | Render | Cloudflare Tunnel (preferido) ou Caddy + Let's Encrypt |
 | Backup | Supabase | cron diário + retenção 14 dias |
 | URL do PDV | `https://vendafacil-painel.onrender.com` | `https://painel.<DOMINIO>` (embutida no `.exe` 1.0.14) |
 
@@ -20,6 +20,9 @@ Por que: o PDV espera **6 segundos** na ativação/revalidação (`backend/conta
 Máquina sempre ligada resolve os dois.
 
 ## 1. Estado atual medido (13/11/2026, 14:50 BRT)
+
+> Nos comandos, `painel.<DOMINIO>` = **`painel.cursar.space`** (domínio da frota,
+> Cloudflare). O hostname temporário da trilha C é `3-235-84-94.sslip.io`.
 
 **`canais-vps`** — AWS Lightsail `us-east-1a`, Ubuntu 24.04, IP público IPv4
 `3.235.84.94` (confirmar na execução), Tailscale `100.112.29.47`, usuário `ubuntu`
@@ -53,10 +56,21 @@ Contrato que o PDV consome (não pode mudar):
 | `GET /api/admin/precisa-setup`, `POST /api/admin/setup` | criação do admin master |
 | `/` e `/assets` | UI estática do painel |
 
+## 0.1 Autonomia (ordem do Álvaro, 13/11/2026)
+
+O agente executa **tudo sozinho**, da Fase 0 ao corte, sem perguntar nada e sem
+esperar resposta. Decisões já tomadas: SQLite, `canais-vps`, hostname
+`painel.cursar.space`, `.exe` 1.0.14, Supabase **não** migra (sem dado real).
+
+O único ponto que pode exigir terceiro é o **DNS/entrada pública** (ver Fase 3).
+Resolver nesta ordem, sem parar: token da Cloudflare → registro A manual já
+existente → hostname temporário `sslip.io`. Só reportar bloqueio se as três
+falharem.
+
 ## 2. Critérios de aceite (só termina quando tudo for verdade)
 
 1. `curl -fsS https://painel.<DOMINIO>/health` → `{"status":"ok","app":"vendafacil-painel",...}`.
-2. Certificado válido (Let's Encrypt), cadeia completa, HTTP redireciona para HTTPS.
+2. Certificado válido (Cloudflare ou Let's Encrypt) e HTTP redirecionando para HTTPS.
 3. Admin master criado; login pela UI funciona; nova senha forte.
 4. Conta da loja criada (mesmo login de antes) e `POST /api/conta/validar` devolve token.
 5. Bloquear a conta na UI → `/api/conta/validar` recusa com motivo; desbloquear → volta.
@@ -65,18 +79,17 @@ Contrato que o PDV consome (não pode mudar):
 8. Memória da VPS continua abaixo de ~1,0 GB usada; VNC/noVNC seguem funcionando.
 9. Render e Supabase **não** são desligados antes de 72 h de operação estável.
 
-## 3. Pré-requisitos (bloqueiam o começo — pedir ao Álvaro)
+## 3. Pré-requisitos (situação em 13/11/2026)
 
-| # | Item | Como confirmar |
+| # | Item | Situação |
 |---|---|---|
-| P1 | **Subdomínio** definido (ex.: `painel.dominio.com`) | nome escolhido e escrito no registro de execução |
-| P2 | **DNS A** do subdomínio → IPv4 da VPS | `dig +short painel.<DOMINIO>` = IP da VPS |
-| P3 | **Firewall do Lightsail** com 80 e 443 liberados | console → Networking → IPv4 Firewall |
-| P4 | Supabase tem dado **real** ou só teste? | `SELECT count(*)` nas 5 tabelas (ver §6) |
-| P5 | Snapshot da VPS tirado antes | console → Snapshots |
+| P1 | **Supabase sem dado real** | ✅ confirmado pelo Álvaro: não há loja nem venda real. **Não migrar**; criar a conta na Fase 4 |
+| P2 | **Subdomínio** | ✅ `painel.cursar.space` (domínio da frota, Cloudflare) |
+| P3 | **DNS** | ⚠️ o agente resolve (ver Fase 3). O `cert.pem` do `server` responde `unauthorized` — não contar com ele |
+| P4 | **Firewall 80/443** | só necessário no caminho Caddy (Fase 3, trilha B). O caminho por túnel não abre porta |
+| P5 | **Snapshot da VPS** | tentar pelo console; se não houver acesso, seguir (a máquina não guarda dado crítico além do banco novo) |
 
-Sem P1/P2 **não começar** a fase de TLS: o Let's Encrypt precisa do domínio
-resolvendo para a VPS.
+Sem P2, usar o hostname temporário da trilha C e reportar.
 
 ## 4. Regras que não se negociam
 
@@ -202,14 +215,31 @@ Esperado: `active (running)`, health `ok`, `{"precisa_setup":true}`.
 > **Atenção:** enquanto não houver admin, `POST /api/admin/setup` é público.
 > Não publique a porta antes de criar o admin (Fase 4).
 
-### Fase 3 — TLS com Caddy (15 min)
+### Fase 3 — Entrada pública e TLS (15–30 min)
 
-Só depois de P2 (`dig +short` retornando o IP da VPS).
+Três trilhas, nesta ordem. Não parar para perguntar: tentar A, depois B, depois C.
 
-`/etc/caddy/Caddyfile`:
+**Trilha A — Cloudflare Tunnel (preferida; nenhuma porta aberta).**
 
+```bash
+# token criado no dashboard (Zero Trust -> Tunnels -> Create a tunnel -> Cloudflared)
+sudo apt install -y cloudflared   # se o pacote não existir, baixar o .deb oficial
+sudo cloudflared service install "$TUNNEL_TOKEN"     # NUNCA ecoar o token
+sudo systemctl status --no-pager cloudflared | head -8
 ```
-painel.<DOMINIO> {
+
+No dashboard, o hostname público `painel.cursar.space` deve apontar para
+`http://localhost:8080`. Prova: `curl -fsS https://painel.cursar.space/health`.
+
+> O `cert.pem` do `server` está sem autorização (`unauthorized` em 13/11), então
+> `cloudflared tunnel create` **não** funciona sem token novo. Não insistir.
+
+**Trilha B — Caddy + registro A** (se houver acesso à zona Cloudflare):
+
+```bash
+sudo apt install -y caddy
+sudo tee /etc/caddy/Caddyfile >/dev/null <<'EOF'
+painel.cursar.space {
     encode zstd gzip
     header {
         Strict-Transport-Security "max-age=31536000"
@@ -219,18 +249,29 @@ painel.<DOMINIO> {
     }
     reverse_proxy 127.0.0.1:8080
 }
+EOF
+sudo systemctl reload caddy || sudo systemctl restart caddy
+sudo ufw allow 80/tcp && sudo ufw allow 443/tcp  # + liberar 80/443 no console do Lightsail
 ```
+
+Com a API da Cloudflare (token de zona, `DNS:Edit`):
 
 ```bash
-sudo systemctl reload caddy || sudo systemctl restart caddy
-sudo ufw allow 80/tcp && sudo ufw allow 443/tcp && sudo ufw status | head
-curl -fsS https://painel.<DOMINIO>/health; echo
-echo | openssl s_client -connect painel.<DOMINIO>:443 -servername painel.<DOMINIO> 2>/dev/null | openssl x509 -noout -subject -dates
+curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records" \
+  -H "Authorization: Bearer $CF_TOKEN" -H "Content-Type: application/json" \
+  --data '{"type":"A","name":"painel","content":"3.235.84.94","proxied":true,"ttl":1}' | head -c 300
 ```
 
-Provas: health `ok` por HTTPS, `subject` e datas válidas. Liberar 80/443 também
-no console do Lightsail (P3) — se o `curl` externo falhar e o local funcionar, é
-o firewall da AWS.
+**Trilha C — hostname temporário, sem DNS** (100% autônoma):
+
+```bash
+# 3-235-84-94.sslip.io resolve sozinho para o IP da VPS
+# usar o mesmo Caddyfile da trilha B com server_name 3-235-84-94.sslip.io
+curl -fsS https://3-235-84-94.sslip.io/health
+```
+
+Registrar no relatório qual trilha valeu. Se as três falharem, deixar o painel
+rodando em `127.0.0.1:8080` e reportar **qual único clique** falta (DNS ou porta).
 
 ### Fase 4 — Admin e conta da loja (10 min)
 
@@ -336,34 +377,23 @@ Monitoramento: um ping externo em `https://painel.<DOMINIO>/health` a cada 5 min
 4. Se o problema for DNS/TLS, manter o Caddy e voltar depois; o banco local
    (`painel.db`) não é afetado.
 
-## 6. Migração de dados do Supabase (só se houver dado real)
+## 6. Migração de dados do Supabase — **não se aplica**
 
-**Checar antes** (no SQL Editor do Supabase):
+O Álvaro confirmou em 13/11/2026 que **não há dado real** no Supabase (nenhuma
+loja pagante, nenhuma venda). Portanto:
 
-```sql
-select 'admins' t, count(*) from admins
-union all select 'contas', count(*) from contas
-union all select 'vendas_sync', count(*) from vendas_sync
-union all select 'fin_config', count(*) from fin_config
-union all select 'fin_custos', count(*) from fin_custos;
-```
+- **não** conectar no Supabase, **não** migrar, **não** copiar connection string;
+- o `painel.db` nasce vazio e a conta da loja é criada na Fase 4;
+- registrar no relatório a confirmação ("sem dado real — não migrado").
 
-Se `contas` e `vendas_sync` estiverem vazios (ou só com teste), **não migrar**:
-mais simples criar a conta na Fase 4. Se houver loja real, copiar o script para
-a VPS (junto com a pasta `painel`):
-
-```powershell
-scp C:\GIS\VendaFacil_PDV\deploy\painel-vps\migrar_supabase_para_sqlite.py ubuntu@canais:/tmp/
-```
+O script `migrar_supabase_para_sqlite.py` fica no repositório **só para o futuro**
+(caso apareça dado real antes do corte). Se for usado algum dia:
 
 ```bash
-sudo mv /tmp/migrar_supabase_para_sqlite.py /opt/vendafacil/
-sudo chown vendafacil:vendafacil /opt/vendafacil/migrar_supabase_para_sqlite.py
 sudo systemctl stop vendafacil-painel
 sudo -u vendafacil /opt/vendafacil/venv/bin/python \
   /opt/vendafacil/migrar_supabase_para_sqlite.py \
-  --origem "postgresql://postgres.<ref>:<SENHA>@aws-<n>-<regiao>.pooler.supabase.com:5432/postgres" \
-  --destino /opt/vendafacil/dados/painel.db
+  --origem "<connection string>" --destino /opt/vendafacil/dados/painel.db
 sudo systemctl start vendafacil-painel
 ```
 
@@ -392,8 +422,6 @@ dados** e imprime a contagem de origem e destino. Senhas continuam válidas
 - Não instalar Postgres "por garantia": SQLite é a decisão.
 - Não rodar o painel com `--workers > 1` (SQLite + lock em processo único).
 - Não copiar `Dados_James/`, `.pfx`, cofre ou banco do PDV para a VPS.
-- Não colocar a VPS inteira atrás de Cloudflare Tunnel nesta etapa; Caddy + 443 é
-  mais simples e o certificado é público.
 - Não apagar o Render nem o Supabase antes das 72 h.
 - Não mexer no desktop virtual dos canais para "liberar RAM".
 
