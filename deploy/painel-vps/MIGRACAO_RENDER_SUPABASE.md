@@ -92,6 +92,12 @@ resolvendo para a VPS.
 - Um passo por vez, com a saída real colada no registro (§12). Sem "deve funcionar".
 - `ufw` **e** firewall do Lightsail: os dois precisam liberar 80/443.
 - O painel escuta **só em 127.0.0.1:8080**. Nunca `0.0.0.0`.
+- **Copiar `painel/` de uma árvore limpa.** Em 13/11/2026 havia trabalho de outro
+  agente ainda não commitado (`painel/static/calendario.js` não rastreado e
+  mudanças em `painel/static/index.html`, `src/pages/ContasReceber.tsx` e
+  `src/pages/Produtos.tsx`). `scp` leva o que está no disco: antes de copiar,
+  `git status --porcelain` tem que estar limpo, senão o WIP de outro agente vai
+  para produção sem revisão.
 
 ## 5. Execução
 
