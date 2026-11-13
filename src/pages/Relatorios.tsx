@@ -3,17 +3,18 @@ import { motion } from "framer-motion";
 import { BarChart3, TrendingUp, Receipt, DollarSign, Trophy, ShieldCheck, FileText, Download } from "lucide-react";
 import { relatorioVendas, relatorioFiscal, exportarXmlsZip } from "../lib/api";
 import type { RelatorioVendas, RelatorioFiscal } from "../lib/api";
+import CampoData from "../components/CampoData";
+import { dataLocal } from "../../painel/static/calendario.js";
 
 const moeda = (v: number) => `R$ ${(v || 0).toFixed(2)}`;
 const LABEL: Record<string, string> = { dinheiro: "Dinheiro", pix: "PIX", debito: "Débito", credito: "Crédito", fiado: "Fiado" };
 
-function hoje() { return new Date().toISOString().slice(0, 10); }
-function inicioMes() { return hoje().slice(0, 8) + "01"; }
+function inicioMes() { return dataLocal().slice(0, 8) + "01"; }
 
 export default function RelatoriosPage() {
   const [aba, setAba] = useState<"vendas" | "fiscal">("vendas");
   const [inicio, setInicio] = useState(inicioMes());
-  const [fim, setFim] = useState(hoje());
+  const [fim, setFim] = useState(() => dataLocal());
   const [dados, setDados] = useState<RelatorioVendas | null>(null);
   const [fiscal, setFiscal] = useState<RelatorioFiscal | null>(null);
   const [loading, setLoading] = useState(true);
@@ -46,10 +47,9 @@ export default function RelatoriosPage() {
   const atalho = (dias: number) => {
     const f = new Date();
     const i = new Date(); i.setDate(i.getDate() - dias + 1);
-    setInicio(i.toISOString().slice(0, 10)); setFim(f.toISOString().slice(0, 10));
+    setInicio(dataLocal(i)); setFim(dataLocal(f));
   };
 
-  const inputCls = "px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500";
   const card = (icon: React.ReactNode, titulo: string, valor: string, cor?: string) => (
     <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
       <div className="flex items-center gap-2 text-slate-500 text-xs uppercase tracking-wide">{icon}{titulo}</div>
@@ -79,13 +79,13 @@ export default function RelatoriosPage() {
       </div>
 
       <div className="flex flex-wrap items-end gap-2 mb-5">
-        <div><label className="block text-xs text-slate-500 mb-1">De</label><input type="date" value={inicio} onChange={(e) => setInicio(e.target.value)} className={inputCls} /></div>
-        <div><label className="block text-xs text-slate-500 mb-1">Até</label><input type="date" value={fim} onChange={(e) => setFim(e.target.value)} className={inputCls} /></div>
+        <CampoData rotulo="De" valor={inicio} onChange={setInicio} className="w-36 max-w-full" />
+        <CampoData rotulo="Até" valor={fim} onChange={setFim} className="w-36 max-w-full" />
         <div className="flex gap-1">
           <button onClick={() => atalho(1)} className="px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs text-slate-300">Hoje</button>
           <button onClick={() => atalho(7)} className="px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs text-slate-300">7 dias</button>
           <button onClick={() => atalho(30)} className="px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs text-slate-300">30 dias</button>
-          <button onClick={() => { setInicio(inicioMes()); setFim(hoje()); }} className="px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs text-slate-300">Mês</button>
+          <button onClick={() => { setInicio(inicioMes()); setFim(dataLocal()); }} className="px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs text-slate-300">Mês</button>
         </div>
       </div>
 

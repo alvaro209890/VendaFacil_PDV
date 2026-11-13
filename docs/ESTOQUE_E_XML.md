@@ -30,8 +30,9 @@ Importando esse XML, o sistema dá entrada no estoque de uma vez.
 ### Passo a passo (tela Produtos → "📄 Importar XML")
 
 1. Clique em **📄 Importar XML** e selecione o arquivo `.xml` da NF-e.
-2. O sistema lê a nota e mostra uma **prévia** com os itens já **casados pelo
-   código de barras (EAN)** com o seu cadastro:
+2. O sistema lê a nota e abre um **diálogo** com a prévia. Os itens já vêm
+   **casados pelo código de barras (EAN)** com o seu cadastro. Dá para marcar
+   ou desmarcar todos de uma vez:
    - **Repor**: o produto já existe → vai **somar** a quantidade ao estoque.
    - **Criar novo**: não existe → será **cadastrado** (você define o preço de venda).
 3. Confira/edite **quantidade** e **custo** de cada item; desmarque o que não

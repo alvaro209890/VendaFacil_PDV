@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useLayoutEffect, useRef } from "react";
 import {
   listarProdutos,
   criarProduto,
@@ -29,6 +29,8 @@ const CAMPOS_NUMEROS_XML = {
   quantidade: "Entra", preco_custo: "Custo R$", preco_venda: "Venda R$",
 } as const;
 type CampoNumeroXml = keyof typeof CAMPOS_NUMEROS_XML;
+type Mensagem = { tipo: "ok" | "erro"; texto: string };
+const CHECKBOX_IMPORTACAO = "h-5 w-5 shrink-0 cursor-pointer accent-brand-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400 disabled:cursor-not-allowed";
 
 function numeroXmlValido(campo: CampoNumeroXml, valor: number): boolean {
   if (!Number.isFinite(valor)) return false;
@@ -66,7 +68,7 @@ export default function ProdutosPage() {
   const [loading, setLoading] = useState(true);
   const [editando, setEditando] = useState<Produto | null>(null);
   const [novo, setNovo] = useState(false);
-  const [msg, setMsg] = useState<{ tipo: "ok" | "erro"; texto: string } | null>(null);
+  const [msg, setMsg] = useState<Mensagem | null>(null);
 
   // Form state
   const [nome, setNome] = useState("");
@@ -84,10 +86,36 @@ export default function ProdutosPage() {
 
   // Importação de XML (NF-e)
   const fileRef = useRef<HTMLInputElement>(null);
+  const importDialogRef = useRef<HTMLDialogElement>(null);
+  const fiscalDialogRef = useRef<HTMLDialogElement>(null);
   const [importInfo, setImportInfo] = useState<{ emitente: string; numero: string; chave: string } | null>(null);
   const [importItens, setImportItens] = useState<ItemImport[]>([]);
   const [importTextos, setImportTextos] = useState<Record<string, string>>({});
   const [importBusy, setImportBusy] = useState(false);
+  const [importMsg, setImportMsg] = useState<Mensagem | null>(null);
+  const itensSelecionados = importItens.filter((item) => item.incluir);
+  const totalSelecionados = itensSelecionados.length;
+  const totalNovos = itensSelecionados.filter((item) => item.acao === "criar").length;
+  const todosSelecionados = totalSelecionados > 0 && totalSelecionados === importItens.length;
+  const selecaoParcial = totalSelecionados > 0 && !todosSelecionados;
+
+  useLayoutEffect(() => {
+    const dialog = importDialogRef.current;
+    if (!importInfo || !dialog) return;
+    if (!dialog.open) dialog.showModal();
+    return () => {
+      if (dialog.open) dialog.close();
+    };
+  }, [importInfo]);
+
+  useLayoutEffect(() => {
+    const dialog = fiscalDialogRef.current;
+    if (!mostrarFiscal || !dialog) return;
+    if (!dialog.open) dialog.showModal();
+    return () => {
+      if (dialog.open) dialog.close();
+    };
+  }, [mostrarFiscal]);
 
   // Histórico de movimentações de um produto
   const [histProduto, setHistProduto] = useState<Produto | null>(null);
@@ -113,7 +141,7 @@ export default function ProdutosPage() {
     e.target.value = ""; // permite reimportar o mesmo arquivo
     if (!file) return;
     setImportBusy(true);
-    setMsg(null);
+    setImportMsg(null);
     try {
       const prev: PreviewXml = await importarXmlPreview(file);
       setImportTextos({});
@@ -138,7 +166,7 @@ export default function ProdutosPage() {
         incluir: true,
       })));
     } catch (err) {
-      setMsg({ tipo: "erro", texto: (err as Error).message });
+      setImportMsg({ tipo: "erro", texto: (err as Error).message });
     } finally {
       setImportBusy(false);
     }
@@ -164,10 +192,11 @@ export default function ProdutosPage() {
     }));
 
   function fecharImportacao() {
+    importDialogRef.current?.close();
     setImportInfo(null);
     setImportItens([]);
     setImportTextos({});
-    setMsg(null);
+    setImportMsg(null);
   }
 
   const textoImport = (i: number, campo: CampoNumeroXml) =>
@@ -188,25 +217,22 @@ export default function ProdutosPage() {
   }
 
   async function confirmarImportacao() {
+    if (importBusy || !importInfo || totalSelecionados === 0) return;
+    setImportMsg(null);
     for (const [i, it] of importItens.entries()) {
       if (!it.incluir) continue;
       for (const campo of Object.keys(CAMPOS_NUMEROS_XML) as CampoNumeroXml[]) {
         const numero = lerNumeroPtBr(textoImport(i, campo));
         if (numero === null || !numeroXmlValido(campo, numero)) {
-          setMsg({ tipo: "erro", texto: `Item ${i + 1}: valor inválido em ${CAMPOS_NUMEROS_XML[campo]}.` });
+          setImportMsg({ tipo: "erro", texto: `Item ${i + 1}: valor inválido em ${CAMPOS_NUMEROS_XML[campo]}.` });
           return;
         }
       }
     }
-    const sel = importItens.filter((it) => it.incluir);
-    if (sel.length === 0) {
-      setMsg({ tipo: "erro", texto: "Selecione ao menos um item para importar." });
-      return;
-    }
     setImportBusy(true);
     try {
-      const doc = importInfo ? (importInfo.numero || importInfo.chave) : "";
-      const itens: ItemConfirmarXml[] = sel.map((it) => ({
+      const doc = importInfo.numero || importInfo.chave;
+      const itens: ItemConfirmarXml[] = itensSelecionados.map((it) => ({
         produto_id: it.produto_id,
         nome: it.nome,
         codigo_barras: it.codigo_barras,
@@ -221,12 +247,12 @@ export default function ProdutosPage() {
         ncm: it.ncm,
         cfop: it.cfop,
       }));
-      const r = await importarXmlConfirmar(doc, itens, importInfo?.chave || "");
+      const r = await importarXmlConfirmar(doc, itens, importInfo.chave);
       fecharImportacao();
-      setMsg({ tipo: "ok", texto: `Importado! ${r.atualizados} atualizado(s), ${r.criados} novo(s).` });
+      setImportMsg({ tipo: "ok", texto: `Importado! ${r.atualizados} atualizado(s), ${r.criados} novo(s).` });
       carregar();
     } catch (err) {
-      setMsg({ tipo: "erro", texto: (err as Error).message });
+      setImportMsg({ tipo: "erro", texto: (err as Error).message });
     } finally {
       setImportBusy(false);
     }
@@ -511,6 +537,18 @@ export default function ProdutosPage() {
           </div>
         </div>
 
+        {!importInfo && importMsg && (
+          <p
+            role={importMsg.tipo === "erro" ? "alert" : "status"}
+            className={`mb-3 rounded-lg border p-3 text-sm ${importMsg.tipo === "erro"
+              ? "border-red-500/30 bg-red-500/10 text-red-300"
+              : "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"}`}
+          >
+            {importMsg.tipo === "erro" && <strong>Não foi possível ler o XML. </strong>}
+            {importMsg.texto}
+          </p>
+        )}
+
         <div className="flex-1 overflow-y-auto rounded-xl bg-slate-900 border border-slate-800">
           {produtos.length === 0 ? (
             <p className="text-slate-500 text-center py-12 text-sm">Nenhum produto cadastrado ainda.</p>
@@ -772,49 +810,19 @@ export default function ProdutosPage() {
               </div>
             </div>
 
-            <div className="border border-slate-800 rounded-lg overflow-hidden">
-              <button
-                type="button"
-                onClick={() => setMostrarFiscal((v) => !v)}
-                className="w-full flex items-center justify-between px-3 py-2 bg-slate-800/60 text-slate-300 text-xs font-bold uppercase tracking-wide"
-              >
-                <span>🧾 Dados fiscais (NFC-e)</span>
-                <span>{mostrarFiscal ? "−" : "+"}</span>
-              </button>
-              {mostrarFiscal && (
-                <div className="p-3 space-y-2">
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="text-slate-400 text-xs block mb-0.5">NCM</label>
-                      <input value={fiscal.ncm} onChange={(e) => setF("ncm", e.target.value)} placeholder="8 dígitos" className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500" />
-                    </div>
-                    <div>
-                      <label className="text-slate-400 text-xs block mb-0.5">CFOP</label>
-                      <input value={fiscal.cfop} onChange={(e) => setF("cfop", e.target.value)} placeholder="5102" className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500" />
-                    </div>
-                    <div>
-                      <label className="text-slate-400 text-xs block mb-0.5">CEST</label>
-                      <input value={fiscal.cest} onChange={(e) => setF("cest", e.target.value)} placeholder="opcional" className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500" />
-                    </div>
-                    <div>
-                      <label className="text-slate-400 text-xs block mb-0.5">Origem</label>
-                      <input value={fiscal.origem} onChange={(e) => setF("origem", e.target.value)} placeholder="0" className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500" />
-                    </div>
-                    <div>
-                      <label className="text-slate-400 text-xs block mb-0.5">CST/CSOSN</label>
-                      <input value={fiscal.cst_csosn} onChange={(e) => setF("cst_csosn", e.target.value)} placeholder="102" className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500" />
-                    </div>
-                    <div>
-                      <label className="text-slate-400 text-xs block mb-0.5">Alíq. ICMS %</label>
-                      <input type="text" inputMode="decimal" value={fiscal.aliquota_icms ?? ""} onChange={(e) => setF("aliquota_icms", e.target.value)} placeholder="0" className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500" />
-                    </div>
-                  </div>
-                  <p className="text-slate-500 text-[11px] leading-snug">
-                    No Simples Nacional use CSOSN (ex.: 102). NCM e CFOP são obrigatórios para emitir. Em dúvida, consulte seu contador.
-                  </p>
-                </div>
-              )}
-            </div>
+            <button
+              type="button"
+              onClick={() => setMostrarFiscal(true)}
+              className="w-full flex items-center justify-between gap-3 rounded-lg border border-slate-700 bg-slate-800/70 px-3 py-2.5 text-left hover:border-slate-600"
+            >
+              <span className="min-w-0">
+                <span className="block text-xs font-bold uppercase tracking-wide text-slate-200">Dados fiscais (NFC-e)</span>
+                <span className="mt-0.5 block truncate text-[11px] text-slate-400">
+                  {[fiscal.ncm && `NCM ${fiscal.ncm}`, fiscal.cfop && `CFOP ${fiscal.cfop}`, fiscal.cst_csosn && `CSOSN ${fiscal.cst_csosn}`].filter(Boolean).join(" · ") || "Toque para preencher NCM, CFOP e CSOSN"}
+                </span>
+              </span>
+              <span className="shrink-0 text-xs font-semibold text-brand-300">Abrir</span>
+            </button>
 
             <button
               type="submit"
@@ -826,26 +834,104 @@ export default function ProdutosPage() {
         </div>
       )}
 
+      {mostrarFiscal && (
+        <dialog
+          ref={fiscalDialogRef}
+          aria-labelledby="dados-fiscais-titulo"
+          onCancel={(event) => {
+            event.preventDefault();
+            setMostrarFiscal(false);
+          }}
+          className="fixed left-1/2 top-1/2 m-0 w-[min(32rem,calc(100%-1.5rem))] max-h-[min(34rem,calc(100dvh-7rem))] -translate-x-1/2 -translate-y-1/2 open:flex flex-col overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 p-0 text-slate-100 shadow-2xl backdrop:bg-black/75"
+        >
+          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-800 px-4 py-3">
+            <div>
+              <h3 id="dados-fiscais-titulo" className="text-base font-bold text-white">Dados fiscais (NFC-e)</h3>
+              <p className="text-[11px] text-slate-400">Simples Nacional · os valores ficam no produto ao fechar</p>
+            </div>
+            <button type="button" aria-label="Fechar dados fiscais" onClick={() => setMostrarFiscal(false)} className="grid h-8 w-8 place-items-center rounded-lg text-xl leading-none text-slate-400 hover:bg-slate-800 hover:text-white">×</button>
+          </div>
+          <div className="grid min-h-0 flex-1 grid-cols-2 gap-3 overflow-y-auto p-4">
+            <label className="block min-w-0">
+              <span className="mb-1 block text-xs text-slate-400">NCM</span>
+              <input value={fiscal.ncm} inputMode="numeric" maxLength={8} onChange={(e) => setF("ncm", e.target.value.replace(/\D/g, "").slice(0, 8))} placeholder="8 dígitos" className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white outline-none focus:border-brand-500" />
+            </label>
+            <label className="block min-w-0">
+              <span className="mb-1 block text-xs text-slate-400">CFOP</span>
+              <input value={fiscal.cfop} inputMode="numeric" maxLength={4} onChange={(e) => setF("cfop", e.target.value.replace(/\D/g, "").slice(0, 4))} placeholder="5102" className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white outline-none focus:border-brand-500" />
+            </label>
+            <label className="block min-w-0">
+              <span className="mb-1 block text-xs text-slate-400">CEST</span>
+              <input value={fiscal.cest} inputMode="numeric" maxLength={7} onChange={(e) => setF("cest", e.target.value.replace(/\D/g, "").slice(0, 7))} placeholder="Opcional" className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white outline-none focus:border-brand-500" />
+            </label>
+            <label className="block min-w-0">
+              <span className="mb-1 block text-xs text-slate-400">Origem</span>
+              <input value={fiscal.origem} inputMode="numeric" maxLength={1} onChange={(e) => setF("origem", e.target.value.replace(/\D/g, "").slice(0, 1))} placeholder="0" className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white outline-none focus:border-brand-500" />
+            </label>
+            <label className="block min-w-0">
+              <span className="mb-1 block text-xs text-slate-400">CST/CSOSN</span>
+              <input value={fiscal.cst_csosn} inputMode="numeric" maxLength={3} onChange={(e) => setF("cst_csosn", e.target.value.replace(/\D/g, "").slice(0, 3))} placeholder="102" className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white outline-none focus:border-brand-500" />
+            </label>
+            <label className="block min-w-0">
+              <span className="mb-1 block text-xs text-slate-400">Alíquota ICMS %</span>
+              <input type="text" inputMode="decimal" value={fiscal.aliquota_icms ?? ""} onChange={(e) => setF("aliquota_icms", e.target.value)} placeholder="0" className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white outline-none focus:border-brand-500" />
+            </label>
+            <p className="col-span-2 text-xs leading-relaxed text-slate-400">
+              No Simples Nacional use CSOSN, por exemplo 102. NCM e CFOP são obrigatórios para emitir a nota. Em dúvida, confirme com o contador.
+            </p>
+          </div>
+          <div className="shrink-0 border-t border-slate-800 px-4 py-3">
+            <button type="button" onClick={() => setMostrarFiscal(false)} className="w-full rounded-lg bg-brand-600 py-2.5 text-sm font-semibold text-white hover:bg-brand-500">Concluir</button>
+          </div>
+        </dialog>
+      )}
+
       {/* ── Modal: Importar XML (NF-e) ── */}
       {importInfo && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 bg-black/80 backdrop-blur-sm">
-          <div className="w-full max-w-6xl max-h-[90vh] flex flex-col bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
-            <div className="flex items-center justify-between p-4 border-b border-slate-800">
-              <div>
-                <h3 className="text-white font-black text-lg">📄 Importar XML — entrada de estoque</h3>
-                <p className="text-slate-500 text-xs">{importInfo.emitente || "Fornecedor"} · NF {importInfo.numero || "—"}</p>
-              </div>
-              <button onClick={fecharImportacao} className="text-slate-400 hover:text-white text-2xl leading-none">×</button>
+        <dialog
+          ref={importDialogRef}
+          aria-labelledby="importar-xml-titulo"
+          onCancel={(event) => {
+            event.preventDefault();
+            if (!importBusy) fecharImportacao();
+          }}
+          className="fixed inset-0 m-auto w-[calc(100%-1.5rem)] max-w-6xl max-h-[90dvh] open:flex flex-col overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 text-slate-100 backdrop:bg-black/80 backdrop:backdrop-blur-sm"
+        >
+          <div className="flex shrink-0 items-start justify-between gap-3 p-4 border-b border-slate-800">
+            <div>
+              <h3 id="importar-xml-titulo" className="text-white font-black text-base sm:text-lg">📄 Importar XML — entrada de estoque</h3>
+              <p className="text-slate-400 text-xs">{importInfo.emitente || "Fornecedor"} · NF {importInfo.numero || "—"}</p>
             </div>
+            <button type="button" aria-label="Fechar prévia do XML" onClick={fecharImportacao} disabled={importBusy} className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white disabled:opacity-60 text-2xl leading-none">×</button>
+          </div>
 
-            <div className="flex-1 overflow-auto p-3">
-              {msg?.tipo === "erro" && (
-                <p role="alert" className="mb-3 p-3 rounded-lg border border-red-500/30 text-red-400 text-sm">{msg.texto}</p>
-              )}
+          {importMsg?.tipo === "erro" && (
+            <p role="alert" className="mx-4 mt-3 shrink-0 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">{importMsg.texto}</p>
+          )}
+
+          <div className="min-h-0 flex-1 overflow-auto px-3">
+            <fieldset disabled={importBusy} className="min-w-0">
+              <legend className="sr-only">Itens do XML</legend>
               <table className="w-full text-sm">
-                <thead className="text-slate-500 text-xs uppercase text-left">
+                <thead className="sticky top-0 z-10 bg-slate-900 text-slate-300 text-xs uppercase text-left">
                   <tr>
-                    <th className="p-2">Imp.</th>
+                    <th scope="col" className="p-2">
+                      <label className="flex w-fit cursor-pointer items-center gap-2 whitespace-nowrap py-2 normal-case">
+                        <input
+                          type="checkbox"
+                          aria-label="Selecionar todos os itens"
+                          checked={todosSelecionados}
+                          disabled={importItens.length === 0}
+                          ref={(input) => { if (input) input.indeterminate = selecaoParcial; }}
+                          onChange={(event) => {
+                            const incluir = event.target.checked;
+                            setImportItens((itens) => itens.map((item) => ({ ...item, incluir })));
+                          }}
+                          className={CHECKBOX_IMPORTACAO}
+                        />
+                        Todos
+                      </label>
+                    </th>
                     <th className="p-2">Produto</th>
                     <th className="p-2">Ação</th>
                     <th className="p-2 w-24">Un. venda</th>
@@ -859,16 +945,21 @@ export default function ProdutosPage() {
                 </thead>
                 <tbody>
                   {importItens.map((it, i) => (
-                    <tr key={i} className={`border-t border-slate-800 ${!it.incluir ? "opacity-40" : ""}`}>
-                      <td className="p-2"><input type="checkbox" checked={it.incluir} onChange={(e) => setItem(i, "incluir", e.target.checked)} className="w-4 h-4 accent-brand-500" /></td>
+                    <tr key={i} className={`border-t border-slate-800 ${it.incluir ? "bg-brand-500/5" : "bg-slate-950/40"}`}>
+                      <td className="p-2">
+                        <label className="flex w-fit cursor-pointer items-center rounded-lg px-2 py-2 hover:bg-slate-800">
+                          <input type="checkbox" checked={it.incluir} onChange={(e) => setItem(i, "incluir", e.target.checked)} className={CHECKBOX_IMPORTACAO} />
+                          <span className="sr-only">Incluir {it.nome || `item ${i + 1}`}</span>
+                        </label>
+                      </td>
                       <td className="p-2">
                         <input value={it.nome} onChange={(e) => setItem(i, "nome", e.target.value)} className="w-full min-w-52 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white" />
                         <div className="text-slate-500 text-2xs">{it.codigo_barras || "sem código"} · {it.unidade}</div>
                       </td>
                       <td className="p-2">
                         {it.acao === "atualizar"
-                          ? <span className="text-emerald-400 text-xs">repor (tem {it.estoque_atual})</span>
-                          : <span className="text-amber-400 text-xs">criar novo</span>}
+                          ? <span className="block whitespace-nowrap text-emerald-300 text-xs font-medium">Repor estoque <span className="block font-normal text-slate-400">Atual: {fmtQtd(it.estoque_atual)}</span></span>
+                          : <span className="whitespace-nowrap text-amber-300 text-xs font-medium">Criar produto</span>}
                       </td>
                       <td className="p-2">
                         <select value={it.unidade} onChange={(e) => setItem(i, "unidade", e.target.value)} className="w-20 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white">
@@ -893,17 +984,24 @@ export default function ProdutosPage() {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </fieldset>
+          </div>
 
-            <div className="p-4 border-t border-slate-800 flex items-center justify-between gap-3">
-              <p className="text-slate-500 text-xs">Confira quantidades e custos. "Repor" soma ao estoque atual; "criar novo" cadastra o produto.</p>
-              <div className="flex gap-2 shrink-0">
-                <button onClick={fecharImportacao} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm font-bold">Cancelar</button>
-                <button onClick={confirmarImportacao} disabled={importBusy} className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white rounded-lg text-sm font-bold">{importBusy ? "Importando..." : "Confirmar importação"}</button>
-              </div>
+          <div className="p-3 sm:p-4 border-t border-slate-800 flex shrink-0 flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div role="status" aria-atomic="true" className="space-y-1">
+              <p className="text-white text-sm font-semibold">{totalSelecionados} de {importItens.length} itens selecionados</p>
+              <p className="text-slate-400 text-xs">
+                {totalSelecionados > 0
+                  ? `${totalNovos} para criar · ${totalSelecionados - totalNovos} para repor`
+                  : "Selecione pelo menos um item para importar."}
+              </p>
+            </div>
+            <div className="flex flex-wrap justify-end gap-2 sm:shrink-0">
+              <button type="button" onClick={fecharImportacao} disabled={importBusy} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-60 text-slate-300 rounded-lg text-sm font-bold">Cancelar</button>
+              <button type="button" onClick={confirmarImportacao} disabled={importBusy || totalSelecionados === 0} className="px-4 sm:px-5 py-2 bg-emerald-600 enabled:hover:bg-emerald-500 disabled:opacity-60 text-white rounded-lg text-sm font-bold">{importBusy ? "Importando..." : "Confirmar importação"}</button>
             </div>
           </div>
-        </div>
+        </dialog>
       )}
 
       {/* ── Modal: Histórico de movimentações ── */}

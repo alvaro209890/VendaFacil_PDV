@@ -1,5 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { lerNumeroPtBr } from "../lib/numeros";
+import CampoData from "../components/CampoData";
+import type { CalendarioData } from "../../painel/static/calendario.js";
 import {
   listarContasReceber,
   criarContaReceber,
@@ -33,6 +35,7 @@ export default function ContasReceber() {
   const [formClienteId, setFormClienteId] = useState<number | "">("");
   const [formValor, setFormValor] = useState("");
   const [formVencimento, setFormVencimento] = useState("");
+  const vencimentoRef = useRef<CalendarioData>(null);
   const [formObs, setFormObs] = useState("");
   const [msg, setMsg] = useState<{ tipo: "ok" | "erro"; texto: string } | null>(null);
 
@@ -63,6 +66,8 @@ export default function ContasReceber() {
   }
 
   async function handleCriar() {
+    const vencimento = vencimentoRef.current ? vencimentoRef.current.confirmar() : formVencimento;
+    if (vencimento === null) return;
     const valor = lerNumeroPtBr(formValor, 2);
     if (valor === null || valor <= 0) {
       setMsg({ tipo: "erro", texto: "Valor inválido." });
@@ -73,7 +78,7 @@ export default function ContasReceber() {
       await criarContaReceber({
         cliente_id: formClienteId || null,
         valor_total: valor,
-        data_vencimento: formVencimento || null,
+        data_vencimento: vencimento || null,
         observacao: formObs,
       });
       setShowModal(false);
@@ -192,7 +197,7 @@ export default function ContasReceber() {
                         </span>
                       )}
                     </span>
-                    {c.data_vencimento && <span className="text-slate-400">Vence: {c.data_vencimento}</span>}
+                    {c.data_vencimento && <span className="text-slate-400">Vence: {c.data_vencimento.slice(0, 10).split("-").reverse().join("/")}</span>}
                     {c.observacao && <span className="text-slate-500 text-2xs sm:text-xs w-full">{c.observacao}</span>}
                   </div>
                 </div>
@@ -252,11 +257,11 @@ export default function ContasReceber() {
                 onChange={(e) => setFormValor(e.target.value)}
                 className="w-full px-3 py-2.5 bg-slate-800 text-white rounded-lg border border-slate-700 focus:border-brand-500 outline-none text-sm"
               />
-              <input
-                type="date"
-                value={formVencimento}
-                onChange={(e) => setFormVencimento(e.target.value)}
-                className="w-full px-3 py-2.5 bg-slate-800 text-white rounded-lg border border-slate-700 focus:border-brand-500 outline-none text-sm"
+              <CampoData
+                rotulo="Vencimento (opcional)"
+                valor={formVencimento}
+                onChange={setFormVencimento}
+                campoRef={vencimentoRef}
               />
               <input
                 placeholder="Observação"

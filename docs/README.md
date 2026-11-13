@@ -44,6 +44,7 @@
 - [TESTES.md](TESTES.md) — como rodar as suítes de testes (pytest, Node, Playwright).
 - [TESTES_NAVEGADOR.md](TESTES_NAVEGADOR.md) — testes de ponta a ponta no navegador (Playwright).
 - [mobile-refactor.md](mobile-refactor.md) — notas da adaptação das telas para celular.
+- [INTERFACE.md](INTERFACE.md) — calendário próprio, prévia de XML e janela de dados fiscais do produto.
 
 ## ⚖️ Jurídico (modelos — revisar com advogado)
 - [legal/LEIA-ME.md](legal/LEIA-ME.md) — como usar os modelos e o que preencher.
