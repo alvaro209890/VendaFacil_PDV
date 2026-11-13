@@ -40,6 +40,14 @@ REVALIDA_INTERVALO_HORAS = int(os.environ.get("VENDAFACIL_REVALIDA_HORAS", "12")
 CONTA_FILE = DATA_DIR / "conta.json"
 _TIMEOUT = 6
 
+try:
+    from version import APP_VERSION as _VERSAO
+except ImportError:  # pragma: no cover
+    _VERSAO = "?"
+# User-Agent próprio: o Cloudflare (túnel/proxy) bloqueia "Python-urllib/x.y"
+# com 403 "error code: 1010" (Browser Integrity Check).
+USER_AGENT = f"VendaFacilPDV/{_VERSAO}"
+
 
 def licenca_obrigatoria() -> bool:
     return bool(PAINEL_URL)
@@ -103,7 +111,7 @@ def _save(d: dict) -> None:
 
 def _http(method: str, path: str, body: dict | None = None, token: str | None = None):
     url = f"{PAINEL_URL}{path}"
-    headers = {"Content-Type": "application/json"}
+    headers = {"Content-Type": "application/json", "User-Agent": USER_AGENT}
     if token:
         headers["Authorization"] = f"Bearer {token}"
     data = json.dumps(body).encode() if body is not None else None

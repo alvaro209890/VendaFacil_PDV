@@ -23,7 +23,8 @@ def _enviar(token: str, vendas: list[dict]) -> list[str]:
     body = json.dumps({"vendas": vendas}).encode()
     req = urllib.request.Request(
         url, data=body,
-        headers={"Content-Type": "application/json", "Authorization": f"Bearer {token}"},
+        headers={"Content-Type": "application/json", "Authorization": f"Bearer {token}",
+                 "User-Agent": conta_mod.USER_AGENT},
         method="POST",
     )
     with urllib.request.urlopen(req, timeout=_TIMEOUT) as r:
