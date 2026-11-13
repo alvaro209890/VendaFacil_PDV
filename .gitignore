@@ -25,3 +25,9 @@ playwright-report/
 Dados_James/
 *.pfx
 *.p12
+
+# Artefatos gerados nas rodadas de teste (caches do Playwright, PDFs/notas de ensaio,
+# logs de scratch). Ficam no disco para conferencia, mas nao entram no repositorio.
+output/
+logsScratch/
+.scratch-playwright/
