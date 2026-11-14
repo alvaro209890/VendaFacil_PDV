@@ -61,6 +61,7 @@ export default function PDV() {
   // abre a janela de entrada em vez de "Nada encontrado".
   const [todosProdutos, setTodosProdutos] = useState<Produto[]>([]);
   const [janela, setJanela] = useState<JanelaProduto | null>(null);
+  const [janelaSalvando, setJanelaSalvando] = useState(false);
   const [busca, setBusca] = useState("");
   const chaveCarrinho = `vf_carrinho_v1:${useAuthStore((s) => s.user?.id)}`;
   const [carrinho, setCarrinho] = useState<CartItem[]>(() => lerCarrinho(chaveCarrinho));
@@ -104,6 +105,7 @@ export default function PDV() {
   const maqIntentIdRef = useRef<string | null>(null);
   // Vínculo do pagamento eletrônico da última cobrança aprovada (p/ a NFC-e).
   const maqPagamentoRef = useRef<PagamentoEletronico | null>(null);
+  const carrinhoBloqueado = loading || pixLoading || !!maqModal || !!pixModal || !!maqPagamentoRef.current;
 
   const carregar = useCallback(async () => {
     try {
@@ -197,6 +199,7 @@ export default function PDV() {
   }, [modalPagamentoAberto]);
 
   function addAoCarrinho(p: Produto, modo: 'embalagem' | 'unidade' = 'unidade'): boolean {
+    if (carrinhoBloqueado) return false;
     const novo = itemCarrinho(p, modo);
     if (!(novo.preco_venda > 0)) {
       setMsg({tipo:'erro', texto:`"${p.nome}" está sem preço de venda. Cadastre o preço em Produtos antes de vender.`});
@@ -215,6 +218,7 @@ export default function PDV() {
 
   /** Vende 1 ou, se faltar estoque/preço, abre a janela para resolver ali mesmo. */
   function venderOuCompletar(p: Produto, modo: 'embalagem' | 'unidade' = 'unidade') {
+    if (carrinhoBloqueado) return;
     const falta = faltaParaVender(p, modo, carrinho);
     if (falta.semPreco || falta.semEstoque) {
       setMsg(null);
@@ -225,6 +229,7 @@ export default function PDV() {
   }
 
   function fecharJanela() {
+    if (janelaSalvando) return;
     setJanela(null);
     buscaRef.current?.focus();
   }
@@ -331,11 +336,30 @@ export default function PDV() {
   }
 
   function removerDoCarrinho(id: string) {
+    if (carrinhoBloqueado) return;
     limparTextoQuantidade(id);
     setCarrinho((prev) => prev.filter((i) => linhaCarrinho(i) !== id));
+    if (!carrinho.some((i) => linhaCarrinho(i) !== id)) {
+      setDesconto(0);
+      setValorRecebido("");
+      setPagamento("dinheiro");
+      setClienteFiado("");
+      setEmitirNota(false);
+      setCpfConsumidor("");
+    }
+    setMsg(null);
+    setBusca("");
+    buscaRef.current?.focus();
   }
 
   function alterarQtd(id: string, delta: number) {
+    if (carrinhoBloqueado) return;
+    const item = carrinho.find((i) => linhaCarrinho(i) === id);
+    if (!item) return;
+    if (Number((item.qtd + delta).toFixed(3)) <= 0) {
+      removerDoCarrinho(id);
+      return;
+    }
     limparTextoQuantidade(id);
     setCarrinho((prev) =>
       prev.map((i) => {
@@ -345,9 +369,11 @@ export default function PDV() {
         return { ...i, qtd: nova };
       })
     );
+    buscaRef.current?.focus();
   }
 
   function definirQtd(id: string, valor: number) {
+    if (carrinhoBloqueado) return;
     setCarrinho((prev) =>
       prev.map((i) => {
         if (linhaCarrinho(i) !== id) return i;
@@ -726,23 +752,29 @@ export default function PDV() {
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: -20 }}
                       key={linhaCarrinho(i)}
-                      className="flex items-center gap-3 bg-slate-800/50 border border-slate-700/30 rounded-2xl p-3 group"
+                      className="flex flex-wrap items-center gap-3 bg-slate-800/50 border border-slate-700/30 rounded-2xl p-3 group"
                     >
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-[8rem]">
                         <p className="text-white text-sm font-bold truncate">{i.nome}</p>
                         {!!i.vende_por_unidade && <span className="text-brand-300 text-xs font-bold">{i.modo_venda === 'embalagem' ? i.unidade_compra : 'AVULSO'}</span>}
                         <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mt-0.5">R$ {preco.toFixed(2)} / {unidadeCarrinho(i)}</p>
                       </div>
                       <div className="flex items-center gap-2 bg-slate-900/50 rounded-xl p-1 border border-slate-700/50">
                         <button
+                          type="button"
+                          data-acao-carrinho
+                          aria-label={`Diminuir quantidade de ${i.nome}${i.vende_por_unidade ? ` ${unidadeCarrinho(i)}` : ""}`}
+                          title="Diminuir; na última unidade, remove da compra"
+                          disabled={carrinhoBloqueado}
                           onClick={() => alterarQtd(linhaCarrinho(i), -passoQtd(unidadeCarrinho(i)))}
-                          className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+                          className="w-9 h-9 rounded-lg flex items-center justify-center text-slate-300 hover:text-white hover:bg-slate-700 transition-colors disabled:opacity-40"
                         >
                           <Minus size={14} />
                         </button>
                         <input
                           type="text"
                           inputMode="decimal"
+                          disabled={carrinhoBloqueado}
                           ref={linhaCarrinho(i) === linhaCarrinho(carrinho[carrinho.length - 1]) ? quantidadeRef : undefined}
                           aria-label={`Quantidade de ${i.nome}${i.vende_por_unidade ? ` ${unidadeCarrinho(i)}` : ""}`}
                           onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); if (confirmarQuantidade(linhaCarrinho(i), limiteCarrinho(i, carrinho))) buscaRef.current?.focus(); } }}
@@ -753,26 +785,37 @@ export default function PDV() {
                             const numero = decimalDigitado(texto, 3);
                             if (numero !== null && numero > 0 && numero <= limiteCarrinho(i, carrinho)) definirQtd(linhaCarrinho(i), numero);
                           }}
-                          onBlur={() => { confirmarQuantidade(linhaCarrinho(i), limiteCarrinho(i, carrinho)); }}
+                          onBlur={(e) => {
+                            if (e.relatedTarget instanceof HTMLElement && e.relatedTarget.closest('[data-acao-carrinho]')) return;
+                            confirmarQuantidade(linhaCarrinho(i), limiteCarrinho(i, carrinho));
+                          }}
                           min={passoQtd(unidadeCarrinho(i))}
                           max={limiteCarrinho(i, carrinho)}
                           step={passoQtd(unidadeCarrinho(i))}
                           className="w-14 bg-transparent text-white text-xs font-bold text-center focus:outline-none"
                         />
                         <button
+                          type="button"
+                          data-acao-carrinho
+                          aria-label={`Aumentar quantidade de ${i.nome}${i.vende_por_unidade ? ` ${unidadeCarrinho(i)}` : ""}`}
+                          disabled={carrinhoBloqueado}
                           onClick={() => alterarQtd(linhaCarrinho(i), passoQtd(unidadeCarrinho(i)))}
-                          className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+                          className="w-9 h-9 rounded-lg flex items-center justify-center text-slate-300 hover:text-white hover:bg-slate-700 transition-colors disabled:opacity-40"
                         >
                           <Plus size={14} />
                         </button>
                       </div>
-                      <div className="text-right w-20">
+                      <div className="ml-auto text-right min-w-20">
                         <p className="text-brand-400 font-black text-sm">R$ {sub.toFixed(2)}</p>
                         <button
+                          type="button"
+                          data-acao-carrinho
+                          aria-label={`Remover ${i.nome}${i.vende_por_unidade ? ` ${unidadeCarrinho(i)}` : ""} da compra`}
+                          disabled={carrinhoBloqueado}
                           onClick={() => removerDoCarrinho(linhaCarrinho(i))}
-                          className="text-slate-600 hover:text-red-400 transition-colors mt-1"
+                          className="mt-1 inline-flex items-center gap-1 rounded-lg bg-red-500/10 px-2 py-2 text-xs font-bold text-red-300 hover:bg-red-500/20 disabled:opacity-40"
                         >
-                          <Trash2 size={14} className="ml-auto" />
+                          <Minus size={14} /> Remover
                         </button>
                       </div>
                     </motion.div>
@@ -1028,7 +1071,7 @@ export default function PDV() {
         )}
       </div>
 
-      {janela && <JanelaProdutoModal janela={janela} onFechar={fecharJanela} onPronto={produtoPronto} />}
+      {janela && <JanelaProdutoModal janela={janela} onFechar={fecharJanela} onPronto={produtoPronto} onSalvando={setJanelaSalvando} />}
 
       {/* ── Modal PIX QR Code ── */}
       <AnimatePresence>

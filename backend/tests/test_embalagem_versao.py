@@ -6,4 +6,4 @@ ROOT=Path(__file__).resolve().parents[2]
 
 @pytest.mark.parametrize('arquivo',['backend/version.py','installer/vendafacil.iss','scripts/roteiro_exe.py'])
 def test_entrega_janela_produto_1018(arquivo):
-    assert '"1.0.20"' in (ROOT/arquivo).read_text(encoding='utf-8')
+    assert '"1.0.21"' in (ROOT/arquivo).read_text(encoding='utf-8')

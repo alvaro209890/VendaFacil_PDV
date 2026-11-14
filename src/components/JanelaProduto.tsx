@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { PackagePlus, X } from "lucide-react";
+import { PackagePlus, Minus, X } from "lucide-react";
 import { criarProduto, atualizarProduto, entradaEstoque } from "../lib/api";
 import type { Produto } from "../lib/api";
 import { lerNumeroPtBr } from "../lib/numeros";
@@ -17,10 +17,11 @@ const UNIDADES = ["UN", "KG", "G", "LT", "ML", "CX", "FD", "PCT"];
 const fmt = (n: number) => Number(n || 0).toLocaleString("pt-BR", { maximumFractionDigits: 3 });
 const CAMPO = "mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-brand-500 focus:outline-none";
 
-export default function JanelaProdutoModal({ janela, onFechar, onPronto }: {
+export default function JanelaProdutoModal({ janela, onFechar, onPronto, onSalvando }: {
   janela: JanelaProduto;
   onFechar: () => void;
   onPronto: (produto: Produto, modo: "embalagem" | "unidade", criado: boolean) => void;
+  onSalvando: (salvando: boolean) => void;
 }) {
   const cadastrar = janela.tipo === "cadastrar";
   const p = janela.tipo === "completar" ? janela.produto : null;
@@ -55,6 +56,7 @@ export default function JanelaProdutoModal({ janela, onFechar, onPronto }: {
     if (cadastrar && ncm.trim() && !/^\d{8}$/.test(ncm.trim())) { setErro("NCM tem 8 dígitos (ou deixe em branco)."); return; }
     setErro("");
     setSalvando(true);
+    onSalvando(true);
     try {
       let produto: Produto;
       if (cadastrar) {
@@ -77,6 +79,7 @@ export default function JanelaProdutoModal({ janela, onFechar, onPronto }: {
       setErro((err as Error).message);
     } finally {
       setSalvando(false);
+      onSalvando(false);
     }
   }
 
@@ -87,11 +90,11 @@ export default function JanelaProdutoModal({ janela, onFechar, onPronto }: {
     <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-[#020617]/90 backdrop-blur-sm" onClick={onFechar} />
       <form role="dialog" aria-modal="true" aria-labelledby="janela-produto-titulo" onSubmit={salvar}
-        className="relative w-full max-w-md space-y-3 rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-2xl">
+        className="relative max-h-[90dvh] w-full max-w-md space-y-3 overflow-y-auto rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-2xl">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-600/10 text-brand-400"><PackagePlus size={20} /></div>
           <h2 id="janela-produto-titulo" className="flex-1 text-lg font-black text-white">{titulo}</h2>
-          <button type="button" aria-label="Fechar" onClick={onFechar} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-800"><X size={18} /></button>
+          <button type="button" aria-label="Fechar" disabled={salvando} onClick={onFechar} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-800 disabled:opacity-40"><X size={18} /></button>
         </div>
 
         {cadastrar ? (
@@ -117,8 +120,8 @@ export default function JanelaProdutoModal({ janela, onFechar, onPronto }: {
         {cadastrar && <p className="text-2xs text-slate-500">Categoria, estoque mínimo, dados fiscais e caixa + unidade: complete depois em Produtos.</p>}
 
         {erro && <p role="alert" className="rounded-lg border border-red-500/30 bg-red-500/10 p-2 text-sm text-red-300">{erro}</p>}
-        <div className="flex justify-end gap-2 pt-1">
-          <button type="button" onClick={onFechar} className="rounded-xl bg-slate-800 px-4 py-2 text-sm font-bold text-slate-300 hover:bg-slate-700">Cancelar (Esc)</button>
+        <div className="flex flex-col justify-end gap-2 pt-1 sm:flex-row">
+          <button type="button" disabled={salvando} onClick={onFechar} title="Pular este produto e continuar a leitura (Esc)" className="inline-flex items-center justify-center gap-1 rounded-xl bg-red-500/10 px-4 py-2 text-sm font-bold text-red-300 hover:bg-red-500/20 disabled:opacity-40"><Minus size={16} /> Não vender este produto</button>
           <button type="submit" disabled={salvando} className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white enabled:hover:bg-emerald-500 disabled:opacity-60">{salvando ? "Salvando..." : botao}</button>
         </div>
       </form>

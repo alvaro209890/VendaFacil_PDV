@@ -16,7 +16,7 @@ def main():
     with tempfile.TemporaryDirectory(prefix='vf-fiado-') as dados:
         pdv = Pdv(args.exe, Path(dados))
         try:
-            assert pdv.iniciar()['version'] == '1.0.20'
+            assert pdv.iniciar()['version'] == '1.0.21'
             pdv.login(novo=True)
             pdv.pedir('PUT', '/api/pix/config', dados={'pix_chave': 'teste@example.com', 'pix_nome': 'LOJA TESTE', 'pix_cidade': 'QUERENCIA'})
             pdv.pedir('POST', '/api/caixa/abrir', dados={'valor_abertura': 10})
