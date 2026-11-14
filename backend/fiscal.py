@@ -172,8 +172,11 @@ def montar_payload(venda: dict, config: dict, cpf: str | None = None) -> dict:
     itens = []
     for i, it in enumerate(venda.get("itens", []), start=1):
         prod = db.get_produto(it["produto_id"]) or {}
-        unidade = (prod.get("unidade") or "UN").upper()
-        und_trib = (prod.get("unidade_tributavel") or unidade).upper()
+        unidade = (it.get("unidade_venda") or prod.get("unidade") or "UN").upper()
+        unidade = {"CARTEIRA": "CART", "DISPLAY": "DISP", "PACOTE": "PCT"}.get(unidade, unidade[:6])
+        dupla = it.get("modo_venda") in {"unidade", "embalagem"}
+        qtd_trib = (it.get("quantidade_estoque") or it["quantidade"]) if dupla else it["quantidade"]
+        und_trib = "UN" if dupla else (prod.get("unidade_tributavel") or unidade).upper()
         itens.append({
             "numero_item": i,
             "codigo_produto": str(it["produto_id"]),
@@ -186,8 +189,8 @@ def montar_payload(venda: dict, config: dict, cpf: str | None = None) -> dict:
             "valor_unitario_comercial": round(it["preco_unitario"], 4),
             "valor_bruto": round(it["subtotal"], 2),
             "unidade_tributavel": und_trib,
-            "quantidade_tributavel": it["quantidade"],
-            "valor_unitario_tributavel": round(it["preco_unitario"], 4),
+            "quantidade_tributavel": qtd_trib,
+            "valor_unitario_tributavel": round(it["subtotal"] / qtd_trib if dupla else it["preco_unitario"], 4),
             "icms_origem": prod.get("origem") or "0",
             "icms_situacao_tributaria": prod.get("cst_csosn") or "102",
             "icms_aliquota": prod.get("aliquota_icms") or 0,

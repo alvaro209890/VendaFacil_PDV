@@ -717,14 +717,20 @@ def montar_documento(venda: dict, config: dict, modelo: str = "65",
         if prod.get("cest"):
             _tag(p, "CEST", so_digitos(prod.get("cest")))
         _tag(p, "CFOP", prod.get("cfop"))
-        _tag(p, "uCom", (prod.get("unidade") or "UN").upper())
+        unidade_com = (item.get("unidade_venda") or prod.get("unidade") or "UN").upper()
+        # uCom tem até 6 caracteres no leiaute; a descrição mantém o nome completo.
+        unidade_com = {"CARTEIRA": "CART", "DISPLAY": "DISP", "PACOTE": "PCT"}.get(unidade_com, unidade_com[:6])
+        _tag(p, "uCom", unidade_com)
         _tag(p, "qCom", f"{qtd:.4f}")
         _tag(p, "vUnCom", f"{val:.4f}")
         _tag(p, "vProd", f"{bruto:.2f}")
         _tag(p, "cEANTrib", prod.get("codigo_barras") or "SEM GTIN")
-        _tag(p, "uTrib", (prod.get("unidade_tributavel") or prod.get("unidade") or "UN").upper())
-        _tag(p, "qTrib", f"{qtd:.4f}")
-        _tag(p, "vUnTrib", f"{val:.4f}")
+        dupla = item.get("modo_venda") in {"unidade", "embalagem"}
+        qtd_trib = float(item.get("quantidade_estoque") or qtd) if dupla else qtd
+        val_trib = float(bruto) / qtd_trib if dupla else val
+        _tag(p, "uTrib", "UN" if dupla else (prod.get("unidade_tributavel") or prod.get("unidade") or "UN").upper())
+        _tag(p, "qTrib", f"{qtd_trib:.4f}")
+        _tag(p, "vUnTrib", f"{val_trib:.4f}")
         if vdesc > 0:
             _tag(p, "vDesc", f"{vdesc:.2f}")
         _tag(p, "indTot", "1")

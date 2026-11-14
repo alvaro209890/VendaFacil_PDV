@@ -37,3 +37,7 @@
 - **2026-11-13 — Codex — E4.1 fim**: pytest backend 492 passed, 9 deselected; Playwright XML/embalagem 18 passed. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
 
 - **2026-11-13 — Codex — E4.2 inicio**: Teste real da NF-e 446817: vf-nota.xml, 600 UN e custo 2,74 sem conversão pelo nome. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
+
+- **2026-11-13 — Codex — E4.2 fim**: Playwright e2e/embalagem.spec.ts com VF_XML_REAL: T8 real passou, 18 testes verdes; hash no 03_TESTES. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
+
+- **2026-11-13 — Codex — E5.1 inicio**: T10 falhou: uCom UN em vez de CART; corrigir snapshots fiscais sem transmitir. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.

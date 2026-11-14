@@ -22,11 +22,11 @@ Ordem fixa. Um `[~]` por vez.
 ## E4 — XML
 
 - [x] **E4.1** Prévia converte embalagem já configurada e não mexe no preço de venda (T7). — 29d718c · pytest backend 492 passed, 9 deselected; Playwright XML/embalagem 18 passed
-- [~] **E4.2** Nota em UN não multiplica pelo número do nome. A pergunta aparece; sem resposta, fator 1 (T8). O caso Kaiser da especificação entra no teste.
+- [x] **E4.2** Nota em UN não multiplica pelo número do nome. A pergunta aparece; sem resposta, fator 1 (T8). O caso Kaiser da especificação entra no teste. — f7fe918 · Playwright e2e/embalagem.spec.ts com VF_XML_REAL: T8 real passou, 18 testes verdes; hash no 03_TESTES
 
 ## E5 — Cupom
 
-- [ ] **E5.1** Linha fiscal e cupom com a unidade e o preço vendidos (T10). Homologação. Sem chamada à SEFAZ.
+- [~] **E5.1** Linha fiscal e cupom com a unidade e o preço vendidos (T10). Homologação. Sem chamada à SEFAZ.
 
 ## E6 — Navegador
 
