@@ -13,3 +13,7 @@
 - **2026-11-13 — Codex — E2.1 fim**: 9 regressões falharam antes; pytest backend inteiro: 475 passed, 9 deselected. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
 
 - **2026-11-13 — Codex — E2.2 inicio**: Tela de cadastro, dois preços e estoque de balcão; teste Node falhou por módulo ausente. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
+
+- **2026-11-13 — Codex — E2.2 fim**: npm run build; npx eslint .; node --test frontend-tests/embalagem.test.mjs: 1 passed; backend 475 passed. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
+
+- **2026-11-13 — Codex — E2.3 inicio**: T9: fator 20 para 30 preserva 65 unidades e dois preços; já verde após E2.1, sem defeito adicional. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.

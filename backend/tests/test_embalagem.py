@@ -51,3 +51,12 @@ def test_t9_trocar_fator_preserva_estoque(client,auth):
     p=r.json()['produto']
     assert p['quantidade_por_embalagem']==30 and p['estoque']==65
     assert p['preco_embalagem']==20 and p['preco_unidade']==2
+
+
+def test_t9_desligar_e_religar_nao_reconta(client,auth):
+    p=criar(client,auth)
+    url=f"/api/produtos/{p['id']}"
+    for data in ({'vende_por_unidade':False}, {'vende_por_unidade':True,'preco_embalagem':30,'preco_unidade':3}):
+        r=client.put(url,headers=auth,json=data)
+        assert r.status_code==200,r.text
+        assert r.json()['produto']['estoque']==65
