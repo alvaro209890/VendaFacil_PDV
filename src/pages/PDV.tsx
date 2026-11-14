@@ -199,7 +199,7 @@ export default function PDV() {
   function addAoCarrinho(p: Produto, modo: 'embalagem' | 'unidade' = 'unidade') {
     const novo = itemCarrinho(p, modo);
     if (!(novo.preco_venda > 0)) {
-      setMsg({tipo:'erro', texto:`"${p.nome}" sem preço de venda. Cadastre o preço em Produtos antes de vender.`});
+      setMsg({tipo:'erro', texto:`"${p.nome}" está sem preço de venda. Cadastre o preço em Produtos antes de vender.`});
       return;
     }
     const existe = carrinho.find(i => linhaCarrinho(i) === linhaCarrinho(novo));

@@ -259,6 +259,9 @@ export function desativarProduto(id: number): Promise<{ ok: boolean }> {
 // ── Estoque: importação de XML (NF-e) e entrada manual ──
 
 export interface ItemXml {
+  fator_entrada: number;
+  perguntar_embalagem: boolean;
+  mensagem_entrada: string;
   nome: string;
   codigo_barras: string;
   unidade: string;
@@ -291,6 +294,9 @@ export interface PreviewXml {
 }
 
 export interface ItemConfirmarXml {
+  confirmar_abertura?: boolean;
+  unidade_xml?: string;
+  valor_unitario_xml?: number;
   produto_id: number | null;
   nome: string;
   codigo_barras: string;

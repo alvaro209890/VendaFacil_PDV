@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { readFileSync } from 'node:fs';
 const api = process.env.VF_EMBALAGEM_API || 'http://127.0.0.1:3121';
 const fixture = {usuario:'e2e-carrinho',nome:'Teste descartável',senha:'fixture-e2e-carrinho'};
 let token:string;
@@ -6,6 +7,45 @@ test.beforeAll(async ({request})=>{
   let r=await request.post(`${api}/api/auth/login`,{data:fixture});
   if(r.status()===401) r=await request.post(`${api}/api/auth/registro`,{data:fixture});
   expect(r.status()).toBe(200); token=(await r.json()).token;
+});
+
+if (process.env.VF_XML_REAL) test('T8 real: NF-e 446817 baixada mantém 600 UN',async({page,request})=>{
+  await page.addInitScript(t=>localStorage.setItem('vf_token',t),token);
+  await page.goto('/produtos');
+  await page.locator('input[type=file]').setInputFiles({name:'nota-baixada.xml',mimeType:'text/xml',buffer:readFileSync(process.env.VF_XML_REAL!)});
+  const dialog=page.getByRole('dialog').filter({hasText:'Confirmar importação'});
+  await expect(dialog.getByText(/Isto é embalagem fechada/)).toBeVisible();
+  await expect(dialog.getByRole('checkbox',{name:/Isto é embalagem/})).not.toBeChecked();
+  await expect(dialog.getByText(/600 UN viram 600 UN/)).toBeVisible();
+  await page.screenshot({path:'output/playwright/xml-real-600.png',fullPage:true});
+  await dialog.getByRole('button',{name:'Confirmar importação',exact:true}).click();
+  await expect(page.getByText(/Importado!/)).toBeVisible();
+  const ps=(await (await request.get(`${api}/api/produtos`,{headers:{Authorization:`Bearer ${token}`}})).json()).produtos;
+  const p=ps.find((p:{nome:string})=>p.nome==='CX 00050 KAISER LT 350ML');
+  expect(p.estoque).toBe(600); expect(p.preco_custo).toBe(2.74); expect(p.preco_venda).toBe(3.56); expect(p.vende_por_unidade).toBe(0);
+});
+
+test('XML: confirmação explícita exige dois preços e converte compra nova',async({page,request})=>{
+  await page.addInitScript(t=>localStorage.setItem('vf_token',t),token);
+  await page.goto('/produtos');
+  const xml='<NFe><infNFe><ide><mod>55</mod><nNF>12</nNF></ide><emit><xNome>Fornecedor teste</xNome></emit><det><prod><cEAN>SEM GTIN</cEAN><xProd>Carteira Nova T11</xProd><uCom>UN</uCom><qCom>2</qCom><vUnCom>10</vUnCom></prod></det></infNFe></NFe>';
+  await page.locator('input[type=file]').setInputFiles({name:'nova-carteira.xml',mimeType:'text/xml',buffer:Buffer.from(xml)});
+  const dialog=page.getByRole('dialog').filter({hasText:'Confirmar importação'});
+  await dialog.getByRole('checkbox',{name:/Isto é embalagem fechada/}).check();
+  await dialog.getByLabel('Embalagem do item 1',{exact:true}).fill('CARTEIRA');
+  const tabela=dialog.getByRole('table');
+  const titulos=(await tabela.getByRole('columnheader').allTextContents()).map(t=>t.trim());
+  await tabela.locator('tbody tr').first().getByRole('cell').nth(titulos.indexOf('Qtd/emb.')).locator('input').fill('20');
+  await dialog.getByRole('button',{name:'Confirmar importação',exact:true}).click();
+  await expect(dialog.getByRole('alert')).toContainText('dois preços');
+  await dialog.getByLabel('Preço da embalagem do item 1',{exact:true}).fill('20');
+  await dialog.getByLabel('Preço da unidade do item 1',{exact:true}).fill('2');
+  await expect(dialog.getByText(/2 UN viram 40 UN/)).toBeVisible();
+  await dialog.getByRole('button',{name:'Confirmar importação',exact:true}).click();
+  await expect(page.getByText(/Importado!/)).toBeVisible();
+  const ps=(await (await request.get(`${api}/api/produtos`,{headers:{Authorization:`Bearer ${token}`}})).json()).produtos;
+  const p=ps.find((p:{nome:string})=>p.nome==='Carteira Nova T11');
+  expect(p.estoque).toBe(40); expect(p.preco_custo).toBe(0.5); expect(p.preco_embalagem).toBe(20); expect(p.preco_unidade).toBe(2);
 });
 test('T11: cadastro, entrada de 2 carteiras, venda mista e recusa',async({page,request})=>{
   await page.addInitScript(t=>localStorage.setItem('vf_token',t),token);

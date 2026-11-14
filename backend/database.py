@@ -1141,6 +1141,11 @@ class Database:
                         if cur.rowcount != 1:
                             raise sqlite3.IntegrityError("Produto da entrada não foi criado.")
                         pid = cur.lastrowid
+                        if it.get("vende_por_unidade"):
+                            self._conn.execute(
+                                "UPDATE produtos SET vende_por_unidade=1, preco_embalagem=?, preco_unidade=? WHERE id=?",
+                                (it["preco_embalagem"], it["preco_unidade"], pid),
+                            )
                         criados += 1
                     observacao = f"{it['nome']} ({it.get('quantidade_xml') or it['quantidade']} {it['unidade_compra'] or it['unidade']})"
                     cur = self._conn.execute(

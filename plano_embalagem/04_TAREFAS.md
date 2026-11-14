@@ -17,11 +17,11 @@ Ordem fixa. Um `[~]` por vez.
 
 - [x] **E3.1** Checkout aceita o modo. Sem modo = unidade (T5). Carteira só no modo embalagem. — 3acf694 · pytest backend: 487 passed, 9 deselected; antes 10 failed e 1 passed em vendas
 - [x] **E3.2** Baixa, recusa por falta de unidade, histórico e lucro (T2, T3, T4). — 6bfad27 · pytest backend: 488 passed, 9 deselected; lucro 14,50 e estorno por snapshot
-- [~] **E3.3** PDV com os dois botões e o código de barras da embalagem lançando a carteira.
+- [x] **E3.3** PDV com os dois botões e o código de barras da embalagem lançando a carteira. — d41e91d · Playwright embalagem e cadastro: 9 passed; Node 2 passed; build e lint verdes; backend 488 passed
 
 ## E4 — XML
 
-- [ ] **E4.1** Prévia converte embalagem já configurada e não mexe no preço de venda (T7).
+- [~] **E4.1** Prévia converte embalagem já configurada e não mexe no preço de venda (T7).
 - [ ] **E4.2** Nota em UN não multiplica pelo número do nome. A pergunta aparece; sem resposta, fator 1 (T8). O caso Kaiser da especificação entra no teste.
 
 ## E5 — Cupom

@@ -65,7 +65,7 @@ test('U06 XML cobertura: zero selecionado bloqueia lote, exclusao explicita perm
   await expect.poll(async () => envios > 0 || await page.getByRole('alert').isVisible()).toBe(true);
   expect(envios).toBe(0);
   await expect(page.getByRole('alert')).toContainText('Entra');
-  await linha.getByRole('checkbox').uncheck();
+  await linha.getByRole('checkbox', {name:/^Incluir /}).uncheck();
   const resposta = page.waitForResponse(r => r.url().endsWith('/api/produtos/importar-xml/confirmar') && r.request().method() === 'POST');
   await page.getByRole('button', { name: 'Confirmar importação', exact: true }).click();
   const confirmacao = await resposta;

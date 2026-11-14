@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 from auth import _verificar_jwt, _agora
 from database import db, NotaEntradaDuplicada
 import importacao_xml
+import re
 
 router = APIRouter()
 
@@ -95,6 +96,12 @@ class ProdutoUpdate(FiscalMixin):
 
 class ItemImportar(BaseModel):
     model_config = {"allow_inf_nan": False}
+    vende_por_unidade: bool = False
+    preco_embalagem: float = Field(default=0, ge=0)
+    preco_unidade: float = Field(default=0, ge=0)
+    confirmar_abertura: bool = False
+    unidade_xml: str | None = Field(default=None, max_length=10)
+    valor_unitario_xml: float | None = Field(default=None, ge=0)
 
     produto_id: int | None = None        # None = criar produto novo
     nome: str = Field(min_length=1, max_length=120)
@@ -245,6 +252,12 @@ async def importar_xml_preview(request: Request):
         custo_unitario = round((it["valor_unitario"] / fator) if fator else it["valor_unitario"], 4)
         itens.append({
             **it,
+            "fator_entrada": fator,
+            "vende_por_unidade": bool(match and match.get("vende_por_unidade")),
+            "preco_embalagem": match.get("preco_embalagem", 0) if match else 0,
+            "preco_unidade": match.get("preco_unidade", 0) if match else 0,
+            "perguntar_embalagem": not match and unidade_xml == "UN" and bool(re.search(r"\b(CX|CAIXA|FD|FARDO|PCT|PACOTE|DISPLAY|CARTEIRA)\b", it["nome"], re.I)),
+            "mensagem_entrada": f"{quantidade_xml:g} {unidade_xml} viram {quantidade_estoque:g} {unidade_estoque}; custo de cada unidade R$ {custo_unitario:.4f}." + (" Os dois preços de venda serão mantidos." if match and match.get("vende_por_unidade") else ""),
             "unidade_xml": unidade_xml,
             "unidade": unidade_estoque,
             "unidade_compra": unidade_compra,
@@ -281,6 +294,25 @@ async def importar_xml_confirmar(data: ConfirmarImportacao, request: Request):
         normalizado["unidade"] = _norm_unidade(item.unidade)
         normalizado["unidade_compra"] = _norm_unidade(item.unidade_compra, item.unidade)
         normalizado["quantidade_por_embalagem"] = _fator(item.quantidade_por_embalagem)
+        existente = db.get_produto(item.produto_id, user_id) if item.produto_id else db.get_produto_by_codigo(user_id, normalizado["codigo_barras"])
+        if not existente and item.vende_por_unidade:
+            validar_embalagem(normalizado)
+            if not item.confirmar_abertura or item.quantidade_xml is None or item.valor_unitario_xml is None:
+                raise HTTPException(status_code=400, detail="Confirme a abertura e informe quantidade, custo da nota e os dois preços.")
+            normalizado["unidade"] = "UN"
+            normalizado["quantidade"] = round(item.quantidade_xml * item.quantidade_por_embalagem, 4)
+            normalizado["preco_custo"] = round(item.valor_unitario_xml / item.quantidade_por_embalagem, 4)
+        elif existente and existente.get("vende_por_unidade") and item.unidade_xml and item.quantidade_xml is not None:
+            un_xml = _norm_unidade(item.unidade_xml)
+            fator = existente["quantidade_por_embalagem"] if un_xml == existente["unidade_compra"] else 1
+            normalizado["quantidade"] = round(item.quantidade_xml * fator, 4)
+            if item.valor_unitario_xml is not None:
+                normalizado["preco_custo"] = round(item.valor_unitario_xml / fator, 4)
+        elif not existente and _norm_unidade(item.unidade_xml or item.unidade) == "UN" and item.quantidade_xml is not None:
+            normalizado["quantidade"] = item.quantidade_xml
+            if item.valor_unitario_xml is not None:
+                normalizado["preco_custo"] = item.valor_unitario_xml
+            normalizado["quantidade_por_embalagem"] = 1
         itens.append(normalizado)
     try:
         return db.importar_entrada_atomica(user_id, chave, doc, itens, agora)

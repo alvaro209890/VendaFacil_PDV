@@ -23,11 +23,14 @@ type ItemImport = ItemConfirmarXml & {
   estoque_atual: number;
   incluir: boolean;
   valor_unitario_xml?: number;
+  perguntar_embalagem?: boolean;
+  fator_entrada?: number;
 };
 
 const CAMPOS_NUMEROS_XML = {
   quantidade_xml: "Qtd XML", quantidade_por_embalagem: "Qtd/emb.",
   quantidade: "Entra", preco_custo: "Custo R$", preco_venda: "Venda R$",
+  preco_embalagem: "Preço da embalagem", preco_unidade: "Preço da unidade",
 } as const;
 type CampoNumeroXml = keyof typeof CAMPOS_NUMEROS_XML;
 type Mensagem = { tipo: "ok" | "erro"; texto: string };
@@ -154,6 +157,12 @@ export default function ProdutosPage() {
       setImportInfo({ emitente: prev.emitente, numero: prev.numero, chave: prev.chave });
       setImportItens(prev.itens.map((it) => ({
         produto_id: it.produto_id,
+        vende_por_unidade: !!it.vende_por_unidade,
+        preco_embalagem: it.preco_embalagem || 0,
+        preco_unidade: it.preco_unidade || 0,
+        unidade_xml: it.unidade_xml,
+        fator_entrada: it.fator_entrada,
+        perguntar_embalagem: it.perguntar_embalagem,
         nome: it.nome,
         codigo_barras: it.codigo_barras,
         unidade: it.unidade,
@@ -182,10 +191,12 @@ export default function ProdutosPage() {
     setImportItens((arr) => arr.map((it, idx) => {
       if (idx !== i) return it;
       const next = { ...it, [campo]: valor };
-      if (campo === "quantidade_por_embalagem" || campo === "quantidade_xml") {
-        const fator = fatorSeguro(next.quantidade_por_embalagem);
+      if (["quantidade_por_embalagem", "quantidade_xml", "confirmar_abertura", "unidade_compra"].includes(campo)) {
+        const fator = next.confirmar_abertura ? fatorSeguro(next.quantidade_por_embalagem)
+          : next.vende_por_unidade ? (next.unidade_xml === next.unidade_compra ? fatorSeguro(next.quantidade_por_embalagem) : 1)
+          : next.unidade_xml === 'UN' ? 1 : fatorSeguro(next.quantidade_por_embalagem);
         const qtdXml = Number(next.quantidade_xml || 0);
-        next.quantidade_por_embalagem = fator;
+        next.fator_entrada = fator;
         next.quantidade = Number((qtdXml * fator).toFixed(4));
         if (next.valor_unitario_xml) {
           next.preco_custo = Number((next.valor_unitario_xml / fator).toFixed(4));
@@ -228,11 +239,15 @@ export default function ProdutosPage() {
     for (const [i, it] of importItens.entries()) {
       if (!it.incluir) continue;
       for (const campo of Object.keys(CAMPOS_NUMEROS_XML) as CampoNumeroXml[]) {
+        if ((campo === 'preco_embalagem' || campo === 'preco_unidade') && !it.confirmar_abertura) continue;
         const numero = lerNumeroPtBr(textoImport(i, campo));
         if (numero === null || !numeroXmlValido(campo, numero)) {
           setImportMsg({ tipo: "erro", texto: `Item ${i + 1}: valor inválido em ${CAMPOS_NUMEROS_XML[campo]}.` });
           return;
         }
+      }
+      if (it.confirmar_abertura && (!(Number(it.preco_embalagem) > 0) || !(Number(it.preco_unidade) > 0) || !Number.isInteger(it.quantidade_por_embalagem) || !it.unidade_compra || it.unidade_compra === 'UN')) {
+        setImportMsg({tipo:'erro',texto:`Item ${i + 1}: informe embalagem, quantidade inteira e os dois preços maiores que zero.`}); return;
       }
     }
     setImportBusy(true);
@@ -240,6 +255,10 @@ export default function ProdutosPage() {
       const doc = importInfo.numero || importInfo.chave;
       const itens: ItemConfirmarXml[] = itensSelecionados.map((it) => ({
         produto_id: it.produto_id,
+        vende_por_unidade: !!it.confirmar_abertura || !!it.vende_por_unidade,
+        preco_embalagem: it.preco_embalagem || 0, preco_unidade: it.preco_unidade || 0,
+        confirmar_abertura: it.confirmar_abertura,
+        unidade_xml: it.unidade_xml, valor_unitario_xml: it.valor_unitario_xml,
         nome: it.nome,
         codigo_barras: it.codigo_barras,
         unidade: it.unidade,
@@ -993,6 +1012,15 @@ export default function ProdutosPage() {
                       <td className="p-2">
                         <input value={it.nome} onChange={(e) => setItem(i, "nome", e.target.value)} className="w-full min-w-52 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white" />
                         <div className="text-slate-500 text-2xs">{it.codigo_barras || "sem código"} · {it.unidade}</div>
+                        <p className="mt-2 text-xs text-emerald-300">{fmtQtd(it.quantidade_xml || it.quantidade)} {it.unidade_xml || it.unidade_compra} viram {fmtQtd(it.quantidade)} {it.confirmar_abertura ? 'UN' : it.unidade}; custo de cada unidade R$ {it.preco_custo.toFixed(4)}.{it.acao === 'atualizar' ? ' Preços de venda mantidos.' : ''}</p>
+                        {it.acao === 'criar' && (it.perguntar_embalagem || it.unidade_xml !== 'UN') && <div className="mt-3 space-y-2 rounded-lg border border-brand-500/30 bg-brand-500/10 p-3">
+                          <label className="flex gap-2 text-sm text-white"><input type="checkbox" className={CHECKBOX_IMPORTACAO} checked={!!it.confirmar_abertura} onChange={e=>setItem(i,'confirmar_abertura',e.target.checked)} />Isto é embalagem fechada que também vende por unidade?</label>
+                          <p className="text-xs text-slate-400">O número no nome não altera a quantidade. Sem confirmação, UN entra unidade a unidade.</p>
+                          {it.confirmar_abertura && <>
+                            <label className="block text-xs text-slate-300">Nome da embalagem<input aria-label={`Embalagem do item ${i+1}`} value={it.unidade_compra} onChange={e=>setItem(i,'unidade_compra',e.target.value.toUpperCase())} className="mt-1 w-full rounded bg-slate-950 p-2 text-white" /></label>
+                            {(['preco_embalagem','preco_unidade'] as const).map(campo=><label key={campo} className="block text-xs text-slate-300">{CAMPOS_NUMEROS_XML[campo]} (R$)<input aria-label={`${CAMPOS_NUMEROS_XML[campo]} do item ${i+1}`} inputMode="decimal" value={textoImport(i,campo)} onChange={e=>editarNumeroImport(i,campo,e.target.value)} className="mt-1 w-full rounded bg-slate-950 p-2 text-white" /></label>)}
+                          </>}
+                        </div>}
                       </td>
                       <td className="p-2">
                         {it.acao === "atualizar"

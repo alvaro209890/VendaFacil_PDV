@@ -29,3 +29,7 @@
 - **2026-11-13 — Codex — E3.2 fim**: pytest backend: 488 passed, 9 deselected; lucro 14,50 e estorno por snapshot. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
 
 - **2026-11-13 — Codex — E3.3 inicio**: Dois botões, códigos principal e avulso, rascunho separado por modo; navegador em validação. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
+
+- **2026-11-13 — Codex — E3.3 fim**: Playwright embalagem e cadastro: 9 passed; Node 2 passed; build e lint verdes; backend 488 passed. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
+
+- **2026-11-13 — Codex — E4.1 inicio**: XML: 4 regressões falharam antes; prévia deve explicar fator e preservar preços. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
