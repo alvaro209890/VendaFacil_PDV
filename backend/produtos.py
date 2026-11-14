@@ -125,6 +125,8 @@ class ConfirmarImportacao(BaseModel):
 
 
 class EntradaInput(BaseModel):
+    model_config = {"allow_inf_nan": False}
+    modo_entrada: str = Field(default="unidade", pattern="^(unidade|embalagem)$")
     quantidade: float = Field(gt=0)
     custo_unitario: float | None = Field(default=None, ge=0)
     observacao: str = Field(default="", max_length=200)
@@ -152,6 +154,13 @@ def validar_embalagem(p: dict):
     if p.get("codigo_barras_unidade") and p.get("codigo_barras_unidade") == p.get("codigo_barras"):
         raise HTTPException(status_code=400, detail="Os códigos da embalagem e da unidade devem ser diferentes.")
 
+
+def validar_codigos(user_id: int, p: dict, produto_id: int | None = None):
+    codigos = {_ean(p.get(c)) for c in ("codigo_barras", "codigo_barras_unidade")} - {""}
+    for outro in db.list_produtos(user_id, ativos_only=True):
+        if outro["id"] != produto_id and codigos.intersection({outro.get("codigo_barras"), outro.get("codigo_barras_unidade")}):
+            raise HTTPException(status_code=409, detail="Já existe produto com este código de barras (embalagem ou unidade).")
+
 @router.get("")
 async def listar(request: Request, ativos: bool = True):
     user_id = _get_user_id(request)
@@ -172,6 +181,7 @@ async def criar(data: ProdutoCreate, request: Request):
     user_id = _get_user_id(request)
     agora = _agora()
     validar_embalagem(data.model_dump())
+    validar_codigos(user_id, data.model_dump())
     codigo = _ean(data.codigo_barras)
     if codigo and db.get_produto_by_codigo(user_id, codigo):
         raise HTTPException(status_code=409, detail="Já existe produto com este código de barras.")
@@ -207,6 +217,10 @@ async def atualizar(produto_id: int, data: ProdutoUpdate, request: Request):
         if not all(k in updates for k in ("preco_embalagem", "preco_unidade")):
             raise HTTPException(status_code=400, detail="Ao ativar, informe os dois preços de venda.")
     validar_embalagem({**p, **updates})
+    validar_codigos(user_id, {**p, **updates}, produto_id)
+    for campo in ("codigo_barras", "codigo_barras_unidade"):
+        if campo in updates:
+            updates[campo] = _ean(updates[campo])
     if "unidade" in updates:
         updates["unidade"] = _norm_unidade(updates["unidade"])
     if "unidade_compra" in updates:
@@ -310,8 +324,6 @@ async def importar_xml_confirmar(data: ConfirmarImportacao, request: Request):
                 normalizado["preco_custo"] = round(item.valor_unitario_xml / fator, 4)
         elif not existente and _norm_unidade(item.unidade_xml or item.unidade) == "UN" and item.quantidade_xml is not None:
             normalizado["quantidade"] = item.quantidade_xml
-            if item.valor_unitario_xml is not None:
-                normalizado["preco_custo"] = item.valor_unitario_xml
             normalizado["quantidade_por_embalagem"] = 1
         itens.append(normalizado)
     try:
@@ -327,14 +339,21 @@ async def importar_xml_confirmar(data: ConfirmarImportacao, request: Request):
 @router.post("/{produto_id}/entrada")
 async def entrada_manual(produto_id: int, data: EntradaInput, request: Request):
     user_id = _get_user_id(request)
-    if not db.get_produto(produto_id, user_id):
+    produto = db.get_produto(produto_id, user_id)
+    if not produto:
         raise HTTPException(status_code=404, detail="Produto não encontrado.")
     agora = _agora()
-    db.entrada_estoque(produto_id, user_id, data.quantidade, agora,
-                       novo_custo=data.custo_unitario or None)
+    fator = 1
+    if data.modo_entrada == "embalagem":
+        if not produto.get("vende_por_unidade") or not data.quantidade.is_integer():
+            raise HTTPException(status_code=400, detail="Entrada por embalagem exige produto configurado e quantidade inteira.")
+        fator = produto["quantidade_por_embalagem"]
+    quantidade = data.quantidade * fator
+    custo = data.custo_unitario / fator if data.custo_unitario is not None else None
+    db.entrada_estoque(produto_id, user_id, quantidade, agora, novo_custo=custo)
     db.registrar_movimentacao(
-        user_id, produto_id, "entrada", data.quantidade, agora,
-        custo_unitario=data.custo_unitario, origem="manual", observacao=data.observacao,
+        user_id, produto_id, "entrada", quantidade, agora,
+        custo_unitario=custo, origem="manual", observacao=data.observacao or f"{data.quantidade:g} {produto['unidade_compra'] if fator != 1 else produto['unidade']}",
     )
     return {"produto": db.get_produto(produto_id, user_id)}
 

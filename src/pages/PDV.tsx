@@ -221,10 +221,10 @@ export default function PDV() {
     }
     if (e.key !== "Enter") return;
     e.preventDefault();
-    const termo = busca.trim();
+    const termo = e.currentTarget.value.trim();
     if (!termo) return;
     const exato = produtos.find((p) => (p.codigo_barras && p.codigo_barras === termo) || (p.codigo_barras_unidade && p.codigo_barras_unidade === termo));
-    const alvo = exato || (filtrados.length >= 1 ? filtrados[0] : null);
+    const alvo = exato || produtos.find(p => p.nome.toLowerCase().includes(termo.toLowerCase()) || p.codigo_barras.includes(termo) || p.codigo_barras_unidade?.includes(termo));
     if (alvo) {
       addAoCarrinho(alvo, exato?.vende_por_unidade && exato.codigo_barras === termo ? "embalagem" : "unidade");
       setBusca("");
@@ -602,7 +602,7 @@ export default function PDV() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3">
               <AnimatePresence mode="popLayout">
                 {filtrados.flatMap((produto) => (produto.vende_por_unidade ? [itemCarrinho(produto, 'embalagem'), itemCarrinho(produto, 'unidade')] : [itemCarrinho(produto)]).map((p) => {
                   const preco = p.preco_venda || p.preco_custo;
@@ -622,7 +622,7 @@ export default function PDV() {
                         <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-1">{p.categoria_nome || "Geral"}</p>
                         <p className="text-white text-sm font-bold leading-snug line-clamp-2">{p.nome}</p>
                       </div>
-                      {p.vende_por_unidade && <p className="mt-3 text-sm font-bold text-brand-300">{p.modo_venda === 'embalagem' ? p.unidade_compra : 'Unidade'} ? R$ {preco.toFixed(2)}</p>}
+                      {!!p.vende_por_unidade && <p className="mt-3 text-sm font-bold text-brand-300">{p.modo_venda === 'embalagem' ? p.unidade_compra : 'Unidade'}</p>}
                       <div className="mt-4">
                         <p className="text-brand-400 font-black text-lg">R$ {preco.toFixed(2)}</p>
                         <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold mt-2 ${baixo ? "bg-amber-500/10 text-amber-500" : "bg-slate-700/30 text-slate-500"}`}>
@@ -690,7 +690,8 @@ export default function PDV() {
                       className="flex items-center gap-3 bg-slate-800/50 border border-slate-700/30 rounded-2xl p-3 group"
                     >
                       <div className="flex-1 min-w-0">
-                        <p className="text-white text-sm font-bold truncate">{i.nome}{i.vende_por_unidade ? ` ? ${i.modo_venda === "embalagem" ? i.unidade_compra : "avulso"}` : ""}</p>
+                        <p className="text-white text-sm font-bold truncate">{i.nome}</p>
+                        {!!i.vende_por_unidade && <span className="text-brand-300 text-xs font-bold">{i.modo_venda === 'embalagem' ? i.unidade_compra : 'AVULSO'}</span>}
                         <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mt-0.5">R$ {preco.toFixed(2)} / {unidadeCarrinho(i)}</p>
                       </div>
                       <div className="flex items-center gap-2 bg-slate-900/50 rounded-xl p-1 border border-slate-700/50">

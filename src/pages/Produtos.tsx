@@ -284,13 +284,21 @@ export default function ProdutosPage() {
   }
 
   async function entradaRapida(p: Produto) {
-    const q = prompt(`Entrada de estoque — "${p.nome}"\nQuantidade a adicionar em ${p.unidade}:`, "1");
+    let modo: 'unidade' | 'embalagem' = 'unidade';
+    if (p.vende_por_unidade) {
+      const escolha = prompt(`Entrada de "${p.nome}"\n1 = unidades avulsas\n2 = ${p.unidade_compra} fechada(s) com ${p.quantidade_por_embalagem} unidades`, '1');
+      if (escolha === null) return;
+      if (!['1','2'].includes(escolha.trim())) {setMsg({tipo:'erro',texto:'Escolha 1 ou 2.'});return;}
+      modo = escolha.trim() === '2' ? 'embalagem' : 'unidade';
+    }
+    const unEntrada = modo === 'embalagem' ? p.unidade_compra : p.unidade;
+    const q = prompt(`Entrada de estoque — "${p.nome}"\nQuantidade a adicionar em ${unEntrada}:`, "1");
     if (q === null) return;
     const qtd = lerNumeroPtBr(q);
     if (qtd === null || qtd <= 0) { setMsg({ tipo: "erro", texto: "Quantidade inválida." }); return; }
     try {
-      await entradaEstoque(p.id, qtd);
-      setMsg({ tipo: "ok", texto: `+${fmtQtd(qtd)} ${p.unidade} em "${p.nome}".` });
+      await entradaEstoque(p.id, qtd, undefined, undefined, modo);
+      setMsg({ tipo: "ok", texto: `+${fmtQtd(qtd * (modo === 'embalagem' ? p.quantidade_por_embalagem : 1))} unidades em "${p.nome}".` });
       carregar();
     } catch (err) {
       setMsg({ tipo: "erro", texto: (err as Error).message });
@@ -624,6 +632,11 @@ export default function ProdutosPage() {
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
+                        {!!p.ativo && <>
+                          <button onClick={()=>entradaRapida(p)} className="touch-target rounded-lg bg-emerald-500/10 text-emerald-300 text-sm">+ Estoque</button>
+                          <button onClick={()=>ajusteRapido(p)} className="touch-target rounded-lg bg-amber-500/10 text-amber-300 text-sm">Ajustar</button>
+                        </>}
+                        <button onClick={()=>abrirHistorico(p)} className="touch-target rounded-lg bg-sky-500/10 text-sky-300 text-sm">Histórico</button>
                         <button
                           onClick={() => abrirEdicao(p)}
                           className="touch-target rounded-lg bg-slate-800 text-slate-200 text-sm active:scale-95"
@@ -866,7 +879,7 @@ export default function ProdutosPage() {
               </div>
             </div>
 
-            {vendePorUnidade && editando && editando.estoque > 0 && Number(quantidadePorEmbalagem) !== editando.quantidade_por_embalagem && <p role="status" className="rounded-lg bg-amber-500/10 p-3 text-sm text-amber-300">Alterar a quantidade por embalagem não reconta o estoque: continuam {fmtQtd(editando.estoque)} unidades.</p>}
+            {vendePorUnidade && editando && editando.estoque > 0 && lerNumeroPtBr(quantidadePorEmbalagem) !== editando.quantidade_por_embalagem && <p role="status" className="rounded-lg bg-amber-500/10 p-3 text-sm text-amber-300">Alterar a quantidade por embalagem não reconta o estoque: continuam {fmtQtd(editando.estoque)} unidades.</p>}
             <button
               type="button"
               onClick={() => setMostrarFiscal(true)}
@@ -1028,19 +1041,19 @@ export default function ProdutosPage() {
                           : <span className="whitespace-nowrap text-amber-300 text-xs font-medium">Criar produto</span>}
                       </td>
                       <td className="p-2">
-                        <select value={it.unidade} onChange={(e) => setItem(i, "unidade", e.target.value)} className="w-20 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white">
-                          {UNIDADES.map((u) => <option key={u} value={u}>{u}</option>)}
+                        <select disabled={!!it.confirmar_abertura || !!it.vende_por_unidade} value={it.unidade} onChange={(e) => setItem(i, "unidade", e.target.value)} className="w-20 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white">
+                          {Array.from(new Set([...UNIDADES, it.unidade_compra])).map((u) => <option key={u} value={u}>{u}</option>)}
                         </select>
                       </td>
                       <td className="p-2">
-                        <select value={it.unidade_compra} onChange={(e) => setItem(i, "unidade_compra", e.target.value)} className="w-20 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white">
-                          {UNIDADES.map((u) => <option key={u} value={u}>{u}</option>)}
+                        <select disabled={!!it.confirmar_abertura || !!it.vende_por_unidade} value={it.unidade_compra} onChange={(e) => setItem(i, "unidade_compra", e.target.value)} className="w-20 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white">
+                          {Array.from(new Set([...UNIDADES, it.unidade_compra])).map((u) => <option key={u} value={u}>{u}</option>)}
                         </select>
                       </td>
                       <td className="p-2"><input type="text" inputMode="decimal" value={textoImport(i, "quantidade_xml")} onChange={(e) => editarNumeroImport(i, "quantidade_xml", e.target.value)} className="w-20 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white" /></td>
-                      <td className="p-2"><input type="text" inputMode="decimal" value={textoImport(i, "quantidade_por_embalagem")} onChange={(e) => editarNumeroImport(i, "quantidade_por_embalagem", e.target.value)} className="w-20 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white" /></td>
-                      <td className="p-2"><input type="text" inputMode="decimal" value={textoImport(i, "quantidade")} onChange={(e) => editarNumeroImport(i, "quantidade", e.target.value)} className="w-20 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white" /></td>
-                      <td className="p-2"><input type="text" inputMode="decimal" value={textoImport(i, "preco_custo")} onChange={(e) => editarNumeroImport(i, "preco_custo", e.target.value)} className="w-20 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white" /></td>
+                      <td className="p-2"><input type="text" inputMode="decimal" disabled={!!it.vende_por_unidade} value={textoImport(i, "quantidade_por_embalagem")} onChange={(e) => editarNumeroImport(i, "quantidade_por_embalagem", e.target.value)} className="w-20 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white" /></td>
+                      <td className="p-2"><input type="text" inputMode="decimal" disabled={!!it.vende_por_unidade || !!it.confirmar_abertura || it.unidade_xml === "UN"} value={textoImport(i, "quantidade")} onChange={(e) => editarNumeroImport(i, "quantidade", e.target.value)} className="w-20 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white" /></td>
+                      <td className="p-2"><input type="text" inputMode="decimal" disabled={!!it.vende_por_unidade || !!it.confirmar_abertura} value={textoImport(i, "preco_custo")} onChange={(e) => editarNumeroImport(i, "preco_custo", e.target.value)} className="w-20 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white" /></td>
                       <td className="p-2">
                         {it.acao === "criar"
                           ? <input type="text" inputMode="decimal" value={textoImport(i, "preco_venda")} onChange={(e) => editarNumeroImport(i, "preco_venda", e.target.value)} className="w-20 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white" />

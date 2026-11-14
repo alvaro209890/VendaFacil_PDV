@@ -1025,8 +1025,8 @@ class Database:
             return None
         with self._lock:
             row = self._conn.execute(
-                "SELECT * FROM produtos WHERE user_id = ? AND codigo_barras = ? AND ativo = 1",
-                (user_id, codigo),
+                "SELECT * FROM produtos WHERE user_id = ? AND (codigo_barras = ? OR codigo_barras_unidade = ?) AND ativo = 1",
+                (user_id, codigo, codigo),
             ).fetchone()
         return dict(row) if row else None
 
@@ -1109,8 +1109,8 @@ class Database:
                     codigo = it.get("codigo_barras") or ""
                     if not pid and codigo:
                         existente = self._conn.execute(
-                            "SELECT id FROM produtos WHERE user_id = ? AND codigo_barras = ? AND ativo = 1",
-                            (user_id, codigo),
+                            "SELECT id FROM produtos WHERE user_id = ? AND (codigo_barras = ? OR codigo_barras_unidade = ?) AND ativo = 1",
+                            (user_id, codigo, codigo),
                         ).fetchone()
                         pid = existente["id"] if existente else None
                     if pid:

@@ -60,3 +60,44 @@ def test_t9_desligar_e_religar_nao_reconta(client,auth):
         r=client.put(url,headers=auth,json=data)
         assert r.status_code==200,r.text
         assert r.json()['produto']['estoque']==65
+
+
+def test_entrada_manual_de_duas_carteiras(client,auth):
+    p=criar(client,auth,estoque=0)
+    r=client.post(f"/api/produtos/{p['id']}/entrada",headers=auth,json={
+        'quantidade':2,'modo_entrada':'embalagem','custo_unitario':10})
+    assert r.status_code==200,r.text
+    assert r.json()['produto']['estoque']==40
+    assert r.json()['produto']['preco_custo']==0.5
+
+
+def test_codigos_de_unidade_nao_colidem(client,auth):
+    p=criar(client,auth,codigo_barras_unidade='AVULSO-UNICO')
+    r=client.post('/api/produtos',headers=auth,json={'nome':'Outro','codigo_barras':'AVULSO-UNICO'})
+    assert r.status_code==409,r.text
+    r=client.post('/api/produtos',headers=auth,json={'nome':'Outro 2','codigo_barras_unidade':'AVULSO-UNICO'})
+    assert r.status_code==409,r.text
+    outro=criar(client,auth)
+    r=client.put(f"/api/produtos/{outro['id']}",headers=auth,json={'codigo_barras_unidade':'AVULSO-UNICO'})
+    assert r.status_code==409,r.text
+    assert p['codigo_barras_unidade']=='AVULSO-UNICO'
+
+
+def test_migracao_idempotente_preserva_produto_antigo(tmp_path):
+    from database import Database
+    path=tmp_path/'legado.db'
+    local=Database(path)
+    uid=local.create_user('legado@fixture','Legado','hash_fixture','2026-11-13T00:00:00Z')['id']
+    p=local.create_produto(uid,'Palheiros antigos',0.5,7,65,5,'','UN','2026-11-13T00:00:00Z')
+    with local._conn:
+        for col in ('vende_por_unidade','preco_embalagem','preco_unidade','codigo_barras_unidade'):
+            local._conn.execute(f'ALTER TABLE produtos DROP COLUMN {col}')
+        for col in ('modo_venda','unidade_venda','quantidade_estoque','custo_unitario_estoque'):
+            local._conn.execute(f'ALTER TABLE itens_venda DROP COLUMN {col}')
+    local.close()
+    for _ in range(2):
+        local=Database(path)
+        produto=local.get_produto(p['id'])
+        assert produto['estoque']==65 and produto['preco_venda']==7
+        assert produto['vende_por_unidade']==0 and produto['preco_embalagem']==0 and produto['preco_unidade']==0
+        local.close()

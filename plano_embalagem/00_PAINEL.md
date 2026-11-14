@@ -5,7 +5,7 @@
 | Estado | 🔄 EM EXECUÇÃO |
 | Versão alvo | 1.0.15 |
 | Branch | `master` |
-| Próxima ação | E5.1 |
+| Próxima ação | E6.1 |
 
 ## Placar
 
@@ -15,8 +15,8 @@
 | E2 | [x] |
 | E3 | [x] |
 | E4 | [x] |
-| E5 | [~] |
-| E6 | [ ] |
+| E5 | [x] |
+| E6 | [~] |
 | E7 | [ ] |
 | E8 | [ ] |
 

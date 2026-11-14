@@ -26,11 +26,11 @@ Ordem fixa. Um `[~]` por vez.
 
 ## E5 — Cupom
 
-- [~] **E5.1** Linha fiscal e cupom com a unidade e o preço vendidos (T10). Homologação. Sem chamada à SEFAZ.
+- [x] **E5.1** Linha fiscal e cupom com a unidade e o preço vendidos (T10). Homologação. Sem chamada à SEFAZ. — d04c3ec · T10 falhou antes com UN; pytest backend 493 passed e teste fiscal payload atualizado 1 passed; sem transmissão
 
 ## E6 — Navegador
 
-- [ ] **E6.1** Playwright do T11 no PDV isolado. Corrigir o que a tela mostrar errado e repetir.
+- [~] **E6.1** Playwright do T11 no PDV isolado. Corrigir o que a tela mostrar errado e repetir.
 
 ## E7 — Documento
 

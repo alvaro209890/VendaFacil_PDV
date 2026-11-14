@@ -336,10 +336,10 @@ export function importarXmlConfirmar(documento: string, itens: ItemConfirmarXml[
   });
 }
 
-export function entradaEstoque(produtoId: number, quantidade: number, custo_unitario?: number, observacao?: string): Promise<{ produto: Produto }> {
+export function entradaEstoque(produtoId: number, quantidade: number, custo_unitario?: number, observacao?: string, modo_entrada: 'unidade' | 'embalagem' = 'unidade'): Promise<{ produto: Produto }> {
   return request(`/api/produtos/${produtoId}/entrada`, {
     method: "POST",
-    body: JSON.stringify({ quantidade, custo_unitario, observacao }),
+    body: JSON.stringify({ quantidade, custo_unitario, observacao, modo_entrada }),
   });
 }
 

@@ -17,7 +17,7 @@ if (process.env.VF_XML_REAL) test('T8 real: NF-e 446817 baixada mantém 600 UN',
   await expect(dialog.getByText(/Isto é embalagem fechada/)).toBeVisible();
   await expect(dialog.getByRole('checkbox',{name:/Isto é embalagem/})).not.toBeChecked();
   await expect(dialog.getByText(/600 UN viram 600 UN/)).toBeVisible();
-  await page.screenshot({path:'output/playwright/xml-real-600.png',fullPage:true});
+  await page.screenshot({path:'output/playwright/xml-real-600.png',fullPage:true,animations:'disabled'});
   await dialog.getByRole('button',{name:'Confirmar importação',exact:true}).click();
   await expect(page.getByText(/Importado!/)).toBeVisible();
   const ps=(await (await request.get(`${api}/api/produtos`,{headers:{Authorization:`Bearer ${token}`}})).json()).produtos;
@@ -77,7 +77,7 @@ test('T11: cadastro, entrada de 2 carteiras, venda mista e recusa',async({page,r
   await page.reload();
   await expect(page.getByLabel('Quantidade de Palheiros T11 CARTEIRA',{exact:true})).toHaveValue('1');
   await expect(page.getByLabel('Quantidade de Palheiros T11 UN',{exact:true})).toHaveValue('3');
-  await page.screenshot({path:'output/playwright/embalagem-carrinho.png',fullPage:true});
+  await page.screenshot({path:'output/playwright/embalagem-carrinho.png',fullPage:true,animations:'disabled'});
   await page.getByPlaceholder('0,00',{exact:true}).fill('26');
   await page.getByRole('button',{name:/finalizar venda/i}).click();
   await expect(page.getByText(/Venda finalizada!/)).toBeVisible();
@@ -85,4 +85,26 @@ test('T11: cadastro, entrada de 2 carteiras, venda mista e recusa',async({page,r
   await busca.fill('7891000888001'); await busca.press('Enter');
   await expect(page.getByText(/Estoque insuficiente/)).toBeVisible();
   await expect(page.getByLabel('Quantidade de Palheiros T11 CARTEIRA',{exact:true})).toHaveCount(0);
+});
+
+test('Cadastro: fator preserva estoque e entrada manual oferece embalagem',async({page,request})=>{
+  const h={Authorization:`Bearer ${token}`};
+  const r=await request.post(`${api}/api/produtos`,{headers:h,data:{nome:'Palheiros balcão',estoque:65,vende_por_unidade:true,unidade:'UN',unidade_compra:'CARTEIRA',quantidade_por_embalagem:20,preco_embalagem:20,preco_unidade:2}});
+  expect(r.status()).toBe(201);const p=(await r.json()).produto;
+  await page.addInitScript(t=>localStorage.setItem('vf_token',t),token);
+  await page.goto('/produtos');
+  const row=page.getByRole('row').filter({hasText:'Palheiros balcão'});
+  await expect(row).toContainText('3 carteiras e 5 avulsos');
+  await row.getByRole('button',{name:'Editar',exact:true}).click();
+  await page.getByText('Qtd por compra',{exact:true}).locator('..').locator('input').fill('30');
+  await expect(page.getByRole('status')).toContainText('continuam 65 unidades');
+  await page.getByRole('button',{name:'Salvar Alterações',exact:true}).click();
+  await expect(row).toContainText('2 carteiras e 5 avulsos');
+  const respostas=['2','2'];
+  page.on('dialog',async d=>{await d.accept(respostas.shift()!);});
+  await row.getByRole('button',{name:'+ Estoque',exact:true}).click();
+  await expect(row).toContainText('4 carteiras e 5 avulsos');
+  expect((await (await request.get(`${api}/api/produtos/${p.id}`,{headers:h})).json()).produto.estoque).toBe(125);
+  await page.setViewportSize({width:390,height:844});
+  await page.screenshot({path:'output/playwright/embalagem-produtos-mobile.png',fullPage:true,animations:'disabled'});
 });

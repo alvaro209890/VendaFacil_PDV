@@ -41,3 +41,7 @@
 - **2026-11-13 — Codex — E4.2 fim**: Playwright e2e/embalagem.spec.ts com VF_XML_REAL: T8 real passou, 18 testes verdes; hash no 03_TESTES. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
 
 - **2026-11-13 — Codex — E5.1 inicio**: T10 falhou: uCom UN em vez de CART; corrigir snapshots fiscais sem transmitir. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
+
+- **2026-11-13 — Codex — E5.1 fim**: T10 falhou antes com UN; pytest backend 493 passed e teste fiscal payload atualizado 1 passed; sem transmissão. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
+
+- **2026-11-13 — Codex — E6.1 inicio**: Navegador integral, inspeção visual, T11 na porta 3021 e correções encontradas. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
