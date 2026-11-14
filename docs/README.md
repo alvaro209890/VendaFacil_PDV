@@ -10,7 +10,8 @@
 
 ## 📘 Uso do sistema (lojista)
 - [**MANUAL.md**](MANUAL.md) — manual completo (lojista + administrador) e FAQ.
-- [ESTOQUE_E_XML.md](ESTOQUE_E_XML.md) — estoque, entrada manual e importação de XML (NF-e).
+- [ESTOQUE_E_XML.md](ESTOQUE_E_XML.md) — estoque, entrada manual, importação de XML (NF-e) e venda de embalagem fechada com avulso.
+- [**CAIXA_E_UNIDADE.md**](CAIXA_E_UNIDADE.md) — caixa e unidade com preços diferentes (1.0.16): cadastro, conta de preço, NF-e (custo real, dois códigos, "como a nota conta"), caixa, lucro, NFC-e e o caso real Kaiser.
 - [CAIXA.md](CAIXA.md) — abertura/fechamento de caixa, sangria e suprimento.
 - [RECIBO.md](RECIBO.md) — impressão de recibo/cupom na térmica (e bloco fiscal da NFC-e).
 - [FISCAL_SIMPLES.md](FISCAL_SIMPLES.md) — CSOSN/CST por produto, XML fiscal e relatório para PGDAS-D.

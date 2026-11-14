@@ -25,7 +25,7 @@ Sumário rápido:
 
 # Parte 1 — Lojista (PDV)
 
-### Carteira fechada e avulso — novidade da 1.0.15
+### Caixa/carteira fechada e avulso — 1.0.15, revisto na 1.0.16
 
 Em **Produtos**, ligue **Também vende por unidade** e informe a embalagem,
 quantas unidades vêm dentro e os dois preços. Exemplo: **CARTEIRA**, **20**,
@@ -41,13 +41,16 @@ Em **+ Estoque**, escolha unidades ou embalagens: duas carteiras somam 40.
 Alterar o fator com saldo não reconta o estoque. Os dois modos ficam separados
 no carrinho, no histórico e no recibo. Produtos sem a opção mantêm a venda atual.
 
-Ao importar XML, leia a conversão antes de confirmar. A pergunta **“Isto é
-embalagem fechada que também vende por unidade?”** permite configurar um produto
-novo com os dois preços. Sem confirmação, nota em UN entra unidade a unidade.
-**O número no nome não vira estoque**: `CX 00050 KAISER LT 350ML`, quantidade
-600 UN, continua **600 UN**, custo R$ 2,74 e venda sugerida R$ 3,56.
-Veja [Estoque e XML](ESTOQUE_E_XML.md) para exemplos e conferência de custos.
-O fiscal desta entrega permanece em **homologação**.
+Ao importar XML, leia a conversão antes de confirmar. Para produto novo, a
+opção **“Vende a embalagem fechada e também a unidade, com preços diferentes?”**
+configura caixa e unidade na hora; responda também **“Como esta nota conta a
+quantidade?”** — *em unidades soltas* (600 UN de lata = 600 latas) ou *em caixa
+fechada* (50 CX × 12 = 600 latas). Nota em UN, por padrão, entra 1 para 1.
+**O número no nome não vira estoque**: `CX 00050 KAISER LT 350ML`, 600 UN a
+R$ 2,74 + R$ 12,36 de outras despesas, entra **600 latas a R$ 2,7606** (custo
+real) com venda sugerida R$ 3,59. A nota traz o código do pacote e o da lata; o
+PDV guarda os dois. Guia completo, com a conta de preço e o caso real:
+[Caixa e unidade](CAIXA_E_UNIDADE.md). O fiscal permanece em **homologação**.
 
 ## 1. Instalar e abrir
 1. Receba o instalador **`VendaFacilPDV-Setup-1.0.15.exe`** e dê dois cliques.

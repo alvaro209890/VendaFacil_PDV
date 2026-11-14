@@ -80,3 +80,25 @@ avulso R$ 2); compra de 2 carteiras virou 40 unidades a R$ 0,50, com os preços
 de venda mantidos; venda de 1 carteira + 3 avulsos totalizou R$ 26 e deixou
 17 avulsos; a carteira seguinte foi recusada. A NF-e 446817 perguntou se a
 Kaiser era embalagem, veio desmarcada e gravou 600 UN a R$ 2,74, venda R$ 3,56.
+
+### Caixa e unidade — 1.0.16 (14/11/2026)
+
+- `backend/tests/test_embalagem_kaiser.py`: NF-e 446817 reduzida (600 UN,
+  vOutro 12,36, cEAN do pacote e cEANTrib da lata). Nota em UN marcada como
+  CX 12 continua 600 latas (a 1.0.15 gravava 7.200); custo de aquisição 2,7606;
+  nota em CX multiplica quando o operador diz; os dois códigos; casamento pelo
+  código da lata; 409 quando o código da unidade é de outro produto.
+- `backend/tests/test_fiscal_gtin.py`: GTIN válido ou SEM GTIN nos dois campos;
+  caixa com GTIN da caixa e cEANTrib da lata; lata avulsa com o GTIN da lata;
+  XSD da NFC-e com código interno.
+- `backend/tests/test_embalagem_vendas.py`: caixa de 15 a R$ 60 e unidade a
+  R$ 5; mensagem "tem 11 UN, pedido 1 CX (12 UN)".
+- `frontend-tests/embalagem.test.mjs`: conta da tela (R$ 4,00 cada, economia
+  R$ 15, lucro/margem, alertas de caixa mais cara e abaixo do custo).
+- `e2e/embalagem.spec.ts` com `VF_XML_REAL`: a NF-e real grava 600 UN a
+  R$ 2,7606 e venda R$ 3,59; importação como CX 12 + lata sem multiplicar,
+  PDV bipa o código da caixa e o da lata e cobra R$ 51,40 (estoque 585).
+
+Roteiro de API fora do repositório usado na conferência (banco temporário,
+porta 3031): 1.0.15 = 33/36, 1.0.16 = 36/36. Detalhes em
+[CAIXA_E_UNIDADE.md](CAIXA_E_UNIDADE.md) §7.

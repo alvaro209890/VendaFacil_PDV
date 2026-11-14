@@ -43,19 +43,27 @@ as unidades da venda original, mesmo se o fator tiver mudado depois.
 - Produto configurado e nota na unidade de compra: **2 CARTEIRA viram 40 UN**;
   custo da unidade = custo da carteira ÷ 20. Os dois preços de venda são mantidos.
 - Nota em **UN**: entra unidade a unidade, fator 1.
-- Produto novo cujo nome sugere caixa/fardo/pacote/display/carteira: responda
-  **“Isto é embalagem fechada que também vende por unidade?”** somente se for
-  isso mesmo. Ao confirmar, informe nome da embalagem, fator e os dois preços.
+- Produto novo: marque **“Vende a embalagem fechada e também a unidade, com
+  preços diferentes?”** somente se for isso mesmo. Informe nome da embalagem,
+  unidades dentro e os dois preços, e responda **“Como esta nota conta a
+  quantidade?”**: *em unidades soltas* (padrão para nota em UN: 600 UN = 600
+  latas) ou *em embalagem fechada* (padrão para nota em CX/FD: 50 CX × 12 = 600).
   A quantidade e o custo convertidos aparecem antes da confirmação do lote.
-- Sem essa confirmação, a nota em UN conserva a quantidade e a unidade da nota,
+  (1.0.15 multiplicava a nota em UN ao marcar — 600 latas viravam 7.200.)
+- Sem marcar, a nota em UN conserva a quantidade e a unidade da nota,
   com venda sugerida de custo + 30%. **O número no nome não vira estoque.**
+- **Custo de aquisição** (1.0.16): valor + frete + seguro + outras despesas +
+  IPI + ICMS-ST − desconto, rateado por unidade. A prévia mostra a parcela.
+- **Dois códigos** (1.0.16): `cEAN` vira o código principal e `cEANTrib`
+  diferente vira o código da unidade; a nota seguinte casa por qualquer um.
 - Quantidade e custo derivados de embalagem configurada são calculados pela
   nota e pelo cadastro. Corrija o fator no cadastro antes de reimportar; a prévia
   não muda o cadastro nem os preços de venda de um produto existente.
 
 Caso conferido com XML baixado: NF-e **446817**, `CX 00050 KAISER LT 350ML`,
-`uCom=UN`, `qCom=600`, custo **R$ 2,74**. Sem confirmar abertura, entram
-**600 UN**, com venda sugerida **R$ 3,56**. O “50” do nome não multiplica nada.
+`uCom=UN`, `qCom=600`, R$ 2,74 + R$ 12,36 de outras despesas. Entram
+**600 UN** a **R$ 2,7606**, venda sugerida **R$ 3,59**, com ou sem caixa + unidade.
+O “50” do nome não multiplica nada. Detalhes: [CAIXA_E_UNIDADE.md](CAIXA_E_UNIDADE.md).
 
 No recibo sai o que o cliente levou: **1 CARTEIRA a R$ 20** e **1 UN a R$ 2**.
 No XML fiscal, CARTEIRA é abreviada como **CART** para respeitar o limite de

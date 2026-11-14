@@ -40,11 +40,17 @@ Prepare em Produtos **Também vende por unidade**, CARTEIRA, 20 unidades,
 5. Tentar outra carteira: deve recusar. Vinte avulsos, quando houver estoque,
    custam **R$ 40**, sem aplicar o preço da carteira.
 
-Na prévia do XML, leia **“Isto é embalagem fechada que também vende por unidade?”**.
-Somente confirme se conhecer o conteúdo e preencher os dois preços.
-Nota em UN sem confirmação entra em UN: **o número no nome não vira estoque**.
-O Kaiser `CX 00050`, com qCom 600, continua 600 UN. Uma entrada em carteira
-divide o custo pelo conteúdo e mantém os preços de venda já cadastrados.
+Na prévia do XML, produto novo: **“Vende a embalagem fechada e também a
+unidade?”**. Marque só se conhecer o conteúdo e preencher os dois preços, e
+responda **“Como esta nota conta a quantidade?”** olhando o preço da nota: preço
+de uma lata = *unidades soltas*; preço de uma caixa = *caixa fechada*.
+**O número no nome não vira estoque**: o Kaiser `CX 00050`, 600 UN a R$ 2,74,
+entra 600 latas mesmo marcando CX de 12. Uma entrada em caixa divide o custo
+pelo conteúdo e mantém os preços de venda já cadastrados.
+
+Exercício rápido de bebida: CX de **15** a **R$ 60** e lata a **R$ 5**. A tela
+mostra "R$ 4,00 cada" e "economiza R$ 15,00". Bipar a caixa + 3 latas = **R$ 75**;
+15 latas soltas = **R$ 75**; com 14 no estoque a caixa é recusada.
 Mudar o fator de 20 para 30 não aumenta nem diminui o saldo contado.
 Fiscal desta atualização: **homologação**; este roteiro não autoriza envio à SEFAZ.
 
