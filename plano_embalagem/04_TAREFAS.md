@@ -34,11 +34,11 @@ Ordem fixa. Um `[~]` por vez.
 
 ## E7 — Documento
 
-- [~] **E7.1** `docs/ESTOQUE_E_XML.md`, manual do operador e treinamento do caixa: exemplo da carteira com R$ 20 e R$ 2, a pergunta na prévia do XML, e que o número no nome não vira estoque.
+- [x] **E7.1** `docs/ESTOQUE_E_XML.md`, manual do operador e treinamento do caixa: exemplo da carteira com R$ 20 e R$ 2, a pergunta na prévia do XML, e que o número no nome não vira estoque. — 69a2ade · Manual do app e 3 documentos atualizados; npm run build e npx eslint . verdes; backend 496; vault receberá versão, commit e artefato comprovados ao fechar
 
 ## E8 — Versão e entrega
 
-- [ ] **E8.1** Subir para 1.0.15 em `backend/version.py`, `installer/vendafacil.iss` e `scripts/roteiro_exe.py`. Não reescrever docs históricos que citam 1.0.14 como entrega passada.
+- [~] **E8.1** Subir para 1.0.15 em `backend/version.py`, `installer/vendafacil.iss` e `scripts/roteiro_exe.py`. Não reescrever docs históricos que citam 1.0.14 como entrega passada.
 - [ ] **E8.2** T12 e T13 verdes.
 - [ ] **E8.3** Commit dos caminhos desta entrega, `git push origin master`.
 - [ ] **E8.4** T14: workflow Build Windows EXE verde. Anotar o número do run e onde baixar o Setup.

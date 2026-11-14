@@ -49,3 +49,7 @@
 - **2026-11-13 — Codex — E6.1 fim**: Backend 496 passed, 9 deselected; Playwright integral 95 passed; aceite porta 3021 4 passed; build/lint/Node 38 verdes. Correções de revisão: entrada por embalagem, códigos, migração e campos derivados da prévia. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
 
 - **2026-11-13 — Codex — E7.1 inicio**: Atualizar manual dentro do app, documentação da loja, treinamento e Segundo Cérebro. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
+
+- **2026-11-13 — Codex — E7.1 fim**: Manual do app e 3 documentos atualizados; npm run build e npx eslint . verdes; backend 496; vault receberá versão, commit e artefato comprovados ao fechar. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
+
+- **2026-11-13 — Codex — E8.1 inicio**: Verificar sincronismo da versão 1.0.15 em backend, instalador e roteiro. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
