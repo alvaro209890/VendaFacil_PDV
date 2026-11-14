@@ -114,11 +114,9 @@ def gerar_payload(
     # 62 — Additional Data Field Template
     payload += _tlv("62", _tlv("05", txid))
 
-    # 63 — CRC16 (preenchido com 0000 para cálculo)
-    payload += "6304" + "0000"
-    crc = _crc16(payload)
-
-    return payload[:-4] + crc
+    # EMV: o cálculo inclui ID e tamanho do CRC (6304), excluindo seu valor.
+    payload += "6304"
+    return payload + _crc16(payload)
 
 
 def gerar_qrcode_base64(payload: str) -> str:
