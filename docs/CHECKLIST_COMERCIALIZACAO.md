@@ -3,7 +3,8 @@
 Estado honesto do que falta para vender o sistema para lojistas. Dividido por
 prioridade. **Atualizado em 12/11/2026 (versão 1.0.13, plano de produção
 `plano_producao/`).** Em 14/11/2026 a versão instalável passou a ser a **1.0.15**
-(embalagem e avulso; ver `ESTOQUE_E_XML.md` e `INSTALACAO_WINDOWS.md`). Os itens
+(embalagem e avulso) e, no mesmo dia, a **1.0.16** (caixa e unidade revisados com
+a NF-e real da Kaiser; ver `CAIXA_E_UNIDADE.md` e `INSTALACAO_WINDOWS.md`). Os itens
 abaixo descrevem o estado de comercialização da 1.0.13 e não foram reabertos.
 O **código do produto** está bem encaminhado; a maior parte do que
 falta é **negócio, distribuição e robustez de produção**, não funcionalidade.

@@ -158,6 +158,15 @@ Roteiro: `cenario_kaiser.py` (API, banco temporário, porta 3031) **33/36 →
 36/36**; Playwright com a nota real: importar como CX 12 + lata, bipar
 `7896045500116` (caixa) e `7896045512317` (lata), cobrar R$ 51,40, estoque 585.
 
+Suítes no HEAD da 1.0.16: backend **513** (+9 de homologação real
+desmarcados), painel 23, Node 42, navegador 96, build e lint limpos. Binário
+gerado neste PC e testado: `scripts/roteiro_exe.py --chromium` 49 requisições,
+0 respostas 5xx; cupons 58/80 mm 4/4 com QR igual ao da nota; Playwright contra
+o `.exe` com a nota real 5/5. Setup `VendaFacilPDV-Setup-1.0.16.exe`
+40.002.691 bytes, SHA-256
+`6D86133E51F514E4AF0B6C110913B9404DC004944FFF11AE09D10A92BB484AB2`.
+Nada foi transmitido à SEFAZ; banco real da loja e certificados intocados.
+
 ## 8. Contrato da API (para quem integra)
 
 - `POST /api/produtos/importar-xml/preview` devolve por item, além do de antes:
