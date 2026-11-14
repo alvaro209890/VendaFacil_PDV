@@ -622,12 +622,13 @@ export default function PDV() {
                         <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-1">{p.categoria_nome || "Geral"}</p>
                         <p className="text-white text-sm font-bold leading-snug line-clamp-2">{p.nome}</p>
                       </div>
-                      {!!p.vende_por_unidade && <p className="mt-3 text-sm font-bold text-brand-300">{p.modo_venda === 'embalagem' ? p.unidade_compra : 'Unidade'}</p>}
+                      {!!p.vende_por_unidade && <p className="mt-3 text-sm font-bold text-brand-300">{p.modo_venda === 'embalagem' ? `${p.unidade_compra} com ${fmtQtd(p.quantidade_por_embalagem)}` : 'Unidade'}</p>}
                       <div className="mt-4">
                         <p className="text-brand-400 font-black text-lg">R$ {preco.toFixed(2)}</p>
+                        {p.vende_por_unidade && p.modo_venda === 'embalagem' && p.quantidade_por_embalagem > 0 && <p className="text-slate-400 text-xs">R$ {(preco / p.quantidade_por_embalagem).toFixed(2)} cada</p>}
                         <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold mt-2 ${baixo ? "bg-amber-500/10 text-amber-500" : "bg-slate-700/30 text-slate-500"}`}>
                           {baixo && <AlertCircle size={10} />}
-                          {fmtQtd(p.estoque)} {p.unidade}
+                          {p.vende_por_unidade && p.modo_venda === 'embalagem' ? `${fmtQtd(Math.floor(p.estoque / (p.quantidade_por_embalagem || 1)))} ${p.unidade_compra} (${fmtQtd(p.estoque)} ${p.unidade})` : `${fmtQtd(p.estoque)} ${p.unidade}`}
                         </div>
                       </div>
                     </motion.button>

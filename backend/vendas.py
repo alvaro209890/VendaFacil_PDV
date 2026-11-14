@@ -99,9 +99,11 @@ async def checkout(data: CheckoutRequest, request: Request):
         fator = produto["quantidade_por_embalagem"] if dupla and modo == "embalagem" else 1
         quantidade_estoque = float(decimal(item.quantidade) * decimal(fator))
         if produto["estoque"] < quantidade_estoque:
+            pedido = (f"{item.quantidade:g} {produto['unidade_compra']} ({quantidade_estoque:g} {produto['unidade']})"
+                      if fator != 1 else f"{item.quantidade:g} {produto['unidade']}")
             erros.append(
                 f"Estoque insuficiente de '{produto['nome']}': "
-                f"tem {produto['estoque']} {produto['unidade']}, pedido {item.quantidade}."
+                f"tem {produto['estoque']:g} {produto['unidade']}, pedido {pedido}."
             )
             continue
 

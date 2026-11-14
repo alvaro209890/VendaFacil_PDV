@@ -79,3 +79,21 @@ def test_lucro_usa_unidades_e_snapshot_de_custo(client,auth):
     assert depois-antes==pytest.approx(14.5)
     mov=client.get(f"/api/produtos/{p['id']}/movimentacoes",headers=auth).json()['movimentacoes']
     assert sorted(m['quantidade'] for m in mov if m['origem']=='venda')==[3,20]
+
+
+def test_caixa_de_15_a_60_e_unidade_a_5(client, auth):
+    p = criar(client, auth, nome="Cerveja 15", estoque=30, unidade_compra="CX",
+              quantidade_por_embalagem=15, preco_embalagem=60, preco_unidade=5, preco_custo=3.5)
+    r = vender(client, auth, p, [{"quantidade": 1, "modo_venda": "embalagem"}])
+    assert r.json()["venda"]["total"] == 60
+    r = vender(client, auth, p, [{"quantidade": 15, "modo_venda": "unidade"}])
+    assert r.json()["venda"]["total"] == 75
+    assert client.get(f"/api/produtos/{p['id']}", headers=auth).json()["produto"]["estoque"] == 0
+
+
+def test_estoque_insuficiente_fala_caixa_e_unidades(client, auth):
+    p = criar(client, auth, nome="Kaiser 11", estoque=11, unidade_compra="CX",
+              quantidade_por_embalagem=12, preco_embalagem=40, preco_unidade=3.8)
+    r = vender(client, auth, p, [{"quantidade": 1, "modo_venda": "embalagem"}])
+    assert r.status_code == 400
+    assert "tem 11 UN, pedido 1 CX (12 UN)" in r.text
