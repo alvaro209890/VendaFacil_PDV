@@ -24,7 +24,9 @@ import { imprimirRecibo, getLarguraRecibo, setLarguraRecibo } from "../lib/recib
 import type { ReciboData } from "../lib/recibo";
 import Mascote from "../components/Mascote";
 import { useAuthStore } from "../store/authStore";
-import { itemCarrinho, linhaCarrinho, limiteCarrinho, unidadeCarrinho, lerCarrinho, salvarCarrinho } from "../lib/carrinho";
+import { itemCarrinho, linhaCarrinho, limiteCarrinho, unidadeCarrinho, lerCarrinho, salvarCarrinho, faltaParaVender, pareceCodigo } from "../lib/carrinho";
+import JanelaProdutoModal from "../components/JanelaProduto";
+import type { JanelaProduto } from "../components/JanelaProduto";
 import type { CartItem } from "../lib/carrinho";
 import { lerNumeroPtBr as decimalDigitado } from "../lib/numeros";
 
@@ -55,6 +57,10 @@ const parseMoeda = (v: string) => decimalDigitado(v) ?? 0;
 
 export default function PDV() {
   const [produtos, setProdutos] = useState<Produto[]>([]);
+  // Todos os ativos, inclusive sem estoque: o código bipado de um produto zerado
+  // abre a janela de entrada em vez de "Nada encontrado".
+  const [todosProdutos, setTodosProdutos] = useState<Produto[]>([]);
+  const [janela, setJanela] = useState<JanelaProduto | null>(null);
   const [busca, setBusca] = useState("");
   const chaveCarrinho = `vf_carrinho_v1:${useAuthStore((s) => s.user?.id)}`;
   const [carrinho, setCarrinho] = useState<CartItem[]>(() => lerCarrinho(chaveCarrinho));
@@ -102,6 +108,7 @@ export default function PDV() {
   const carregar = useCallback(async () => {
     try {
       const [p, d, c] = await Promise.all([listarProdutos(true), getDashboard(), listarClientes()]);
+      setTodosProdutos(p.produtos);
       setProdutos(p.produtos.filter((x) => x.estoque > 0));
       // Reabre o rascunho com preço/estoque atuais; o backend segue validando o checkout.
       setCarrinho((anterior) => anterior.map((item) => {
@@ -189,25 +196,54 @@ export default function PDV() {
     modalPagamentoAnterior.current = modalPagamentoAberto;
   }, [modalPagamentoAberto]);
 
-  function addAoCarrinho(p: Produto, modo: 'embalagem' | 'unidade' = 'unidade') {
+  function addAoCarrinho(p: Produto, modo: 'embalagem' | 'unidade' = 'unidade'): boolean {
     const novo = itemCarrinho(p, modo);
     if (!(novo.preco_venda > 0)) {
       setMsg({tipo:'erro', texto:`"${p.nome}" está sem preço de venda. Cadastre o preço em Produtos antes de vender.`});
-      return;
+      return false;
     }
     const existe = carrinho.find(i => linhaCarrinho(i) === linhaCarrinho(novo));
     const qtd = (existe?.qtd || 0) + 1;
     if (qtd > limiteCarrinho(novo, carrinho)) {
       setMsg({tipo:'erro',texto:`Estoque insuficiente de "${p.nome}" para ${modo}.`});
-      return;
+      return false;
     }
     setCarrinho(prev => existe ? prev.map(i => linhaCarrinho(i) === linhaCarrinho(novo) ? {...i,qtd} : i) : [...prev,novo]);
     setMsg(null); buscaRef.current?.focus();
+    return true;
+  }
+
+  /** Vende 1 ou, se faltar estoque/preço, abre a janela para resolver ali mesmo. */
+  function venderOuCompletar(p: Produto, modo: 'embalagem' | 'unidade' = 'unidade') {
+    const falta = faltaParaVender(p, modo, carrinho);
+    if (falta.semPreco || falta.semEstoque) {
+      setMsg(null);
+      setJanela({ tipo: 'completar', produto: p, modo, ...falta });
+      return;
+    }
+    addAoCarrinho(p, modo);
+  }
+
+  function fecharJanela() {
+    setJanela(null);
+    buscaRef.current?.focus();
+  }
+
+  function produtoPronto(p: Produto, modo: 'embalagem' | 'unidade', criado: boolean) {
+    setTodosProdutos(prev => [...prev.filter(x => x.id !== p.id), p]);
+    setProdutos(prev => {
+      const resto = prev.filter(x => x.id !== p.id);
+      return p.estoque > 0 ? [...resto, p] : resto;
+    });
+    // Linhas já no carrinho passam a enxergar o estoque/preço novos.
+    setCarrinho(prev => prev.map(i => i.id === p.id ? itemCarrinho(p, i.modo_venda, i.qtd) : i));
+    setJanela(null);
+    if (addAoCarrinho(p, modo)) setMsg({ tipo: 'ok', texto: `"${p.nome}" ${criado ? 'cadastrado' : 'atualizado'} e adicionado à venda.` });
   }
 
   // Leitor de código de barras / Enter: bipa → adiciona → limpa → mantém o foco.
   function onBuscaKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (loading || pixLoading || maqModal || pixModal) return;
+    if (loading || pixLoading || maqModal || pixModal || janela) return;
     if (e.key === "Escape") {
       setBusca("");
       return;
@@ -216,21 +252,30 @@ export default function PDV() {
     e.preventDefault();
     const termo = e.currentTarget.value.trim();
     if (!termo) return;
-    const exato = produtos.find((p) => (p.codigo_barras && p.codigo_barras === termo) || (p.codigo_barras_unidade && p.codigo_barras_unidade === termo));
-    const alvo = exato || produtos.find(p => p.nome.toLowerCase().includes(termo.toLowerCase()) || p.codigo_barras.includes(termo) || p.codigo_barras_unidade?.includes(termo));
+    const exato = todosProdutos.find((p) => (p.codigo_barras && p.codigo_barras === termo) || (p.codigo_barras_unidade && p.codigo_barras_unidade === termo));
+    const confere = (p: Produto) => p.nome.toLowerCase().includes(termo.toLowerCase()) || p.codigo_barras.includes(termo) || !!p.codigo_barras_unidade?.includes(termo);
+    // Código exato (mesmo zerado) > parecido com estoque > parecido sem estoque.
+    const alvo = exato || produtos.find(confere) || todosProdutos.find(confere);
+    setBusca("");
     if (alvo) {
-      addAoCarrinho(alvo, exato?.vende_por_unidade && exato.codigo_barras === termo ? "embalagem" : "unidade");
-      setBusca("");
+      // addAoCarrinho devolve o foco à busca; a janela, se abrir, fica com ele.
+      venderOuCompletar(alvo, exato?.vende_por_unidade && exato.codigo_barras === termo ? "embalagem" : "unidade");
     } else {
-      setMsg({ tipo: "erro", texto: `Nada encontrado para "${termo}".` });
+      // Não cadastrado: janela de cadastro rápido, já com o código (ou o nome) digitado.
+      setMsg(null);
+      setJanela(pareceCodigo(termo) ? { tipo: "cadastrar", codigo: termo, nome: "" } : { tipo: "cadastrar", codigo: "", nome: termo });
     }
-    buscaRef.current?.focus();
   }
 
   // Instala antes de pintar, sempre com o estado do render atual (como o clique).
   // F2 finaliza, F3 quantidade, F4 busca, F6 desconto, F7 pagamento; Esc fecha modal.
   useLayoutEffect(() => {
     function onKey(e: KeyboardEvent) {
+      // Janela de cadastro/entrada aberta: só Esc (fecha); atalhos do caixa esperam.
+      if (janela) {
+        if (e.key === "Escape") { e.preventDefault(); fecharJanela(); }
+        return;
+      }
       // Estado atual, inclusive enquanto o PIX está carregando.
       if (e.key === "Escape" && !loading) {
         if (pixModal) {
@@ -608,7 +653,7 @@ export default function PDV() {
                       whileHover={{ y: -4, scale: 1.02 }}
                       whileTap={{ scale: 0.95 }}
                       key={linhaCarrinho(p)}
-                      onClick={() => addAoCarrinho(produto, p.modo_venda)}
+                      onClick={() => venderOuCompletar(produto, p.modo_venda)}
                       className="group text-left bg-slate-800/40 hover:bg-slate-800/80 border border-slate-700/50 hover:border-brand-500/50 rounded-2xl p-4 transition-all shadow-lg hover:shadow-brand-500/5 flex flex-col h-full"
                     >
                       <div className="flex-1">
@@ -982,6 +1027,8 @@ export default function PDV() {
           </div>
         )}
       </div>
+
+      {janela && <JanelaProdutoModal janela={janela} onFechar={fecharJanela} onPronto={produtoPronto} />}
 
       {/* ── Modal PIX QR Code ── */}
       <AnimatePresence>

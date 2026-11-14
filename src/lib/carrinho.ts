@@ -46,3 +46,16 @@ export function salvarCarrinho(chave: string, itens: CartItem[]): boolean {
     return false;
   }
 }
+
+/** O que impede vender mais 1 deste produto agora (no modo escolhido), contando o
+ * que já está no carrinho. Usado para abrir a janela de cadastro/entrada no caixa
+ * em vez de só mostrar erro. */
+export function faltaParaVender(p: Produto, modo: 'embalagem' | 'unidade', itens: CartItem[]): { semPreco: boolean; semEstoque: boolean } {
+  const novo = itemCarrinho(p, modo);
+  const existe = itens.find(i => linhaCarrinho(i) === linhaCarrinho(novo));
+  const qtd = (existe?.qtd || 0) + 1;
+  return { semPreco: !(novo.preco_venda > 0), semEstoque: qtd > limiteCarrinho(novo, itens) };
+}
+
+/** Termo bipado/digitado parece código de barras (só dígitos, 4 a 14)? */
+export const pareceCodigo = (termo: string) => /^\d{4,14}$/.test(termo.trim());

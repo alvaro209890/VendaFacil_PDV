@@ -22,6 +22,8 @@ cancele as vendas de treino no fim.
 | Nota fiscal | Marque **Emitir NFC-e** se a loja emite nota |
 | Finalizar | **F2** ou o botão **FINALIZAR VENDA** |
 | Fechar janela | **Esc** |
+| Produto não cadastrado | Ao bipar, abre **Produto não cadastrado**: nome, preço, quantidade → **Cadastrar e vender** (Enter) |
+| Produto sem estoque | Abre **Sem estoque**: quantas chegaram → **Dar entrada e vender** (fica como "Entrada rápida no caixa") |
 
 O cupom pode sair sozinho ("Imprimir recibo ao finalizar") ou pelo botão
 **🖨️ Imprimir recibo**, que também serve para reimprimir.

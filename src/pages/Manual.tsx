@@ -116,6 +116,8 @@ const sections: HelpSection[] = [
     texto: "A tela PDV é o caixa da mercearia.",
     itens: [
       "Use a busca para localizar produto por nome ou código de barras.",
+      "Bipou e o produto não está cadastrado? Abre a janela Produto não cadastrado: informe nome, preço e quantidade e clique Cadastrar e vender (ou Enter). O produto já entra na venda; categoria e dados fiscais você completa depois em Produtos.",
+      "Produto cadastrado mas sem estoque (ou sem preço)? Abre a janela Sem estoque: informe quantas unidades chegaram e ele entra na venda. A entrada fica no histórico como Entrada rápida no caixa. Esc fecha sem mudar nada.",
       "Revise quantidade, preço e desconto antes de finalizar.",
       "Em dinheiro, informe quanto o cliente entregou para o sistema calcular o troco.",
       "Para PIX, confira a chave configurada e só finalize após confirmar pagamento.",

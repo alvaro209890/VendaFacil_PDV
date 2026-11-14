@@ -70,6 +70,17 @@ nota fiscal precisam de conexão.
 
 ## 3. Vender (PDV)
 
+**Produto não cadastrado ou sem estoque (1.0.18):** ao bipar um código que não
+existe, o caixa abre a janela **Produto não cadastrado** com o código já
+preenchido (se digitou um nome, vem o nome): informe nome, preço de venda e a
+quantidade em estoque (unidade, custo e NCM são opcionais) e clique **Cadastrar
+e vender** — o produto é criado e já entra no carrinho. Produto cadastrado com
+estoque zerado (ou menor que uma caixa, no caso de caixa + unidade) abre **Sem
+estoque**: informe quantas chegaram e ele entra na venda; a entrada fica no
+histórico do produto como "Entrada rápida no caixa". Produto sem preço pede o
+preço antes de vender. **Esc** fecha sem mudar nada. Categoria, estoque mínimo,
+dados fiscais completos e caixa + unidade continuam em **Produtos**.
+
 **Centavos e produtos fracionados (revisão 10/11/2026):** o subtotal de cada item
 é arredondado comercialmente (`ROUND_HALF_UP`) para duas casas, depois os itens
 são somados. O desconto também é quantizado em centavos antes de ser subtraído.
