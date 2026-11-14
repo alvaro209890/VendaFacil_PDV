@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 // Janela do caixa (1.0.18): código não cadastrado abre o cadastro rápido;
 // produto sem estoque/preço abre a entrada rápida. Tudo em banco descartável.
-const api = 'http://127.0.0.1:3121';
+const api = process.env.VF_EMBALAGEM_API || 'http://127.0.0.1:3121';
 const fixture = { usuario: 'e2e-carrinho', nome: 'Teste descartável', senha: 'fixture-e2e-carrinho' };
 let token: string;
 const h = () => ({ Authorization: `Bearer ${token}` });

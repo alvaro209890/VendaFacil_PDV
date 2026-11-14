@@ -20,13 +20,14 @@ Já existe `.github/workflows/build-exe.yml`: a cada push no `master` (e em tags
 `vX.Y.Z`) a GitHub gera o `.exe` + instalador num runner Windows. Baixe em
 **Actions → Artifacts**, ou em **Releases** (nas tags). Conferido em 12/11/2026:
 as execuções do workflow "Build Windows EXE" no `master` estão verdes
-(`gh run list --workflow build-exe.yml`). A entrega atual é a **1.0.17**
+(`gh run list --workflow build-exe.yml`). A entrega atual é a **1.0.18**
 (caixa e unidade com preços diferentes, ver `docs/CAIXA_E_UNIDADE.md`; vender sem
-abrir caixa e sem aviso, ver `docs/CAIXA.md`). Build local validado em
-14/11/2026: `dist_installer\VendaFacilPDV-Setup-1.0.17.exe` (40.002.839 bytes,
-SHA-256 `E892829B0D836644D7CC3B68A134F141EFECC3ADB43ED1614117352A2B8FBC68`) e `dist_exe\VendaFacilPDV.exe` (39.716.710 bytes,
-SHA-256 `853F0A2C3B1F8EF117279C3A3F418687F8A804865A877D813F5FCC1FAEF8E227`). O Setup do Actions tem outro hash (o build não é
-reprodutível byte a byte). A 1.0.16 foi publicada e substituída no mesmo dia.
+abrir caixa e sem aviso, ver `docs/CAIXA.md`; janela de cadastro/entrada
+rápida no PDV, ver `docs/MANUAL.md` §3). Build local validado em
+14/11/2026: `dist_installer\VendaFacilPDV-Setup-1.0.18.exe` (40.003.652 bytes,
+SHA-256 `A87EAD1073CE38C72E6FA905CE0D8A020957DB25900096058A2C36DA68676C6B`) e `dist_exe\VendaFacilPDV.exe` (39.718.718 bytes,
+SHA-256 `3764AAA843FC8573ED69E80EC4558F4084710A8B3CB8730890B4983952F1958C`). O Setup do Actions tem outro hash (o build não é
+reprodutível byte a byte). A 1.0.16 e a 1.0.17 foram publicadas e substituídas no mesmo dia.
 A 1.0.15 era `b3477e2` (run
 [43549468463](https://github.com/alvaro209890/VendaFacil_PDV/actions/runs/43549468463)).
 O entregável validado, porém, é o gerado localmente e conferido pelo roteiro
