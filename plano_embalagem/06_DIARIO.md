@@ -33,3 +33,7 @@
 - **2026-11-13 — Codex — E3.3 fim**: Playwright embalagem e cadastro: 9 passed; Node 2 passed; build e lint verdes; backend 488 passed. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
 
 - **2026-11-13 — Codex — E4.1 inicio**: XML: 4 regressões falharam antes; prévia deve explicar fator e preservar preços. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
+
+- **2026-11-13 — Codex — E4.1 fim**: pytest backend 492 passed, 9 deselected; Playwright XML/embalagem 18 passed. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
+
+- **2026-11-13 — Codex — E4.2 inicio**: Teste real da NF-e 446817: vf-nota.xml, 600 UN e custo 2,74 sem conversão pelo nome. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
