@@ -172,6 +172,7 @@ const sections: HelpSection[] = [
     titulo: "Caixa e Recebimentos",
     texto: "Use o caixa para conferir se o dinheiro físico e as formas de pagamento batem com o sistema.",
     itens: [
+      "Abrir o caixa é opcional: o PDV vende sem ele e não mostra aviso. Só as vendas feitas com o caixa aberto entram no fechamento daquele turno.",
       "Confira vendas por forma de pagamento no fechamento do turno.",
       "Separe dinheiro, PIX, cartão de débito, crédito e fiado.",
       "Em Contas a Receber, registre pagamento parcial ou total do cliente fiado.",

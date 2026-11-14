@@ -31,10 +31,10 @@ async function conferir() {
       const r=await fetch('http://127.0.0.1:3021/health',{signal:AbortSignal.timeout(500)});
       if(r.ok) {
         const body=await r.json();
-        if(body.version !== '1.0.16') throw new Error('Artefato não é 1.0.16.');
-        console.log('Artefato 1.0.16 pronto na porta 3021, com banco temporário.'); return;
+        if(body.version !== '1.0.17') throw new Error('Artefato não é 1.0.17.');
+        console.log('Artefato 1.0.17 pronto na porta 3021, com banco temporário.'); return;
       }
-    } catch(err) { if(err.message === 'Artefato não é 1.0.16.') throw err; }
+    } catch(err) { if(err.message === 'Artefato não é 1.0.17.') throw err; }
     await new Promise(r=>setTimeout(r,500));
   }
   throw new Error('Executável não respondeu em 60 segundos.');

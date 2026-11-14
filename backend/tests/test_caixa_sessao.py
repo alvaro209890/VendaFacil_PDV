@@ -32,12 +32,14 @@ def test_c01_esperado_bate_com_gaveta(checkout_local):
     assert fechado['diferenca'] == 0
 
 
-def test_d4_pdv_avisa_caixa_fechado_sem_bloquear():
+def test_d4_pdv_vende_sem_caixa_aberto_e_sem_aviso():
+    # Álvaro, 14/11/2026: abrir caixa não é obrigatório para vender e o PDV
+    # não mostra aviso de caixa fechado (antes: faixa amarela "Caixa fechado").
     from pathlib import Path
     tela = (Path(__file__).resolve().parents[2] / 'src/pages/PDV.tsx').read_text(encoding='utf-8')
-    assert 'caixaAtual' in tela
-    assert 'Caixa fechado' in tela
-    assert 'caixaAberto === false' in tela
+    assert 'Caixa fechado' not in tela
+    assert 'caixaAberto' not in tela
+    assert 'caixaAtual' not in tela
     inicio = tela.index('onClick={finalizarVenda}')
     botao = tela[inicio:tela.index('className=', inicio)]
     assert 'caixaAberto' not in botao

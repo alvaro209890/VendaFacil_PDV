@@ -17,7 +17,7 @@ import {
 import {
   listarProdutos, checkout, getDashboard, gerarPixQrCode, listarClientes,
   getConfigMaquininha, criarCobrancaMaquininha, consultarCobrancaMaquininha,
-  cancelarCobrancaMaquininha, getConfigFiscal, caixaAtual, getAtivacaoStatus,
+  cancelarCobrancaMaquininha, getConfigFiscal, getAtivacaoStatus,
 } from "../lib/api";
 import type { Produto, DashboardData, PixQrCodeResponse, Cliente, PagamentoEletronico } from "../lib/api";
 import { imprimirRecibo, getLarguraRecibo, setLarguraRecibo } from "../lib/recibo";
@@ -67,7 +67,6 @@ export default function PDV() {
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<{ tipo: "ok" | "erro"; texto: string; recibo?: ReciboData } | null>(null);
   const [dash, setDash] = useState<DashboardData | null>(null);
-  const [caixaAberto, setCaixaAberto] = useState<boolean | null>(null);
   const [licencaBloqueada, setLicencaBloqueada] = useState(false);
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [clienteFiado, setClienteFiado] = useState<number | "">("");
@@ -122,12 +121,6 @@ export default function PDV() {
       setMaqPixIntegrado(!!config.pix_integrado);
     } catch {
       setMaqHabilitada(false);
-    }
-    try {
-      const caixa = await caixaAtual();
-      setCaixaAberto(caixa.aberto);
-    } catch {
-      setCaixaAberto(null);
     }
     try {
       const licenca = await getAtivacaoStatus();
@@ -917,11 +910,6 @@ export default function PDV() {
               {licencaBloqueada && (
                 <p className="mb-3 rounded border border-amber-400/40 bg-amber-400/10 p-2 text-xs text-amber-200">
                   Licença suspensa. Dá para fechar o caixa e exportar, mas não vender.
-                </p>
-              )}
-              {caixaAberto === false && (
-                <p className="mb-3 rounded border border-amber-400/40 bg-amber-400/10 p-2 text-xs text-amber-200">
-                  Caixa fechado. A venda será registrada, mas não entra no fechamento até você abrir o caixa.
                 </p>
               )}
 

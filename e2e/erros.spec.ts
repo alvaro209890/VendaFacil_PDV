@@ -53,11 +53,11 @@ test('F3.13: estoque alterado no backend mostra motivo e preserva carrinho', asy
   expect(erros).toEqual([]);
 });
 
-test('F3.13: caixa fechado avisa sem impedir venda conforme D4', async ({ page, request }) => {
+test('F3.13: vende com caixa fechado, sem aviso (Álvaro, 14/11/2026)', async ({ page, request }) => {
   const caixa = await request.get(`${api}/api/caixa/atual`, { headers: { Authorization: `Bearer ${token}` } });
   expect(caixa.status()).toBe(200);
   expect((await caixa.json()).aberto).toBe(false);
-  await expect(page.getByText(/Caixa fechado\. A venda será registrada/)).toBeVisible();
+  await expect(page.getByText(/Caixa fechado/)).toHaveCount(0);
   const checkout = page.waitForResponse(r => r.url().endsWith('/api/vendas/checkout') && r.request().method() === 'POST');
   await page.keyboard.press('F2');
   expect((await checkout).status()).toBe(201);

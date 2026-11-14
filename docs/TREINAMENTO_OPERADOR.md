@@ -6,7 +6,9 @@ cancele as vendas de treino no fim.
 ## 1. Abrir o caixa (2 min)
 
 1. Menu **Caixa** → informe o **fundo de troco** (dinheiro que já está na gaveta) → **Abrir caixa**.
-2. Se esquecer de abrir, o PDV avisa "Caixa fechado", mas deixa vender. Abra o caixa assim que perceber.
+2. Abrir o caixa é opcional: o PDV vende sem ele e não mostra aviso. Use o caixa
+   quando quiser conferir a gaveta no fim do dia — só as vendas feitas com o caixa
+   aberto entram nesse fechamento.
 
 ## 2. Vender com o leitor (5 min)
 

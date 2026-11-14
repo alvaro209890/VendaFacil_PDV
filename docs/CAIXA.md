@@ -49,8 +49,11 @@ estornada comercialmente: retorna 409 sem reabrir o caixa nem alterar a gaveta.
 - Cada venda nova guarda a sessão aberta do próprio usuário na mesma transação.
   A sessão seguinte não soma as vendas da anterior; janela temporal é só fallback
   para vendas legadas sem vínculo.
-- Sem caixa aberto, a venda continua permitida (D4), com aviso na tela. Ela não
-  ganha vínculo retroativo ao abrir outra sessão.
+- **Abrir caixa não é obrigatório para vender** e o PDV não mostra aviso de
+  caixa fechado (decisão do Álvaro, 14/11/2026, versão 1.0.17; até a 1.0.16
+  aparecia a faixa "Caixa fechado"). A venda feita sem caixa aberto entra em
+  Vendas, relatórios e estoque normalmente, só não soma no fechamento de nenhuma
+  sessão (não ganha vínculo retroativo ao abrir outra).
 - Segundo caixa aberto pelo mesmo usuário: 409.
 - Sangria, suprimento e pagamento de fiado precisam ter valor maior que zero
   (400). Sangria acima do dinheiro esperado: 409, sem gravar movimento.
