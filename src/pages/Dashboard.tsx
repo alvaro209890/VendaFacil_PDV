@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 import { 
   Package,
   AlertTriangle,
@@ -121,6 +122,13 @@ export default function DashboardPage() {
               m.destaque ? "border-red-500/50 shadow-red-900/10" : "border-slate-800/50"
             }`}
           >
+            {m.id === "alertas" && (
+              <Link
+                to="/produtos?estoque=alerta"
+                aria-label={`Ver produtos em alerta de estoque (${m.valor})`}
+                className="absolute inset-0 z-10 rounded-3xl focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand-400"
+              />
+            )}
             {/* Background Glow */}
             <div className={`absolute -right-10 -top-10 w-24 h-24 bg-gradient-to-br ${m.cor} opacity-10 blur-2xl rounded-full`} />
             

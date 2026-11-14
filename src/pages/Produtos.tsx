@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useLayoutEffect, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   listarProdutos,
   criarProduto,
@@ -83,7 +84,12 @@ const ORIGEM_LABEL: Record<string, string> = {
 };
 
 export default function ProdutosPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const apenasAlerta = searchParams.get("estoque") === "alerta";
   const [produtos, setProdutos] = useState<Produto[]>([]);
+  const produtosExibidos = apenasAlerta
+    ? produtos.filter((p) => p.ativo && p.estoque <= p.estoque_minimo)
+    : produtos;
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [loading, setLoading] = useState(true);
   const [editando, setEditando] = useState<Produto | null>(null);
@@ -610,7 +616,7 @@ export default function ProdutosPage() {
       <div className="flex-1 min-h-0 flex flex-col">
         {msg && !novo && !editando && <div role="status" className={`mb-3 rounded-lg border p-3 text-sm ${msg.tipo === 'ok' ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300' : 'border-red-500/30 bg-red-500/10 text-red-300'}`}>{msg.texto}</div>}
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-white font-bold text-base sm:text-lg">📦 Produtos ({produtos.length})</h2>
+          <h2 className="text-white font-bold text-base sm:text-lg">📦 Produtos ({produtosExibidos.length})</h2>
           <div className="flex gap-2">
             <input ref={fileRef} type="file" accept=".xml,text/xml,application/xml" onChange={onXmlEscolhido} className="hidden" />
             <button
@@ -630,6 +636,24 @@ export default function ProdutosPage() {
           </div>
         </div>
 
+        <label className="mb-3 flex items-center gap-2 text-sm text-slate-300">
+          <input
+            type="checkbox"
+            checked={apenasAlerta}
+            onChange={(e) => {
+              const marcado = e.currentTarget.checked;
+              setSearchParams((atual) => {
+                const next = new URLSearchParams(atual);
+                if (marcado) next.set("estoque", "alerta");
+                else next.delete("estoque");
+                return next;
+              });
+            }}
+            className="h-4 w-4 accent-brand-500"
+          />
+          Somente produtos em alerta de estoque
+        </label>
+
         {!importInfo && importMsg && (
           <p
             role={importMsg.tipo === "erro" ? "alert" : "status"}
@@ -643,13 +667,13 @@ export default function ProdutosPage() {
         )}
 
         <div className="flex-1 overflow-y-auto rounded-xl bg-slate-900 border border-slate-800">
-          {produtos.length === 0 ? (
-            <p className="text-slate-500 text-center py-12 text-sm">Nenhum produto cadastrado ainda.</p>
+          {produtosExibidos.length === 0 ? (
+            <p className="text-slate-500 text-center py-12 text-sm">{apenasAlerta ? "Nenhum produto em alerta de estoque." : "Nenhum produto cadastrado ainda."}</p>
           ) : (
             <>
               {/* Cards mobile: evita tabela espremida em telas pequenas */}
               <div className="sm:hidden grid gap-2 p-2">
-                {produtos.map((p) => {
+                {produtosExibidos.map((p) => {
                   const baixo = p.estoque <= p.estoque_minimo;
                   return (
                     <article
@@ -718,7 +742,7 @@ export default function ProdutosPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {produtos.map((p) => {
+                  {produtosExibidos.map((p) => {
                     const baixo = p.estoque <= p.estoque_minimo;
                     return (
                       <tr key={p.id} className={`border-t border-slate-800 hover:bg-slate-800/50 ${!p.ativo ? "opacity-40" : ""}`}>
