@@ -61,3 +61,13 @@
 - **2026-11-13 — Codex — E8.2 fim**: npm run build e npx eslint . exit 0; backend 499, Node 38 e navegador integral 95 passed. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
 
 - **2026-11-13 — Codex — E8.3 inicio**: Auditoria do commit final e push único origin/master. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
+
+- **2026-11-14 — Codex — E8.3 fim**: Push efetivo único: 9a47c2b..b3477e2 master -> master no mesmo origin via SSH já autorizado do server; HTTPS local recusava credencial. HEAD exato validado: 499 passed, 9 deselected. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
+
+- **2026-11-14 — Codex — E8.4 inicio**: Aguardar Build Windows EXE do commit b3477e2 e conferir Setup 1.0.15. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
+
+- **2026-11-14 — Codex — E8.4 fim**: gh run view 43549468463: success, HEAD b3477e2; artefato 14094704053 Setup ProductVersion 1.0.15; ZIP SHA256 igual ao digest GitHub; Playwright no exe publicado 4 passed, com XML real. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
+
+- **2026-11-14 — Cursor — reteste independente**: PDV 1.0.15 na porta 3021, banco temporário e painel vazio. Cadastro da carteira, compra de 2 carteiras, venda mista R$ 26, saldo 17, recusa da carteira seguinte e NF-e 446817 com 600 UN. Instalador local conferido, SHA-256 igual ao do vault. (autor: Cursor | 2026-11-14)
+
+- **2026-11-14 — Codex — auditoria final**: 17 itens concluídos e T1–T14 verdes. HEAD e master público b3477e24d53cd9344c800fddaa4e5441d0aea8a8; backend no HEAD 499 passed, 9 deselected; Node 38; navegador 95; executável publicado 4. Build Windows EXE 43549468463 success. Setup 1.0.15 copiado para dist_installer, SHA-256 BB0A9823B90204B571777F2CB7438ACEA14BA68256430CC4FA47C7B0E5573B97. Segundo Cérebro atualizado e commitado: cd27c61 (ficha §11 e changelog). Nenhum segundo push: as evidências posteriores à publicação ficam no plano local e vault, sem mudar o código/manuais do master publicado. Download público do ZIP via nightly.link com digest idêntico ao GitHub; fonte real de XML e binários fora do git. Fiscal em homologação; não houve acesso ao banco real, certificado ou SEFAZ.

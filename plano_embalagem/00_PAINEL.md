@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| Estado | 🔄 EM EXECUÇÃO |
+| Estado | ✅ CONCLUÍDO |
 | Versão alvo | 1.0.15 |
 | Branch | `master` |
-| Próxima ação | E8.3 |
+| Próxima ação | Entrega do Setup 1.0.15 — run 43549468463 verde |
 
 ## Placar
 
@@ -18,7 +18,7 @@
 | E5 | [x] |
 | E6 | [x] |
 | E7 | [x] |
-| E8 | [~] |
+| E8 | [x] |
 
 ## O que já é fato (13/11/2026)
 

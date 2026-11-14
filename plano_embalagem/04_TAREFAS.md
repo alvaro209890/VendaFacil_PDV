@@ -40,8 +40,8 @@ Ordem fixa. Um `[~]` por vez.
 
 - [x] **E8.1** Subir para 1.0.15 em `backend/version.py`, `installer/vendafacil.iss` e `scripts/roteiro_exe.py`. Não reescrever docs históricos que citam 1.0.14 como entrega passada. — 781718b · 3 testes de versão falharam antes; pytest backend 499 passed, 9 deselected depois
 - [x] **E8.2** T12 e T13 verdes. — de9fd08 · npm run build e npx eslint . exit 0; backend 499, Node 38 e navegador integral 95 passed
-- [~] **E8.3** Commit dos caminhos desta entrega, `git push origin master`.
-- [ ] **E8.4** T14: workflow Build Windows EXE verde. Anotar o número do run e onde baixar o Setup.
+- [x] **E8.3** Commit dos caminhos desta entrega, `git push origin master`. — b3477e2 · Push efetivo único: 9a47c2b..b3477e2 master -> master no mesmo origin via SSH já autorizado do server; HTTPS local recusava credencial. HEAD exato validado: 499 passed, 9 deselected
+- [x] **E8.4** T14: workflow Build Windows EXE verde. Anotar o número do run e onde baixar o Setup. — b3477e2 · gh run view 43549468463: success, HEAD b3477e2; artefato 14094704053 Setup ProductVersion 1.0.15; ZIP SHA256 igual ao digest GitHub; Playwright no exe publicado 4 passed, com XML real
 
 ## Portão
 

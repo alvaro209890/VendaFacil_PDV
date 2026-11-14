@@ -1,7 +1,7 @@
 # Instalar o VendaFacil PDV em um PC Windows
 
-Este guia e para instalar o sistema no computador do caixa usando o instalador
-`VendaFacilPDV-Setup-1.0.13.exe`.
+Este guia e para instalar o sistema no computador do caixa. A entrega atual,
+conferida em 14/11/2026, e o instalador `VendaFacilPDV-Setup-1.0.15.exe`.
 
 ## Requisitos do computador
 
@@ -15,16 +15,20 @@ Este guia e para instalar o sistema no computador do caixa usando o instalador
 Entregue ao cliente o instalador:
 
 ```text
-dist_installer\VendaFacilPDV-Setup-1.0.13.exe
+dist_installer\VendaFacilPDV-Setup-1.0.15.exe
 ```
 
 Confira a integridade antes de entregar (PowerShell):
 
 ```powershell
-Get-FileHash .\VendaFacilPDV-Setup-1.0.13.exe -Algorithm SHA256
+Get-FileHash .\VendaFacilPDV-Setup-1.0.15.exe -Algorithm SHA256
 ```
 
-O SHA-256 de cada versão gerada fica em `plano_producao/evidencias/F6_ARTEFATOS.txt`.
+O SHA-256 conferido em 14/11/2026 e
+`BB0A9823B90204B571777F2CB7438ACEA14BA68256430CC4FA47C7B0E5573B97`.
+O arquivo tambem sai do artefato do workflow Build Windows EXE
+(run `43549468463`). Hashes de versoes anteriores continuam em
+`plano_producao/evidencias/F6_ARTEFATOS.txt`.
 
 O executavel direto tambem existe em:
 
@@ -37,7 +41,7 @@ o desinstalador e usa o icone oficial do VendaFacil PDV.
 
 ## Passo a passo de instalacao
 
-1. Copie ou baixe `VendaFacilPDV-Setup-1.0.13.exe` no PC do caixa.
+1. Copie ou baixe `VendaFacilPDV-Setup-1.0.15.exe` no PC do caixa.
 2. Clique com o botao direito no instalador e escolha `Executar como administrador`.
 3. Se o Windows SmartScreen aparecer, clique em `Mais informacoes` e depois `Executar assim mesmo`.
 4. Avance no instalador e deixe marcada a opcao de criar atalho na Area de Trabalho.
@@ -68,9 +72,10 @@ atualizar o sistema por cima nao apaga as vendas.
 3. Instale por cima da versao anterior.
 4. Abra o atalho e confira uma venda/produto existente.
 
-Antes de atualizar, o PDV faz backup automatico ao iniciar. A versao 1.0.13 abre o
-banco das versoes anteriores sem perder dados (migracao aditiva, validada com as
-contagens de usuarios, clientes, produtos, vendas, itens e notas).
+Antes de atualizar, o PDV faz backup automatico ao iniciar. A atualizacao e
+aditiva: a 1.0.15 abre o banco das versoes anteriores e acrescenta os campos de
+embalagem e avulso sem apagar vendas. A 1.0.13 ja tinha sido conferida com as
+contagens de usuarios, clientes, produtos, vendas, itens e notas.
 
 Teste automatizado de instalar → atualizar → desinstalar (so em maquina descartavel,
 PowerShell como administrador):

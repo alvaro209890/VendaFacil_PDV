@@ -20,9 +20,13 @@ Já existe `.github/workflows/build-exe.yml`: a cada push no `master` (e em tags
 `vX.Y.Z`) a GitHub gera o `.exe` + instalador num runner Windows. Baixe em
 **Actions → Artifacts**, ou em **Releases** (nas tags). Conferido em 12/11/2026:
 as execuções do workflow "Build Windows EXE" no `master` estão verdes
-(`gh run list --workflow build-exe.yml`). O entregável validado, porém, é o
-gerado localmente e conferido pelo roteiro abaixo. Para gerar localmente,
-siga abaixo.
+(`gh run list --workflow build-exe.yml`). A entrega atual é a **1.0.15**
+(`master` `b3477e2`, run
+[43549468463](https://github.com/alvaro209890/VendaFacil_PDV/actions/runs/43549468463),
+Setup com SHA-256
+`BB0A9823B90204B571777F2CB7438ACEA14BA68256430CC4FA47C7B0E5573B97`).
+O entregável validado, porém, é o gerado localmente e conferido pelo roteiro
+abaixo. Para gerar localmente, siga abaixo.
 
 ## Pré-requisitos (na máquina Windows)
 

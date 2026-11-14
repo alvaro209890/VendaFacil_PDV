@@ -73,3 +73,10 @@ cobrem fator com saldo e entrada manual. Com `VF_XML_REAL`, a NF-e 446817
 deve conservar 600 UN, custo 2,74 e sugestão de venda 3,56. Não há SEFAZ.
 Na suíte geral, remova `VF_E2E_API_PORT` e `VF_EMBALAGEM_API` para usar o harness
 padrão em 3121: `npx playwright test --workers=1`.
+
+Conferência independente em 14/11/2026, no PDV 1.0.15 com banco temporário,
+porta 3021 e painel desligado: cadastro do palheiro (carteira R$ 20, 20 unidades,
+avulso R$ 2); compra de 2 carteiras virou 40 unidades a R$ 0,50, com os preços
+de venda mantidos; venda de 1 carteira + 3 avulsos totalizou R$ 26 e deixou
+17 avulsos; a carteira seguinte foi recusada. A NF-e 446817 perguntou se a
+Kaiser era embalagem, veio desmarcada e gravou 600 UN a R$ 2,74, venda R$ 3,56.
