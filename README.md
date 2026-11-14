@@ -3,6 +3,11 @@
 Sistema de **Ponto de Venda (PDV)** para mercadinhos e pequenos comércios,
 distribuído como **executável único (.exe)** com controle central de licenças.
 
+**Atualização local 1.0.19 (14/11/2026):** recebimento do fiado com forma de pagamento,
+Point e PIX copia e cola salvo para pagar depois, sem ocupar sistema ou terminal.
+Instalador e validação em [VALIDACAO_FIADO_1.0.19.md](docs/VALIDACAO_FIADO_1.0.19.md).
+Preparado e testado localmente; instalação na loja e aceite na Point física pendentes.
+
 > 📚 **Índice da documentação:** [`docs/README.md`](docs/README.md)
 > 📘 **Manual completo (lojista + admin):** [`docs/MANUAL.md`](docs/MANUAL.md)
 > 📦 **Deploy e produção:** [`docs/DEPLOY_E_PRODUCAO.md`](docs/DEPLOY_E_PRODUCAO.md)

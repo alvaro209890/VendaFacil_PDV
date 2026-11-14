@@ -204,6 +204,14 @@ Detalhes: [`ESTOQUE_E_XML.md`](ESTOQUE_E_XML.md).
   o que está pendente/vencido. A tela mostra o histórico de pagamentos. Excedente
   é recusado, não vira crédito: informe no máximo o pendente. Recebimento em
   dinheiro entra na gaveta da sessão aberta. Conta cancelada não recebe baixa.
+- Na versão **1.0.19**, **Receber** permite escolher Dinheiro, PIX, Débito ou Crédito.
+  Cartão pode ser enviado à Point configurada e só baixa após aprovação. Em outra
+  maquininha, confirme a aprovação antes de registrar manualmente.
+- **PIX copia e cola:** gere o código, copie para enviar ao cliente e clique em
+  **Fechar e continuar vendendo**. O código fica salvo em **Ver PIX de R$ …**;
+  não ocupa a Point nem exige deixar a janela aberta. Quando o pagamento chegar,
+  confira o crédito na conta da loja e confirme o recebimento no PIX salvo.
+  Gerar ou enviar o código não quita a dívida. **PIX na Point** é uma opção separada.
 
 ## 9. Caixa (abrir/fechar)
 Tela **Caixa**:

@@ -66,3 +66,20 @@ engolido: retorna 400 sem baixar a conta. Valor exato quita. Conta cancelada nã
 aceita recebimento (409). Receber em dinheiro entra no caixa aberto do usuário;
 PIX/cartão não alteram espécie. Cliente com fiado em aberto não pode ser ocultado
 pelo DELETE (409).
+
+Desde a 1.0.19, **Receber** pede a forma de pagamento. Cartão pode acionar a Point;
+a baixa integrada valida aprovação, valor, forma e referência no servidor, com
+proteção contra repetição. Cobrança pendente pode ser retomada após fechar a janela
+ou reiniciar o PDV. Cancelamento só libera a conta após confirmação da Point.
+
+**PIX copia e cola é independente da Point:** o código é salvo com valor e referência
+próprios, pode ser enviado ao cliente e pago depois. O operador fecha a janela e
+continua vendendo; nenhuma reserva de terminal, trava de caixa ou baixa é criada.
+A conferência do crédito na conta da loja é manual. **PIX na Point** é uma opção
+separada, com confirmação pela integração. Se o saldo mudar enquanto o cliente
+estiver com um código antigo, confira o valor recebido antes da baixa; um código
+estático já enviado não pode ser revogado no banco pelo PDV.
+
+Referências técnicas: [Orders Point](https://www.mercadopago.com.br/developers/pt/docs/mp-point/payment-processing),
+[cancelamento Point](https://www.mercadopago.com.br/developers/pt/reference/in-person-payments/point/orders/cancel-order/post)
+e [Manual Pix do Banco Central](https://www.bcb.gov.br/content/estabilidadefinanceira/pix/Regulamento_Pix/II_ManualdePadroesparaIniciacaodoPix.pdf).

@@ -8,6 +8,10 @@ a NF-e real da Kaiser; ver `CAIXA_E_UNIDADE.md`) e a **1.0.17** (vender sem abri
 caixa, sem aviso; ver `CAIXA.md`) e a **1.0.18** (janela de cadastro/entrada
 rápida na venda; ver `MANUAL.md` §3 e `INSTALACAO_WINDOWS.md`). Os itens
 abaixo descrevem o estado de comercialização da 1.0.13 e não foram reabertos.
+**Entrega local 1.0.19 (14/11/2026):** acerto do fiado por forma de pagamento,
+Point e PIX copia e cola salvo sem bloquear o PDV/terminal. Testes e hashes em
+`VALIDACAO_FIADO_1.0.19.md`. Instalação na loja e cobrança na Point física pendentes;
+esta rodada não revalidou os demais itens comerciais/fiscais.
 O **código do produto** está bem encaminhado; a maior parte do que
 falta é **negócio, distribuição e robustez de produção**, não funcionalidade.
 

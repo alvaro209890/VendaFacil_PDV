@@ -2,6 +2,10 @@
 
 Índice de toda a documentação, por público.
 
+**Entrega local atual: 1.0.19**, recebimento do fiado com forma de pagamento,
+Point e PIX copia e cola independente. [Validação, instalador e pendências](VALIDACAO_FIADO_1.0.19.md).
+Instalada no PC do James em 14/11: [aceite com provas e bloqueios reais](ACEITE_JAMES_1.0.19.md).
+
 ## 🏪 Implantação e operação na loja
 - [IMPLANTACAO_MERCEARIA.md](IMPLANTACAO_MERCEARIA.md) — roteiro de instalação na loja, item a item, com evidência.
 - [TREINAMENTO_OPERADOR.md](TREINAMENTO_OPERADOR.md) — treinamento de 20 minutos do operador de caixa.
@@ -13,6 +17,7 @@
 - [ESTOQUE_E_XML.md](ESTOQUE_E_XML.md) — estoque, entrada manual, importação de XML (NF-e) e venda de embalagem fechada com avulso.
 - [**CAIXA_E_UNIDADE.md**](CAIXA_E_UNIDADE.md) — caixa e unidade com preços diferentes (1.0.16): cadastro, conta de preço, NF-e (custo real, dois códigos, "como a nota conta"), caixa, lucro, NFC-e e o caso real Kaiser.
 - [CAIXA.md](CAIXA.md) — abertura/fechamento de caixa, sangria e suprimento.
+- [VALIDACAO_FIADO_1.0.19.md](VALIDACAO_FIADO_1.0.19.md) — fiado por forma, Point, PIX salvo sem travar o caixa, testes e hashes.
 - [RECIBO.md](RECIBO.md) — impressão de recibo/cupom na térmica (e bloco fiscal da NFC-e).
 - [FISCAL_SIMPLES.md](FISCAL_SIMPLES.md) — CSOSN/CST por produto, XML fiscal e relatório para PGDAS-D.
 - [CONTADOR.md](CONTADOR.md) — fluxo com o contador: quem emite, o que entregar (export de XMLs em ZIP) e o que ele configura.

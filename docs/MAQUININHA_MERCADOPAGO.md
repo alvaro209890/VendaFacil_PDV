@@ -75,13 +75,22 @@ O PDV envia para `config.payment_method.default_type`:
 |---|---|
 | Debito | `debit_card` |
 | Credito | `credit_card` |
+| PIX na Point (se habilitado) | `qr` |
 
 O valor e enviado em reais como string decimal, por exemplo `"4.93"`.
 
-Desde a versao 1.0.12, a Point fica dedicada a cartao. O PIX nao e enviado para
-a maquininha: ele deve seguir pelo fluxo proprio de QR Code do PDV. Isso evita
-misturar a order da Point com o PIX e deixa o caixa mais previsivel para venda
-fiscal.
+**Contrato atual da 1.0.19:** PIX na Point e opcional, ligado por `pix_integrado`.
+O PIX QR/copia e cola da chave da loja e independente da Point. No acerto do
+fiado, o codigo fica salvo para enviar ao cliente e pagar depois: fechar a
+janela libera o PDV, sem reservar o terminal e sem dar baixa antecipada.
+A confirmacao desse PIX exige conferir o credito na conta da loja.
+
+Em **Contas a Receber → Receber**, debito/credito podem enviar a cobranca para
+a Point. A baixa ocorre apos o backend validar aprovacao, valor, forma e
+referencia. Cobranca integrada pendente pode ser retomada apos fechar/reiniciar;
+cancelamento so libera apos estado final confirmado. Validacao da 1.0.19 foi
+local, com transporte Point simulado; aceite fisico pendente. Evidencias:
+`VALIDACAO_FIADO_1.0.19.md`.
 
 ## Estados
 

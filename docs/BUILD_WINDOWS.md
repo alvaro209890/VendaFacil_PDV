@@ -85,9 +85,11 @@ Antes, edite o topo do `installer\vendafacil.iss` com os seus dados:
 `AppPublisher` (empresa), `AppURL` (site) e, se tiver, `SetupIconFile` (ícone).
 
 **Resultado:** `dist_installer\VendaFacilPDV-Setup-<versão>.exe`. A versão sai
-de `AppVersion` em `installer\vendafacil.iss`. A entrega atual é a **1.0.18**
-(`VendaFacilPDV-Setup-1.0.18.exe`, build local SHA-256
-`A87EAD1073CE38C72E6FA905CE0D8A020957DB25900096058A2C36DA68676C6B`). A 1.0.15 era
+de `AppVersion` em `installer\vendafacil.iss`. A entrega local atual é a **1.0.19**
+(`VendaFacilPDV-Setup-1.0.19.exe`, build local SHA-256
+`7BBC9B37F0309ACD06D9310F892B828885D37D2DFB09346976287766C897B0C9`).
+Fiado, testes e pendências em `VALIDACAO_FIADO_1.0.19.md`; esta versão ainda não
+foi instalada na loja nem publicada no GitHub. A 1.0.15 era
 `BB0A9823B90204B571777F2CB7438ACEA14BA68256430CC4FA47C7B0E5573B97`,
 workflow [43549468463](https://github.com/alvaro209890/VendaFacil_PDV/actions/runs/43549468463).
 

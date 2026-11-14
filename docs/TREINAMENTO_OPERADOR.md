@@ -66,8 +66,17 @@ troco). Digite o valor. O "dinheiro esperado" já desconta/soma.
 ## 4. Fiado e recebimento (4 min)
 
 1. Venda em **Fiado**: escolha o cliente (cadastre em **Clientes** se não existir).
-2. Para receber: **Contas a receber** → conta do cliente → registre o valor pago
-   (pode ser parcial; quita ao zerar).
+2. Para receber: **Contas a Receber** → conta do cliente → **Receber** → valor e
+   forma (**Dinheiro**, **PIX**, **Débito** ou **Crédito**). Pode ser parcial; quita ao zerar.
+   Dinheiro entra na gaveta do caixa aberto. PIX e cartão não somam em espécie.
+   Cartão com Point configurada: **Enviar cobrança para a Point** e aguardar aprovação.
+   Outra maquininha: selecione a opção manual e confirme que o cartão foi aprovado.
+   PIX: **Gerar PIX** mostra QR Code e copia e cola. Copie para enviar pelo WhatsApp
+   e clique **Fechar e continuar vendendo**: a maquininha não é acionada e o PDV
+   continua livre. O código fica salvo na conta em **Ver PIX de R$ …**, inclusive
+   depois de reabrir o sistema. Quando o cliente pagar, confira o crédito na
+   conta da loja, reabra o PIX salvo e confirme o recebimento. Gerar/enviar não dá baixa.
+   **PIX na Point** é uma opção separada (se habilitada) e tem confirmação automática.
 3. Venda fiada que já teve pagamento **não pode ser cancelada** antes de estornar
    o recebimento — o sistema avisa.
 

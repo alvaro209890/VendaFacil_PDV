@@ -1,8 +1,9 @@
 # Instalar o VendaFacil PDV em um PC Windows
 
 Este guia e para instalar o sistema no computador do caixa. A entrega atual,
-conferida em 14/11/2026, e o instalador `VendaFacilPDV-Setup-1.0.18.exe`
-(caixa e unidade com precos diferentes; ver `CAIXA_E_UNIDADE.md`).
+conferida em 14/11/2026, e o instalador `VendaFacilPDV-Setup-1.0.19.exe`
+(fiado por forma de pagamento, Point e PIX copia e cola salvo para pagar depois;
+ver `VALIDACAO_FIADO_1.0.19.md`). A instalacao desta versao na loja ainda esta pendente.
 
 ## Requisitos do computador
 
@@ -16,20 +17,21 @@ conferida em 14/11/2026, e o instalador `VendaFacilPDV-Setup-1.0.18.exe`
 Entregue ao cliente o instalador:
 
 ```text
-dist_installer\VendaFacilPDV-Setup-1.0.18.exe
+dist_installer\VendaFacilPDV-Setup-1.0.19.exe
 ```
 
 Confira a integridade antes de entregar (PowerShell):
 
 ```powershell
-Get-FileHash .\VendaFacilPDV-Setup-1.0.18.exe -Algorithm SHA256
+Get-FileHash .\VendaFacilPDV-Setup-1.0.19.exe -Algorithm SHA256
 ```
 
 O SHA-256 conferido em 14/11/2026 e
-`A87EAD1073CE38C72E6FA905CE0D8A020957DB25900096058A2C36DA68676C6B` (build local validado).
+`7BBC9B37F0309ACD06D9310F892B828885D37D2DFB09346976287766C897B0C9` (build local validado).
 O Setup 1.0.15 anterior era `BB0A9823B90204B571777F2CB7438ACEA14BA68256430CC4FA47C7B0E5573B97`.
-O arquivo tambem sai do artefato do workflow Build Windows EXE
-(run `43549468463`). Hashes de versoes anteriores continuam em
+Esta 1.0.19 foi gerada localmente e ainda nao foi publicada no GitHub.
+O run `43549468463` do workflow Build Windows EXE e da versao historica 1.0.15.
+Hashes de versoes anteriores continuam em
 `plano_producao/evidencias/F6_ARTEFATOS.txt`.
 
 O executavel direto tambem existe em:
@@ -43,7 +45,7 @@ o desinstalador e usa o icone oficial do VendaFacil PDV.
 
 ## Passo a passo de instalacao
 
-1. Copie ou baixe `VendaFacilPDV-Setup-1.0.18.exe` no PC do caixa.
+1. Copie ou baixe `VendaFacilPDV-Setup-1.0.19.exe` no PC do caixa.
 2. Clique com o botao direito no instalador e escolha `Executar como administrador`.
 3. Se o Windows SmartScreen aparecer, clique em `Mais informacoes` e depois `Executar assim mesmo`.
 4. Avance no instalador e deixe marcada a opcao de criar atalho na Area de Trabalho.
@@ -75,8 +77,8 @@ atualizar o sistema por cima nao apaga as vendas.
 4. Abra o atalho e confira uma venda/produto existente.
 
 Antes de atualizar, o PDV faz backup automatico ao iniciar. A atualizacao e
-aditiva: a 1.0.18 abre o banco das versoes anteriores e acrescenta os campos de
-embalagem e avulso sem apagar vendas. A 1.0.13 ja tinha sido conferida com as
+aditiva: a 1.0.19 abre o banco das versoes anteriores e acrescenta as tabelas e
+referencias de cobrancas do fiado e PIX salvos, sem apagar vendas. A 1.0.13 ja tinha sido conferida com as
 contagens de usuarios, clientes, produtos, vendas, itens e notas.
 
 Teste automatizado de instalar → atualizar → desinstalar (so em maquina descartavel,

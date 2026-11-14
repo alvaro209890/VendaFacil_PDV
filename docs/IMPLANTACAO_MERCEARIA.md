@@ -1,6 +1,6 @@
 # Implantação na mercearia — roteiro item a item
 
-Para quem vai instalar o VendaFácil PDV 1.0.18 no caixa da loja. Cada item tem a
+Para quem vai instalar o VendaFácil PDV 1.0.19 no caixa da loja. Cada item tem a
 **evidência a colher** (foto, print ou anotação). Guarde as evidências numa pasta
 com a data da implantação.
 
@@ -8,7 +8,7 @@ Tempo estimado: 2 a 3 horas, sem contar o cadastro completo de produtos.
 
 | # | Etapa | Como fazer | Evidência a colher |
 |---|---|---|---|
-| 1 | Conferir o instalador | No PC, em PowerShell: `Get-FileHash .\VendaFacilPDV-Setup-1.0.18.exe -Algorithm SHA256`. O hash do build local conferido em 14/11/2026 é `A87EAD1073CE38C72E6FA905CE0D8A020957DB25900096058A2C36DA68676C6B` | Print do hash igual |
+| 1 | Conferir o instalador | No PC, em PowerShell: `Get-FileHash .\VendaFacilPDV-Setup-1.0.19.exe -Algorithm SHA256`. O hash do build local conferido em 14/11/2026 é `7BBC9B37F0309ACD06D9310F892B828885D37D2DFB09346976287766C897B0C9` | Print do hash igual |
 | 2 | Instalar | Botão direito → **Executar como administrador**. SmartScreen: "Mais informações → Executar assim mesmo" (o programa não é assinado, decisão do projeto). Detalhes: `INSTALACAO_WINDOWS.md` | Print do atalho na Área de Trabalho |
 | 3 | Primeiro acesso | Abra o atalho. O navegador abre em `http://127.0.0.1:3020/`. Com painel: entre com o usuário e a senha criados no painel (o primeiro login precisa de internet). Modo local: crie o primeiro usuário com senha forte | Print da tela do PDV logado |
 | 4 | Senha | Troque a senha provisória e anote-a só com o dono da loja (nunca em papel colado no caixa) | Confirmação verbal do dono |

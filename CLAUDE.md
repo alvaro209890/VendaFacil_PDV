@@ -1,5 +1,20 @@
 # CLAUDE.md — instruções para o agente
 
+## Atualização local 1.0.19 — 14/11/2026
+
+Recebimento do fiado com forma de pagamento, cartão/PIX na Point e PIX copia e
+cola independente, salvo para pagamento posterior. Veja `docs/CAIXA.md` e
+`docs/TREINAMENTO_OPERADOR.md`. Artefatos atuais: `dist_exe/VendaFacilPDV.exe`
+e `dist_installer/VendaFacilPDV-Setup-1.0.19.exe`. A descrição da 1.0.18 abaixo
+é histórica. Instalada no James em 14/11: `docs/ACEITE_JAMES_1.0.19.md` registra
+as provas, o 403 de Point Orders, o 230 de homologação e o aceite físico pendente.
+Esta rodada não publicou no GitHub.
+
+Aceite específico do binário, com banco descartável e sem terminal/SEFAZ reais:
+`backend\.venv\Scripts\python -X utf8 -I scripts\verificar_fiado_exe.py`.
+O roteiro verifica código salvo após reinício, venda liberada durante a espera,
+formas corretas no histórico, baixa sem duplicação e dinheiro esperado.
+
 Este repositório é o **VendaFácil PDV**. Se você é um agente que pegou este repo
 para **gerar o executável Windows (.exe)**, siga este guia. Os comandos de build
 já estão **pré-autorizados** em `.claude/settings.json` (não deve pedir permissão).

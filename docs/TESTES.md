@@ -1,5 +1,17 @@
 # ✅ Testes automatizados
 
+**Rodada 1.0.19, 14/11/2026:** backend **539 aprovados** (9 de homologação real
+desmarcados), Node **46**, navegador **98**, build e lint aprovados. O painel não
+foi alterado nem retestado nesta rodada. Aceite do binário: **20 requisições,
+0 erros 5xx**, PIX salvo após reinício e venda liberada enquanto se aguarda.
+Detalhes e limites: [VALIDACAO_FIADO_1.0.19.md](VALIDACAO_FIADO_1.0.19.md).
+
+```powershell
+backend\.venv\Scripts\python -X utf8 -I scripts\verificar_fiado_exe.py
+```
+
+O roteiro usa dados descartáveis; não aciona banco, terminal ou SEFAZ reais.
+
 Há uma suíte de testes (pytest) cobrindo a lógica crítica do **PDV** e do
 **Painel**. Eles usam um banco temporário (não tocam nos seus dados) e o
 `TestClient` do FastAPI.

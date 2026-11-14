@@ -1,5 +1,12 @@
 # Diagnostico da Point neste PC
 
+> **Nota de 14/11/2026, versao local 1.0.19:** este documento conserva o
+> diagnostico historico do terminal. O contrato atual admite PIX na Point
+> quando habilitado (`default_type=qr`) e acerto do fiado integrado.
+> O PIX copia e cola da chave da loja fica salvo sem ocupar o terminal;
+> o operador confere o credito para dar baixa. Veja `MAQUININHA_MERCADOPAGO.md`
+> e `VALIDACAO_FIADO_1.0.19.md`. Nao houve novo teste no terminal fisico nesta rodada.
+
 Data: 2026-06-01
 
 Contexto: o PDV instalado ficava em **"Enviando para a maquininha..."** ao tentar
