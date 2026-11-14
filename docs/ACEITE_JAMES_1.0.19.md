@@ -2,6 +2,11 @@
 
 Responsável: Codex, 14/11/2026. Autorizado pelo Álvaro nesta sessão.
 
+**Atualização posterior na mesma sessão:** a versão atual no James é a
+**1.0.20**, com card de estoque e leitor verificados. Veja
+[a atualização e os hashes atuais](ATUALIZACAO_1.0.20.md). A tabela abaixo
+preserva as provas da primeira instalação 1.0.19 e os bloqueios externos.
+
 ## Escopo e situação inicial
 
 Atualizar o PDV, preservar banco/backups e configurar EPSON TM-T20, Mercado Pago
@@ -44,6 +49,9 @@ Sem PR ou push nesta rodada.
 | 8. Impressora | `EPSON TM-T20`, driver `EPSON TM-T20 Receipt5`, porta `USB001`. `SetDefaultPrinter` retornou sucesso e `GetDefaultPrinter` retornou o nome da Epson. PrintTicket **80000 × 297000 µm**. `04` e `14`. |
 | 9. Cupom | Cupom não fiscal da venda de teste nº 1, R$ 1,00/dinheiro, gerado pelo mesmo código do app e conferido em PNG/PDF de 80 mm. Diagnóstico enviado ao spooler como imagem: evento **307**, job **2**, **38.744 bytes**, USB001, fila vazia ao final. Evento informa 0 páginas; **não substitui foto nem leitura do papel**. Foto, chave/QR no papel e impressão pelo Edge permanecem sem aceite físico. `12-impressao-evidencia.txt`, `14-spooler-evidencia.txt`, `cupom-teste.png` e `cupom-teste.pdf`. |
 | 10. Pendências | Autorização de criação de orders no Mercado Pago; aprovação/estorno de R$ 1 na Point com pessoa no local; cadastro da IE no ambiente de homologação da SEFAZ; foto e leitura do cupom/QR na Epson. Produção fiscal depende de Álvaro e contador. |
+
+A renovação da credencial Mercado Pago exposta na conversa também permanece
+pendente. A credencial não foi reproduzida neste relatório nem nos comandos.
 
 Evidências sanitizadas em `C:\GIS\VendaFacil_PDV\output\james` (fora do Git).
 No James, relatórios JSON e log do instalador estão em

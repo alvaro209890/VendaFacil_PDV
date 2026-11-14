@@ -25,6 +25,17 @@ Sumário rápido:
 
 # Parte 1 — Lojista (PDV)
 
+### Dashboard e leitor USB — 1.0.20
+
+Clique em **Alertas Estoque** para abrir os produtos ativos com estoque menor
+ou igual ao mínimo, inclusive os zerados. Desmarque **Somente produtos em
+alerta de estoque** para voltar à lista completa.
+
+No PDV, o leitor USB em modo teclado digita no campo **Bipe o código de barras**
+e envia Enter para adicionar ou abrir o cadastro. F4 retorna ao campo. Em sites,
+selecione o campo que deve receber o código antes de bipar. Ler QR Code exige
+suporte QR/2D no próprio aparelho; o PDV não acrescenta essa capacidade ao leitor.
+
 ### Caixa/carteira fechada e avulso — 1.0.15, revisto na 1.0.16
 
 Em **Produtos**, ligue **Também vende por unidade** e informe a embalagem,

@@ -22,6 +22,15 @@ terminador aceito pelo PDV; não foi necessário alterar firmware ou driver.
 
 ## Validação e artefatos
 
+**Instalada no James**, com `ExitCode=0` e hashes iguais aos locais. `GET /health`
+retorna **1.0.20**, porta 3020 **True**, tarefa **Running**. Banco íntegro,
+contagens preservadas e hashes dos backups anteriores iguais. Novo backup
+`vendafacil-apos-1.0.20-20261114-140438.db`, 249.856 bytes, integridade **ok**.
+Token, A1, homologação e licença ativa preservados. Bundle servido no próprio
+James contém o link do card corrigido. Evidências: `16-instalar-1.0.20-evidencia.txt`
+e `17-aceite-1.0.20-evidencia.txt` em `output/james`; relatórios no cliente em
+`C:\ProgramData\VendaFacil\evidencias-1.0.20`. Limpeza anterior continua confirmada.
+
 Build TypeScript/Vite e ESLint aprovados; 46 testes Node, 13 testes de foco e
 teclado no navegador e 3 testes de embalagem/versão aprovados. Playwright CLI
 conferiu o clique no card, seis alertas (mais que a prévia de cinco), produto

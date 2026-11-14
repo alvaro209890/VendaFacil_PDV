@@ -1,5 +1,12 @@
 # ✅ Testes automatizados
 
+**1.0.20, 14/11/2026:** build/lint, Node **46**, foco/teclado **13** e
+embalagem/versão **3** aprovados. Playwright CLI validou o filtro do dashboard
+com seis alertas, zero/limite, remoção do filtro, recarga e mobile. Binário:
+20 requisições/0 erros 5xx. [Entrega e provas](ATUALIZACAO_1.0.20.md).
+A suíte integral abaixo é a medição da 1.0.19; não foi repetida integralmente
+para esta alteração de frontend.
+
 **Rodada 1.0.19, 14/11/2026:** backend **539 aprovados** (9 de homologação real
 desmarcados), Node **46**, navegador **98**, build e lint aprovados. O painel não
 foi alterado nem retestado nesta rodada. Aceite do binário: **20 requisições,

@@ -2,9 +2,10 @@
 
 Índice de toda a documentação, por público.
 
-**Entrega local atual: 1.0.19**, recebimento do fiado com forma de pagamento,
-Point e PIX copia e cola independente. [Validação, instalador e pendências](VALIDACAO_FIADO_1.0.19.md).
-Instalada no PC do James em 14/11: [aceite com provas e bloqueios reais](ACEITE_JAMES_1.0.19.md).
+**Entrega atual: 1.0.20 instalada no James**, alertas de estoque clicáveis e
+leitor USB conferido. [Atualização, hashes e testes](ATUALIZACAO_1.0.20.md).
+Inclui o [fiado/PIX da 1.0.19](VALIDACAO_FIADO_1.0.19.md).
+[Aceite da loja e bloqueios reais](ACEITE_JAMES_1.0.19.md).
 
 ## 🏪 Implantação e operação na loja
 - [IMPLANTACAO_MERCEARIA.md](IMPLANTACAO_MERCEARIA.md) — roteiro de instalação na loja, item a item, com evidência.

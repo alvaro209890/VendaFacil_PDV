@@ -1,5 +1,13 @@
 # CLAUDE.md — instruções para o agente
 
+## Entrega atual 1.0.20 — 14/11/2026
+
+Instalada no PC James. Card de alertas abre `/produtos?estoque=alerta`, lista
+completa de ativos com estoque <= mínimo, filtro removível e persistente na URL.
+Build, hashes, testes e leitor: `docs/ATUALIZACAO_1.0.20.md`. Aceite inicial e
+bloqueios externos: `docs/ACEITE_JAMES_1.0.19.md` (Point 403, SEFAZ 230, foto do
+cupom e débito físico pendentes). As versões descritas abaixo são históricas.
+
 ## Atualização local 1.0.19 — 14/11/2026
 
 Recebimento do fiado com forma de pagamento, cartão/PIX na Point e PIX copia e

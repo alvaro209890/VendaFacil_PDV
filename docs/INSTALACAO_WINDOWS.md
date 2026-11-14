@@ -1,9 +1,9 @@
 # Instalar o VendaFacil PDV em um PC Windows
 
 Este guia e para instalar o sistema no computador do caixa. A entrega atual,
-conferida em 14/11/2026, e o instalador `VendaFacilPDV-Setup-1.0.19.exe`
-(fiado por forma de pagamento, Point e PIX copia e cola salvo para pagar depois;
-ver `VALIDACAO_FIADO_1.0.19.md`). A instalacao desta versao na loja ainda esta pendente.
+conferida em 14/11/2026, e o instalador `VendaFacilPDV-Setup-1.0.20.exe`
+(alertas de estoque clicaveis, incluindo fiado/PIX da 1.0.19;
+ver `ATUALIZACAO_1.0.20.md`). Instalacao no James confirmada; aceite fisico parcial.
 
 ## Requisitos do computador
 
@@ -17,19 +17,19 @@ ver `VALIDACAO_FIADO_1.0.19.md`). A instalacao desta versao na loja ainda esta p
 Entregue ao cliente o instalador:
 
 ```text
-dist_installer\VendaFacilPDV-Setup-1.0.19.exe
+dist_installer\VendaFacilPDV-Setup-1.0.20.exe
 ```
 
 Confira a integridade antes de entregar (PowerShell):
 
 ```powershell
-Get-FileHash .\VendaFacilPDV-Setup-1.0.19.exe -Algorithm SHA256
+Get-FileHash .\VendaFacilPDV-Setup-1.0.20.exe -Algorithm SHA256
 ```
 
 O SHA-256 conferido em 14/11/2026 e
-`7BBC9B37F0309ACD06D9310F892B828885D37D2DFB09346976287766C897B0C9` (build local validado).
+`DA0285AC5A09B2CDC1451541B4AA46B124EED9CB03C4188A2E5D64DA2569B274` (build local validado).
 O Setup 1.0.15 anterior era `BB0A9823B90204B571777F2CB7438ACEA14BA68256430CC4FA47C7B0E5573B97`.
-Esta 1.0.19 foi gerada localmente e ainda nao foi publicada no GitHub.
+Esta 1.0.20 foi gerada localmente e ainda nao foi publicada no GitHub.
 O run `43549468463` do workflow Build Windows EXE e da versao historica 1.0.15.
 Hashes de versoes anteriores continuam em
 `plano_producao/evidencias/F6_ARTEFATOS.txt`.
@@ -45,7 +45,7 @@ o desinstalador e usa o icone oficial do VendaFacil PDV.
 
 ## Passo a passo de instalacao
 
-1. Copie ou baixe `VendaFacilPDV-Setup-1.0.19.exe` no PC do caixa.
+1. Copie ou baixe `VendaFacilPDV-Setup-1.0.20.exe` no PC do caixa.
 2. Clique com o botao direito no instalador e escolha `Executar como administrador`.
 3. Se o Windows SmartScreen aparecer, clique em `Mais informacoes` e depois `Executar assim mesmo`.
 4. Avance no instalador e deixe marcada a opcao de criar atalho na Area de Trabalho.
