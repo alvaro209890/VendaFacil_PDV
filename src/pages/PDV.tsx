@@ -24,7 +24,7 @@ import { imprimirRecibo, getLarguraRecibo, setLarguraRecibo } from "../lib/recib
 import type { ReciboData } from "../lib/recibo";
 import Mascote from "../components/Mascote";
 import { useAuthStore } from "../store/authStore";
-import { lerCarrinho, salvarCarrinho } from "../lib/carrinho";
+import { itemCarrinho, linhaCarrinho, limiteCarrinho, unidadeCarrinho, lerCarrinho, salvarCarrinho } from "../lib/carrinho";
 import type { CartItem } from "../lib/carrinho";
 import { lerNumeroPtBr as decimalDigitado } from "../lib/numeros";
 
@@ -59,7 +59,7 @@ export default function PDV() {
   const chaveCarrinho = `vf_carrinho_v1:${useAuthStore((s) => s.user?.id)}`;
   const [carrinho, setCarrinho] = useState<CartItem[]>(() => lerCarrinho(chaveCarrinho));
   const [descontoTexto, setDescontoTexto] = useState("");
-  const [quantidadesTexto, setQuantidadesTexto] = useState<Record<number, string>>({});
+  const [quantidadesTexto, setQuantidadesTexto] = useState<Record<string, string>>({});
   const desconto = decimalDigitado(descontoTexto, 2) ?? 0;
   function setDesconto(valor: number) { setDescontoTexto(valor ? String(valor) : ""); }
   const [pagamento, setPagamento] = useState("dinheiro");
@@ -107,7 +107,7 @@ export default function PDV() {
       // Reabre o rascunho com preço/estoque atuais; o backend segue validando o checkout.
       setCarrinho((anterior) => anterior.map((item) => {
         const atual = p.produtos.find((produto) => produto.id === item.id);
-        return atual ? { ...atual, qtd: item.qtd } : item;
+        return atual ? itemCarrinho(atual, item.modo_venda, item.qtd) : item;
       }));
       setDash(d);
       setClientes(c.clientes);
@@ -180,7 +180,7 @@ export default function PDV() {
     ? produtos.filter(
         (p) =>
           p.nome.toLowerCase().includes(busca.toLowerCase()) ||
-          p.codigo_barras.includes(busca)
+          (p.codigo_barras.includes(busca) || p.codigo_barras_unidade?.includes(busca))
       )
     : produtos;
 
@@ -196,23 +196,20 @@ export default function PDV() {
     modalPagamentoAnterior.current = modalPagamentoAberto;
   }, [modalPagamentoAberto]);
 
-  function addAoCarrinho(p: Produto) {
-    // D3 (Álvaro, 12/11/2026): sem preço de venda não vende (o backend também recusa).
-    if (!(Number(p.preco_venda) > 0)) {
-      setMsg({ tipo: "erro", texto: `"${p.nome}" está sem preço de venda. Cadastre o preço em Produtos antes de vender.` });
-      buscaRef.current?.focus();
+  function addAoCarrinho(p: Produto, modo: 'embalagem' | 'unidade' = 'unidade') {
+    const novo = itemCarrinho(p, modo);
+    if (!(novo.preco_venda > 0)) {
+      setMsg({tipo:'erro', texto:`"${p.nome}" sem preço de venda. Cadastre o preço em Produtos antes de vender.`});
       return;
     }
-    setCarrinho((prev) => {
-      const existe = prev.find((i) => i.id === p.id);
-      if (existe) {
-        if (existe.qtd >= p.estoque) return prev;
-        return prev.map((i) => (i.id === p.id ? { ...i, qtd: i.qtd + 1 } : i));
-      }
-      return [...prev, { ...p, qtd: 1 }];
-    });
-    setMsg(null);
-    buscaRef.current?.focus();
+    const existe = carrinho.find(i => linhaCarrinho(i) === linhaCarrinho(novo));
+    const qtd = (existe?.qtd || 0) + 1;
+    if (qtd > limiteCarrinho(novo, carrinho)) {
+      setMsg({tipo:'erro',texto:`Estoque insuficiente de "${p.nome}" para ${modo}.`});
+      return;
+    }
+    setCarrinho(prev => existe ? prev.map(i => linhaCarrinho(i) === linhaCarrinho(novo) ? {...i,qtd} : i) : [...prev,novo]);
+    setMsg(null); buscaRef.current?.focus();
   }
 
   // Leitor de código de barras / Enter: bipa → adiciona → limpa → mantém o foco.
@@ -226,10 +223,10 @@ export default function PDV() {
     e.preventDefault();
     const termo = busca.trim();
     if (!termo) return;
-    const exato = produtos.find((p) => p.codigo_barras && p.codigo_barras === termo);
+    const exato = produtos.find((p) => (p.codigo_barras && p.codigo_barras === termo) || (p.codigo_barras_unidade && p.codigo_barras_unidade === termo));
     const alvo = exato || (filtrados.length >= 1 ? filtrados[0] : null);
     if (alvo) {
-      addAoCarrinho(alvo);
+      addAoCarrinho(alvo, exato?.vende_por_unidade && exato.codigo_barras === termo ? "embalagem" : "unidade");
       setBusca("");
     } else {
       setMsg({ tipo: "erro", texto: `Nada encontrado para "${termo}".` });
@@ -273,17 +270,20 @@ export default function PDV() {
     return () => window.removeEventListener("keydown", onKey);
   });
 
-  function limparTextoQuantidade(id: number) {
+  function limparTextoQuantidade(id: string) {
     setQuantidadesTexto((prev) => { const novo = { ...prev }; delete novo[id]; return novo; });
   }
 
-  function quantidadeDigitadaValida(id: number, estoque: number) {
-    if (quantidadesTexto[id] === undefined) return true;
+  function quantidadeDigitadaValida(id: string, estoque: number) {
+    const item = carrinho.find(i => linhaCarrinho(i) === id);
+    const qtd = quantidadesTexto[id] === undefined ? item?.qtd : decimalDigitado(quantidadesTexto[id], 3);
+    if (item?.vende_por_unidade && !Number.isInteger(qtd)) return false;
+    if (quantidadesTexto[id] === undefined) return !!qtd && qtd <= estoque;
     const numero = decimalDigitado(quantidadesTexto[id], 3);
     return numero !== null && numero > 0 && numero <= estoque;
   }
 
-  function confirmarQuantidade(id: number, estoque: number) {
+  function confirmarQuantidade(id: string, estoque: number) {
     if (!quantidadeDigitadaValida(id, estoque)) {
       setMsg({ tipo: "erro", texto: "Corrija a quantidade: maior que zero, até o estoque e com até 3 casas decimais." });
       return false;
@@ -292,30 +292,30 @@ export default function PDV() {
     return true;
   }
 
-  function removerDoCarrinho(id: number) {
+  function removerDoCarrinho(id: string) {
     limparTextoQuantidade(id);
-    setCarrinho((prev) => prev.filter((i) => i.id !== id));
+    setCarrinho((prev) => prev.filter((i) => linhaCarrinho(i) !== id));
   }
 
-  function alterarQtd(id: number, delta: number) {
+  function alterarQtd(id: string, delta: number) {
     limparTextoQuantidade(id);
     setCarrinho((prev) =>
       prev.map((i) => {
-        if (i.id !== id) return i;
+        if (linhaCarrinho(i) !== id) return i;
         const nova = Number((i.qtd + delta).toFixed(3));
-        if (nova <= 0 || nova > i.estoque) return i;
+        if (nova <= 0 || nova > limiteCarrinho(i, prev)) return i;
         return { ...i, qtd: nova };
       })
     );
   }
 
-  function definirQtd(id: number, valor: number) {
+  function definirQtd(id: string, valor: number) {
     setCarrinho((prev) =>
       prev.map((i) => {
-        if (i.id !== id) return i;
+        if (linhaCarrinho(i) !== id) return i;
         const nova = Number((valor || 0).toFixed(3));
         if (nova <= 0) return { ...i, qtd: 0.001 };
-        return { ...i, qtd: Math.min(nova, i.estoque) };
+        return { ...i, qtd: Math.min(nova, limiteCarrinho(i, prev)) };
       })
     );
   }
@@ -391,7 +391,7 @@ export default function PDV() {
       setMsg({ tipo: "erro", texto: "Corrija o desconto: valor não negativo com até 2 casas decimais." });
       return;
     }
-    if (carrinho.some((i) => !quantidadeDigitadaValida(i.id, i.estoque))) {
+    if (carrinho.some((i) => !quantidadeDigitadaValida(linhaCarrinho(i), limiteCarrinho(i, carrinho)))) {
       setMsg({ tipo: "erro", texto: "Corrija a quantidade: maior que zero, até o estoque e com até 3 casas decimais." });
       return;
     }
@@ -503,7 +503,7 @@ export default function PDV() {
     try {
       const pagamentoFiscal = maqPagamentoRef.current ?? undefined;
       const resp = await checkout({
-        itens: carrinho.map((i) => ({ produto_id: i.id, quantidade: i.qtd })),
+        itens: carrinho.map((i) => ({ produto_id: i.id, quantidade: i.qtd, modo_venda: i.modo_venda })),
         desconto,
         forma_pagamento: pagamento,
         observacao,
@@ -519,7 +519,7 @@ export default function PDV() {
           const produto = carrinho.find((p) => p.id === i.produto_id);
           return {
             nome: i.nome_produto, qtd: i.quantidade, preco: i.preco_unitario,
-            subtotal: i.subtotal, unidade: produto?.unidade, codigo: String(i.produto_id),
+            subtotal: i.subtotal, unidade: i.unidade_venda || produto?.unidade, codigo: String(i.produto_id),
           };
         }),
         subtotal,
@@ -604,7 +604,7 @@ export default function PDV() {
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
               <AnimatePresence mode="popLayout">
-                {filtrados.map((p) => {
+                {filtrados.flatMap((produto) => (produto.vende_por_unidade ? [itemCarrinho(produto, 'embalagem'), itemCarrinho(produto, 'unidade')] : [itemCarrinho(produto)]).map((p) => {
                   const preco = p.preco_venda || p.preco_custo;
                   const baixo = p.estoque <= p.estoque_minimo;
                   return (
@@ -614,14 +614,15 @@ export default function PDV() {
                       animate={{ opacity: 1, scale: 1 }}
                       whileHover={{ y: -4, scale: 1.02 }}
                       whileTap={{ scale: 0.95 }}
-                      key={p.id}
-                      onClick={() => addAoCarrinho(p)}
+                      key={linhaCarrinho(p)}
+                      onClick={() => addAoCarrinho(produto, p.modo_venda)}
                       className="group text-left bg-slate-800/40 hover:bg-slate-800/80 border border-slate-700/50 hover:border-brand-500/50 rounded-2xl p-4 transition-all shadow-lg hover:shadow-brand-500/5 flex flex-col h-full"
                     >
                       <div className="flex-1">
                         <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-1">{p.categoria_nome || "Geral"}</p>
                         <p className="text-white text-sm font-bold leading-snug line-clamp-2">{p.nome}</p>
                       </div>
+                      {p.vende_por_unidade && <p className="mt-3 text-sm font-bold text-brand-300">{p.modo_venda === 'embalagem' ? p.unidade_compra : 'Unidade'} ? R$ {preco.toFixed(2)}</p>}
                       <div className="mt-4">
                         <p className="text-brand-400 font-black text-lg">R$ {preco.toFixed(2)}</p>
                         <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold mt-2 ${baixo ? "bg-amber-500/10 text-amber-500" : "bg-slate-700/30 text-slate-500"}`}>
@@ -631,7 +632,7 @@ export default function PDV() {
                       </div>
                     </motion.button>
                   );
-                })}
+                }))}
               </AnimatePresence>
             </div>
           )}
@@ -685,16 +686,16 @@ export default function PDV() {
                       initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: -20 }}
-                      key={i.id}
+                      key={linhaCarrinho(i)}
                       className="flex items-center gap-3 bg-slate-800/50 border border-slate-700/30 rounded-2xl p-3 group"
                     >
                       <div className="flex-1 min-w-0">
-                        <p className="text-white text-sm font-bold truncate">{i.nome}</p>
-                        <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mt-0.5">R$ {preco.toFixed(2)} / {i.unidade}</p>
+                        <p className="text-white text-sm font-bold truncate">{i.nome}{i.vende_por_unidade ? ` ? ${i.modo_venda === "embalagem" ? i.unidade_compra : "avulso"}` : ""}</p>
+                        <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mt-0.5">R$ {preco.toFixed(2)} / {unidadeCarrinho(i)}</p>
                       </div>
                       <div className="flex items-center gap-2 bg-slate-900/50 rounded-xl p-1 border border-slate-700/50">
                         <button
-                          onClick={() => alterarQtd(i.id, -passoQtd(i.unidade))}
+                          onClick={() => alterarQtd(linhaCarrinho(i), -passoQtd(unidadeCarrinho(i)))}
                           className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
                         >
                           <Minus size={14} />
@@ -702,24 +703,24 @@ export default function PDV() {
                         <input
                           type="text"
                           inputMode="decimal"
-                          ref={i.id === carrinho[carrinho.length - 1]?.id ? quantidadeRef : undefined}
-                          aria-label={`Quantidade de ${i.nome}`}
-                          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); if (confirmarQuantidade(i.id, i.estoque)) buscaRef.current?.focus(); } }}
-                          value={quantidadesTexto[i.id] ?? String(i.qtd)}
+                          ref={linhaCarrinho(i) === linhaCarrinho(carrinho[carrinho.length - 1]) ? quantidadeRef : undefined}
+                          aria-label={`Quantidade de ${i.nome}${i.vende_por_unidade ? ` ${unidadeCarrinho(i)}` : ""}`}
+                          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); if (confirmarQuantidade(linhaCarrinho(i), limiteCarrinho(i, carrinho))) buscaRef.current?.focus(); } }}
+                          value={quantidadesTexto[linhaCarrinho(i)] ?? String(i.qtd)}
                           onChange={(e) => {
                             const texto = e.target.value;
-                            setQuantidadesTexto((prev) => ({ ...prev, [i.id]: texto }));
+                            setQuantidadesTexto((prev) => ({ ...prev, [linhaCarrinho(i)]: texto }));
                             const numero = decimalDigitado(texto, 3);
-                            if (numero !== null && numero > 0 && numero <= i.estoque) definirQtd(i.id, numero);
+                            if (numero !== null && numero > 0 && numero <= limiteCarrinho(i, carrinho)) definirQtd(linhaCarrinho(i), numero);
                           }}
-                          onBlur={() => { confirmarQuantidade(i.id, i.estoque); }}
-                          min={passoQtd(i.unidade)}
-                          max={i.estoque}
-                          step={passoQtd(i.unidade)}
+                          onBlur={() => { confirmarQuantidade(linhaCarrinho(i), limiteCarrinho(i, carrinho)); }}
+                          min={passoQtd(unidadeCarrinho(i))}
+                          max={limiteCarrinho(i, carrinho)}
+                          step={passoQtd(unidadeCarrinho(i))}
                           className="w-14 bg-transparent text-white text-xs font-bold text-center focus:outline-none"
                         />
                         <button
-                          onClick={() => alterarQtd(i.id, passoQtd(i.unidade))}
+                          onClick={() => alterarQtd(linhaCarrinho(i), passoQtd(unidadeCarrinho(i)))}
                           className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
                         >
                           <Plus size={14} />
@@ -728,7 +729,7 @@ export default function PDV() {
                       <div className="text-right w-20">
                         <p className="text-brand-400 font-black text-sm">R$ {sub.toFixed(2)}</p>
                         <button
-                          onClick={() => removerDoCarrinho(i.id)}
+                          onClick={() => removerDoCarrinho(linhaCarrinho(i))}
                           className="text-slate-600 hover:text-red-400 transition-colors mt-1"
                         >
                           <Trash2 size={14} className="ml-auto" />

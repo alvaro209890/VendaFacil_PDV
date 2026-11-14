@@ -533,6 +533,7 @@ export default function ProdutosPage() {
     <div className="flex flex-col lg:flex-row gap-3 lg:gap-4 h-full">
       {/* Lista */}
       <div className="flex-1 min-h-0 flex flex-col">
+        {msg && !novo && !editando && <div role="status" className={`mb-3 rounded-lg border p-3 text-sm ${msg.tipo === 'ok' ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300' : 'border-red-500/30 bg-red-500/10 text-red-300'}`}>{msg.texto}</div>}
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-white font-bold text-base sm:text-lg">📦 Produtos ({produtos.length})</h2>
           <div className="flex gap-2">
@@ -600,7 +601,7 @@ export default function ProdutosPage() {
                         </div>
                         <div className="rounded-lg bg-slate-800 p-2">
                           <p className="text-slate-500 text-2xs uppercase">Venda</p>
-                          <p className="text-brand-400 font-semibold">{p.vende_por_unidade ? `${p.unidade_compra}: R$ ${Number(p.preco_embalagem).toFixed(2)} ? Unidade: R$ ${Number(p.preco_unidade).toFixed(2)}` : `R$ ${(p.preco_venda || 0).toFixed(2)}`}</p>
+                          <p className="text-brand-400 font-semibold">{p.vende_por_unidade ? `${p.unidade_compra}: R$ ${Number(p.preco_embalagem).toFixed(2)} · Unidade: R$ ${Number(p.preco_unidade).toFixed(2)}` : `R$ ${(p.preco_venda || 0).toFixed(2)}`}</p>
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
@@ -648,7 +649,7 @@ export default function ProdutosPage() {
                           </div>
                         </td>
                         <td className="p-3 text-slate-300">R$ {(p.preco_custo || 0).toFixed(2)}</td>
-                        <td className="p-3 text-brand-400 font-semibold">{p.vende_por_unidade ? `${p.unidade_compra}: R$ ${Number(p.preco_embalagem).toFixed(2)} ? Unidade: R$ ${Number(p.preco_unidade).toFixed(2)}` : `R$ ${(p.preco_venda || 0).toFixed(2)}`}</td>
+                        <td className="p-3 text-brand-400 font-semibold">{p.vende_por_unidade ? `${p.unidade_compra}: R$ ${Number(p.preco_embalagem).toFixed(2)} · Unidade: R$ ${Number(p.preco_unidade).toFixed(2)}` : `R$ ${(p.preco_venda || 0).toFixed(2)}`}</td>
                         <td className="p-3 hidden md:table-cell">
                           <span className={baixo ? "text-amber-400 font-medium" : "text-slate-300"}>{p.vende_por_unidade ? estoqueBalcao(p) : `${fmtQtd(p.estoque)} ${p.unidade}`}{baixo && ` ⚠️`}</span>
                         </td>

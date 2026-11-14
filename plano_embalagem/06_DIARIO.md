@@ -25,3 +25,7 @@
 - **2026-11-13 — Codex — E3.1 fim**: pytest backend: 487 passed, 9 deselected; antes 10 failed e 1 passed em vendas. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
 
 - **2026-11-13 — Codex — E3.2 inicio**: Verificar lucro, movimentos, cancelamento e concorrência. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
+
+- **2026-11-13 — Codex — E3.2 fim**: pytest backend: 488 passed, 9 deselected; lucro 14,50 e estorno por snapshot. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
+
+- **2026-11-13 — Codex — E3.3 inicio**: Dois botões, códigos principal e avulso, rascunho separado por modo; navegador em validação. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.

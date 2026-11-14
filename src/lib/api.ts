@@ -532,11 +532,15 @@ export function cancelarContaReceber(id: number): Promise<{ ok: boolean }> {
 // ── Vendas ──
 
 export interface ItemVenda {
+  modo_venda?: "embalagem" | "unidade";
   produto_id: number;
   quantidade: number;
 }
 
 export interface ItemVendaProcessado {
+  unidade_venda?: string;
+  quantidade_estoque?: number;
+  modo_venda?: "embalagem" | "unidade";
   produto_id: number;
   nome_produto: string;
   quantidade: number;
