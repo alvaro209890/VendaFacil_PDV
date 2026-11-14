@@ -57,6 +57,11 @@ class FiscalMixin(BaseModel):
 
 
 class ProdutoCreate(FiscalMixin):
+    model_config = {"allow_inf_nan": False}
+    vende_por_unidade: bool = False
+    preco_embalagem: float = Field(default=0, ge=0)
+    preco_unidade: float = Field(default=0, ge=0)
+    codigo_barras_unidade: str = Field(default="", max_length=60)
     nome: str = Field(min_length=1, max_length=120)
     categoria_id: int | None = Field(default=None)
     preco_custo: float = Field(default=0, ge=0)
@@ -70,6 +75,11 @@ class ProdutoCreate(FiscalMixin):
 
 
 class ProdutoUpdate(FiscalMixin):
+    model_config = {"allow_inf_nan": False}
+    vende_por_unidade: bool | None = None
+    preco_embalagem: float | None = Field(default=None, ge=0)
+    preco_unidade: float | None = Field(default=None, ge=0)
+    codigo_barras_unidade: str | None = Field(default=None, max_length=60)
     nome: str | None = Field(default=None, min_length=1, max_length=120)
     categoria_id: int | None = Field(default=None)
     preco_custo: float | None = Field(default=None, ge=0)
@@ -123,6 +133,18 @@ class AjusteInput(BaseModel):
 
 # ── Rotas ──
 
+def validar_embalagem(p: dict):
+    if not p.get("vende_por_unidade"):
+        return
+    fator = p.get("quantidade_por_embalagem", 1)
+    if (_norm_unidade(p.get("unidade")) != "UN" or not (p.get("unidade_compra") or "").strip()
+            or _norm_unidade(p.get("unidade_compra")) in {"UN", "KG", "G", "LT", "ML"}
+            or fator <= 0 or not float(fator).is_integer()
+            or p.get("preco_embalagem", 0) <= 0 or p.get("preco_unidade", 0) <= 0):
+        raise HTTPException(status_code=400, detail="Informe embalagem, quantidade inteira e os dois preços maiores que zero; estoque em UN.")
+    if p.get("codigo_barras_unidade") and p.get("codigo_barras_unidade") == p.get("codigo_barras"):
+        raise HTTPException(status_code=400, detail="Os códigos da embalagem e da unidade devem ser diferentes.")
+
 @router.get("")
 async def listar(request: Request, ativos: bool = True):
     user_id = _get_user_id(request)
@@ -142,6 +164,7 @@ async def obter(produto_id: int, request: Request):
 async def criar(data: ProdutoCreate, request: Request):
     user_id = _get_user_id(request)
     agora = _agora()
+    validar_embalagem(data.model_dump())
     codigo = _ean(data.codigo_barras)
     if codigo and db.get_produto_by_codigo(user_id, codigo):
         raise HTTPException(status_code=409, detail="Já existe produto com este código de barras.")
@@ -157,6 +180,8 @@ async def criar(data: ProdutoCreate, request: Request):
         unidade=_norm_unidade(data.unidade),
         unidade_compra=_norm_unidade(data.unidade_compra, data.unidade),
         quantidade_por_embalagem=_fator(data.quantidade_por_embalagem),
+        vende_por_unidade=data.vende_por_unidade, preco_embalagem=data.preco_embalagem,
+        preco_unidade=data.preco_unidade, codigo_barras_unidade=_ean(data.codigo_barras_unidade),
         agora=agora,
         fiscais={k: v for k, v in data.model_dump(include=set(FiscalMixin.model_fields)).items() if v is not None},
     )
@@ -171,6 +196,10 @@ async def atualizar(produto_id: int, data: ProdutoUpdate, request: Request):
         raise HTTPException(status_code=404, detail="Produto não encontrado.")
 
     updates = {k: v for k, v in data.model_dump().items() if v is not None}
+    if updates.get("vende_por_unidade") and not p.get("vende_por_unidade"):
+        if not all(k in updates for k in ("preco_embalagem", "preco_unidade")):
+            raise HTTPException(status_code=400, detail="Ao ativar, informe os dois preços de venda.")
+    validar_embalagem({**p, **updates})
     if "unidade" in updates:
         updates["unidade"] = _norm_unidade(updates["unidade"])
     if "unidade_compra" in updates:

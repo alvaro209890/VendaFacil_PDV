@@ -5,3 +5,7 @@
 - **2026-11-13 — Codex — E1.1 fim**: Leitura integral da especificação e regras; execução local autorizada. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
 
 - **2026-11-13 — Codex — E1.2 inicio**: Suíte backend de partida. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
+
+- **2026-11-13 — Codex — E1.2 fim**: backend: .venv/Scripts/python -X utf8 -I -m pytest -q --tb=short: 466 passed, 9 deselected. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
+
+- **2026-11-13 — Codex — E2.1 inicio**: Regressões de cadastro e migração. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.

@@ -266,6 +266,10 @@ class Database:
         embalagem = {
             "unidade_compra": "TEXT NOT NULL DEFAULT ''",
             "quantidade_por_embalagem": "REAL NOT NULL DEFAULT 1",
+            "vende_por_unidade": "INTEGER NOT NULL DEFAULT 0",
+            "preco_embalagem": "REAL NOT NULL DEFAULT 0",
+            "preco_unidade": "REAL NOT NULL DEFAULT 0",
+            "codigo_barras_unidade": "TEXT NOT NULL DEFAULT ''",
         }
         for col, ddl in embalagem.items():
             if col not in pcols:
@@ -954,6 +958,8 @@ class Database:
                        categoria_id: int | None = None,
                        unidade_compra: str = "",
                        quantidade_por_embalagem: float = 1,
+                       vende_por_unidade: bool = False, preco_embalagem: float = 0,
+                       preco_unidade: float = 0, codigo_barras_unidade: str = "",
                        fiscais: dict | None = None) -> dict[str, Any] | None:
         cols = ["user_id", "categoria_id", "nome", "preco_custo", "preco_venda", "estoque",
                 "estoque_minimo", "codigo_barras", "unidade", "unidade_compra",
@@ -962,6 +968,8 @@ class Database:
                 estoque_minimo, codigo_barras.strip(), unidade.strip().upper(),
                 (unidade_compra or unidade).strip().upper(),
                 max(float(quantidade_por_embalagem or 1), 0.0001), agora, agora]
+        cols += ["vende_por_unidade", "preco_embalagem", "preco_unidade", "codigo_barras_unidade"]
+        vals += [int(vende_por_unidade), preco_embalagem, preco_unidade, codigo_barras_unidade.strip()]
         permitidos = {"ncm", "cest", "cfop", "origem", "unidade_tributavel", "cst_csosn",
                       "aliquota_icms", "cst_pis", "aliquota_pis", "cst_cofins", "aliquota_cofins"}
         for chave, valor in (fiscais or {}).items():
@@ -979,6 +987,7 @@ class Database:
         allowed = {"nome", "categoria_id", "preco_custo", "preco_venda", "estoque",
                    "estoque_minimo", "codigo_barras", "unidade", "ativo", "atualizado_em",
                    "unidade_compra", "quantidade_por_embalagem",
+                   "vende_por_unidade", "preco_embalagem", "preco_unidade", "codigo_barras_unidade",
                    "ncm", "cest", "cfop", "origem", "unidade_tributavel", "cst_csosn",
                    "aliquota_icms", "cst_pis", "aliquota_pis", "cst_cofins", "aliquota_cofins"}
         fields = {k: v for k, v in kwargs.items() if k in allowed}

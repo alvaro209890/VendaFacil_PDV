@@ -5,11 +5,11 @@ Ordem fixa. Um `[~]` por vez.
 ## E1 — Linha de base
 
 - [x] **E1.1** Ler `02_ESPECIFICACAO.md` e `01_REGRAS.md`. Não editar código ainda. — 9a47c2b · Leitura integral da especificação e regras; execução local autorizada
-- [~] **E1.2** Rodar a suíte backend e anotar verdes/falhas em `06_DIARIO.md` e T1.
+- [x] **E1.2** Rodar a suíte backend e anotar verdes/falhas em `06_DIARIO.md` e T1. — 532a9aa · backend: .venv/Scripts/python -X utf8 -I -m pytest -q --tb=short: 466 passed, 9 deselected
 
 ## E2 — Cadastro e estoque
 
-- [ ] **E2.1** Testes T2–T6 e T9 falhando. Colunas novas no produto, default da opção desligado, produtos antigos intactos.
+- [~] **E2.1** Testes T2–T6 e T9 falhando. Colunas novas no produto, default da opção desligado, produtos antigos intactos.
 - [ ] **E2.2** API de cadastro e a tela Produtos com a opção, os dois preços e o texto “3 carteiras e 5 avulsos”.
 - [ ] **E2.3** Troca de fator com estoque não recontagem (T9).
 
