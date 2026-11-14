@@ -5,7 +5,7 @@
 | Estado | 🔄 EM EXECUÇÃO |
 | Versão alvo | 1.0.15 |
 | Branch | `master` |
-| Próxima ação | E6.1 |
+| Próxima ação | E7.1 |
 
 ## Placar
 
@@ -16,8 +16,8 @@
 | E3 | [x] |
 | E4 | [x] |
 | E5 | [x] |
-| E6 | [~] |
-| E7 | [ ] |
+| E6 | [x] |
+| E7 | [~] |
 | E8 | [ ] |
 
 ## O que já é fato (13/11/2026)

@@ -45,3 +45,7 @@
 - **2026-11-13 — Codex — E5.1 fim**: T10 falhou antes com UN; pytest backend 493 passed e teste fiscal payload atualizado 1 passed; sem transmissão. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
 
 - **2026-11-13 — Codex — E6.1 inicio**: Navegador integral, inspeção visual, T11 na porta 3021 e correções encontradas. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
+
+- **2026-11-13 — Codex — E6.1 fim**: Backend 496 passed, 9 deselected; Playwright integral 95 passed; aceite porta 3021 4 passed; build/lint/Node 38 verdes. Correções de revisão: entrada por embalagem, códigos, migração e campos derivados da prévia. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
+
+- **2026-11-13 — Codex — E7.1 inicio**: Atualizar manual dentro do app, documentação da loja, treinamento e Segundo Cérebro. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.

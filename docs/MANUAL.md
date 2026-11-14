@@ -25,8 +25,32 @@ Sumário rápido:
 
 # Parte 1 — Lojista (PDV)
 
+### Carteira fechada e avulso — novidade da 1.0.15
+
+Em **Produtos**, ligue **Também vende por unidade** e informe a embalagem,
+quantas unidades vêm dentro e os dois preços. Exemplo: **CARTEIRA**, **20**,
+**R$ 20** a carteira e **R$ 2** o palheiro. Estoque e custo são por palheiro.
+Não divida automaticamente o preço da carteira para definir o preço avulso.
+
+No caixa, escolha o botão **CARTEIRA** ou **Unidade**. O código principal é da
+carteira; o segundo código, se cadastrado, é do avulso. Uma carteira mais três
+palheiros custa **R$ 26** e baixa **23 unidades**. Vinte avulsos custam **R$ 40**.
+Com 15 palheiros, a carteira é recusada e os avulsos continuam disponíveis.
+
+Em **+ Estoque**, escolha unidades ou embalagens: duas carteiras somam 40.
+Alterar o fator com saldo não reconta o estoque. Os dois modos ficam separados
+no carrinho, no histórico e no recibo. Produtos sem a opção mantêm a venda atual.
+
+Ao importar XML, leia a conversão antes de confirmar. A pergunta **“Isto é
+embalagem fechada que também vende por unidade?”** permite configurar um produto
+novo com os dois preços. Sem confirmação, nota em UN entra unidade a unidade.
+**O número no nome não vira estoque**: `CX 00050 KAISER LT 350ML`, quantidade
+600 UN, continua **600 UN**, custo R$ 2,74 e venda sugerida R$ 3,56.
+Veja [Estoque e XML](ESTOQUE_E_XML.md) para exemplos e conferência de custos.
+O fiscal desta entrega permanece em **homologação**.
+
 ## 1. Instalar e abrir
-1. Receba o instalador **`VendaFacilPDV-Setup-1.0.13.exe`** e dê dois cliques.
+1. Receba o instalador **`VendaFacilPDV-Setup-1.0.15.exe`** e dê dois cliques.
 2. Avance a instalação (cria atalho no Menu Iniciar e na Área de Trabalho).
 3. Abra pelo atalho **VendaFácil PDV**. O sistema sobe e abre no navegador.
 

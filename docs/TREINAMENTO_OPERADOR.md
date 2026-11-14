@@ -27,6 +27,27 @@ O cupom pode sair sozinho ("Imprimir recibo ao finalizar") ou pelo botão
 Se fechar o programa sem querer com itens no carrinho, ao abrir de novo o
 carrinho volta.
 
+### Exercício: carteira e avulso
+
+Prepare em Produtos **Também vende por unidade**, CARTEIRA, 20 unidades,
+**R$ 20** por carteira e **R$ 2** por palheiro. Peça ao operador:
+
+1. Dar entrada de **2 carteiras** pelo + Estoque (escolha embalagem), ou importar
+   o XML na unidade CARTEIRA: saldo **40 unidades**.
+2. Bipar o código principal: entra **1 carteira por R$ 20**.
+3. Usar o botão Unidade ou o segundo código e informar **3**: total **R$ 26**.
+4. Finalizar e conferir saldo **17** e duas linhas no histórico/recibo.
+5. Tentar outra carteira: deve recusar. Vinte avulsos, quando houver estoque,
+   custam **R$ 40**, sem aplicar o preço da carteira.
+
+Na prévia do XML, leia **“Isto é embalagem fechada que também vende por unidade?”**.
+Somente confirme se conhecer o conteúdo e preencher os dois preços.
+Nota em UN sem confirmação entra em UN: **o número no nome não vira estoque**.
+O Kaiser `CX 00050`, com qCom 600, continua 600 UN. Uma entrada em carteira
+divide o custo pelo conteúdo e mantém os preços de venda já cadastrados.
+Mudar o fator de 20 para 30 não aumenta nem diminui o saldo contado.
+Fiscal desta atualização: **homologação**; este roteiro não autoriza envio à SEFAZ.
+
 ## 3. Sangria e suprimento (2 min)
 
 **Caixa** → **Sangria** (tirar dinheiro da gaveta) ou **Suprimento** (colocar

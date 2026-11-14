@@ -30,11 +30,11 @@ Ordem fixa. Um `[~]` por vez.
 
 ## E6 — Navegador
 
-- [~] **E6.1** Playwright do T11 no PDV isolado. Corrigir o que a tela mostrar errado e repetir.
+- [x] **E6.1** Playwright do T11 no PDV isolado. Corrigir o que a tela mostrar errado e repetir. — 1544c43 · Backend 496 passed, 9 deselected; Playwright integral 95 passed; aceite porta 3021 4 passed; build/lint/Node 38 verdes. Correções de revisão: entrada por embalagem, códigos, migração e campos derivados da prévia
 
 ## E7 — Documento
 
-- [ ] **E7.1** `docs/ESTOQUE_E_XML.md`, manual do operador e treinamento do caixa: exemplo da carteira com R$ 20 e R$ 2, a pergunta na prévia do XML, e que o número no nome não vira estoque.
+- [~] **E7.1** `docs/ESTOQUE_E_XML.md`, manual do operador e treinamento do caixa: exemplo da carteira com R$ 20 e R$ 2, a pergunta na prévia do XML, e que o número no nome não vira estoque.
 
 ## E8 — Versão e entrega
 

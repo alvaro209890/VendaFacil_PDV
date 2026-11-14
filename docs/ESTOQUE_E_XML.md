@@ -5,6 +5,75 @@ mercadoria importando o XML da nota do fornecedor.
 
 ## Como o estoque funciona
 
+### Embalagem fechada e avulso (1.0.15)
+
+No cadastro, ligue **Também vende por unidade** somente nos produtos que têm
+as duas formas de venda. Use estoque em **UN**, informe o nome da embalagem
+(por exemplo, CARTEIRA), quantas unidades vêm dentro e **os dois preços**.
+Os preços são independentes: não é obrigatório dividir o preço da carteira.
+Ao ligar a opção num produto antigo, informe ambos; o estoque não é recontado.
+
+| Palheiro: carteira com 20, carteira R$ 20, unidade R$ 2 | Total | Baixa |
+|---|---|---|
+| 1 carteira | R$ 20 | 20 unidades |
+| 1 avulso | R$ 2 | 1 unidade |
+| 1 carteira + 3 avulsos | R$ 26 | 23 unidades |
+| 20 avulsos | R$ 40 | 20 unidades |
+| Carteira com apenas 15 em estoque | Recusada | Nenhuma |
+
+Um cadastro, um estoque. Não é preciso “abrir caixa” antes de vender avulsos.
+Com 65 palheiros, a lista mostra **3 carteiras e 5 avulsos (65 palheiros)**.
+Mudar o fator para 30 mantém as mesmas 65 unidades; a tela avisa antes de salvar.
+KG, G, LT e ML continuam com o funcionamento anterior, sem essa opção.
+
+No **+ Estoque**, escolha avulsos ou embalagens. Duas carteiras com fator 20
+somam 40 unidades. A API também aceita `modo_entrada: "embalagem"`;
+nesse modo, o custo informado é o custo da embalagem e será dividido pelo fator.
+No cadastro, o preço de custo sempre é por unidade menor.
+
+No PDV aparecem dois botões grandes. O código principal lança a embalagem;
+o segundo código opcional e a busca pelo nome lançam unidade. As linhas
+ficam separadas, inclusive depois de recarregar. O caixa valida a soma do
+estoque usado pelas duas linhas. Histórico e relatórios identificam a forma
+vendida; o lucro desconta o custo das unidades baixadas. O estorno devolve
+as unidades da venda original, mesmo se o fator tiver mudado depois.
+
+#### Conferir a prévia da NF-e
+
+- Produto configurado e nota na unidade de compra: **2 CARTEIRA viram 40 UN**;
+  custo da unidade = custo da carteira ÷ 20. Os dois preços de venda são mantidos.
+- Nota em **UN**: entra unidade a unidade, fator 1.
+- Produto novo cujo nome sugere caixa/fardo/pacote/display/carteira: responda
+  **“Isto é embalagem fechada que também vende por unidade?”** somente se for
+  isso mesmo. Ao confirmar, informe nome da embalagem, fator e os dois preços.
+  A quantidade e o custo convertidos aparecem antes da confirmação do lote.
+- Sem essa confirmação, a nota em UN conserva a quantidade e a unidade da nota,
+  com venda sugerida de custo + 30%. **O número no nome não vira estoque.**
+- Quantidade e custo derivados de embalagem configurada são calculados pela
+  nota e pelo cadastro. Corrija o fator no cadastro antes de reimportar; a prévia
+  não muda o cadastro nem os preços de venda de um produto existente.
+
+Caso conferido com XML baixado: NF-e **446817**, `CX 00050 KAISER LT 350ML`,
+`uCom=UN`, `qCom=600`, custo **R$ 2,74**. Sem confirmar abertura, entram
+**600 UN**, com venda sugerida **R$ 3,56**. O “50” do nome não multiplica nada.
+
+No recibo sai o que o cliente levou: **1 CARTEIRA a R$ 20** e **1 UN a R$ 2**.
+No XML fiscal, CARTEIRA é abreviada como **CART** para respeitar o limite de
+seis caracteres; a descrição preserva o nome. O grupo tributável usa as unidades
+menores. Esta entrega continua em **homologação**, sem transmissão à SEFAZ.
+
+#### Contrato de integração
+
+Produto: `vende_por_unidade` (padrão false), `preco_embalagem`, `preco_unidade`,
+`codigo_barras_unidade` opcional, mais `unidade_compra` e
+`quantidade_por_embalagem` existentes. Checkout: `modo_venda` = `embalagem`
+ou `unidade`. **Sem modo, vende unidade** nos produtos com a opção ligada.
+Produto desligado mantém `preco_venda` e baixa 1 para 1.
+Cada item vendido grava `unidade_venda`, `quantidade_estoque`, `modo_venda`
+e `custo_unitario_estoque`; itens antigos mantêm o comportamento anterior.
+
+### Rotina geral
+
 - Cada produto tem **estoque** e **estoque mínimo**.
 - **Venda** baixa o estoque automaticamente (e bloqueia se faltar).
 - **Estoque baixo**: o Dashboard mostra alerta quando `estoque <= estoque_mínimo`.

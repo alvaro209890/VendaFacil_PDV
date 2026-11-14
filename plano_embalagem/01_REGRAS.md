@@ -2,6 +2,11 @@
 
 ## Onde executar
 
+**Atualização do Álvaro (13/11/2026):** o executor é o Codex já no Windows
+`PCQUE001IMAP`; executar diretamente aqui, sem exigir SSH. A exigência de SSH
+abaixo descreve o plano original para o Hermes da AWS e está superada para
+esta execução. Build e testes continuam exclusivamente no Windows.
+
 O Hermes que recebe o WhatsApp é o da AWS. Este trabalho é do PC Windows `pcque001imap`, repositório `C:\GIS\VendaFacil_PDV`. Entrar por SSH nesse PC e editar aqui. Não compilar o `.exe` na Lightsail (2 GB, sem Inno Setup). O instalador de amanhã sai do GitHub Actions no `master`.
 
 Se o SSH neste PC não conectar: uma mensagem no WhatsApp e pare. Não porte o build para Linux.
