@@ -444,6 +444,48 @@ _ICMS_SN_GRUPO = {
 }
 
 
+def gtin_fiscal(codigo: str | None) -> str:
+    """Devolve o código só se for GTIN-8/12/13/14 com dígito certo e prefixo de
+    circulação livre; senão "" (o XML leva "SEM GTIN").
+
+    Código interno (ex.: "AVULSO-PALHEIRO", "001") ou etiqueta de balança
+    (prefixo 2) no cEAN derruba a NFC-e no schema ou na SEFAZ (GTIN inválido).
+    """
+    c = (codigo or "").strip()
+    if len(c) not in (8, 12, 13, 14) or not c.isascii() or not c.isdigit() or set(c) == {"0"}:
+        return ""
+    soma = sum(int(d) * (3 if i % 2 == 0 else 1) for i, d in enumerate(reversed(c[:-1])))
+    if (-soma) % 10 != int(c[-1]):
+        return ""
+    # Prefixo 2 (GTIN-12/13; posição 2 no GTIN-14) = circulação restrita à loja
+    # (etiqueta de balança, código próprio): não é GTIN para a nota.
+    if (len(c) in (12, 13) and c[0] == "2") or (len(c) == 14 and c[1] == "2"):
+        return ""
+    return c
+
+
+def gtins_item(prod: dict, modo_venda: str | None) -> tuple[str, str]:
+    """(cEAN, cEANTrib) do item vendido.
+
+    - Caixa fechada: cEAN = código da caixa; cEANTrib = código da unidade
+      (a unidade tributável é UN), ou o da caixa se a unidade não tiver GTIN.
+    - Unidade avulsa: GTIN da unidade nos dois; nunca o código da caixa.
+    - Produto comum: código principal (ou o segundo código) nos dois.
+    Os dois saem juntos ou nenhum: GTIN num e "SEM GTIN" no outro é rejeição.
+    """
+    principal = gtin_fiscal(prod.get("codigo_barras"))
+    unidade = gtin_fiscal(prod.get("codigo_barras_unidade"))
+    if modo_venda == "embalagem":
+        cean, trib = principal, unidade or principal
+    elif modo_venda == "unidade":
+        cean = trib = unidade
+    else:
+        cean = trib = principal or unidade
+    if not cean or not trib:
+        return "SEM GTIN", "SEM GTIN"
+    return cean, trib
+
+
 def _grupo_icms_sn(imposto, prod: dict) -> None:
     """Monta <ICMS> com o grupo SN correto a partir do CSOSN do produto.
 
@@ -711,7 +753,8 @@ def montar_documento(venda: dict, config: dict, modelo: str = "65",
         det.set("nItem", str(idx))
         p = _tag(det, "prod")
         _tag(p, "cProd", item["produto_id"])
-        _tag(p, "cEAN", prod.get("codigo_barras") or "SEM GTIN")
+        cean, cean_trib = gtins_item(prod, item.get("modo_venda"))
+        _tag(p, "cEAN", cean)
         _tag(p, "xProd", _texto_xml(item["nome_produto"], 120))
         _tag(p, "NCM", so_digitos(prod.get("ncm")))
         if prod.get("cest"):
@@ -724,7 +767,7 @@ def montar_documento(venda: dict, config: dict, modelo: str = "65",
         _tag(p, "qCom", f"{qtd:.4f}")
         _tag(p, "vUnCom", f"{val:.4f}")
         _tag(p, "vProd", f"{bruto:.2f}")
-        _tag(p, "cEANTrib", prod.get("codigo_barras") or "SEM GTIN")
+        _tag(p, "cEANTrib", cean_trib)
         dupla = item.get("modo_venda") in {"unidade", "embalagem"}
         qtd_trib = float(item.get("quantidade_estoque") or qtd) if dupla else qtd
         val_trib = float(bruto) / qtd_trib if dupla else val
