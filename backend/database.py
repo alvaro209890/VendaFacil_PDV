@@ -1132,10 +1132,11 @@ class Database:
                     else:
                         cur = self._conn.execute(
                             "INSERT INTO produtos (user_id, nome, preco_custo, preco_venda, estoque, "
-                            "estoque_minimo, codigo_barras, unidade, unidade_compra, quantidade_por_embalagem, "
-                            "ncm, cfop, criado_em, atualizado_em) VALUES (?,?,?,?,?,5,?,?,?,?,?,?,?,?)",
+                            "estoque_minimo, codigo_barras, codigo_barras_unidade, unidade, unidade_compra, quantidade_por_embalagem, "
+                            "ncm, cfop, criado_em, atualizado_em) VALUES (?,?,?,?,?,5,?,?,?,?,?,?,?,?,?)",
                             (user_id, it["nome"].strip(), it["preco_custo"], it["preco_venda"],
-                             it["quantidade"], codigo, it["unidade"], it["unidade_compra"],
+                             it["quantidade"], codigo, (it.get("codigo_barras_unidade") or "").strip(),
+                             it["unidade"], it["unidade_compra"],
                              it["quantidade_por_embalagem"], it.get("ncm") or "", it.get("cfop") or "", agora, agora),
                         )
                         if cur.rowcount != 1:

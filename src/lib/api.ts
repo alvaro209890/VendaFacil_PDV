@@ -276,6 +276,11 @@ export interface ItemXml {
   quantidade_xml: number;
   valor_unitario: number;
   valor_unitario_xml?: number;
+  /** vUnCom puro da nota; valor_unitario_xml já soma frete/outras/IPI/ST − desconto. */
+  valor_unitario_nota?: number;
+  despesas_unitarias?: number;
+  /** Unidades por embalagem que a própria nota indica (qTrib ÷ qCom), 0 se não indica. */
+  fator_sugerido?: number;
   ncm: string;
   cfop: string;
   produto_id: number | null;
@@ -295,6 +300,8 @@ export interface PreviewXml {
 
 export interface ItemConfirmarXml {
   confirmar_abertura?: boolean;
+  /** true = cada unidade da nota é uma caixa fechada; false = a nota já conta unidades soltas. */
+  nota_em_embalagem?: boolean;
   unidade_xml?: string;
   valor_unitario_xml?: number;
   produto_id: number | null;

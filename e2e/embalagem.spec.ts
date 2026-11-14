@@ -14,15 +14,67 @@ if (process.env.VF_XML_REAL) test('T8 real: NF-e 446817 baixada mantém 600 UN',
   await page.goto('/produtos');
   await page.locator('input[type=file]').setInputFiles({name:'nota-baixada.xml',mimeType:'text/xml',buffer:readFileSync(process.env.VF_XML_REAL!)});
   const dialog=page.getByRole('dialog').filter({hasText:'Confirmar importação'});
-  await expect(dialog.getByText(/Isto é embalagem fechada/)).toBeVisible();
-  await expect(dialog.getByRole('checkbox',{name:/Isto é embalagem/})).not.toBeChecked();
+  await expect(dialog.getByRole('checkbox',{name:/Vende a embalagem fechada/})).not.toBeChecked();
   await expect(dialog.getByText(/600 UN viram 600 UN/)).toBeVisible();
+  await expect(dialog.getByText(/Custo da nota R\$ 2\.7400 \+ despesas/)).toBeVisible();
   await page.screenshot({path:'output/playwright/xml-real-600.png',fullPage:true,animations:'disabled'});
   await dialog.getByRole('button',{name:'Confirmar importação',exact:true}).click();
   await expect(page.getByText(/Importado!/)).toBeVisible();
   const ps=(await (await request.get(`${api}/api/produtos`,{headers:{Authorization:`Bearer ${token}`}})).json()).produtos;
   const p=ps.find((p:{nome:string})=>p.nome==='CX 00050 KAISER LT 350ML');
-  expect(p.estoque).toBe(600); expect(p.preco_custo).toBe(2.74); expect(p.preco_venda).toBe(3.56); expect(p.vende_por_unidade).toBe(0);
+  // Custo de aquisição: (1644,00 + 12,36 de outras despesas) / 600 = 2,7606; venda sugerida +30%.
+  expect(p.estoque).toBe(600); expect(p.preco_custo).toBe(2.7606); expect(p.preco_venda).toBe(3.59); expect(p.vende_por_unidade).toBe(0);
+  expect(p.codigo_barras).toBe('7896045500116'); expect(p.codigo_barras_unidade).toBe('7896045512317');
+});
+
+if (process.env.VF_XML_REAL) test('Kaiser real: CX 12 a R$ 40 e lata a R$ 3,80 sem multiplicar a nota; caixa bipa os dois',async({page,request})=>{
+  const h={Authorization:`Bearer ${token}`};
+  const antes=(await (await request.get(`${api}/api/produtos`,{headers:h})).json()).produtos;
+  for (const p of antes.filter((p:{nome:string})=>p.nome.includes('KAISER'))) await request.delete(`${api}/api/produtos/${p.id}`,{headers:h});
+  // A mesma chave já entrou no teste T8: troca chave e número para simular a compra seguinte.
+  const xml=readFileSync(process.env.VF_XML_REAL!,'utf8').replaceAll('4468171004306280','4468181004306287');
+  await page.addInitScript(t=>localStorage.setItem('vf_token',t),token);
+  await page.goto('/produtos');
+  await page.locator('input[type=file]').setInputFiles({name:'kaiser.xml',mimeType:'text/xml',buffer:Buffer.from(xml)});
+  const dialog=page.getByRole('dialog').filter({hasText:'Confirmar importação'});
+  await dialog.getByRole('checkbox',{name:/Vende a embalagem fechada/}).check();
+  await expect(dialog.getByLabel('Embalagem do item 1',{exact:true})).toHaveValue('CX');
+  await dialog.getByLabel('Unidades por embalagem do item 1',{exact:true}).fill('12');
+  await dialog.getByLabel('Preço da embalagem do item 1',{exact:true}).fill('40');
+  await dialog.getByLabel('Preço da unidade do item 1',{exact:true}).fill('3,80');
+  await expect(dialog.getByRole('radio',{name:/Em unidades soltas: 600 UN = 600 unidades/})).toBeChecked();
+  await expect(dialog.getByText(/600 UN viram 600 UN/)).toBeVisible();
+  await expect(dialog.getByLabel('Código da embalagem do item 1',{exact:true})).toHaveValue('7896045500116');
+  await expect(dialog.getByLabel('Código da unidade do item 1',{exact:true})).toHaveValue('7896045512317');
+  await expect(dialog.getByLabel('Comparação de preços do item 1')).toContainText('CX com 12: R$ 40,00 = R$ 3,33 cada');
+  await expect(dialog.getByLabel('Comparação de preços do item 1')).toContainText('economiza R$ 5,60');
+  // Marcar "em CX fechada" mostraria 7.200; voltar para soltas.
+  await dialog.getByRole('radio',{name:/Em CX fechada/}).check();
+  await expect(dialog.getByText(/600 UN viram 7\.200 UN/)).toBeVisible();
+  await dialog.getByRole('radio',{name:/Em unidades soltas/}).check();
+  await page.screenshot({path:'output/playwright/kaiser-importacao-caixa-unidade.png',fullPage:true,animations:'disabled'});
+  await dialog.getByRole('button',{name:'Confirmar importação',exact:true}).click();
+  await expect(page.getByText(/Importado!/)).toBeVisible();
+  const ps=(await (await request.get(`${api}/api/produtos`,{headers:h})).json()).produtos;
+  const p=ps.find((p:{nome:string;ativo:number})=>p.nome==='CX 00050 KAISER LT 350ML');
+  expect(p.estoque).toBe(600); expect(p.preco_custo).toBe(2.7606); expect(p.quantidade_por_embalagem).toBe(12);
+  expect([p.preco_embalagem,p.preco_unidade,p.vende_por_unidade]).toEqual([40,3.8,1]);
+  await page.goto('/pdv');
+  await expect(page.getByText('CX com 12').first()).toBeVisible();
+  await expect(page.getByText('R$ 3.33 cada').first()).toBeVisible();
+  const busca=page.getByPlaceholder(/Bipe o código/);
+  await busca.fill('7896045500116'); await busca.press('Enter');
+  await busca.fill('7896045512317'); await busca.press('Enter');
+  await page.getByLabel('Quantidade de CX 00050 KAISER LT 350ML UN',{exact:true}).fill('3');
+  await page.getByLabel('Quantidade de CX 00050 KAISER LT 350ML UN',{exact:true}).press('Enter');
+  await page.screenshot({path:'output/playwright/kaiser-pdv-caixa-e-latas.png',fullPage:true,animations:'disabled'});
+  await page.getByPlaceholder('0,00',{exact:true}).fill('51,40');
+  await page.getByRole('button',{name:/finalizar venda/i}).click();
+  await expect(page.getByText(/Venda finalizada!/)).toBeVisible();
+  const apos=(await (await request.get(`${api}/api/produtos/${p.id}`,{headers:h})).json()).produto;
+  expect(apos.estoque).toBe(585);
+  const vendas=(await (await request.get(`${api}/api/vendas`,{headers:h})).json()).vendas;
+  expect(vendas.some((v:{total:number})=>v.total===51.4)).toBe(true);
 });
 
 test('XML: confirmação explícita exige dois preços e converte compra nova',async({page,request})=>{
@@ -31,8 +83,10 @@ test('XML: confirmação explícita exige dois preços e converte compra nova',a
   const xml='<NFe><infNFe><ide><mod>55</mod><nNF>12</nNF></ide><emit><xNome>Fornecedor teste</xNome></emit><det><prod><cEAN>SEM GTIN</cEAN><xProd>Carteira Nova T11</xProd><uCom>UN</uCom><qCom>2</qCom><vUnCom>10</vUnCom></prod></det></infNFe></NFe>';
   await page.locator('input[type=file]').setInputFiles({name:'nova-carteira.xml',mimeType:'text/xml',buffer:Buffer.from(xml)});
   const dialog=page.getByRole('dialog').filter({hasText:'Confirmar importação'});
-  await dialog.getByRole('checkbox',{name:/Isto é embalagem fechada/}).check();
+  await dialog.getByRole('checkbox',{name:/Vende a embalagem fechada/}).check();
   await dialog.getByLabel('Embalagem do item 1',{exact:true}).fill('CARTEIRA');
+  // Cada UN desta nota (R$ 10) é uma carteira inteira: o operador diz isso.
+  await dialog.getByRole('radio',{name:/Em CARTEIRA fechada/}).check();
   const tabela=dialog.getByRole('table');
   const titulos=(await tabela.getByRole('columnheader').allTextContents()).map(t=>t.trim());
   await tabela.locator('tbody tr').first().getByRole('cell').nth(titulos.indexOf('Qtd/emb.')).locator('input').fill('20');

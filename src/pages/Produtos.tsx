@@ -14,7 +14,7 @@ import {
 import type {
   Produto, ProdutoInput, Categoria, CamposFiscais, PreviewXml, ItemConfirmarXml, Movimentacao,
 } from "../lib/api";
-import { estoqueBalcao } from "../lib/embalagem";
+import { estoqueBalcao, embalagemDoNome, textoComparacao } from "../lib/embalagem";
 import { lerNumeroPtBr } from "../lib/numeros";
 
 // Item da importação com flags editáveis na tela.
@@ -23,9 +23,25 @@ type ItemImport = ItemConfirmarXml & {
   estoque_atual: number;
   incluir: boolean;
   valor_unitario_xml?: number;
+  valor_unitario_nota?: number;
+  despesas_unitarias?: number;
   perguntar_embalagem?: boolean;
   fator_entrada?: number;
+  // Códigos como vieram na nota (cEAN e cEANTrib diferente), para redistribuir
+  // entre caixa e unidade quando o operador muda a forma de venda.
+  ean_nota?: string;
+  ean_trib_nota?: string;
 };
+
+/** Caixa + unidade: quem é o código da caixa e quem é o da unidade.
+ * Com dois códigos na nota, cEAN = caixa e cEANTrib = unidade (a unidade tributável
+ * é UN). Com um só: nota em unidades soltas → é o da unidade; em caixas → da caixa. */
+function codigosPadrao(it: ItemImport): { codigo_barras: string; codigo_barras_unidade: string } {
+  const ean = it.ean_nota || "";
+  const trib = it.ean_trib_nota || "";
+  if (!it.confirmar_abertura || trib) return { codigo_barras: ean, codigo_barras_unidade: trib };
+  return it.nota_em_embalagem ? { codigo_barras: ean, codigo_barras_unidade: "" } : { codigo_barras: "", codigo_barras_unidade: ean };
+}
 
 const CAMPOS_NUMEROS_XML = {
   quantidade_xml: "Qtd XML", quantidade_por_embalagem: "Qtd/emb.",
@@ -155,31 +171,51 @@ export default function ProdutosPage() {
       const prev: PreviewXml = await importarXmlPreview(file);
       setImportTextos({});
       setImportInfo({ emitente: prev.emitente, numero: prev.numero, chave: prev.chave });
-      setImportItens(prev.itens.map((it) => ({
-        produto_id: it.produto_id,
-        vende_por_unidade: !!it.vende_por_unidade,
-        preco_embalagem: it.preco_embalagem || 0,
-        preco_unidade: it.preco_unidade || 0,
-        unidade_xml: it.unidade_xml,
-        fator_entrada: it.fator_entrada,
-        perguntar_embalagem: it.perguntar_embalagem,
-        nome: it.nome,
-        codigo_barras: it.codigo_barras,
-        unidade: it.unidade,
-        unidade_compra: it.unidade_compra || it.unidade_xml || it.unidade,
-        quantidade_por_embalagem: fatorSeguro(it.quantidade_por_embalagem),
-        quantidade: it.quantidade,
-        quantidade_xml: it.quantidade_xml ?? it.quantidade,
-        preco_custo: it.valor_unitario,
-        valor_unitario_xml: it.valor_unitario_xml ?? it.valor_unitario,
-        preco_venda: it.preco_venda_atual ?? Number((it.valor_unitario * 1.3).toFixed(2)),
-        atualizar_custo: true,
-        ncm: it.ncm,
-        cfop: it.cfop,
-        acao: it.acao,
-        estoque_atual: it.estoque_atual,
-        incluir: true,
-      })));
+      setImportItens(prev.itens.map((it) => {
+        const item: ItemImport = {
+          produto_id: it.produto_id,
+          vende_por_unidade: !!it.vende_por_unidade,
+          preco_embalagem: it.preco_embalagem || 0,
+          preco_unidade: it.preco_unidade || 0,
+          unidade_xml: it.unidade_xml,
+          fator_entrada: it.fator_entrada,
+          perguntar_embalagem: it.perguntar_embalagem,
+          nota_em_embalagem: (it.unidade_xml || "UN") !== "UN",
+          nome: it.nome,
+          codigo_barras: it.codigo_barras,
+          codigo_barras_unidade: it.codigo_barras_unidade || "",
+          ean_nota: it.codigo_barras,
+          ean_trib_nota: it.acao === "criar" ? (it.codigo_barras_unidade || "") : "",
+          unidade: it.unidade,
+          unidade_compra: it.unidade_compra || it.unidade_xml || it.unidade,
+          quantidade_por_embalagem: fatorSeguro(it.quantidade_por_embalagem),
+          quantidade: it.quantidade,
+          quantidade_xml: it.quantidade_xml ?? it.quantidade,
+          preco_custo: it.valor_unitario,
+          valor_unitario_xml: it.valor_unitario_xml ?? it.valor_unitario,
+          valor_unitario_nota: it.valor_unitario_nota,
+          despesas_unitarias: it.despesas_unitarias,
+          preco_venda: it.preco_venda_atual ?? Number((it.valor_unitario * 1.3).toFixed(2)),
+          atualizar_custo: true,
+          ncm: it.ncm,
+          cfop: it.cfop,
+          acao: it.acao,
+          estoque_atual: it.estoque_atual,
+          incluir: true,
+        };
+        // Nota em caixa que diz quantas unidades vêm dentro (qTrib ÷ qCom):
+        // produto novo já nasce vendendo a unidade, com a conta pronta.
+        const sugerido = it.fator_sugerido || 0;
+        if (it.acao === "criar" && sugerido > 1) {
+          item.unidade = "UN";
+          item.quantidade_por_embalagem = sugerido;
+          item.fator_entrada = sugerido;
+          item.quantidade = Number((item.quantidade_xml! * sugerido).toFixed(4));
+          item.preco_custo = Number((item.valor_unitario_xml! / sugerido).toFixed(4));
+          item.preco_venda = Number((item.preco_custo * 1.3).toFixed(2));
+        }
+        return item;
+      }));
     } catch (err) {
       setImportMsg({ tipo: "erro", texto: (err as Error).message });
     } finally {
@@ -191,8 +227,18 @@ export default function ProdutosPage() {
     setImportItens((arr) => arr.map((it, idx) => {
       if (idx !== i) return it;
       const next = { ...it, [campo]: valor };
-      if (["quantidade_por_embalagem", "quantidade_xml", "confirmar_abertura", "unidade_compra"].includes(campo)) {
-        const fator = next.confirmar_abertura ? fatorSeguro(next.quantidade_por_embalagem)
+      if (campo === "confirmar_abertura" && valor) {
+        // Ao ligar caixa + unidade: estoque em UN e embalagem tirada do nome (CX, FD…).
+        next.unidade = "UN";
+        if (!next.unidade_compra || next.unidade_compra === "UN") next.unidade_compra = embalagemDoNome(next.nome);
+      }
+      if (campo === "confirmar_abertura" || campo === "nota_em_embalagem") {
+        Object.assign(next, codigosPadrao(next));
+      }
+      if (["quantidade_por_embalagem", "quantidade_xml", "confirmar_abertura", "nota_em_embalagem", "unidade_compra"].includes(campo)) {
+        // Nota em unidades soltas (600 UN de lata) entra 1 para 1, mesmo vendendo caixa:
+        // só multiplica quando o operador diz que cada unidade da nota é uma caixa fechada.
+        const fator = next.confirmar_abertura ? (next.nota_em_embalagem ? fatorSeguro(next.quantidade_por_embalagem) : 1)
           : next.vende_por_unidade ? (next.unidade_xml === next.unidade_compra ? fatorSeguro(next.quantidade_por_embalagem) : 1)
           : next.unidade_xml === 'UN' ? 1 : fatorSeguro(next.quantidade_por_embalagem);
         const qtdXml = Number(next.quantidade_xml || 0);
@@ -258,6 +304,8 @@ export default function ProdutosPage() {
         vende_por_unidade: !!it.confirmar_abertura || !!it.vende_por_unidade,
         preco_embalagem: it.preco_embalagem || 0, preco_unidade: it.preco_unidade || 0,
         confirmar_abertura: it.confirmar_abertura,
+        nota_em_embalagem: it.confirmar_abertura ? !!it.nota_em_embalagem : undefined,
+        codigo_barras_unidade: it.codigo_barras_unidade || "",
         unidade_xml: it.unidade_xml, valor_unitario_xml: it.valor_unitario_xml,
         nome: it.nome,
         codigo_barras: it.codigo_barras,
@@ -750,11 +798,14 @@ export default function ProdutosPage() {
               <label className="block text-slate-300 text-sm">Preço da unidade (R$)
                 <input aria-label="Preço da unidade" value={precoUnidade} onChange={e=>setPrecoUnidade(e.target.value)} inputMode="decimal" className="w-full rounded-lg bg-slate-800 p-2 text-white" required />
               </label>
-              <label className="block text-slate-300 text-sm">Código da unidade (opcional)
-                <input aria-label="Código da unidade" value={codigoUnidade} onChange={e=>setCodigoUnidade(e.target.value)} className="w-full rounded-lg bg-slate-800 p-2 text-white" />
-              </label>
-              <p className="text-xs text-slate-400">Estoque e custo sempre por unidade. O código principal lança a embalagem fechada no caixa.</p>
+              <p className="text-xs text-slate-400">Estoque e custo sempre por unidade. O código principal lança a embalagem fechada no caixa; o código da unidade lança 1 avulsa.</p>
+              <ul aria-label="Comparação de preços" className="space-y-0.5 rounded-lg bg-slate-900/60 p-2 text-xs text-slate-200">
+                {textoComparacao({custo: lerNumeroPtBr(precoCusto) || 0, fator: lerNumeroPtBr(quantidadePorEmbalagem) || 0, precoEmbalagem: lerNumeroPtBr(precoEmbalagem) || 0, precoUnidade: lerNumeroPtBr(precoUnidade) || 0, embalagem: unidadeCompra}).map(t => <li key={t} className={t.startsWith('⚠️') ? 'text-amber-300' : ''}>{t}</li>)}
+              </ul>
             </fieldset>}
+            <label className="block text-slate-300 text-sm">{vendePorUnidade ? "Código da unidade (opcional)" : "Segundo código de barras (opcional)"}
+              <input aria-label="Código da unidade" value={codigoUnidade} onChange={e=>setCodigoUnidade(e.target.value)} className="w-full rounded-lg bg-slate-800 p-2 text-white" placeholder={vendePorUnidade ? "o da lata/unidade avulsa" : "outro código do mesmo produto"} />
+            </label>
 
             <div>
               <label className="text-slate-400 text-xs block mb-0.5">Nome *</label>
@@ -1005,7 +1056,7 @@ export default function ProdutosPage() {
                     <th className="p-2">Produto</th>
                     <th className="p-2">Ação</th>
                     <th className="p-2 w-24">Un. venda</th>
-                    <th className="p-2 w-24">Un. XML</th>
+                    <th className="p-2 w-24" title="Unidade em que a mercadoria é comprada (caixa, fardo…); a da nota aparece na frase verde">Un. compra</th>
                     <th className="p-2 w-24">Qtd XML</th>
                     <th className="p-2 w-24">Qtd/emb.</th>
                     <th className="p-2 w-24">Entra</th>
@@ -1026,12 +1077,30 @@ export default function ProdutosPage() {
                         <input value={it.nome} onChange={(e) => setItem(i, "nome", e.target.value)} className="w-full min-w-52 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white" />
                         <div className="text-slate-500 text-2xs">{it.codigo_barras || "sem código"} · {it.unidade}</div>
                         <p className="mt-2 text-xs text-emerald-300">{fmtQtd(it.quantidade_xml || it.quantidade)} {it.unidade_xml || it.unidade_compra} viram {fmtQtd(it.quantidade)} {it.confirmar_abertura ? 'UN' : it.unidade}; custo de cada unidade R$ {it.preco_custo.toFixed(4)}.{it.acao === 'atualizar' ? ' Preços de venda mantidos.' : ''}</p>
-                        {it.acao === 'criar' && (it.perguntar_embalagem || it.unidade_xml !== 'UN') && <div className="mt-3 space-y-2 rounded-lg border border-brand-500/30 bg-brand-500/10 p-3">
-                          <label className="flex gap-2 text-sm text-white"><input type="checkbox" className={CHECKBOX_IMPORTACAO} checked={!!it.confirmar_abertura} onChange={e=>setItem(i,'confirmar_abertura',e.target.checked)} />Isto é embalagem fechada que também vende por unidade?</label>
-                          <p className="text-xs text-slate-400">O número no nome não altera a quantidade. Sem confirmação, UN entra unidade a unidade.</p>
+                        {!!it.despesas_unitarias && <p className="text-2xs text-slate-400">Custo da nota R$ {Number(it.valor_unitario_nota ?? 0).toFixed(4)} {it.despesas_unitarias > 0 ? '+ despesas' : '− desconto'} (frete, seguro, outras, IPI, ST) R$ {Math.abs(it.despesas_unitarias).toFixed(4)} por {it.unidade_xml}.</p>}
+                        {it.acao === 'criar' && <div className={`mt-3 space-y-2 rounded-lg border p-3 ${it.perguntar_embalagem || it.unidade_xml !== 'UN' || it.confirmar_abertura ? 'border-brand-500/30 bg-brand-500/10' : 'border-slate-800'}`}>
+                          <label className="flex gap-2 text-sm text-white"><input type="checkbox" className={CHECKBOX_IMPORTACAO} checked={!!it.confirmar_abertura} onChange={e=>setItem(i,'confirmar_abertura',e.target.checked)} />Vende a embalagem fechada e também a unidade, com preços diferentes?</label>
+                          {(it.perguntar_embalagem || it.unidade_xml !== 'UN') && !it.confirmar_abertura && <p className="text-xs text-slate-400">O número no nome não altera a quantidade. Sem marcar, {it.unidade_xml} entra como está na nota.</p>}
                           {it.confirmar_abertura && <>
-                            <label className="block text-xs text-slate-300">Nome da embalagem<input aria-label={`Embalagem do item ${i+1}`} value={it.unidade_compra} onChange={e=>setItem(i,'unidade_compra',e.target.value.toUpperCase())} className="mt-1 w-full rounded bg-slate-950 p-2 text-white" /></label>
-                            {(['preco_embalagem','preco_unidade'] as const).map(campo=><label key={campo} className="block text-xs text-slate-300">{CAMPOS_NUMEROS_XML[campo]} (R$)<input aria-label={`${CAMPOS_NUMEROS_XML[campo]} do item ${i+1}`} inputMode="decimal" value={textoImport(i,campo)} onChange={e=>editarNumeroImport(i,campo,e.target.value)} className="mt-1 w-full rounded bg-slate-950 p-2 text-white" /></label>)}
+                            <div className="grid grid-cols-2 gap-2">
+                              <label className="block text-xs text-slate-300">Nome da embalagem<input aria-label={`Embalagem do item ${i+1}`} value={it.unidade_compra} onChange={e=>setItem(i,'unidade_compra',e.target.value.toUpperCase())} className="mt-1 w-full rounded bg-slate-950 p-2 text-white" /></label>
+                              <label className="block text-xs text-slate-300">Unidades dentro<input aria-label={`Unidades por embalagem do item ${i+1}`} inputMode="numeric" value={textoImport(i,'quantidade_por_embalagem')} onChange={e=>editarNumeroImport(i,'quantidade_por_embalagem',e.target.value)} className="mt-1 w-full rounded bg-slate-950 p-2 text-white" /></label>
+                              {(['preco_embalagem','preco_unidade'] as const).map(campo=><label key={campo} className="block text-xs text-slate-300">{CAMPOS_NUMEROS_XML[campo]} (R$)<input aria-label={`${CAMPOS_NUMEROS_XML[campo]} do item ${i+1}`} inputMode="decimal" value={textoImport(i,campo)} onChange={e=>editarNumeroImport(i,campo,e.target.value)} className="mt-1 w-full rounded bg-slate-950 p-2 text-white" /></label>)}
+                            </div>
+                            <fieldset className="space-y-1 rounded border border-slate-700 p-2">
+                              <legend className="px-1 text-xs font-semibold text-white">Como esta nota conta a quantidade?</legend>
+                              <label className="flex items-start gap-2 text-xs text-slate-200"><input type="radio" name={`conta-${i}`} className="mt-0.5 accent-brand-500" checked={!it.nota_em_embalagem} onChange={()=>setItem(i,'nota_em_embalagem',false)} />Em unidades soltas: {fmtQtd(it.quantidade_xml || 0)} {it.unidade_xml} = {fmtQtd(it.quantidade_xml || 0)} unidades</label>
+                              <label className="flex items-start gap-2 text-xs text-slate-200"><input type="radio" name={`conta-${i}`} className="mt-0.5 accent-brand-500" checked={!!it.nota_em_embalagem} onChange={()=>setItem(i,'nota_em_embalagem',true)} />Em {it.unidade_compra || 'embalagem'} fechada: {fmtQtd(it.quantidade_xml || 0)} {it.unidade_xml} × {fmtQtd(it.quantidade_por_embalagem)} = {fmtQtd((it.quantidade_xml || 0) * it.quantidade_por_embalagem)} unidades</label>
+                              <p className="text-2xs text-slate-400">Confira pelo preço: R$ {Number(it.valor_unitario_nota ?? it.valor_unitario_xml ?? 0).toFixed(2)} por {it.unidade_xml} na nota é preço de uma unidade ou de uma {it.unidade_compra || 'embalagem'}?</p>
+                            </fieldset>
+                            <div className="grid grid-cols-2 gap-2">
+                              <label className="block text-xs text-slate-300">Código da {it.unidade_compra || 'embalagem'}<input aria-label={`Código da embalagem do item ${i+1}`} value={it.codigo_barras} onChange={e=>setItem(i,'codigo_barras',e.target.value.trim())} className="mt-1 w-full rounded bg-slate-950 p-2 text-white" placeholder="opcional" /></label>
+                              <label className="block text-xs text-slate-300">Código da unidade<input aria-label={`Código da unidade do item ${i+1}`} value={it.codigo_barras_unidade || ''} onChange={e=>setItem(i,'codigo_barras_unidade',e.target.value.trim())} className="mt-1 w-full rounded bg-slate-950 p-2 text-white" placeholder="opcional" /></label>
+                            </div>
+                            <p className="text-2xs text-slate-400">No caixa, o código da {it.unidade_compra || 'embalagem'} lança a embalagem inteira e o da unidade lança 1 avulsa. Bipe uma unidade aqui para conferir.</p>
+                            <ul aria-label={`Comparação de preços do item ${i+1}`} className="space-y-0.5 text-xs text-slate-200">
+                              {textoComparacao({custo: it.preco_custo, fator: it.quantidade_por_embalagem, precoEmbalagem: Number(it.preco_embalagem) || 0, precoUnidade: Number(it.preco_unidade) || 0, embalagem: it.unidade_compra}).map(t => <li key={t} className={t.startsWith('⚠️') ? 'text-amber-300' : ''}>{t}</li>)}
+                            </ul>
                           </>}
                         </div>}
                       </td>

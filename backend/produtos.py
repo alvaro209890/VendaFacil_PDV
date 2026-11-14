@@ -100,6 +100,12 @@ class ItemImportar(BaseModel):
     preco_embalagem: float = Field(default=0, ge=0)
     preco_unidade: float = Field(default=0, ge=0)
     confirmar_abertura: bool = False
+    # Como a nota conta a quantidade quando o produto novo vende caixa e unidade:
+    # True = cada unidade da nota é uma embalagem fechada (multiplica pelo fator);
+    # False = a nota já vem em unidades soltas (600 UN = 600 latas). None = deduz
+    # pela unidade da nota (UN = unidades soltas; CX/FD/... = embalagens).
+    nota_em_embalagem: bool | None = None
+    codigo_barras_unidade: str = Field(default="", max_length=60)
     unidade_xml: str | None = Field(default=None, max_length=10)
     valor_unitario_xml: float | None = Field(default=None, ge=0)
 
@@ -249,6 +255,10 @@ async def importar_xml_preview(request: Request):
     itens = []
     for it in nfe["itens"]:
         match = db.get_produto_by_codigo(user_id, it["codigo_barras"]) if it["codigo_barras"] else None
+        if not match and it.get("codigo_barras_trib"):
+            # Ex.: a distribuidora põe o código do pacote em cEAN e o da lata em
+            # cEANTrib; a loja cadastrou a lata. Casa pelo código da unidade.
+            match = db.get_produto_by_codigo(user_id, it["codigo_barras_trib"])
         unidade_xml = _norm_unidade(it["unidade"])
         unidade_estoque = _norm_unidade(match.get("unidade") if match else unidade_xml)
         unidade_compra = _norm_unidade(match.get("unidade_compra") if match else unidade_xml, unidade_xml)
@@ -263,21 +273,29 @@ async def importar_xml_preview(request: Request):
             fator = 1
         quantidade_xml = it["quantidade"]
         quantidade_estoque = round(quantidade_xml * fator, 4)
-        custo_unitario = round((it["valor_unitario"] / fator) if fator else it["valor_unitario"], 4)
+        # Custo de aquisição (valor + frete/seguro/outras/IPI/ST − desconto) por
+        # unidade comercial da nota; dividido pelo fator vira custo da unidade de estoque.
+        custo_nota = it.get("valor_unitario_efetivo", it["valor_unitario"])
+        custo_unitario = round((custo_nota / fator) if fator else custo_nota, 4)
+        despesas = it.get("despesas_unitarias", 0) or 0
+        detalhe_custo = (f" (nota R$ {it['valor_unitario']:.4f} {'+ despesas' if despesas > 0 else '− desconto'} "
+                         f"R$ {abs(despesas):.4f} por {unidade_xml})") if despesas else ""
         itens.append({
             **it,
             "fator_entrada": fator,
             "vende_por_unidade": bool(match and match.get("vende_por_unidade")),
             "preco_embalagem": match.get("preco_embalagem", 0) if match else 0,
             "preco_unidade": match.get("preco_unidade", 0) if match else 0,
+            "codigo_barras_unidade": (match.get("codigo_barras_unidade") or "") if match else it.get("codigo_barras_trib", ""),
             "perguntar_embalagem": not match and unidade_xml == "UN" and bool(re.search(r"\b(CX|CAIXA|FD|FARDO|PCT|PACOTE|DISPLAY|CARTEIRA)\b", it["nome"], re.I)),
-            "mensagem_entrada": f"{quantidade_xml:g} {unidade_xml} viram {quantidade_estoque:g} {unidade_estoque}; custo de cada unidade R$ {custo_unitario:.4f}." + (" Os dois preços de venda serão mantidos." if match and match.get("vende_por_unidade") else ""),
+            "mensagem_entrada": f"{quantidade_xml:g} {unidade_xml} viram {quantidade_estoque:g} {unidade_estoque}; custo de cada unidade R$ {custo_unitario:.4f}{detalhe_custo}." + (" Os dois preços de venda serão mantidos." if match and match.get("vende_por_unidade") else ""),
             "unidade_xml": unidade_xml,
             "unidade": unidade_estoque,
             "unidade_compra": unidade_compra,
             "quantidade_xml": quantidade_xml,
             "quantidade": quantidade_estoque,
-            "valor_unitario_xml": it["valor_unitario"],
+            "valor_unitario_nota": it["valor_unitario"],
+            "valor_unitario_xml": custo_nota,
             "valor_unitario": custo_unitario,
             "quantidade_por_embalagem": fator_cadastro if match else 1,
             "produto_id": match["id"] if match else None,
@@ -305,17 +323,29 @@ async def importar_xml_confirmar(data: ConfirmarImportacao, request: Request):
     for item in data.itens:
         normalizado = item.model_dump()
         normalizado["codigo_barras"] = _ean(item.codigo_barras)
+        normalizado["codigo_barras_unidade"] = _ean(item.codigo_barras_unidade)
         normalizado["unidade"] = _norm_unidade(item.unidade)
         normalizado["unidade_compra"] = _norm_unidade(item.unidade_compra, item.unidade)
         normalizado["quantidade_por_embalagem"] = _fator(item.quantidade_por_embalagem)
         existente = db.get_produto(item.produto_id, user_id) if item.produto_id else db.get_produto_by_codigo(user_id, normalizado["codigo_barras"])
+        if not existente:
+            # Produto novo: o código da unidade (ex.: cEANTrib da lata) não pode
+            # ser de outro produto. A prévia já casa por ele; aqui só recusa.
+            validar_codigos(user_id, normalizado)
         if not existente and item.vende_por_unidade:
+            # Caixa + unidade sempre guarda estoque em UN, mesmo com a nota em CX
+            # (a tela manda a unidade da nota e isso recusava toda nota em caixa).
+            normalizado["unidade"] = "UN"
             validar_embalagem(normalizado)
             if not item.confirmar_abertura or item.quantidade_xml is None or item.valor_unitario_xml is None:
                 raise HTTPException(status_code=400, detail="Confirme a abertura e informe quantidade, custo da nota e os dois preços.")
+            em_embalagem = item.nota_em_embalagem
+            if em_embalagem is None:
+                em_embalagem = _norm_unidade(item.unidade_xml) != "UN"
+            fator_nota = item.quantidade_por_embalagem if em_embalagem else 1
             normalizado["unidade"] = "UN"
-            normalizado["quantidade"] = round(item.quantidade_xml * item.quantidade_por_embalagem, 4)
-            normalizado["preco_custo"] = round(item.valor_unitario_xml / item.quantidade_por_embalagem, 4)
+            normalizado["quantidade"] = round(item.quantidade_xml * fator_nota, 4)
+            normalizado["preco_custo"] = round(item.valor_unitario_xml / fator_nota, 4)
         elif existente and existente.get("vende_por_unidade") and item.unidade_xml and item.quantidade_xml is not None:
             un_xml = _norm_unidade(item.unidade_xml)
             fator = existente["quantidade_por_embalagem"] if un_xml == existente["unidade_compra"] else 1

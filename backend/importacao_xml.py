@@ -60,6 +60,56 @@ def _gtin(texto: str) -> str:
     return texto
 
 
+def _gtin_secundario(texto: str) -> str:
+    """cEANTrib serve só de código extra: inválido vira vazio, sem recusar a nota."""
+    try:
+        return _gtin(texto)
+    except ValueError:
+        return ""
+
+
+def _valor_opcional(el, nome: str, campo: str) -> Decimal:
+    texto = _ctext(el, nome) if el is not None else ""
+    return Decimal(str(_numero(texto, campo))) if texto else Decimal(0)
+
+
+def _soma_tag(raiz, nome: str, campo: str) -> Decimal:
+    """Soma uma tag em qualquer grupo abaixo de `raiz` (ICMS00..ICMS90, ICMSSN*, IPITrib)."""
+    if raiz is None:
+        return Decimal(0)
+    total = Decimal(0)
+    for e in raiz.iter():
+        if _local(e.tag) == nome and (e.text or "").strip():
+            total += Decimal(str(_numero(e.text.strip(), campo)))
+    return total
+
+
+def _custo_item(prod, imposto, quantidade: float, valor_unitario: float) -> dict:
+    """Custo de aquisição do item: o que a loja paga por ele, rateado na quantidade.
+
+    vProd + frete + seguro + outras despesas + IPI + ICMS-ST (e FCP-ST) − desconto.
+    O ICMS retido anteriormente (vICMSSTRet, CST 60) não entra: já está no preço.
+    """
+    v_prod_txt = _ctext(prod, "vProd")
+    v_prod = Decimal(str(_numero(v_prod_txt, "valor do produto"))) if v_prod_txt else (
+        Decimal(str(quantidade)) * Decimal(str(valor_unitario)))
+    despesas = (_valor_opcional(prod, "vFrete", "frete") + _valor_opcional(prod, "vSeg", "seguro")
+                + _valor_opcional(prod, "vOutro", "outras despesas")
+                - _valor_opcional(prod, "vDesc", "desconto"))
+    icms = _child(imposto, "ICMS") if imposto is not None else None
+    ipi = _child(imposto, "IPI") if imposto is not None else None
+    despesas += _soma_tag(icms, "vICMSST", "ICMS-ST") + _soma_tag(icms, "vFCPST", "FCP-ST")
+    despesas += _soma_tag(ipi, "vIPI", "IPI")
+    total = v_prod + despesas
+    if total < 0:
+        total = Decimal(0)
+    qtd = Decimal(str(quantidade))
+    efetivo = (total / qtd).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+    rateio = (despesas / qtd).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+    return {"valor_unitario_efetivo": float(efetivo), "despesas_unitarias": float(rateio),
+            "custo_total_item": float(total.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))}
+
+
 def parse_nfe(xml_bytes: bytes) -> dict:
     """Devolve {emitente, numero, chave, itens:[...]} a partir do XML da NF-e."""
     try:
@@ -97,12 +147,30 @@ def parse_nfe(xml_bytes: bytes) -> dict:
         if not nome:
             raise ValueError("Nome do item ausente na NF-e.")
         ean = _gtin(_ctext(prod, "cEAN"))
+        ean_trib = _gtin_secundario(_ctext(prod, "cEANTrib"))
+        quantidade = _numero(_ctext(prod, "qCom"), "quantidade", positivo=True)
+        valor_unitario = _numero(_ctext(prod, "vUnCom"), "custo")
+        unidade = _ctext(prod, "uCom") or "UN"
+        unidade_trib = (_ctext(prod, "uTrib") or unidade).strip().upper()
+        qtd_trib_txt = _ctext(prod, "qTrib")
+        try:
+            qtd_trib = _numero(qtd_trib_txt, "quantidade tributável", positivo=True) if qtd_trib_txt else 0
+        except ValueError:
+            qtd_trib = 0
+        # Ex.: 50 CX na unidade comercial e 600 UN na tributável = 12 por caixa.
+        razao = qtd_trib / quantidade if qtd_trib else 0
+        fator_sugerido = int(round(razao)) if (unidade_trib != unidade.strip().upper() and razao > 1
+                                               and abs(razao - round(razao)) < 1e-6) else 0
         itens.append({
             "nome": nome,
             "codigo_barras": ean,
-            "unidade": _ctext(prod, "uCom") or "UN",
-            "quantidade": _numero(_ctext(prod, "qCom"), "quantidade", positivo=True),
-            "valor_unitario": _numero(_ctext(prod, "vUnCom"), "custo"),
+            "codigo_barras_trib": ean_trib if ean_trib != ean else "",
+            "unidade": unidade,
+            "unidade_trib": unidade_trib,
+            "fator_sugerido": fator_sugerido,
+            "quantidade": quantidade,
+            "valor_unitario": valor_unitario,
+            **_custo_item(prod, _child(det, "imposto"), quantidade, valor_unitario),
             "ncm": _ctext(prod, "NCM"),
             "cfop": _ctext(prod, "CFOP"),
         })

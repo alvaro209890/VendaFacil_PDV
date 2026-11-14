@@ -45,9 +45,11 @@ def test_t8_kaiser_sem_confirmacao_nao_multiplica(client,auth):
 
 def test_novo_confirmado_explicitamente_vira_unidades(client,auth):
     it=preview(client,auth,'','UN',2,10,'Carteira Nova')
+    # Cada UN desta nota é uma carteira (R$ 10 cada): o operador diz isso
+    # explicitamente. Sem dizer, nota em UN entra 1 para 1 (caso Kaiser).
     r=confirmar(client,auth,it,vende_por_unidade=True,unidade_compra='CARTEIRA',
                 quantidade_por_embalagem=20,preco_embalagem=20,preco_unidade=2,
-                confirmar_abertura=True,unidade_xml='UN',valor_unitario_xml=10)
+                confirmar_abertura=True,nota_em_embalagem=True,unidade_xml='UN',valor_unitario_xml=10)
     assert r.status_code==200,r.text
     p=next(p for p in client.get('/api/produtos',headers=auth).json()['produtos'] if p['nome']=='Carteira Nova')
     assert p['estoque']==40 and p['preco_custo']==0.5 and p['vende_por_unidade']==1
