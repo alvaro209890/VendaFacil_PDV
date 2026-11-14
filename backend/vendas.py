@@ -1,6 +1,7 @@
 """Vendas / Checkout — VendaFácil PDV"""
 
 import json
+from typing import Literal
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
@@ -19,6 +20,7 @@ router = APIRouter()
 class ItemVenda(BaseModel):
     produto_id: int
     quantidade: float = Field(allow_inf_nan=False)
+    modo_venda: Literal["unidade", "embalagem"] | None = None
 
 
 class PagamentoEletronico(BaseModel):
@@ -89,7 +91,14 @@ async def checkout(data: CheckoutRequest, request: Request):
         if not produto["ativo"]:
             erros.append(f"Produto '{produto['nome']}' está desativado.")
             continue
-        if produto["estoque"] < item.quantidade:
+        modo = item.modo_venda or "unidade"
+        dupla = bool(produto.get("vende_por_unidade"))
+        if dupla and not item.quantidade.is_integer():
+            erros.append("Embalagem e avulso exigem quantidade inteira.")
+            continue
+        fator = produto["quantidade_por_embalagem"] if dupla and modo == "embalagem" else 1
+        quantidade_estoque = float(decimal(item.quantidade) * decimal(fator))
+        if produto["estoque"] < quantidade_estoque:
             erros.append(
                 f"Estoque insuficiente de '{produto['nome']}': "
                 f"tem {produto['estoque']} {produto['unidade']}, pedido {item.quantidade}."
@@ -98,20 +107,24 @@ async def checkout(data: CheckoutRequest, request: Request):
 
         # D3 (Álvaro, 12/11/2026): produto sem preço de venda não é vendido
         # (antes caía para o preço de custo, sem aviso).
-        if not produto["preco_venda"] or produto["preco_venda"] <= 0:
+        preco = produto["preco_embalagem" if modo == "embalagem" else "preco_unidade"] if dupla else produto["preco_venda"]
+        if not preco or preco <= 0:
             erros.append(f"Produto '{produto['nome']}' está sem preço de venda. "
                          "Cadastre o preço em Produtos antes de vender.")
             continue
-        preco = produto["preco_venda"]
         subtotal = multiplicar(item.quantidade, preco)
         subtotal_total += subtotal
 
         itens_processados.append({
             "produto_id": produto["id"],
-            "nome_produto": produto["nome"],
+            "nome_produto": f"{produto['nome']} — {produto['unidade_compra'] if modo == 'embalagem' else 'avulso'}" if dupla else produto["nome"],
             "quantidade": item.quantidade,
             "preco_unitario": preco,
             "subtotal": moeda(subtotal),
+            "modo_venda": modo if dupla else None,
+            "unidade_venda": (produto["unidade_compra"] if modo == "embalagem" else "UN") if dupla else produto["unidade"],
+            "quantidade_estoque": quantidade_estoque,
+            "custo_unitario_estoque": produto["preco_custo"],
         })
 
     if erros:

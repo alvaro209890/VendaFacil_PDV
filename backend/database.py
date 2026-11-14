@@ -276,6 +276,11 @@ class Database:
                 self._conn.execute(f"ALTER TABLE produtos ADD COLUMN {col} {ddl}")
 
         ccols = {r["name"] for r in self._conn.execute("PRAGMA table_info(clientes)")}
+        icols = {r["name"] for r in self._conn.execute("PRAGMA table_info(itens_venda)")}
+        for col, ddl in {"modo_venda": "TEXT", "unidade_venda": "TEXT",
+                         "quantidade_estoque": "REAL", "custo_unitario_estoque": "REAL"}.items():
+            if col not in icols:
+                self._conn.execute(f"ALTER TABLE itens_venda ADD COLUMN {col} {ddl}")
         cliente_fiscal = {
             "documento": "TEXT DEFAULT ''",
             "inscricao_estadual": "TEXT DEFAULT ''",
@@ -1365,7 +1370,7 @@ class Database:
             quantidades = {}
             produtos = {}
             for item in itens:
-                quantidade = decimal(item["quantidade"])
+                quantidade = decimal(item.get("quantidade_estoque", item["quantidade"]))
                 if quantidade <= 0:
                     raise ValueError("Quantidade deve ser maior que zero.")
                 pid = item["produto_id"]
@@ -1400,15 +1405,16 @@ class Database:
             for item in itens:
                 self._conn.execute(
                     "INSERT INTO itens_venda (venda_id, produto_id, nome_produto, quantidade, "
-                    "preco_unitario, subtotal) VALUES (?, ?, ?, ?, ?, ?)",
+                    "preco_unitario, subtotal, modo_venda, unidade_venda, quantidade_estoque, custo_unitario_estoque) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     (venda_id, item["produto_id"], item["nome_produto"], item["quantidade"],
-                     item["preco_unitario"], moeda(item["subtotal"])),
+                     item["preco_unitario"], moeda(item["subtotal"]), item.get("modo_venda"),
+                     item.get("unidade_venda"), item.get("quantidade_estoque", item["quantidade"]), item.get("custo_unitario_estoque")),
                 )
                 self._conn.execute(
                     "INSERT INTO movimentacoes_estoque (user_id, produto_id, tipo, quantidade, "
                     "custo_unitario, origem, documento, observacao, criado_em) "
                     "VALUES (?, ?, 'saida', ?, NULL, 'venda', ?, ?, ?)",
-                    (user_id, item["produto_id"], item["quantidade"], str(venda_id),
+                    (user_id, item["produto_id"], item.get("quantidade_estoque", item["quantidade"]), str(venda_id),
                      item["nome_produto"], agora),
                 )
             if forma_pagamento == "fiado":
@@ -1460,7 +1466,8 @@ class Database:
                 produto = self.get_produto(item["produto_id"], user_id)
                 if not produto:
                     raise ValueError("Produto da venda não encontrado; estorno não realizado.")
-                estoque = decimal(produto["estoque"]) + decimal(item["quantidade"])
+                quantidade_devolvida = item.get("quantidade_estoque") if item.get("quantidade_estoque") is not None else item["quantidade"]
+                estoque = decimal(produto["estoque"]) + decimal(quantidade_devolvida)
                 atualizacao = self._conn.execute(
                     "UPDATE produtos SET estoque = ?, atualizado_em = ? WHERE id = ? AND user_id = ?",
                     (float(estoque), agora, produto["id"], user_id),
@@ -1471,7 +1478,7 @@ class Database:
                     "INSERT INTO movimentacoes_estoque (user_id, produto_id, tipo, quantidade, "
                     "origem, documento, observacao, criado_em) "
                     "VALUES (?, ?, 'entrada', ?, 'cancelamento_venda', ?, ?, ?)",
-                    (user_id, produto["id"], item["quantidade"], str(venda_id), motivo, agora),
+                    (user_id, produto["id"], quantidade_devolvida, str(venda_id), motivo, agora),
                 )
                 if movimento.rowcount != 1:
                     raise ValueError("Não foi possível registrar a devolução; estorno não realizado.")
@@ -1844,7 +1851,7 @@ class Database:
                 (user_id, inicio, fim)
             ).fetchall()
             margem = self._conn.execute(
-                "SELECT i.preco_unitario, COALESCE(p.preco_custo,0) preco_custo, i.quantidade "
+                "SELECT i.preco_unitario, COALESCE(i.custo_unitario_estoque,p.preco_custo,0) preco_custo, i.quantidade, COALESCE(i.quantidade_estoque,i.quantidade) quantidade_estoque "
                 "FROM itens_venda i JOIN vendas v ON v.id=i.venda_id "
                 "LEFT JOIN produtos p ON p.id=i.produto_id "
                 "WHERE v.user_id=? AND v.status='concluida' AND date(v.criado_em, 'localtime') BETWEEN ? AND ?",
@@ -1854,8 +1861,8 @@ class Database:
         qtd = resumo["qtd"]
         desconto = resumo["desconto"]
         # Lucro estimado: margem por item (custo atual) menos os descontos da venda.
-        lucro = somar((decimal(r["preco_unitario"]) - decimal(r["preco_custo"]))
-                      * decimal(r["quantidade"]) for r in margem) - decimal(desconto)
+        lucro = somar(decimal(r["preco_unitario"]) * decimal(r["quantidade"])
+                      - decimal(r["preco_custo"]) * decimal(r["quantidade_estoque"]) for r in margem) - decimal(desconto)
         return {
             "inicio": inicio, "fim": fim,
             "faturamento": moeda(faturamento),

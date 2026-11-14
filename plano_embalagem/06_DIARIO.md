@@ -17,3 +17,7 @@
 - **2026-11-13 — Codex — E2.2 fim**: npm run build; npx eslint .; node --test frontend-tests/embalagem.test.mjs: 1 passed; backend 475 passed. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
 
 - **2026-11-13 — Codex — E2.3 inicio**: T9: fator 20 para 30 preserva 65 unidades e dois preços; já verde após E2.1, sem defeito adicional. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
+
+- **2026-11-13 — Codex — E2.3 fim**: T9: pytest backend 476 passed, 9 deselected; fator e ativação preservam estoque. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
+
+- **2026-11-13 — Codex — E3.1 inicio**: Checkout: 10 falhas e 1 verde antes; T2-T6 e snapshots. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.

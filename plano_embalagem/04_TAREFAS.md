@@ -11,11 +11,11 @@ Ordem fixa. Um `[~]` por vez.
 
 - [x] **E2.1** Testes T2–T6 e T9 falhando. Colunas novas no produto, default da opção desligado, produtos antigos intactos. — 051e969 · 9 regressões falharam antes; pytest backend inteiro: 475 passed, 9 deselected
 - [x] **E2.2** API de cadastro e a tela Produtos com a opção, os dois preços e o texto “3 carteiras e 5 avulsos”. — b1a6075 · npm run build; npx eslint .; node --test frontend-tests/embalagem.test.mjs: 1 passed; backend 475 passed
-- [~] **E2.3** Troca de fator com estoque não recontagem (T9).
+- [x] **E2.3** Troca de fator com estoque não recontagem (T9). — 5fa54df · T9: pytest backend 476 passed, 9 deselected; fator e ativação preservam estoque
 
 ## E3 — Caixa
 
-- [ ] **E3.1** Checkout aceita o modo. Sem modo = unidade (T5). Carteira só no modo embalagem.
+- [~] **E3.1** Checkout aceita o modo. Sem modo = unidade (T5). Carteira só no modo embalagem.
 - [ ] **E3.2** Baixa, recusa por falta de unidade, histórico e lucro (T2, T3, T4).
 - [ ] **E3.3** PDV com os dois botões e o código de barras da embalagem lançando a carteira.
 
