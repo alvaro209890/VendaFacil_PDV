@@ -53,3 +53,7 @@
 - **2026-11-13 — Codex — E7.1 fim**: Manual do app e 3 documentos atualizados; npm run build e npx eslint . verdes; backend 496; vault receberá versão, commit e artefato comprovados ao fechar. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
 
 - **2026-11-13 — Codex — E8.1 inicio**: Verificar sincronismo da versão 1.0.15 em backend, instalador e roteiro. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
+
+- **2026-11-13 — Codex — E8.1 fim**: 3 testes de versão falharam antes; pytest backend 499 passed, 9 deselected depois. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
+
+- **2026-11-13 — Codex — E8.2 inicio**: Portão final: build, lint, Node, backend e navegador; preparar validação do artefato. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
