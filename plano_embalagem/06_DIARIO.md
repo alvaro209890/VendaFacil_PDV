@@ -9,3 +9,7 @@
 - **2026-11-13 — Codex — E1.2 fim**: backend: .venv/Scripts/python -X utf8 -I -m pytest -q --tb=short: 466 passed, 9 deselected. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
 
 - **2026-11-13 — Codex — E2.1 inicio**: Regressões de cadastro e migração. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
+
+- **2026-11-13 — Codex — E2.1 fim**: 9 regressões falharam antes; pytest backend inteiro: 475 passed, 9 deselected. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
+
+- **2026-11-13 — Codex — E2.2 inicio**: Tela de cadastro, dois preços e estoque de balcão; teste Node falhou por módulo ausente. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.

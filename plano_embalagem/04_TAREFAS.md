@@ -9,8 +9,8 @@ Ordem fixa. Um `[~]` por vez.
 
 ## E2 — Cadastro e estoque
 
-- [~] **E2.1** Testes T2–T6 e T9 falhando. Colunas novas no produto, default da opção desligado, produtos antigos intactos.
-- [ ] **E2.2** API de cadastro e a tela Produtos com a opção, os dois preços e o texto “3 carteiras e 5 avulsos”.
+- [x] **E2.1** Testes T2–T6 e T9 falhando. Colunas novas no produto, default da opção desligado, produtos antigos intactos. — 051e969 · 9 regressões falharam antes; pytest backend inteiro: 475 passed, 9 deselected
+- [~] **E2.2** API de cadastro e a tela Produtos com a opção, os dois preços e o texto “3 carteiras e 5 avulsos”.
 - [ ] **E2.3** Troca de fator com estoque não recontagem (T9).
 
 ## E3 — Caixa

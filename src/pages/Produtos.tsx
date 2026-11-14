@@ -14,6 +14,7 @@ import {
 import type {
   Produto, ProdutoInput, Categoria, CamposFiscais, PreviewXml, ItemConfirmarXml, Movimentacao,
 } from "../lib/api";
+import { estoqueBalcao } from "../lib/embalagem";
 import { lerNumeroPtBr } from "../lib/numeros";
 
 // Item da importação com flags editáveis na tela.
@@ -69,6 +70,11 @@ export default function ProdutosPage() {
   const [editando, setEditando] = useState<Produto | null>(null);
   const [novo, setNovo] = useState(false);
   const [msg, setMsg] = useState<Mensagem | null>(null);
+
+  const [vendePorUnidade, setVendePorUnidade] = useState(false);
+  const [precoEmbalagem, setPrecoEmbalagem] = useState("");
+  const [precoUnidade, setPrecoUnidade] = useState("");
+  const [codigoUnidade, setCodigoUnidade] = useState("");
 
   // Form state
   const [nome, setNome] = useState("");
@@ -322,6 +328,7 @@ export default function ProdutosPage() {
   }, [carregar]);
 
   function resetForm() {
+    setVendePorUnidade(false); setPrecoEmbalagem(""); setPrecoUnidade(""); setCodigoUnidade("");
     setNome("");
     setCategoriaId("");
     setPrecoCusto("");
@@ -339,6 +346,10 @@ export default function ProdutosPage() {
   }
 
   function abrirEdicao(p: Produto) {
+    setVendePorUnidade(!!p.vende_por_unidade);
+    setPrecoEmbalagem(p.vende_por_unidade ? String(p.preco_embalagem) : "");
+    setPrecoUnidade(p.vende_por_unidade ? String(p.preco_unidade) : "");
+    setCodigoUnidade(p.codigo_barras_unidade || "");
     setEditando(p);
     setNovo(false);
     setNome(p.nome);
@@ -455,7 +466,13 @@ export default function ProdutosPage() {
       valCofins = parsed;
     }
 
+    const emb = lerNumeroPtBr(precoEmbalagem);
+    const un = lerNumeroPtBr(precoUnidade);
+    if (vendePorUnidade && (!(emb && emb > 0) || !(un && un > 0) || !unidadeCompra.trim() || !Number.isInteger(valFator) || normUn(unidade) !== "UN")) {
+      setMsg({tipo:"erro", texto:"Informe a embalagem, quantidade inteira, os dois preços maiores que zero e unidade UN."}); return;
+    }
     const data: ProdutoInput = {
+      vende_por_unidade: vendePorUnidade, preco_embalagem: emb || 0, preco_unidade: un || 0, codigo_barras_unidade: codigoUnidade.trim(),
       nome: nome.trim(),
       categoria_id: categoriaId || undefined,
       preco_custo: valCusto,
@@ -567,7 +584,7 @@ export default function ProdutosPage() {
                         <div className="min-w-0 flex-1">
                           <h3 className="text-white font-medium truncate">{p.nome}</h3>
                           <p className="text-slate-500 text-xs mt-0.5">
-                            estoque <span className={baixo ? "text-amber-400" : "text-slate-300"}>{fmtQtd(p.estoque)} {p.unidade}{baixo ? " ⚠️" : ""}</span>
+                            estoque <span className={baixo ? "text-amber-400" : "text-slate-300"}>{p.vende_por_unidade ? estoqueBalcao(p) : `${fmtQtd(p.estoque)} ${p.unidade}`}{baixo ? " ⚠️" : ""}</span>
                           </p>
                         </div>
                         {p.ativo ? (
@@ -583,7 +600,7 @@ export default function ProdutosPage() {
                         </div>
                         <div className="rounded-lg bg-slate-800 p-2">
                           <p className="text-slate-500 text-2xs uppercase">Venda</p>
-                          <p className="text-brand-400 font-semibold">R$ {(p.preco_venda || 0).toFixed(2)}</p>
+                          <p className="text-brand-400 font-semibold">{p.vende_por_unidade ? `${p.unidade_compra}: R$ ${Number(p.preco_embalagem).toFixed(2)} ? Unidade: R$ ${Number(p.preco_unidade).toFixed(2)}` : `R$ ${(p.preco_venda || 0).toFixed(2)}`}</p>
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
@@ -631,9 +648,9 @@ export default function ProdutosPage() {
                           </div>
                         </td>
                         <td className="p-3 text-slate-300">R$ {(p.preco_custo || 0).toFixed(2)}</td>
-                        <td className="p-3 text-brand-400 font-semibold">R$ {(p.preco_venda || 0).toFixed(2)}</td>
+                        <td className="p-3 text-brand-400 font-semibold">{p.vende_por_unidade ? `${p.unidade_compra}: R$ ${Number(p.preco_embalagem).toFixed(2)} ? Unidade: R$ ${Number(p.preco_unidade).toFixed(2)}` : `R$ ${(p.preco_venda || 0).toFixed(2)}`}</td>
                         <td className="p-3 hidden md:table-cell">
-                          <span className={baixo ? "text-amber-400 font-medium" : "text-slate-300"}>{fmtQtd(p.estoque)} {p.unidade}{baixo && ` ⚠️`}</span>
+                          <span className={baixo ? "text-amber-400 font-medium" : "text-slate-300"}>{p.vende_por_unidade ? estoqueBalcao(p) : `${fmtQtd(p.estoque)} ${p.unidade}`}{baixo && ` ⚠️`}</span>
                         </td>
                         <td className="p-3 hidden md:table-cell">
                           {p.ativo ? (
@@ -686,6 +703,26 @@ export default function ProdutosPage() {
           )}
 
           <form onSubmit={handleSalvar} className="space-y-3">
+            <label className="flex items-center gap-3 rounded-xl border border-brand-500/40 bg-brand-500/10 p-3 text-white">
+              <input type="checkbox" checked={vendePorUnidade} onChange={e => {
+                setVendePorUnidade(e.target.checked);
+                if (e.target.checked && !editando?.vende_por_unidade) {setPrecoEmbalagem(""); setPrecoUnidade("");}
+              }} className="h-5 w-5 accent-brand-500" />Também vende por unidade
+            </label>
+            {vendePorUnidade && <fieldset className="space-y-3 rounded-xl border border-brand-500/30 p-3">
+              <legend className="text-brand-300 text-sm">Dois preços independentes</legend>
+              <label className="block text-slate-300 text-sm">Preço da embalagem fechada (R$)
+                <input aria-label="Preço da embalagem fechada" value={precoEmbalagem} onChange={e=>setPrecoEmbalagem(e.target.value)} inputMode="decimal" className="w-full rounded-lg bg-slate-800 p-2 text-white" required />
+              </label>
+              <label className="block text-slate-300 text-sm">Preço da unidade (R$)
+                <input aria-label="Preço da unidade" value={precoUnidade} onChange={e=>setPrecoUnidade(e.target.value)} inputMode="decimal" className="w-full rounded-lg bg-slate-800 p-2 text-white" required />
+              </label>
+              <label className="block text-slate-300 text-sm">Código da unidade (opcional)
+                <input aria-label="Código da unidade" value={codigoUnidade} onChange={e=>setCodigoUnidade(e.target.value)} className="w-full rounded-lg bg-slate-800 p-2 text-white" />
+              </label>
+              <p className="text-xs text-slate-400">Estoque e custo sempre por unidade. O código principal lança a embalagem fechada no caixa.</p>
+            </fieldset>}
+
             <div>
               <label className="text-slate-400 text-xs block mb-0.5">Nome *</label>
               <input
@@ -789,13 +826,12 @@ export default function ProdutosPage() {
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="text-slate-400 text-xs block mb-0.5">Unidade da compra</label>
-                <select
+                {vendePorUnidade ? <input aria-label="Nome da embalagem" list="unidades-compra"
                   value={unidadeCompra}
                   onChange={(e) => setUnidadeCompra(e.target.value)}
                   className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500"
-                >
-                  {UNIDADES.map((u) => <option key={u} value={u}>{u}</option>)}
-                </select>
+                /> : <select value={unidadeCompra} onChange={e=>setUnidadeCompra(e.target.value)} className="w-full rounded-lg bg-slate-800 p-2 text-white">{UNIDADES.map(u=><option key={u} value={u}>{u}</option>)}</select>}
+                <datalist id="unidades-compra">{UNIDADES.map((u) => <option key={u} value={u} />)}<option value="CARTEIRA" /><option value="DISPLAY" /></datalist>
               </div>
               <div>
                 <label className="text-slate-400 text-xs block mb-0.5">Qtd por compra</label>
@@ -810,6 +846,7 @@ export default function ProdutosPage() {
               </div>
             </div>
 
+            {vendePorUnidade && editando && editando.estoque > 0 && Number(quantidadePorEmbalagem) !== editando.quantidade_por_embalagem && <p role="status" className="rounded-lg bg-amber-500/10 p-3 text-sm text-amber-300">Alterar a quantidade por embalagem não reconta o estoque: continuam {fmtQtd(editando.estoque)} unidades.</p>}
             <button
               type="button"
               onClick={() => setMostrarFiscal(true)}

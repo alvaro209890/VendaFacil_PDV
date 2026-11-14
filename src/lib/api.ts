@@ -186,6 +186,10 @@ export interface Produto extends CamposFiscais {
   unidade: string;
   unidade_compra: string;
   quantidade_por_embalagem: number;
+  vende_por_unidade?: boolean | number;
+  preco_embalagem?: number;
+  preco_unidade?: number;
+  codigo_barras_unidade?: string;
   ativo: number;
   criado_em: string;
   atualizado_em: string;
@@ -202,6 +206,10 @@ export interface ProdutoInput extends CamposFiscais {
   unidade?: string;
   unidade_compra?: string;
   quantidade_por_embalagem?: number;
+  vende_por_unidade?: boolean | number;
+  preco_embalagem?: number;
+  preco_unidade?: number;
+  codigo_barras_unidade?: string;
 }
 
 export interface ProdutoUpdate extends CamposFiscais {
@@ -215,6 +223,10 @@ export interface ProdutoUpdate extends CamposFiscais {
   unidade?: string;
   unidade_compra?: string;
   quantidade_por_embalagem?: number;
+  vende_por_unidade?: boolean | number;
+  preco_embalagem?: number;
+  preco_unidade?: number;
+  codigo_barras_unidade?: string;
   ativo?: number;
 }
 
@@ -253,6 +265,10 @@ export interface ItemXml {
   unidade_xml?: string;
   unidade_compra: string;
   quantidade_por_embalagem: number;
+  vende_por_unidade?: boolean | number;
+  preco_embalagem?: number;
+  preco_unidade?: number;
+  codigo_barras_unidade?: string;
   quantidade: number;
   quantidade_xml: number;
   valor_unitario: number;
@@ -281,6 +297,10 @@ export interface ItemConfirmarXml {
   unidade: string;
   unidade_compra: string;
   quantidade_por_embalagem: number;
+  vende_por_unidade?: boolean | number;
+  preco_embalagem?: number;
+  preco_unidade?: number;
+  codigo_barras_unidade?: string;
   quantidade: number;
   quantidade_xml?: number;
   preco_custo: number;
