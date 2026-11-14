@@ -167,6 +167,12 @@ o `.exe` com a nota real 5/5. Setup `VendaFacilPDV-Setup-1.0.16.exe`
 `6D86133E51F514E4AF0B6C110913B9404DC004944FFF11AE09D10A92BB484AB2`.
 Nada foi transmitido à SEFAZ; banco real da loja e certificados intocados.
 
+**1.0.17 (mesmo dia):** só tira a obrigação/aviso de caixa aberto no PDV. Mesmas
+suítes verdes (backend 513, navegador 96), `.exe` revalidado (49 requisições /
+0 5xx, cupons 4/4, Playwright 5/5) e ativado contra o painel real com a conta da
+loja. Setup `VendaFacilPDV-Setup-1.0.17.exe` 40.002.839 bytes, SHA-256
+`E892829B0D836644D7CC3B68A134F141EFECC3ADB43ED1614117352A2B8FBC68`.
+
 ## 8. Contrato da API (para quem integra)
 
 - `POST /api/produtos/importar-xml/preview` devolve por item, além do de antes:
