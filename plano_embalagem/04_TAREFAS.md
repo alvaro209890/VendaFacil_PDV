@@ -39,8 +39,8 @@ Ordem fixa. Um `[~]` por vez.
 ## E8 — Versão e entrega
 
 - [x] **E8.1** Subir para 1.0.15 em `backend/version.py`, `installer/vendafacil.iss` e `scripts/roteiro_exe.py`. Não reescrever docs históricos que citam 1.0.14 como entrega passada. — 781718b · 3 testes de versão falharam antes; pytest backend 499 passed, 9 deselected depois
-- [~] **E8.2** T12 e T13 verdes.
-- [ ] **E8.3** Commit dos caminhos desta entrega, `git push origin master`.
+- [x] **E8.2** T12 e T13 verdes. — de9fd08 · npm run build e npx eslint . exit 0; backend 499, Node 38 e navegador integral 95 passed
+- [~] **E8.3** Commit dos caminhos desta entrega, `git push origin master`.
 - [ ] **E8.4** T14: workflow Build Windows EXE verde. Anotar o número do run e onde baixar o Setup.
 
 ## Portão

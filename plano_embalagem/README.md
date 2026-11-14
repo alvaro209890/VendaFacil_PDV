@@ -14,6 +14,7 @@ Criado em 13/11/2026. A especificação já está fechada pelo Álvaro em `02_ES
 | `02_ESPECIFICACAO.md` | Regra de negócio fechada | ninguém, salvo correção de fato errado |
 | `03_TESTES.md` | Matriz do que tem de passar | agente |
 | `04_TAREFAS.md` | Itens em ordem | agente |
+| `05_EVIDENCIAS.md` | Saídas de vermelho/verde e comandos de reprodução | agente |
 | `06_DIARIO.md` | Registro corrido (só acrescenta) | agente |
 
 ## Marcação

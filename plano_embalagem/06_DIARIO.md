@@ -57,3 +57,7 @@
 - **2026-11-13 — Codex — E8.1 fim**: 3 testes de versão falharam antes; pytest backend 499 passed, 9 deselected depois. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
 
 - **2026-11-13 — Codex — E8.2 inicio**: Portão final: build, lint, Node, backend e navegador; preparar validação do artefato. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
+
+- **2026-11-13 — Codex — E8.2 fim**: npm run build e npx eslint . exit 0; backend 499, Node 38 e navegador integral 95 passed. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
+
+- **2026-11-13 — Codex — E8.3 inicio**: Auditoria do commit final e push único origin/master. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
