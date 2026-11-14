@@ -42,4 +42,12 @@ para vender o produto por unidade"*.
   sinais de embalagem, nota em peso sem sugestão, mesma unidade com contagem
   maior, modo unidade com nota em caixa e em unidades soltas, e exigência dos
   dois preços no modo embalagem.
-- Suíte backend completa e `tsc --noEmit` — resultado na ficha de entrega.
+- Suíte backend completa: **547 passed, 9 deselected** (539 antes; +8 novos).
+- `tsc --noEmit` limpo, ESLint sem avisos e **14 testes de navegador** aprovados
+  (`embalagem`, `xml-locale`, `produtos-locale`, `cadastro-rapido`, `preco-zero`).
+- Instalador `VendaFacilPDV-Setup-1.0.22.exe`, **40.022.581 bytes**, SHA-256
+  `1723DAA82BCFD7B2726E0779D2B8D46CF6CF9CB106F107C44CD209F2D1A862E3`.
+- No James: Setup **ExitCode 0**, hash igual antes e depois do `scp`, `/health`
+  **1.0.22**, porta 3020, **25 backups**, banco e licença preservados.
+- Repositório: `master` **`6ac72d3`** pushado (`5aab8f0..6ac72d3`), árvore limpa,
+  workflow **Build Windows EXE** verde para o commit.
