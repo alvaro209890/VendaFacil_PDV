@@ -53,7 +53,8 @@ class MercadoPagoPoint:
         path: str,
         body: dict[str, Any] | None = None,
         *,
-        idempotency: bool = False,
+        idempotency: bool | str = False,
+        extra_headers: dict[str, str] | None = None,
     ) -> tuple[int, dict[str, Any]]:
         url = f"{_BASE}{path}"
         data = json.dumps(body).encode() if body is not None else None
@@ -62,7 +63,9 @@ class MercadoPagoPoint:
             "Content-Type": "application/json",
         }
         if idempotency:
-            headers["X-Idempotency-Key"] = str(uuid.uuid4())
+            headers["X-Idempotency-Key"] = idempotency if isinstance(idempotency, str) else str(uuid.uuid4())
+        if extra_headers:
+            headers.update(extra_headers)
         req = urllib.request.Request(url, data=data, method=method, headers=headers)
         try:
             with urllib.request.urlopen(req, timeout=_TIMEOUT) as r:
@@ -104,6 +107,8 @@ class MercadoPagoPoint:
         referencia: str,
         imprimir: bool,
         forma: str,
+        *,
+        idempotency_key: str | None = None,
     ) -> dict[str, Any]:
         default_type = _forma_para_default_type(forma)
         body = {
@@ -124,7 +129,7 @@ class MercadoPagoPoint:
                 "payment_method": {"default_type": default_type},
             },
         }
-        status, resp = self._req("POST", "/v1/orders", body, idempotency=True)
+        status, resp = self._req("POST", "/v1/orders", body, idempotency=idempotency_key or True)
         logger.info(
             "point_order_create status=%s device_id=%s forma=%s order_id=%s order_status=%s",
             status,
@@ -144,9 +149,10 @@ class MercadoPagoPoint:
             _raise_point_error(status, resp, "orders_get")
         return resp
 
-    def cancelar_cobranca(self, order_id: str) -> dict[str, Any]:
+    def cancelar_cobranca(self, order_id: str, *, at_terminal: bool = False) -> dict[str, Any]:
         safe_id = urllib.parse.quote(order_id, safe="")
-        status, resp = self._req("POST", f"/v1/orders/{safe_id}/cancel", idempotency=True)
+        kwargs = {"extra_headers": {"x-allow-cancelable-status": "at_terminal"}} if at_terminal else {}
+        status, resp = self._req("POST", f"/v1/orders/{safe_id}/cancel", idempotency=True, **kwargs)
         if status >= 400:
             _raise_point_error(status, resp, "orders_cancel")
         return resp
@@ -247,7 +253,7 @@ def _forma_para_default_type(forma: str | None) -> str:
     if f == "credito":
         return "credit_card"
     if f == "pix":
-        return "pix"
+        return "qr"
     raise PointError(400, "Forma de pagamento nao suportada pela maquininha.")
 
 

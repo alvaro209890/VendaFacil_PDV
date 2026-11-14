@@ -28,12 +28,27 @@ class FakePoint(MercadoPagoPoint):
         return 200, {}
 
 
-def test_criar_cobranca_pix_usa_default_type_pix():
+def test_criar_cobranca_pix_usa_default_type_qr():
     cli = FakePoint()
     cli.criar_cobranca("NEWLAND_TEST", Decimal("4.93"), "venda-teste", False, "pix")
 
     _, _, body, _ = cli.calls[0]
-    assert body["config"]["payment_method"]["default_type"] == "pix"
+    assert body["config"]["payment_method"]["default_type"] == "qr"
+
+
+def test_cobranca_reutiliza_chave_de_idempotencia_informada():
+    cli = FakePoint()
+    cli.criar_cobranca('TEST', Decimal('30'), 'fiado-teste', False, 'debito', idempotency_key='chave-estavel')
+    assert cli.calls[0][3] == 'chave-estavel'
+
+
+def test_cancelamento_no_terminal_envia_header_exigido():
+    class Point(FakePoint):
+        def _req(self, method, path, body=None, *, idempotency=False, extra_headers=None):
+            assert extra_headers == {'x-allow-cancelable-status': 'at_terminal'}
+            assert path == '/v1/orders/ORD123/cancel'
+            return 202, {'status': 'at_terminal'}
+    assert Point().cancelar_cobranca('ORD123', at_terminal=True)['status'] == 'at_terminal'
 
 
 def test_rota_maquininha_recusa_pix_quando_desligado(client, auth):

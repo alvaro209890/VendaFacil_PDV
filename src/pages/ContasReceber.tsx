@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { lerNumeroPtBr } from "../lib/numeros";
 import CampoData from "../components/CampoData";
+import ReceberFiadoModal from "../components/ReceberFiadoModal";
+import { FORMAS_RECEBIMENTO } from "../lib/api";
+import type { FormaRecebimento, PixFiado } from "../lib/api";
 import type { CalendarioData } from "../../painel/static/calendario.js";
 import {
   listarContasReceber,
   criarContaReceber,
-  pagarContaReceber,
   cancelarContaReceber,
   listarClientes,
   type ContaReceber,
@@ -32,6 +34,8 @@ export default function ContasReceber() {
   const [loading, setLoading] = useState(true);
   const [filtro, setFiltro] = useState<string>("pendente");
   const [showModal, setShowModal] = useState(false);
+  const [recebendo, setRecebendo] = useState<ContaReceber | null>(null);
+  const [pixSalvo, setPixSalvo] = useState<PixFiado | undefined>();
   const [formClienteId, setFormClienteId] = useState<number | "">("");
   const [formValor, setFormValor] = useState("");
   const [formVencimento, setFormVencimento] = useState("");
@@ -90,34 +94,20 @@ export default function ContasReceber() {
     }
   }
 
-  async function handlePagar(conta: ContaReceber) {
-    const valorStr = prompt(`Valor a receber (R$ ${conta.valor_pendente.toFixed(2)}):`, conta.valor_pendente.toFixed(2));
-    if (!valorStr) return;
-    const valor = lerNumeroPtBr(valorStr, 2);
-    if (valor === null || !(valor > 0)) {
-      setMsg({ tipo: "erro", texto: "Valor deve ser maior que zero." });
-      return;
-    }
-    if (valor > conta.valor_pendente) {
-      setMsg({ tipo: "erro", texto: "Pagamento maior que o pendente." });
-      return;
-    }
-    try {
-      await pagarContaReceber(conta.id, { valor });
-      await carregar();
-      setMsg({ tipo: "ok", texto: "Pagamento registrado!" });
-    } catch (err) {
-      setMsg({ tipo: "erro", texto: (err as Error).message });
-    }
-  }
+  const pagamentoConcluido = useCallback(() => {
+    setRecebendo(null);
+    setFiltro("");
+    if (!filtro) void carregar();
+    setMsg({ tipo: "ok", texto: "Pagamento registrado com a forma escolhida!" });
+  }, [carregar, filtro]);
 
   async function handleCancelar(id: number) {
     if (!confirm("Cancelar esta conta?")) return;
     try {
       await cancelarContaReceber(id);
       await carregar();
-    } catch {
-      setMsg({ tipo: "erro", texto: "Erro ao cancelar." });
+    } catch (err) {
+      setMsg({ tipo: "erro", texto: (err as Error).message });
     }
   }
 
@@ -204,10 +194,10 @@ export default function ContasReceber() {
                 {(c.status === "pendente" || c.status === "parcial") && (
                   <div className="grid grid-cols-2 gap-2 w-full min-[460px]:w-auto shrink-0">
                     <button
-                      onClick={() => handlePagar(c)}
+                      onClick={() => { setMsg(null); setPixSalvo(undefined); setRecebendo(c); }}
                       className="px-2 sm:px-3 py-1 sm:py-1.5 text-2xs sm:text-xs bg-green-900/30 hover:bg-green-900/50 text-green-400 rounded-lg transition-colors active:scale-95"
                     >
-                      Receber
+                      {c.cobranca_pendente ? "Acompanhar cobrança" : "Receber"}
                     </button>
                     <button
                       onClick={() => handleCancelar(c.id)}
@@ -218,12 +208,19 @@ export default function ContasReceber() {
                   </div>
                 )}
               </div>
+              {(c.status === 'pendente' || c.status === 'parcial') && !!c.pix_pendentes?.length && (
+                <div className="mt-3 space-y-2 border-t border-slate-800 pt-2">
+                  <p className="text-xs text-slate-400">PIX gerado · aguardando conferência · maquininha livre</p>
+                  {c.pix_pendentes.map(p => <button key={p.id} onClick={() => { setPixSalvo(p); setRecebendo(c); }} className="mr-2 rounded-lg bg-brand-900/30 px-3 py-2 text-xs text-brand-300">Ver PIX de R$ {p.valor.toFixed(2)}</button>)}
+                </div>
+              )}
               {c.pagamentos && c.pagamentos.length > 0 && (
                 <div className="mt-3 border-t border-slate-800 pt-2">
                   <p className="text-2xs text-slate-500 mb-1">Histórico</p>
                   {c.pagamentos.map((p) => (
                     <p key={p.id} className="text-xs text-slate-400">
-                      {p.criado_em} · {p.forma} · R$ {p.valor.toFixed(2)}
+                      {p.criado_em} · {FORMAS_RECEBIMENTO[p.forma as FormaRecebimento] || p.forma} · R$ {p.valor.toFixed(2)}
+                      {p.payment_id && <span className="text-slate-500"> · Point #{p.payment_id}</span>}
                     </p>
                   ))}
                 </div>
@@ -233,6 +230,7 @@ export default function ContasReceber() {
         </div>
       )}
 
+      {recebendo && <ReceberFiadoModal conta={recebendo} pixSalvo={pixSalvo} onFechar={() => { setRecebendo(null); void carregar(); }} onConcluido={pagamentoConcluido} />}
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setShowModal(false)}>

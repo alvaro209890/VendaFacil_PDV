@@ -90,9 +90,10 @@ for (const valor of ['1,50', '1.50']) {
     const contaId = (await criada.json()).conta.id;
     await page.goto('/contas-receber');
     const cartao = page.getByText(observacao, { exact: true }).locator('..').locator('..').locator('..');
-    page.once('dialog', d => d.accept(valor));
-    const paga = page.waitForResponse(r => r.url().endsWith(`/api/contas-receber/${contaId}/pagar`));
     await cartao.getByRole('button', { name: 'Receber', exact: true }).click();
+    await page.getByRole('textbox', { name: 'Valor a receber', exact: true }).fill(valor);
+    const paga = page.waitForResponse(r => r.url().endsWith(`/api/contas-receber/${contaId}/pagar`));
+    await page.getByRole('button', { name: 'Confirmar recebimento em dinheiro', exact: true }).click();
     const resposta = await paga;
     expect(resposta.status()).toBe(200);
     const numero = Number(valor.replace(',', '.'));

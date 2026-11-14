@@ -492,6 +492,8 @@ export interface PagamentoFiado {
   valor: number;
   forma: string;
   criado_em: string;
+  referencia?: string | null;
+  payment_id?: string | null;
 }
 
 export interface ContaReceber {
@@ -507,6 +509,8 @@ export interface ContaReceber {
   observacao: string;
   criado_em: string;
   pagamentos?: PagamentoFiado[];
+  cobranca_pendente?: CobrancaFiado | null;
+  pix_pendentes?: PixFiado[];
 }
 
 export interface ContaReceberInput {
@@ -529,11 +533,54 @@ export function criarContaReceber(data: ContaReceberInput): Promise<{ conta: Con
   });
 }
 
-export function pagarContaReceber(id: number, data: { valor: number }): Promise<{ conta: ContaReceber }> {
+export type FormaRecebimento = 'dinheiro' | 'pix' | 'debito' | 'credito';
+export const FORMAS_RECEBIMENTO = { dinheiro: 'Dinheiro', pix: 'PIX', debito: 'Débito', credito: 'Crédito' };
+
+export function pagarContaReceber(id: number, data: { valor: number; forma: FormaRecebimento; referencia: string }): Promise<{ conta: ContaReceber }> {
   return request(`/api/contas-receber/${id}/pagar`, {
     method: "POST",
     body: JSON.stringify(data),
   });
+}
+
+export interface CobrancaFiado {
+  id: string;
+  valor: number;
+  forma: FormaRecebimento;
+  status: 'pendente' | 'pago' | 'cancelado' | 'erro';
+  order_id: string | null;
+}
+
+export interface PixFiado extends PixQrCodeResponse {
+  id: string;
+  valor: number;
+  criado_em: string;
+}
+
+export function gerarPixFiado(id: number, valor: number): Promise<{ pix: PixFiado }> {
+  return request(`/api/contas-receber/${id}/pix`, { method: 'POST', body: JSON.stringify({ valor }) });
+}
+
+export interface ResultadoCobrancaFiado {
+  cobranca: CobrancaFiado;
+  state: string;
+  conta: ContaReceber;
+}
+
+export function criarCobrancaFiado(id: number, valor: number, forma: FormaRecebimento, referencia: string): Promise<ResultadoCobrancaFiado> {
+  return request(`/api/contas-receber/${id}/cobrancas`, { method: 'POST', body: JSON.stringify({ valor, forma, referencia }) });
+}
+
+export function consultarCobrancaFiado(id: number, cobranca: string): Promise<ResultadoCobrancaFiado> {
+  return request(`/api/contas-receber/${id}/cobrancas/${cobranca}/consultar`, { method: 'POST' });
+}
+
+export function cancelarCobrancaFiado(id: number, cobranca: string): Promise<ResultadoCobrancaFiado> {
+  return request(`/api/contas-receber/${id}/cobrancas/${cobranca}`, { method: 'DELETE' });
+}
+
+export function obterContaReceber(id: number): Promise<{ conta: ContaReceber }> {
+  return request(`/api/contas-receber/${id}`);
 }
 
 export function cancelarContaReceber(id: number): Promise<{ ok: boolean }> {

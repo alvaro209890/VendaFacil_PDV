@@ -224,6 +224,33 @@ class Database:
         pfiado = {r["name"] for r in self._conn.execute("PRAGMA table_info(pagamentos_fiado)")}
         if "sessao_id" not in pfiado:
             self._conn.execute("ALTER TABLE pagamentos_fiado ADD COLUMN sessao_id INTEGER")
+        for coluna in ("referencia", "payment_id"):
+            if coluna not in pfiado:
+                self._conn.execute(f"ALTER TABLE pagamentos_fiado ADD COLUMN {coluna} TEXT")
+        self._conn.execute(
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_fiado_referencia "
+            "ON pagamentos_fiado(user_id, referencia) WHERE referencia IS NOT NULL"
+        )
+        self._conn.execute(
+            "CREATE TABLE IF NOT EXISTS cobrancas_fiado ("
+            "id TEXT PRIMARY KEY, user_id INTEGER NOT NULL, conta_id INTEGER NOT NULL, "
+            "valor REAL NOT NULL, forma TEXT NOT NULL, device_id TEXT NOT NULL, "
+            "order_id TEXT UNIQUE, status TEXT NOT NULL DEFAULT 'pendente', "
+            "criado_em TEXT NOT NULL, atualizado_em TEXT NOT NULL, "
+            "FOREIGN KEY(conta_id) REFERENCES contas_receber(id))"
+        )
+        self._conn.execute(
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_fiado_cobranca_ativa "
+            "ON cobrancas_fiado(conta_id) WHERE status = 'pendente'"
+        )
+        # QR estático é independente do terminal e não reserva nem bloqueia a conta.
+        self._conn.execute(
+            "CREATE TABLE IF NOT EXISTS pix_fiado ("
+            "id TEXT PRIMARY KEY, user_id INTEGER NOT NULL, conta_id INTEGER NOT NULL, "
+            "valor REAL NOT NULL, payload TEXT NOT NULL, qr_base64 TEXT NOT NULL, "
+            "status TEXT NOT NULL DEFAULT 'pendente', criado_em TEXT NOT NULL, "
+            "FOREIGN KEY(conta_id) REFERENCES contas_receber(id))"
+        )
         self._conn.execute(
             "CREATE TABLE IF NOT EXISTS notas_entrada ("
             "id INTEGER PRIMARY KEY AUTOINCREMENT, "
@@ -1465,6 +1492,11 @@ class Database:
                 "SELECT valor_total, valor_pendente, status FROM contas_receber "
                 "WHERE venda_id = ? AND user_id = ?", (venda_id, user_id),
             ).fetchall()
+            if self._conn.execute(
+                "SELECT 1 FROM cobrancas_fiado cf JOIN contas_receber cr ON cr.id = cf.conta_id "
+                "WHERE cr.venda_id = ? AND cf.user_id = ? AND cf.status = 'pendente'", (venda_id, user_id),
+            ).fetchone():
+                raise ValueError('Existe cobrança pendente. Consulte ou cancele antes de cancelar a venda.')
             if any(c["status"] in ("pago", "parcial") or
                    decimal(c["valor_pendente"]) < decimal(c["valor_total"]) for c in contas):
                 raise ValueError("Estorne o recebimento antes de cancelar a venda fiada.")
@@ -1678,12 +1710,14 @@ class Database:
             if ids:
                 marcas = ",".join("?" for _ in ids)
                 for pagamento in self._conn.execute(
-                    "SELECT id, user_id, conta_id, valor, forma, criado_em "
+                    "SELECT id, user_id, conta_id, valor, forma, criado_em, referencia, payment_id "
                     f"FROM pagamentos_fiado WHERE conta_id IN ({marcas}) ORDER BY id",
                     ids,
                 ):
                     por_conta.setdefault(pagamento["conta_id"], []).append(dict(pagamento))
-        return [{**dict(r), "pagamentos": por_conta.get(r["id"], [])} for r in rows]
+        return [{**dict(r), "pagamentos": por_conta.get(r["id"], []),
+                 "cobranca_pendente": self.cobranca_fiado_pendente(r["id"], user_id),
+                 "pix_pendentes": self.list_pix_fiado(r["id"], user_id)} for r in rows]
 
     def get_conta_receber(self, conta_id: int, user_id: int | None = None) -> dict[str, Any] | None:
         with self._lock:
@@ -1700,11 +1734,13 @@ class Database:
                 return None
             resultado = dict(row)
             pagamentos = self._conn.execute(
-                "SELECT id, user_id, conta_id, valor, forma, criado_em "
+                "SELECT id, user_id, conta_id, valor, forma, criado_em, referencia, payment_id "
                 "FROM pagamentos_fiado WHERE conta_id = ? ORDER BY id",
                 (conta_id,),
             ).fetchall()
             resultado["pagamentos"] = [dict(p) for p in pagamentos]
+            resultado["cobranca_pendente"] = self.cobranca_fiado_pendente(conta_id, int(row['user_id']))
+            resultado["pix_pendentes"] = self.list_pix_fiado(conta_id, int(row['user_id']))
             return resultado
 
     def create_conta_receber(self, user_id: int, cliente_id: int | None, venda_id: int | None,
@@ -1720,9 +1756,100 @@ class Database:
             )
             return self.get_conta_receber(cursor.lastrowid)
 
-    def pagar_conta_receber(self, conta_id: int, user_id: int, valor: float, agora: str,
-                             forma: str = "dinheiro") -> dict[str, Any] | None:
+    def list_pix_fiado(self, conta_id: int, user_id: int) -> list[dict[str, Any]]:
+        with self._lock:
+            return [dict(r) for r in self._conn.execute(
+                "SELECT * FROM pix_fiado WHERE conta_id = ? AND user_id = ? AND status = 'pendente' ORDER BY criado_em DESC",
+                (conta_id, user_id),
+            ).fetchall()]
+
+    def salvar_pix_fiado(self, pix_id: str, conta_id: int, user_id: int, valor: float,
+                         payload: str, qr_base64: str, agora: str) -> dict[str, Any]:
         with self._lock, self._conn:
+            conta = self.get_conta_receber(conta_id, user_id)
+            if not conta or conta['status'] not in {'pendente', 'parcial'}:
+                raise ValueError('Conta não está aberta para recebimento.')
+            if moeda(valor) <= 0 or decimal(valor) > decimal(conta['valor_pendente']):
+                raise ValueError('Valor deve ser maior que zero e não superar o pendente.')
+            existente = next((p for p in conta['pix_pendentes'] if p['valor'] == moeda(valor)), None)
+            if existente:
+                return existente
+            self._conn.execute(
+                'INSERT INTO pix_fiado (id,user_id,conta_id,valor,payload,qr_base64,criado_em) VALUES (?,?,?,?,?,?,?)',
+                (pix_id, user_id, conta_id, moeda(valor), payload, qr_base64, agora),
+            )
+            return next(p for p in self.list_pix_fiado(conta_id, user_id) if p['id'] == pix_id)
+
+    def cobranca_fiado_pendente(self, conta_id: int, user_id: int) -> dict[str, Any] | None:
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT * FROM cobrancas_fiado WHERE conta_id = ? AND user_id = ? AND status = 'pendente'",
+                (conta_id, user_id),
+            ).fetchone()
+            return dict(row) if row else None
+
+    def get_cobranca_fiado(self, cobranca_id: str, conta_id: int, user_id: int) -> dict[str, Any] | None:
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT * FROM cobrancas_fiado WHERE id = ? AND conta_id = ? AND user_id = ?",
+                (cobranca_id, conta_id, user_id),
+            ).fetchone()
+            return dict(row) if row else None
+
+    def reservar_cobranca_fiado(self, cobranca_id: str, conta_id: int, user_id: int,
+                                valor: float, forma: str, device_id: str, agora: str) -> dict[str, Any]:
+        with self._lock, self._conn:
+            existente = self._conn.execute('SELECT * FROM cobrancas_fiado WHERE id = ?', (cobranca_id,)).fetchone()
+            if existente:
+                if (existente['conta_id'] != conta_id or existente['user_id'] != user_id
+                        or existente['valor'] != moeda(valor) or existente['forma'] != forma):
+                    raise ValueError('Referência de cobrança já utilizada com outros dados.')
+                return dict(existente)
+            ativa = self.cobranca_fiado_pendente(conta_id, user_id)
+            if ativa:
+                if moeda(ativa['valor']) != moeda(valor) or ativa['forma'] != forma:
+                    raise ValueError('Existe cobrança pendente. Consulte ou cancele antes de alterar o recebimento.')
+                return ativa
+            conta = self.get_conta_receber(conta_id, user_id)
+            if not conta:
+                raise ValueError('Conta não encontrada.')
+            if conta['status'] == 'cancelado':
+                raise ValueError('Conta cancelada não recebe pagamento.')
+            if moeda(valor) <= 0 or decimal(valor) > decimal(conta['valor_pendente']):
+                raise ValueError('Valor deve ser maior que zero e não superar o pendente.')
+            self._conn.execute(
+                "INSERT INTO cobrancas_fiado (id,user_id,conta_id,valor,forma,device_id,criado_em,atualizado_em) "
+                "VALUES (?,?,?,?,?,?,?,?)",
+                (cobranca_id, user_id, conta_id, moeda(valor), forma, device_id, agora, agora),
+            )
+            return self.get_cobranca_fiado(cobranca_id, conta_id, user_id)
+
+    def atualizar_cobranca_fiado(self, cobranca_id: str, *, order_id: str | None = None,
+                                 status: str | None = None, agora: str) -> None:
+        with self._lock, self._conn:
+            self._conn.execute(
+                "UPDATE cobrancas_fiado SET order_id = COALESCE(?,order_id), "
+                "status = COALESCE(?,status), atualizado_em = ? WHERE id = ? AND status = 'pendente'",
+                (order_id, status, agora, cobranca_id),
+            )
+
+    def pagar_conta_receber(self, conta_id: int, user_id: int, valor: float, agora: str,
+                             forma: str = "dinheiro", referencia: str | None = None,
+                             cobranca_id: str | None = None, payment_id: str | None = None) -> dict[str, Any] | None:
+        with self._lock, self._conn:
+            if forma not in {'dinheiro', 'pix', 'debito', 'credito'}:
+                raise ValueError('Forma de pagamento inválida.')
+            if referencia:
+                anterior = self._conn.execute(
+                    'SELECT * FROM pagamentos_fiado WHERE user_id = ? AND referencia = ?', (user_id, referencia),
+                ).fetchone()
+                if anterior:
+                    if anterior['conta_id'] != conta_id or anterior['valor'] != moeda(valor) or anterior['forma'] != forma:
+                        raise ValueError('Referência de pagamento já utilizada com outros dados.')
+                    return self.get_conta_receber(conta_id, user_id)
+            ativa = self.cobranca_fiado_pendente(conta_id, user_id)
+            if ativa and ativa['id'] != cobranca_id:
+                raise ValueError('Existe cobrança pendente. Consulte ou cancele antes de receber manualmente.')
             row = self._conn.execute(
                 "SELECT * FROM contas_receber WHERE id = ? AND user_id = ?",
                 (conta_id, user_id),
@@ -1758,14 +1885,25 @@ class Database:
                 ).fetchone()
                 sessao_id = aberta["id"] if aberta else None
             self._conn.execute(
-                "INSERT INTO pagamentos_fiado (user_id, conta_id, valor, forma, criado_em, sessao_id) "
-                "VALUES (?, ?, ?, ?, ?, ?)",
-                (user_id, conta_id, moeda(valor), forma_limpa, agora, sessao_id),
+                "INSERT INTO pagamentos_fiado (user_id, conta_id, valor, forma, criado_em, sessao_id, referencia, payment_id) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                (user_id, conta_id, moeda(valor), forma_limpa, agora, sessao_id, referencia, payment_id),
             )
+            if cobranca_id:
+                self._conn.execute(
+                    "UPDATE cobrancas_fiado SET status = 'pago', atualizado_em = ? WHERE id = ?", (agora, cobranca_id),
+                )
+            if forma == 'pix' and referencia and referencia.startswith('manual:'):
+                self._conn.execute(
+                    "UPDATE pix_fiado SET status = 'recebido' WHERE id = ? AND user_id = ? AND conta_id = ? AND valor = ?",
+                    (referencia.removeprefix('manual:'), user_id, conta_id, moeda(valor)),
+                )
             return self.get_conta_receber(conta_id, user_id)
 
     def cancelar_conta_receber(self, conta_id: int, user_id: int, agora: str) -> bool:
         with self._lock, self._conn:
+            if self.cobranca_fiado_pendente(conta_id, user_id):
+                raise ValueError('Existe cobrança pendente. Consulte ou cancele a cobrança antes de cancelar a conta.')
             cursor = self._conn.execute(
                 "UPDATE contas_receber SET status = 'cancelado', atualizado_em = ? WHERE id = ? AND user_id = ?",
                 (agora, conta_id, user_id),

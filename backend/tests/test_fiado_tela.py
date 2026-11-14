@@ -12,7 +12,8 @@ TELA = RAIZ / 'src' / 'pages' / 'ContasReceber.tsx'
 
 def test_f27_tela_mostra_historico_e_erro_de_excedente():
     texto = TELA.read_text(encoding='utf-8')
-    assert 'Pagamento maior que o pendente.' in texto
+    modal = (RAIZ / 'src' / 'components' / 'ReceberFiadoModal.tsx').read_text(encoding='utf-8')
+    assert 'Pagamento maior que o pendente.' in modal
     assert 'pagamentos.map' in texto
     assert 'Histórico' in texto
 
