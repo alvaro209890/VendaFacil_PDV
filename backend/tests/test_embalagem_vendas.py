@@ -1,5 +1,7 @@
 import pytest
 from test_embalagem import criar
+from database import db
+from auth import _verificar_jwt
 
 
 def vender(client,auth,p,itens):
@@ -63,3 +65,17 @@ def test_historico_movimentos_e_estorno_snapshot(client,auth):
 def test_embalagem_ou_avulso_inteiros(client,auth,qtd):
     p=criar(client,auth)
     assert vender(client,auth,p,[{'quantidade':qtd,'modo_venda':'embalagem'}]).status_code==400
+
+
+def test_lucro_usa_unidades_e_snapshot_de_custo(client,auth):
+    uid=int(_verificar_jwt(auth['Authorization'][7:])['sub'])
+    antes=db.relatorio_vendas(uid,'2000-01-01','2100-12-31')['lucro_estimado']
+    p=criar(client,auth,preco_custo=0.5)
+    r=vender(client,auth,p,[{'quantidade':1,'modo_venda':'embalagem'},{'quantidade':3}])
+    assert r.status_code==201,r.text
+    # 26 - 23 * 0,50 = 14,50; alterar cadastro não altera o lucro realizado.
+    client.put(f"/api/produtos/{p['id']}",headers=auth,json={'preco_custo':10})
+    depois=db.relatorio_vendas(uid,'2000-01-01','2100-12-31')['lucro_estimado']
+    assert depois-antes==pytest.approx(14.5)
+    mov=client.get(f"/api/produtos/{p['id']}/movimentacoes",headers=auth).json()['movimentacoes']
+    assert sorted(m['quantidade'] for m in mov if m['origem']=='venda')==[3,20]

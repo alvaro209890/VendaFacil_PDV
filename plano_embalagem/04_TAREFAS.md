@@ -15,8 +15,8 @@ Ordem fixa. Um `[~]` por vez.
 
 ## E3 — Caixa
 
-- [~] **E3.1** Checkout aceita o modo. Sem modo = unidade (T5). Carteira só no modo embalagem.
-- [ ] **E3.2** Baixa, recusa por falta de unidade, histórico e lucro (T2, T3, T4).
+- [x] **E3.1** Checkout aceita o modo. Sem modo = unidade (T5). Carteira só no modo embalagem. — 3acf694 · pytest backend: 487 passed, 9 deselected; antes 10 failed e 1 passed em vendas
+- [~] **E3.2** Baixa, recusa por falta de unidade, histórico e lucro (T2, T3, T4).
 - [ ] **E3.3** PDV com os dois botões e o código de barras da embalagem lançando a carteira.
 
 ## E4 — XML

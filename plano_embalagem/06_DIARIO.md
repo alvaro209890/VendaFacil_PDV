@@ -21,3 +21,7 @@
 - **2026-11-13 — Codex — E2.3 fim**: T9: pytest backend 476 passed, 9 deselected; fator e ativação preservam estoque. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
 
 - **2026-11-13 — Codex — E3.1 inicio**: Checkout: 10 falhas e 1 verde antes; T2-T6 e snapshots. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
+
+- **2026-11-13 — Codex — E3.1 fim**: pytest backend: 487 passed, 9 deselected; antes 10 failed e 1 passed em vendas. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
+
+- **2026-11-13 — Codex — E3.2 inicio**: Verificar lucro, movimentos, cancelamento e concorrência. Execução local no PCQUE001IMAP autorizada pelo Álvaro; sem SSH.
