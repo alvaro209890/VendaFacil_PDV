@@ -16,6 +16,8 @@ cancele as vendas de treino no fim.
 |---|---|
 | Colocar produto | Bipe o código de barras (ou digite o nome na busca, **F4**) |
 | Mudar quantidade | **F3** e digite (vírgula para peso: `0,350`) |
+| Remover produto da compra | **− Remover** na linha; vale também para cadastrado na hora. O menos da quantidade remove a última unidade. |
+| Pular um produto não cadastrado | **− Não vender este produto**; mantém os outros itens e volta ao leitor sem cadastrar |
 | Desconto | **F6** |
 | Forma de pagamento | **F7** (Dinheiro, PIX, Crédito, Débito, Fiado) |
 | Dinheiro | Digite o valor recebido; o troco aparece na tela |

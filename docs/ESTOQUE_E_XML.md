@@ -43,15 +43,22 @@ as unidades da venda original, mesmo se o fator tiver mudado depois.
 - Produto configurado e nota na unidade de compra: **2 CARTEIRA viram 40 UN**;
   custo da unidade = custo da carteira ÷ 20. Os dois preços de venda são mantidos.
 - Nota em **UN**: entra unidade a unidade, fator 1.
-- Produto novo: marque **“Vende a embalagem fechada e também a unidade, com
-  preços diferentes?”** somente se for isso mesmo. Informe nome da embalagem,
-  unidades dentro e os dois preços, e responda **“Como esta nota conta a
-  quantidade?”**: *em unidades soltas* (padrão para nota em UN: 600 UN = 600
-  latas) ou *em embalagem fechada* (padrão para nota em CX/FD: 50 CX × 12 = 600).
-  A quantidade e o custo convertidos aparecem antes da confirmação do lote.
-  (1.0.15 multiplicava a nota em UN ao marcar — 600 latas viravam 7.200.)
-- Sem marcar, a nota em UN conserva a quantidade e a unidade da nota,
-  com venda sugerida de custo + 30%. **O número no nome não vira estoque.**
+- Produto novo: escolha primeiro **“Como você vende este produto?”** — três
+  caminhos, e a tela mostra o efeito de cada um na frase verde:
+  - **Só por unidade** (padrão): estoque na unidade menor. Nota em `UN` entra
+    1 para 1 (600 UN = 600 latas); nota em `CX`/`FD` multiplica pelo *Qtd/emb.*
+    (2 CX × 6 = 12 UN). Não exige preço de embalagem.
+  - **Caixa fechada e unidade**: um produto, dois preços. Exige nome da
+    embalagem, unidades dentro e os dois preços maiores que zero; responda
+    também **“Como esta nota conta a quantidade?”** — *em unidades soltas*
+    (600 UN = 600 latas) ou *em embalagem fechada* (50 CX × 12 = 600).
+  - **Só a embalagem fechada**: estoque e venda na unidade da nota, fator 1.
+- O aviso **“Esta nota tem cara de caixa fechada”** aparece quando qualquer
+  sinal aponta embalagem: a nota declara `qTrib ÷ qCom`, o nome cita
+  `CX`/`FARDO`/`PCT`/`CARTEIRA`, ou a própria `uCom` é de contagem. Ele só
+  avisa — **nada multiplica sem o operador confirmar**.
+- **Sem marcar embalagem**, a nota em UN conserva a quantidade e a unidade da
+  nota, com venda sugerida de custo + 30%. **O número no nome não vira estoque.**
 - **Custo de aquisição** (1.0.16): valor + frete + seguro + outras despesas +
   IPI + ICMS-ST − desconto, rateado por unidade. A prévia mostra a parcela.
 - **Dois códigos** (1.0.16): `cEAN` vira o código principal e `cEANTrib`
@@ -59,6 +66,15 @@ as unidades da venda original, mesmo se o fator tiver mudado depois.
 - Quantidade e custo derivados de embalagem configurada são calculados pela
   nota e pelo cadastro. Corrija o fator no cadastro antes de reimportar; a prévia
   não muda o cadastro nem os preços de venda de um produto existente.
+- **Unidade fora do padrão** (1.0.22): `UN1`, `UND`, `UNID`, `PC`, `PÇ`, `PCS`,
+  `PECA` são lidas como **UN** e a tela avisa (`A nota mandou “UN1”, lida como
+  UN`). Antes, `UN1` virava uma unidade própria e a nota inteira era tratada
+  como embalagem fechada. Nome de embalagem (`CARTEIRA`, `CAIXA`) **não** é
+  abreviado: fica como o lojista escreveu.
+- **Validação da prévia** (1.0.22): só é cobrado o campo que o operador
+  consegue editar. Campo travado pela própria tela (ex.: *Entra* e *Custo R$*
+  com caixa+unidade ligada) não reprova mais a importação inteira, e a
+  mensagem diz qual item e qual valor recusou.
 
 Caso conferido com XML baixado: NF-e **446817**, `CX 00050 KAISER LT 350ML`,
 `uCom=UN`, `qCom=600`, R$ 2,74 + R$ 12,36 de outras despesas. Entram

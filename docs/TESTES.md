@@ -1,5 +1,18 @@
 # ✅ Testes automatizados
 
+**1.0.22, 14/11/2026:** backend **547 testes** aprovados (9 deselected de
+homologação) + **8 novos** de importação de caixa x unidade, `tsc --noEmit` limpo
+e ESLint sem avisos. Navegador: **14** testes de importação/embalagem/localização
+aprovados (`embalagem`, `xml-locale`, `produtos-locale`, `cadastro-rapido`,
+`preco-zero`). Instalado no James com hash conferido e `/health` 1.0.22.
+[Entrega, instalação e provas](ATUALIZACAO_1.0.22.md).
+
+**1.0.21, 14/11/2026:** build/lint, **48 navegador**, **46 Node** e **3 versão**
+aprovados. CLI no fonte e no exe real conferiu remoção em compra mista,
+última unidade, desconhecido, fracionado, caixa/avulso, foco, rascunho/mobile e
+checkout sem os produtos removidos. Aceite fiado no exe: 20 req/0 erros 5xx.
+[Entrega, instalação e provas](ATUALIZACAO_1.0.21.md).
+
 **1.0.20, 14/11/2026:** build/lint, Node **46**, foco/teclado **13** e
 embalagem/versão **3** aprovados. Playwright CLI validou o filtro do dashboard
 com seis alertas, zero/limite, remoção do filtro, recarga e mobile. Binário:

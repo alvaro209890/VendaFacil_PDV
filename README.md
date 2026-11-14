@@ -3,10 +3,11 @@
 Sistema de **Ponto de Venda (PDV)** para mercadinhos e pequenos comércios,
 distribuído como **executável único (.exe)** com controle central de licenças.
 
-**1.0.20 instalada no James (14/11/2026):** o card de alertas do dashboard abre
-os produtos com estoque baixo. Leitor USB funcionando para código de barras;
-QR não confirmado no aparelho. Inclui o fiado por forma/Point e PIX independente.
-[Atualização, hashes e validação](docs/ATUALIZACAO_1.0.20.md).
+**1.0.22 instalada no James (14/11/2026):** a importação de XML agora pergunta
+**como o produto é vendido** (*só por unidade*, *caixa fechada e unidade* ou
+*só a embalagem fechada*), avisa quando a nota tem cara de caixa e normaliza
+`UN1`/`UND`/`PC` para **UN**. Nota em UN continua entrando 1 para 1.
+[Atualização, hashes e validação](docs/ATUALIZACAO_1.0.22.md).
 [Aceite da loja e bloqueios de Point/fiscal](docs/ACEITE_JAMES_1.0.19.md).
 
 > 📚 **Índice da documentação:** [`docs/README.md`](docs/README.md)

@@ -2,8 +2,9 @@
 
 Índice de toda a documentação, por público.
 
-**Entrega atual: 1.0.20 instalada no James**, alertas de estoque clicáveis e
-leitor USB conferido. [Atualização, hashes e testes](ATUALIZACAO_1.0.20.md).
+**Entrega atual: 1.0.22 instalada no James e PDV local**, importação de XML com
+caixa x unidade bem especificada. [Atualização, hashes e testes](ATUALIZACAO_1.0.22.md).
+Anterior: [remoção de item da compra na 1.0.21](ATUALIZACAO_1.0.21.md).
 Inclui o [fiado/PIX da 1.0.19](VALIDACAO_FIADO_1.0.19.md).
 [Aceite da loja e bloqueios reais](ACEITE_JAMES_1.0.19.md).
 

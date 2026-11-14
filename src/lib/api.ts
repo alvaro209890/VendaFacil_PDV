@@ -261,6 +261,15 @@ export function desativarProduto(id: number): Promise<{ ok: boolean }> {
 export interface ItemXml {
   fator_entrada: number;
   perguntar_embalagem: boolean;
+  /** Embalagem citada no nome do item (CX, FD, PCT…) — só sugestão para a tela. */
+  embalagem_sugerida?: string;
+  /** Frases que explicam por que este item pode ser uma caixa fechada. */
+  sinais_embalagem?: string[];
+  /** Aviso quando a unidade da nota foi normalizada (ex.: UN1 → UN). */
+  aviso_unidade?: string;
+  unidade_original?: string;
+  qtd_trib?: number;
+  unidade_trib?: string;
   mensagem_entrada: string;
   nome: string;
   codigo_barras: string;
@@ -300,6 +309,9 @@ export interface PreviewXml {
 
 export interface ItemConfirmarXml {
   confirmar_abertura?: boolean;
+  /** Produto novo: "unidade" = estoque em UN sem preço de embalagem;
+   * "embalagem" = vende caixa e unidade (exige os dois preços). */
+  modo_entrada?: "unidade" | "embalagem";
   /** true = cada unidade da nota é uma caixa fechada; false = a nota já conta unidades soltas. */
   nota_em_embalagem?: boolean;
   unidade_xml?: string;

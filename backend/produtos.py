@@ -22,7 +22,7 @@ def _get_user_id(request: Request) -> int:
 
 
 def _norm_unidade(valor: str | None, padrao: str = "UN") -> str:
-    return (valor or padrao).strip().upper() or padrao
+    return importacao_xml.normalizar_unidade(valor, padrao)
 
 
 def _fator(valor: float | None) -> float:
@@ -100,6 +100,11 @@ class ItemImportar(BaseModel):
     preco_embalagem: float = Field(default=0, ge=0)
     preco_unidade: float = Field(default=0, ge=0)
     confirmar_abertura: bool = False
+    # Como o produto novo entra no estoque:
+    # "unidade"   = comprei caixa, mas só vendo unidade → estoque em UN, sem preço de embalagem;
+    # "embalagem" = vende a embalagem fechada e a unidade (exige os dois preços);
+    # None        = regra antiga (vende_por_unidade decide).
+    modo_entrada: str | None = None
     # Como a nota conta a quantidade quando o produto novo vende caixa e unidade:
     # True = cada unidade da nota é uma embalagem fechada (multiplica pelo fator);
     # False = a nota já vem em unidades soltas (600 UN = 600 latas). None = deduz
@@ -280,6 +285,32 @@ async def importar_xml_preview(request: Request):
         despesas = it.get("despesas_unitarias", 0) or 0
         detalhe_custo = (f" (nota R$ {it['valor_unitario']:.4f} {'+ despesas' if despesas > 0 else '− desconto'} "
                          f"R$ {abs(despesas):.4f} por {unidade_xml})") if despesas else ""
+        fator_sugerido = int(it.get("fator_sugerido") or 0)
+        embalagem_sugerida = it.get("embalagem_no_nome") or ""
+        # Nota em UN pode ser caixa fechada (distribuidora manda uCom=UN e o
+        # preço é o da caixa). Só o operador confirma: aqui a tela é avisada
+        # de todos os sinais, sem multiplicar nada por conta própria.
+        sinais_embalagem = []
+        if fator_sugerido > 1:
+            sinais_embalagem.append(
+                f"a nota declara {it.get('qtd_trib', 0):g} {it.get('unidade_trib') or unidade_xml} "
+                f"para {quantidade_xml:g} {unidade_xml} ({fator_sugerido} por {unidade_xml})")
+        if embalagem_sugerida:
+            sinais_embalagem.append(f"o nome do item cita {embalagem_sugerida}")
+        if unidade_xml != "UN" and unidade_xml in importacao_xml.UNIDADES_CONTAGEM:
+            sinais_embalagem.append(f"a nota veio em {unidade_xml}")
+        if not match and sinais_embalagem:
+            sugestao = "embalagem" if fator_sugerido > 1 else "revisar"
+        elif match:
+            sugestao = "cadastro"
+        else:
+            sugestao = "unidades"
+        mensagem_entrada = (
+            f"{quantidade_xml:g} {unidade_xml} viram {quantidade_estoque:g} {unidade_estoque}"
+            + (f" ({quantidade_xml:g} × {fator:g})" if fator and fator != 1 else "")
+            + f"; custo de cada unidade R$ {custo_unitario:.4f}{detalhe_custo}."
+            + (" Os dois preços de venda serão mantidos." if match and match.get("vende_por_unidade") else "")
+        )
         itens.append({
             **it,
             "fator_entrada": fator,
@@ -287,8 +318,15 @@ async def importar_xml_preview(request: Request):
             "preco_embalagem": match.get("preco_embalagem", 0) if match else 0,
             "preco_unidade": match.get("preco_unidade", 0) if match else 0,
             "codigo_barras_unidade": (match.get("codigo_barras_unidade") or "") if match else it.get("codigo_barras_trib", ""),
-            "perguntar_embalagem": not match and unidade_xml == "UN" and bool(re.search(r"\b(CX|CAIXA|FD|FARDO|PCT|PACOTE|DISPLAY|CARTEIRA)\b", it["nome"], re.I)),
-            "mensagem_entrada": f"{quantidade_xml:g} {unidade_xml} viram {quantidade_estoque:g} {unidade_estoque}; custo de cada unidade R$ {custo_unitario:.4f}{detalhe_custo}." + (" Os dois preços de venda serão mantidos." if match and match.get("vende_por_unidade") else ""),
+            "perguntar_embalagem": bool(not match and sinais_embalagem),
+            "embalagem_sugerida": embalagem_sugerida,
+            "sugestao": sugestao,
+            "sinais_embalagem": sinais_embalagem,
+            "aviso_unidade": (
+                f"A nota mandou a unidade “{it.get('unidade_original')}”, lida como {unidade_xml}."
+                if it.get("unidade_original") and it.get("unidade_original") != unidade_xml else ""
+            ),
+            "mensagem_entrada": mensagem_entrada,
             "unidade_xml": unidade_xml,
             "unidade": unidade_estoque,
             "unidade_compra": unidade_compra,
@@ -332,13 +370,40 @@ async def importar_xml_confirmar(data: ConfirmarImportacao, request: Request):
             # Produto novo: o código da unidade (ex.: cEANTrib da lata) não pode
             # ser de outro produto. A prévia já casa por ele; aqui só recusa.
             validar_codigos(user_id, normalizado)
-        if not existente and item.vende_por_unidade:
+        modo_entrada = (item.modo_entrada or "").strip().lower()
+        if not existente and modo_entrada == "unidade":
+            # Comprou em caixa, vende só unidade: estoque na unidade menor e
+            # nenhum preço de embalagem. É o caso mais comum do mercadinho e
+            # antes só existia pelo caminho "vende caixa e unidade".
+            # Quantidade e custo chegam já convertidos pela tela (que mostra a
+            # conta antes de confirmar); o servidor não refaz a conta por cima
+            # do que o operador corrigiu.
+            if item.quantidade_xml is None:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Item “{item.nome}”: informe a quantidade da nota.",
+                )
+            # A unidade final vem da tela (UN por padrão; o operador pode
+            # trocar e a troca dele vale). Aqui só garante que não sobra preço
+            # de embalagem no cadastro.
+            normalizado["vende_por_unidade"] = False
+            normalizado["preco_embalagem"] = 0
+            normalizado["preco_unidade"] = 0
+            if (item.nota_em_embalagem is not False
+                    and _norm_unidade(item.unidade_xml) not in ("", "UN")):
+                normalizado["unidade_compra"] = _norm_unidade(item.unidade_xml)
+        elif not existente and item.vende_por_unidade:
             # Caixa + unidade sempre guarda estoque em UN, mesmo com a nota em CX
             # (a tela manda a unidade da nota e isso recusava toda nota em caixa).
             normalizado["unidade"] = "UN"
             validar_embalagem(normalizado)
             if not item.confirmar_abertura or item.quantidade_xml is None or item.valor_unitario_xml is None:
-                raise HTTPException(status_code=400, detail="Confirme a abertura e informe quantidade, custo da nota e os dois preços.")
+                raise HTTPException(
+                    status_code=400,
+                    detail=(f"Item “{item.nome}”: para vender a embalagem fechada e a unidade, "
+                            "marque a confirmação de abertura e informe a quantidade da nota, "
+                            "o custo por unidade e os dois preços de venda."),
+                )
             em_embalagem = item.nota_em_embalagem
             if em_embalagem is None:
                 em_embalagem = _norm_unidade(item.unidade_xml) != "UN"

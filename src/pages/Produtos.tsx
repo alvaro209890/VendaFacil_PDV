@@ -28,6 +28,16 @@ type ItemImport = ItemConfirmarXml & {
   despesas_unitarias?: number;
   perguntar_embalagem?: boolean;
   fator_entrada?: number;
+  // Sinais que o backend manda explicando por que este item pode ser caixa.
+  embalagem_sugerida?: string;
+  sinais_embalagem?: string[];
+  aviso_unidade?: string;
+  fator_sugerido?: number;
+  // Decisão do operador para produto novo:
+  // "unidade" = comprou em caixa mas vende só unidade (estoque em UN);
+  // "aberta"  = vende a caixa fechada e a unidade, com preços diferentes;
+  // "fechada" = só vende a embalagem fechada (estoque na unidade da nota).
+  modo_venda?: "unidade" | "aberta" | "fechada";
   // Códigos como vieram na nota (cEAN e cEANTrib diferente), para redistribuir
   // entre caixa e unidade quando o operador muda a forma de venda.
   ean_nota?: string;
@@ -74,6 +84,31 @@ const fatorSeguro = (v: number | string | undefined) => {
   return parsed !== null && parsed > 0 ? Math.max(parsed, 0.0001) : 1;
 };
 const fmtQtd = (v: number) => Number(v || 0).toLocaleString("pt-BR", { maximumFractionDigits: 3 });
+
+/** Fator da nota para o estoque, conforme a decisão do operador.
+ * "fechada" nunca multiplica; "unidade"/"aberta" multiplicam quando a nota veio
+ * em embalagem (CX/FD) ou quando o operador disse que cada unidade é uma caixa. */
+function fatorDoModo(it: ItemImport): number {
+  const qtdEmb = fatorSeguro(it.quantidade_por_embalagem);
+  if (it.modo_venda === "fechada") return 1;
+  const notaEmEmbalagem = it.nota_em_embalagem === undefined || it.nota_em_embalagem === null
+    ? (it.unidade_xml || "UN") !== "UN"
+    : !!it.nota_em_embalagem;
+  return notaEmEmbalagem ? qtdEmb : 1;
+}
+
+/** Campo numérico que a tela deixa editar — o validador só olha esses.
+ * Antes ele varria também campo desabilitado e recusava a importação inteira
+ * por um valor que o operador nem podia corrigir. */
+function campoAtivo(it: ItemImport, campo: CampoNumeroXml): boolean {
+  if (campo === "quantidade_xml") return true;
+  if (campo === "preco_venda") return it.acao === "criar";
+  if (campo === "quantidade_por_embalagem") return !it.vende_por_unidade;
+  if (campo === "quantidade") return !(it.vende_por_unidade || it.confirmar_abertura || it.unidade_xml === "UN");
+  if (campo === "preco_custo") return !(it.vende_por_unidade || it.confirmar_abertura);
+  if (campo === "preco_embalagem" || campo === "preco_unidade") return !!it.confirmar_abertura;
+  return true;
+}
 const fmtData = (iso: string) => {
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? iso : d.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
@@ -208,7 +243,16 @@ export default function ProdutosPage() {
           acao: it.acao,
           estoque_atual: it.estoque_atual,
           incluir: true,
+          embalagem_sugerida: it.embalagem_sugerida || "",
+          sinais_embalagem: it.sinais_embalagem || [],
+          aviso_unidade: it.aviso_unidade || "",
+          fator_sugerido: it.fator_sugerido || 0,
+          // Decisão inicial: produto novo entra por unidade (estoque na menor).
+          // Nota em UN entra 1 para 1; nota em CX/FD multiplica pelo Qtd/emb.
+          // Nada multiplica pelo número do nome sem o operador ver.
+          modo_venda: it.acao === "criar" ? "unidade" : undefined,
         };
+        if (item.modo_venda === "unidade") item.unidade = "UN";
         // Nota em caixa que diz quantas unidades vêm dentro (qTrib ÷ qCom):
         // produto novo já nasce vendendo a unidade, com a conta pronta.
         const sugerido = it.fator_sugerido || 0;
@@ -233,20 +277,25 @@ export default function ProdutosPage() {
     setImportItens((arr) => arr.map((it, idx) => {
       if (idx !== i) return it;
       const next = { ...it, [campo]: valor };
-      if (campo === "confirmar_abertura" && valor) {
-        // Ao ligar caixa + unidade: estoque em UN e embalagem tirada do nome (CX, FD…).
-        next.unidade = "UN";
-        if (!next.unidade_compra || next.unidade_compra === "UN") next.unidade_compra = embalagemDoNome(next.nome);
+      if (campo === "confirmar_abertura") {
+        next.modo_venda = valor ? "aberta" : (it.modo_venda === "aberta" ? "unidade" : it.modo_venda);
+        if (valor) {
+          // vende_por_unidade continua false aqui de propósito: é o payload que
+          // liga as duas formas. Setar agora desabilitaria Qtd/emb. na tela.
+          next.unidade = "UN";
+          if (!next.unidade_compra || next.unidade_compra === "UN") {
+            next.unidade_compra = next.embalagem_sugerida || embalagemDoNome(next.nome)
+              || (next.unidade_xml && next.unidade_xml !== "UN" ? next.unidade_xml : "CX");
+          }
+        }
       }
+      if (next.modo_venda === "aberta") next.vende_por_unidade = true;
       if (campo === "confirmar_abertura" || campo === "nota_em_embalagem") {
         Object.assign(next, codigosPadrao(next));
       }
-      if (["quantidade_por_embalagem", "quantidade_xml", "confirmar_abertura", "nota_em_embalagem", "unidade_compra"].includes(campo)) {
-        // Nota em unidades soltas (600 UN de lata) entra 1 para 1, mesmo vendendo caixa:
-        // só multiplica quando o operador diz que cada unidade da nota é uma caixa fechada.
-        const fator = next.confirmar_abertura ? (next.nota_em_embalagem ? fatorSeguro(next.quantidade_por_embalagem) : 1)
-          : next.vende_por_unidade ? (next.unidade_xml === next.unidade_compra ? fatorSeguro(next.quantidade_por_embalagem) : 1)
-          : next.unidade_xml === 'UN' ? 1 : fatorSeguro(next.quantidade_por_embalagem);
+      if (["quantidade_por_embalagem", "quantidade_xml", "confirmar_abertura", "nota_em_embalagem", "unidade_compra", "modo_venda"].includes(String(campo))) {
+        // Um só cálculo manda: o modo escolhido + a forma como a nota conta.
+        const fator = fatorDoModo(next);
         const qtdXml = Number(next.quantidade_xml || 0);
         next.fator_entrada = fator;
         next.quantidade = Number((qtdXml * fator).toFixed(4));
@@ -259,6 +308,42 @@ export default function ProdutosPage() {
       }
       return next;
     }));
+
+  /** Troca a decisão do produto novo: só unidade, caixa+unidade ou só caixa. */
+  function setModo(i: number, modo: "unidade" | "aberta" | "fechada") {
+    setImportItens((arr) => arr.map((it, idx) => {
+      if (idx !== i) return it;
+      const next: ItemImport = { ...it, modo_venda: modo };
+      if (modo === "aberta") {
+        next.confirmar_abertura = true;
+        next.unidade = "UN";
+        if (!next.unidade_compra || next.unidade_compra === "UN") {
+          next.unidade_compra = next.embalagem_sugerida || embalagemDoNome(next.nome)
+            || (next.unidade_xml && next.unidade_xml !== "UN" ? next.unidade_xml : "CX");
+        }
+        if ((next.unidade_xml || "UN") === "UN" && (next.fator_sugerido || 0) <= 1) {
+          next.nota_em_embalagem = false;
+        }
+      } else {
+        next.confirmar_abertura = false;
+        next.vende_por_unidade = false;
+        next.unidade = modo === "unidade" ? "UN" : (next.unidade_xml || "UN");
+        next.unidade_compra = modo === "unidade"
+          ? (next.unidade_xml && next.unidade_xml !== "UN"
+              ? next.unidade_xml
+              : (next.embalagem_sugerida || next.unidade_compra))
+          : (next.unidade_xml || next.unidade);
+      }
+      const fator = fatorDoModo(next);
+      const qtdXml = Number(next.quantidade_xml || 0);
+      next.fator_entrada = fator;
+      next.quantidade = Number((qtdXml * fator).toFixed(4));
+      if (next.valor_unitario_xml) {
+        next.preco_custo = Number((next.valor_unitario_xml / fator).toFixed(4));
+      }
+      return next;
+    }));
+  }
 
   function fecharImportacao() {
     importDialogRef.current?.close();
@@ -290,16 +375,18 @@ export default function ProdutosPage() {
     setImportMsg(null);
     for (const [i, it] of importItens.entries()) {
       if (!it.incluir) continue;
+      const rotuloItem = `Item ${i + 1}${it.nome ? ` (${it.nome})` : ""}`;
       for (const campo of Object.keys(CAMPOS_NUMEROS_XML) as CampoNumeroXml[]) {
-        if ((campo === 'preco_embalagem' || campo === 'preco_unidade') && !it.confirmar_abertura) continue;
+        // Só valida campo que o operador consegue ver e corrigir.
+        if (!campoAtivo(it, campo)) continue;
         const numero = lerNumeroPtBr(textoImport(i, campo));
         if (numero === null || !numeroXmlValido(campo, numero)) {
-          setImportMsg({ tipo: "erro", texto: `Item ${i + 1}: valor inválido em ${CAMPOS_NUMEROS_XML[campo]}.` });
+          setImportMsg({ tipo: "erro", texto: `${rotuloItem}: valor inválido em ${CAMPOS_NUMEROS_XML[campo]} — “${textoImport(i, campo)}”.` });
           return;
         }
       }
       if (it.confirmar_abertura && (!(Number(it.preco_embalagem) > 0) || !(Number(it.preco_unidade) > 0) || !Number.isInteger(it.quantidade_por_embalagem) || !it.unidade_compra || it.unidade_compra === 'UN')) {
-        setImportMsg({tipo:'erro',texto:`Item ${i + 1}: informe embalagem, quantidade inteira e os dois preços maiores que zero.`}); return;
+        setImportMsg({tipo:'erro',texto:`${rotuloItem}: informe a embalagem, quantas unidades vêm dentro (número inteiro) e os dois preços maiores que zero.`}); return;
       }
     }
     setImportBusy(true);
@@ -310,6 +397,11 @@ export default function ProdutosPage() {
         vende_por_unidade: !!it.confirmar_abertura || !!it.vende_por_unidade,
         preco_embalagem: it.preco_embalagem || 0, preco_unidade: it.preco_unidade || 0,
         confirmar_abertura: it.confirmar_abertura,
+        // Só manda o modo quando o estoque fica em UN; se o operador trocou a
+        // unidade na mão (KG, LT…), a escolha dele manda.
+        modo_entrada: it.acao === "criar" && it.unidade === "UN"
+          ? (it.confirmar_abertura ? "embalagem" : it.modo_venda === "unidade" ? "unidade" : undefined)
+          : undefined,
         nota_em_embalagem: it.confirmar_abertura ? !!it.nota_em_embalagem : undefined,
         codigo_barras_unidade: it.codigo_barras_unidade || "",
         unidade_xml: it.unidade_xml, valor_unitario_xml: it.valor_unitario_xml,
@@ -1100,10 +1192,46 @@ export default function ProdutosPage() {
                       <td className="p-2">
                         <input value={it.nome} onChange={(e) => setItem(i, "nome", e.target.value)} className="w-full min-w-52 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white" />
                         <div className="text-slate-500 text-2xs">{it.codigo_barras || "sem código"} · {it.unidade}</div>
-                        <p className="mt-2 text-xs text-emerald-300">{fmtQtd(it.quantidade_xml || it.quantidade)} {it.unidade_xml || it.unidade_compra} viram {fmtQtd(it.quantidade)} {it.confirmar_abertura ? 'UN' : it.unidade}; custo de cada unidade R$ {it.preco_custo.toFixed(4)}.{it.acao === 'atualizar' ? ' Preços de venda mantidos.' : ''}</p>
+                        <div className="mt-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2">
+                          <p className="text-xs text-emerald-300">{fmtQtd(it.quantidade_xml || it.quantidade)} {it.unidade_xml || it.unidade_compra} viram {fmtQtd(it.quantidade)} {it.confirmar_abertura ? 'UN' : it.unidade}; custo de cada unidade R$ {it.preco_custo.toFixed(4)}.{it.acao === 'atualizar' ? ' Preços de venda mantidos.' : ''}</p>
+                          {it.acao === 'criar' && (
+                            <p className="mt-1 text-2xs text-emerald-200/80">
+                              {it.modo_venda === 'aberta'
+                                ? `No caixa vão aparecer dois botões: ${it.unidade_compra} (${fmtQtd(it.quantidade_por_embalagem)} un.) e 1 unidade avulsa.`
+                                : it.modo_venda === 'fechada'
+                                  ? `No caixa este produto vende por ${it.unidade}; a unidade avulsa não é vendida.`
+                                  : 'No caixa este produto vende por unidade; a caixa serve só para comprar.'}
+                            </p>
+                          )}
+                        </div>
                         {!!it.despesas_unitarias && <p className="text-2xs text-slate-400">Custo da nota R$ {Number(it.valor_unitario_nota ?? 0).toFixed(4)} {it.despesas_unitarias > 0 ? '+ despesas' : '− desconto'} (frete, seguro, outras, IPI, ST) R$ {Math.abs(it.despesas_unitarias).toFixed(4)} por {it.unidade_xml}.</p>}
+                        {!!it.aviso_unidade && <p className="mt-1 text-2xs text-amber-300">{it.aviso_unidade}</p>}
                         {it.acao === 'criar' && <div className={`mt-3 space-y-2 rounded-lg border p-3 ${it.perguntar_embalagem || it.unidade_xml !== 'UN' || it.confirmar_abertura ? 'border-brand-500/30 bg-brand-500/10' : 'border-slate-800'}`}>
-                          <label className="flex gap-2 text-sm text-white"><input type="checkbox" className={CHECKBOX_IMPORTACAO} checked={!!it.confirmar_abertura} onChange={e=>setItem(i,'confirmar_abertura',e.target.checked)} />Vende a embalagem fechada e também a unidade, com preços diferentes?</label>
+                          <fieldset className="space-y-1">
+                            <legend className="px-1 text-xs font-semibold text-white">Como você vende este produto?</legend>
+                            {([
+                              ['unidade', 'Só por unidade', 'Comprei em caixa, mas no caixa vendo a unidade'],
+                              ['aberta', 'Caixa fechada e unidade', 'Dois preços: a embalagem inteira e a unidade avulsa'],
+                              ['fechada', 'Só a embalagem fechada', `Vendo ${it.unidade_xml && it.unidade_xml !== 'UN' ? it.unidade_xml : 'a embalagem'}, nunca avulso`],
+                            ] as const).map(([valor, titulo, ajuda]) => (
+                              <label key={valor} className={`flex cursor-pointer items-start gap-2 rounded-lg border p-2 text-xs ${(it.modo_venda || 'unidade') === valor ? 'border-brand-500 bg-brand-500/10 text-white' : 'border-slate-700 text-slate-300'}`}>
+                                <input
+                                  type="radio"
+                                  name={`modo-${i}`}
+                                  className="mt-0.5 accent-brand-500"
+                                  checked={(it.modo_venda || 'unidade') === valor}
+                                  onChange={() => setModo(i, valor)}
+                                />
+                                <span><span className="font-semibold">{titulo}</span><span className="block text-2xs text-slate-400">{ajuda}</span></span>
+                              </label>
+                            ))}
+                          </fieldset>
+                          {!!it.sinais_embalagem?.length && it.modo_venda !== 'aberta' && (
+                            <p className="rounded border border-amber-500/40 bg-amber-500/10 p-2 text-2xs text-amber-200">
+                              ⚠️ Esta nota tem cara de caixa fechada: {it.sinais_embalagem.join('; ')}. Confira pelo preço da nota antes de confirmar.
+                            </p>
+                          )}
+                          <label className={`flex gap-2 text-sm text-white ${(it.modo_venda || 'unidade') === 'aberta' ? '' : 'opacity-60'}`}><input type="checkbox" className={CHECKBOX_IMPORTACAO} checked={!!it.confirmar_abertura} onChange={e=>setItem(i,'confirmar_abertura',e.target.checked)} />Vende a embalagem fechada e também a unidade, com preços diferentes?</label>
                           {(it.perguntar_embalagem || it.unidade_xml !== 'UN') && !it.confirmar_abertura && <p className="text-xs text-slate-400">O número no nome não altera a quantidade. Sem marcar, {it.unidade_xml} entra como está na nota.</p>}
                           {it.confirmar_abertura && <>
                             <div className="grid grid-cols-2 gap-2">

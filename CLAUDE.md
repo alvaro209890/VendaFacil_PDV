@@ -1,5 +1,22 @@
 # CLAUDE.md — instruções para o agente
 
+## Entrega atual 1.0.22 — 14/11/2026
+
+Importação de XML com a decisão explícita de caixa x unidade: *só por unidade*,
+*caixa fechada e unidade* ou *só a embalagem fechada*; aviso de embalagem pelos
+sinais da nota; `UN1`/`UND`/`PC` normalizados para UN; validação só do campo que
+o operador consegue editar. Instalada no James e testada com a suíte completa.
+Provas e limites: `docs/ATUALIZACAO_1.0.22.md`. Descrições abaixo são históricas.
+
+## Entrega 1.0.21 — 14/11/2026
+
+Instalada/reiniciada no James e no PDV local deste PC. Botão − Remover em cada
+linha, menos remove a última unidade, pular produto desconhecido e foco no leitor.
+Provas, hashes e limites: `docs/ATUALIZACAO_1.0.21.md`. Na 3020 local, o processo
+antigo Python 3.11/1.0.14 foi substituído pelo Python da venv do projeto/1.0.21;
+mantém `dados/`. No James, exe e tarefa de logon, com banco local preservado.
+Descrições de versões anteriores abaixo são históricas.
+
 ## Entrega atual 1.0.20 — 14/11/2026
 
 Instalada no PC James. Card de alertas abre `/produtos?estoque=alerta`, lista

@@ -52,9 +52,10 @@ Em **+ Estoque**, escolha unidades ou embalagens: duas carteiras somam 40.
 Alterar o fator com saldo não reconta o estoque. Os dois modos ficam separados
 no carrinho, no histórico e no recibo. Produtos sem a opção mantêm a venda atual.
 
-Ao importar XML, leia a conversão antes de confirmar. Para produto novo, a
-opção **“Vende a embalagem fechada e também a unidade, com preços diferentes?”**
-configura caixa e unidade na hora; responda também **“Como esta nota conta a
+Ao importar XML, leia a conversão antes de confirmar. Para produto novo, escolha
+**“Como você vende este produto?”** — *só por unidade* (comprei em caixa, vendo a
+unidade), *caixa fechada e unidade* (dois preços) ou *só a embalagem fechada*.
+Quem vende as duas formas responde também **“Como esta nota conta a
 quantidade?”** — *em unidades soltas* (600 UN de lata = 600 latas) ou *em caixa
 fechada* (50 CX × 12 = 600 latas). Nota em UN, por padrão, entra 1 para 1.
 **O número no nome não vira estoque**: `CX 00050 KAISER LT 350ML`, 600 UN a
@@ -64,7 +65,7 @@ PDV guarda os dois. Guia completo, com a conta de preço e o caso real:
 [Caixa e unidade](CAIXA_E_UNIDADE.md). O fiscal permanece em **homologação**.
 
 ## 1. Instalar e abrir
-1. Receba o instalador **`VendaFacilPDV-Setup-1.0.15.exe`** e dê dois cliques.
+1. Receba o instalador **`VendaFacilPDV-Setup-1.0.22.exe`** e dê dois cliques.
 2. Avance a instalação (cria atalho no Menu Iniciar e na Área de Trabalho).
 3. Abra pelo atalho **VendaFácil PDV**. O sistema sobe e abre no navegador.
 
@@ -122,7 +123,10 @@ ela sai do total do dia, do caixa, do dashboard e dos relatórios.
 
 1. Na tela **PDV / Vender**, busque o produto por **nome** ou **código de
    barras** (pode usar leitor — bipou, entrou no carrinho).
-2. Ajuste a **quantidade** com + / − no carrinho.
+2. Ajuste a **quantidade** com + / − no carrinho. O menos na última unidade
+   remove a linha. Para retirar a linha inteira de uma vez, use **− Remover**,
+   inclusive para produto cadastrado na hora. O foco volta ao leitor e o total
+   é recalculado; o cadastro e o estoque permanecem até concluir a venda.
 3. Informe **desconto** (opcional).
 4. Escolha a **forma de pagamento**.
 5. Clique em **FINALIZAR VENDA** (atalho **F2**). O estoque baixa automaticamente.
@@ -197,10 +201,31 @@ Detalhes: [`ESTOQUE_E_XML.md`](ESTOQUE_E_XML.md).
 
 ## 6. Importar XML (entrada de mercadoria)
 Quando o fornecedor entrega a mercadoria com a **NF-e (.xml)**:
+
 1. Em **Produtos**, clique **📄 Importar XML** e escolha o arquivo.
-2. Confira a **prévia**: itens que já existem aparecem como **repor** (somam ao
-   estoque) e os novos como **criar** (defina o preço de venda).
-3. Ajuste quantidades/custos, desmarque o que não quiser, e **Confirmar importação**.
+2. A **prévia** mostra cada item com a conta pronta:
+   - **Repor estoque** — o produto já existe e a quantidade **soma** ao estoque.
+   - **Criar produto** — não existe; você define o preço de venda.
+3. Para cada produto novo, responda **“Como você vende este produto?”**:
+   - **Só por unidade** *(o mais comum)* — você compra em caixa, mas no caixa
+     vende a unidade. Informe **quantas unidades vêm dentro** da caixa: o
+     estoque entra em unidades e o custo é dividido automaticamente.
+   - **Caixa fechada e unidade** — vende a caixa inteira **e** a unidade avulsa,
+     com preços diferentes. Informe a embalagem, as unidades dentro e os
+     **dois preços**; depois diga como a nota conta a quantidade.
+   - **Só a embalagem fechada** — o produto só é vendido em caixa/fardo.
+4. Confira a frase verde de cada item (`o que a nota traz` → `o que entra`) e o
+   custo por unidade. Desmarque o que não quiser importar.
+5. Clique **Confirmar importação**. A mesma nota não entra duas vezes.
+
+**Caixa ou unidade? Como conferir pelo preço**
+Se a nota traz **R$ 40,00 por CX**, é preço de caixa fechada. Se traz
+**R$ 3,33**, é preço de uma unidade. O número que aparece no nome
+(`CX 00050 …`) **não** altera a quantidade sozinho — quando o sistema desconfia,
+ele avisa em amarelo: *“Esta nota tem cara de caixa fechada”*.
+
+**Unidade estranha na nota** (`UN1`, `UND`, `PC`): o sistema lê como **UN** e
+mostra o aviso. Nada de produto nascendo com unidade `UN1`.
 
 Detalhes: [`ESTOQUE_E_XML.md`](ESTOQUE_E_XML.md).
 
