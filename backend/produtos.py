@@ -103,9 +103,10 @@ class ItemImportar(BaseModel):
     # Como o produto novo entra no estoque:
     # "unidade"   = comprei caixa, mas só vendo unidade → estoque em UN, sem preço de embalagem;
     # "embalagem" = vende a embalagem fechada e a unidade (exige os dois preços);
+    # "fechada"  = vende só a embalagem; quantidade/custo conferidos na tela;
     # None        = regra antiga (vende_por_unidade decide).
     modo_entrada: str | None = None
-    # Como a nota conta a quantidade quando o produto novo vende caixa e unidade:
+    # Como a nota conta a quantidade (novos e reposições com estoque em UN):
     # True = cada unidade da nota é uma embalagem fechada (multiplica pelo fator);
     # False = a nota já vem em unidades soltas (600 UN = 600 latas). None = deduz
     # pela unidade da nota (UN = unidades soltas; CX/FD/... = embalagens).
@@ -239,7 +240,10 @@ async def atualizar(produto_id: int, data: ProdutoUpdate, request: Request):
     if "quantidade_por_embalagem" in updates:
         updates["quantidade_por_embalagem"] = _fator(updates["quantidade_por_embalagem"])
     updates["atualizado_em"] = _agora()
-    p = db.update_produto(produto_id, user_id, **updates)
+    try:
+        p = db.update_produto(produto_id, user_id, **updates)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     return {"produto": p}
 
 
@@ -411,13 +415,21 @@ async def importar_xml_confirmar(data: ConfirmarImportacao, request: Request):
             normalizado["unidade"] = "UN"
             normalizado["quantidade"] = round(item.quantidade_xml * fator_nota, 4)
             normalizado["preco_custo"] = round(item.valor_unitario_xml / fator_nota, 4)
+        elif existente and item.nota_em_embalagem is not None and item.quantidade_xml is not None:
+            # A unidade escrita na nota não diz se o fornecedor contou a caixa
+            # ou o conteúdo. A decisão explícita vale também para reposições.
+            fator = (existente["quantidade_por_embalagem"] if existente.get("vende_por_unidade")
+                     else item.quantidade_por_embalagem) if item.nota_em_embalagem else 1
+            normalizado["quantidade"] = round(item.quantidade_xml * fator, 4)
+            if item.valor_unitario_xml is not None:
+                normalizado["preco_custo"] = round(item.valor_unitario_xml / fator, 4)
         elif existente and existente.get("vende_por_unidade") and item.unidade_xml and item.quantidade_xml is not None:
             un_xml = _norm_unidade(item.unidade_xml)
             fator = existente["quantidade_por_embalagem"] if un_xml == existente["unidade_compra"] else 1
             normalizado["quantidade"] = round(item.quantidade_xml * fator, 4)
             if item.valor_unitario_xml is not None:
                 normalizado["preco_custo"] = round(item.valor_unitario_xml / fator, 4)
-        elif not existente and _norm_unidade(item.unidade_xml or item.unidade) == "UN" and item.quantidade_xml is not None:
+        elif not existente and modo_entrada != "fechada" and _norm_unidade(item.unidade_xml or item.unidade) == "UN" and item.quantidade_xml is not None:
             normalizado["quantidade"] = item.quantidade_xml
             normalizado["quantidade_por_embalagem"] = 1
         itens.append(normalizado)

@@ -7,7 +7,7 @@ mercadoria importando o XML da nota do fornecedor.
 
 ### Embalagem fechada e avulso (1.0.15)
 
-No cadastro, ligue **Também vende por unidade** somente nos produtos que têm
+No cadastro, escolha **Caixa e unidade** somente nos produtos que têm
 as duas formas de venda. Use estoque em **UN**, informe o nome da embalagem
 (por exemplo, CARTEIRA), quantas unidades vêm dentro e **os dois preços**.
 Os preços são independentes: não é obrigatório dividir o preço da carteira.
@@ -49,7 +49,8 @@ produto, no lugar da tabela de 9 colunas. Cada cartão traz:
 | Linha da nota | código, `Nota: 5 UN × R$ 10,29 − desconto R$ 1,30 = R$ 8,99 por UN` |
 | Campos | **Na nota**, *Unidades em cada CX* (só quando a nota vem em embalagem), **Entra no estoque**, **Custo por unidade**, **Preço de venda** + lucro % |
 | Como vende? | só nos itens com cara de embalagem (destacados em amarelo); nos simples fica recolhido em “Vende em caixa também? Trocar” |
-| Caixa + unidade | quadro próprio com nome da embalagem, dois preços, “A nota conta em quê?”, os dois códigos e a comparação de preços |
+| Contagem da nota (1.0.24) | separada da venda, nos novos e cadastrados com estoque em UN: unidades já contadas ou embalagens fechadas |
+| Caixa + unidade | quadro próprio com nome da embalagem, dois preços, os dois códigos e a comparação de preços |
 
 - **Margem dos novos** no topo: aplica `custo × (1 + margem)` ao preço de venda
   de todos os produtos novos de preço único (padrão 30%).
@@ -65,17 +66,23 @@ produto, no lugar da tabela de 9 colunas. Cada cartão traz:
 
 - Produto configurado e nota na unidade de compra: **2 CARTEIRA viram 40 UN**;
   custo da unidade = custo da carteira ÷ 20. Os dois preços de venda são mantidos.
-- Nota em **UN**: entra unidade a unidade, fator 1.
-- Produto novo: escolha primeiro **“Como você vende este produto?”** — três
+- Nota em **UN**: entra unidade a unidade por padrão. Se o preço e a quantidade
+  representam caixas inteiras, escolha **Em embalagem fechada** e informe as unidades dentro.
+  A escolha explícita vale também nas reposições; preços e formato são mantidos.
+- Primeiro confira **Como a nota conta esta compra?**: entrega física em caixas
+  não multiplica uma nota que já conta o conteúdo. Bebida láctea: 54 UN a
+  R$ 1,59 → 54 unidades. Palheiro: 2 carteiras a R$ 10 com 20 dentro → 40 UN a R$ 0,50.
+- Produto novo: escolha também **“Como vende?”** — três
   caminhos, e a tela mostra o efeito de cada um em *Entra no estoque* e no custo:
   - **Só por unidade** (padrão): estoque na unidade menor. Nota em `UN` entra
     1 para 1 (600 UN = 600 latas); nota em `CX`/`FD` multiplica por *Unidades em cada CX*
     (2 CX × 6 = 12 UN). Não exige preço de embalagem.
   - **Caixa fechada e unidade**: um produto, dois preços. Exige nome da
     embalagem, unidades dentro e os dois preços maiores que zero; responda
-    também **“Como esta nota conta a quantidade?”** — *em unidades soltas*
+    separadamente **“Como a nota conta esta compra?”** — *em unidades soltas*
     (600 UN = 600 latas) ou *em embalagem fechada* (50 CX × 12 = 600).
-  - **Só a embalagem fechada**: estoque e venda na unidade da nota, fator 1.
+  - **Só a embalagem fechada**: estoque e venda em CX/FD/CARTEIRA (ou outra
+    unidade conferida); revise a contagem e o custo de cada embalagem.
 - O aviso **“Esta nota tem cara de caixa fechada”** aparece quando qualquer
   sinal aponta embalagem: a nota declara `qTrib ÷ qCom`, o nome cita
   `CX`/`FARDO`/`PCT`/`CARTEIRA`, ou a própria `uCom` é de contagem. Ele só

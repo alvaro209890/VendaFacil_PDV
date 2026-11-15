@@ -26,7 +26,7 @@ Exemplo do lojista: caixa de cerveja com **15** latas a **R$ 60**, lata solta a 
 
 ## 2. Cadastro (Produtos → + Novo ou Editar)
 
-1. Ligue **Também vende por unidade**.
+1. Em **Como o cliente compra?**, escolha **Caixa e unidade**.
 2. **Nome da embalagem**: CX, FD, PCT, DISPLAY, CARTEIRA…
 3. **Qtd por compra** = quantas unidades vêm dentro (inteiro).
 4. **Preço da embalagem fechada** e **Preço da unidade** (os dois > 0).
@@ -63,9 +63,10 @@ produto novo = custo + 30%.
 
 ### 3.2 Como a nota conta — a pergunta que decide o estoque
 
-Produto **novo**: marque **"Vende a embalagem fechada e também a unidade, com
-preços diferentes?"**, preencha embalagem, unidades dentro e os dois preços, e
-responda **"Como esta nota conta a quantidade?"**:
+Desde a **1.0.24**, todo item com estoque em UN (novo ou cadastrado) pergunta
+**"Como a nota conta esta compra?"**. Isso é separado de vender caixa ou avulso.
+Para vender as duas formas, escolha **Caixa fechada e unidade** e preencha
+embalagem, unidades dentro e os dois preços:
 
 | Resposta | Quando | Exemplo | Entra |
 |---|---|---|---|

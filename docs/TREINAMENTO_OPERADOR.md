@@ -35,7 +35,7 @@ carrinho volta.
 
 ### Exercício: carteira e avulso
 
-Prepare em Produtos **Também vende por unidade**, CARTEIRA, 20 unidades,
+Prepare em Produtos **Caixa e unidade**, CARTEIRA, 20 unidades,
 **R$ 20** por carteira e **R$ 2** por palheiro. Peça ao operador:
 
 1. Dar entrada de **2 carteiras** pelo + Estoque (escolha embalagem), ou importar

@@ -1,5 +1,18 @@
 # CLAUDE.md — instruções para o agente
 
+## Entrega 1.0.24 — 15/11/2026
+
+Contagem da nota separada da forma de venda, também nas reposições. Nota em
+UN não multiplica só porque a mercadoria chegou em caixa. Cadastro/edição
+com três formatos explícitos, dois preços quando aplicável, preservação do
+código da unidade e conversão de estoque/custo conferida. Proteção de unidade
+de estoque para preservar estornos de vendas anteriores. Guia e provas:
+`docs/ATUALIZACAO_1.0.24.md`.
+Instalada no James (Setup ExitCode 0, `/health` 1.0.24, tarefa Running,
+licença ativa, produtos idênticos antes/depois e backup íntegro). Backend 557,
+Node 46, navegador fonte 105 e executável 13 aprovados; roteiro do exe 49
+requisições/zero 5xx. Guia rápido no desktop e manual do PDV atualizados.
+
 ## Entrega atual 1.0.23 — 14/11/2026
 
 Tela de importação de XML em **cartões**: um por produto, com *Na nota · Entra no

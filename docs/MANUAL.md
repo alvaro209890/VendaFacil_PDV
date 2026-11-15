@@ -38,7 +38,7 @@ suporte QR/2D no próprio aparelho; o PDV não acrescenta essa capacidade ao lei
 
 ### Caixa/carteira fechada e avulso — 1.0.15, revisto na 1.0.16
 
-Em **Produtos**, ligue **Também vende por unidade** e informe a embalagem,
+Em **Produtos**, escolha **Caixa e unidade** e informe a embalagem,
 quantas unidades vêm dentro e os dois preços. Exemplo: **CARTEIRA**, **20**,
 **R$ 20** a carteira e **R$ 2** o palheiro. Estoque e custo são por palheiro.
 Não divida automaticamente o preço da carteira para definir o preço avulso.
@@ -55,8 +55,8 @@ no carrinho, no histórico e no recibo. Produtos sem a opção mantêm a venda a
 Ao importar XML, leia a conversão antes de confirmar. Para produto novo, escolha
 **“Como você vende este produto?”** — *só por unidade* (comprei em caixa, vendo a
 unidade), *caixa fechada e unidade* (dois preços) ou *só a embalagem fechada*.
-Quem vende as duas formas responde também **“Como esta nota conta a
-quantidade?”** — *em unidades soltas* (600 UN de lata = 600 latas) ou *em caixa
+Todo produto com estoque em UN responde **“Como a nota conta esta
+compra?”** — *em unidades soltas* (600 UN de lata = 600 latas) ou *em caixa
 fechada* (50 CX × 12 = 600 latas). Nota em UN, por padrão, entra 1 para 1.
 **O número no nome não vira estoque**: `CX 00050 KAISER LT 350ML`, 600 UN a
 R$ 2,74 + R$ 12,36 de outras despesas, entra **600 latas a R$ 2,7606** (custo
@@ -65,7 +65,7 @@ PDV guarda os dois. Guia completo, com a conta de preço e o caso real:
 [Caixa e unidade](CAIXA_E_UNIDADE.md). O fiscal permanece em **homologação**.
 
 ## 1. Instalar e abrir
-1. Receba o instalador **`VendaFacilPDV-Setup-1.0.23.exe`** e dê dois cliques.
+1. Receba o instalador **`VendaFacilPDV-Setup-1.0.24.exe`** e dê dois cliques.
 2. Avance a instalação (cria atalho no Menu Iniciar e na Área de Trabalho).
 3. Abra pelo atalho **VendaFácil PDV**. O sistema sobe e abre no navegador.
 
@@ -199,6 +199,19 @@ Tela **Produtos**:
 
 Detalhes: [`ESTOQUE_E_XML.md`](ESTOQUE_E_XML.md).
 
+**Mudar preço ou formato (1.0.24):** clique **Editar** no produto. Escolha
+**Somente unidade**, **Caixa e unidade** ou **Somente embalagem fechada**.
+Para mudar apenas o preço, mantenha o formato e o estoque atuais. No modo com
+dois preços, preencha o preço da caixa e o da unidade; não há terceiro preço.
+O código que já vendia a unidade continua ligado à unidade.
+
+Se trocar a unidade do estoque (CX ↔ UN), confira estoque e custo. Use
+**Converter estoque e custo pela embalagem** ou informe a contagem real e marque
+**Conferi o estoque e o custo na nova unidade**. Só grava ao salvar. Exemplo:
+2 CX com 12, custo R$ 24 por CX → 24 UN a R$ 2. Se já há vendas do produto,
+mantenha a unidade do estoque para preservar estornos; com base em UN pode
+alternar entre **Somente unidade** e **Caixa e unidade** e mudar os preços.
+
 ## 6. Importar XML (entrada de mercadoria)
 Quando o fornecedor entrega a mercadoria com a **NF-e (.xml)**:
 
@@ -214,19 +227,29 @@ Quando o fornecedor entrega a mercadoria com a **NF-e (.xml)**:
      **Aplicar aos novos** para dar o mesmo lucro a todos de uma vez.
    - Produto repetido na nota (mesmo código em duas linhas) aparece **uma vez
      só**, com as quantidades somadas e o custo médio.
-3. Produto que vem em **caixa, fardo ou pacote** fica **destacado em amarelo**.
+3. Primeiro responda **Como a nota conta esta compra?**, inclusive nas reposições:
+   - **Em unidades soltas**: 54 UN de bebida láctea entram como **54 unidades**,
+     mesmo entregues dentro de caixas. Não multiplique de novo.
+   - **Em embalagem fechada**: se cada item da nota é uma caixa/carteira,
+     informe quantas unidades vêm dentro. 2 carteiras a R$ 10 com 20 palheiros
+     entram como **40 unidades a R$ 0,50**. A nota pode escrever UN neste caso;
+     confira se o preço é de uma unidade ou da embalagem inteira.
+   Produto que vem em **caixa, fardo ou pacote** fica **destacado em amarelo**.
    Produto simples já vem como *Só por unidade*; se você também vende a caixa,
    clique **“Vende em caixa também? Trocar”**. A pergunta é **“Como vende?”**:
    - **Só por unidade** *(o mais comum)* — você compra em caixa, mas no caixa
-     vende a unidade. Informe **quantas unidades vêm dentro** da caixa: o
-     estoque entra em unidades e o custo é dividido automaticamente.
+     vende a unidade. A quantidade só multiplica e o custo só divide quando
+     você escolhe que a nota conta **embalagens fechadas**.
    - **Caixa fechada e unidade** — vende a caixa inteira **e** a unidade avulsa,
      com preços diferentes. Informe a embalagem, as unidades dentro e os
-     **dois preços**; depois diga como a nota conta a quantidade.
+     **dois preços**. A contagem da nota é uma decisão separada.
    - **Só a embalagem fechada** — o produto só é vendido em caixa/fardo.
 4. Confira **Entra no estoque** e o **custo por unidade** de cada cartão.
    Desmarque o que não quiser importar. O rodapé mostra o **custo total**.
 5. Clique **Confirmar importação**. A mesma nota não entra duas vezes.
+
+Na reposição, **preços e formato de venda são mantidos**. Para alterá-los,
+cancele a prévia, use **Produtos → Editar**, salve e reabra o XML.
 
 **Caixa ou unidade? Como conferir pelo preço**
 Se a nota traz **R$ 40,00 por CX**, é preço de caixa fechada. Se traz

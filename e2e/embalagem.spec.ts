@@ -111,7 +111,7 @@ test('T11: cadastro, entrada de 2 carteiras, venda mista e recusa',async({page,r
   await page.getByRole('button',{name:'+ Novo',exact:true}).click();
   await page.getByPlaceholder('Ex: Arroz 5kg').fill('Palheiros T11');
   await page.getByPlaceholder('789...').fill('7891000888001');
-  await page.getByRole('checkbox',{name:'Também vende por unidade'}).check();
+  await page.getByRole('radio',{name:'Caixa e unidade',exact:true}).check();
   await page.getByLabel('Nome da embalagem').fill('CARTEIRA');
   await page.getByText('Qtd por compra',{exact:true}).locator('..').locator('input').fill('20');
   await page.getByLabel('Preço da embalagem fechada',{exact:true}).fill('20');

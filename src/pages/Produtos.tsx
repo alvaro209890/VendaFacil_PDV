@@ -160,10 +160,11 @@ function fatorDoModo(it: ItemImport): number {
  * por um valor que o operador nem podia corrigir. */
 function campoAtivo(it: ItemImport, campo: CampoNumeroXml): boolean {
   if (campo === "quantidade_xml") return true;
-  if (campo === "preco_venda") return it.acao === "criar";
+  if (campo === "preco_venda") return it.acao === "criar" && !it.confirmar_abertura;
   if (campo === "quantidade_por_embalagem") return !it.vende_por_unidade;
+  if (campo === "quantidade" && it.modo_venda === "fechada") return true;
   if (campo === "quantidade") return !(it.vende_por_unidade || it.confirmar_abertura || it.unidade_xml === "UN");
-  if (campo === "preco_custo") return !(it.vende_por_unidade || it.confirmar_abertura);
+  if (campo === "preco_custo") return !(it.vende_por_unidade || it.confirmar_abertura || (it.acao === "atualizar" && it.unidade === "UN"));
   if (campo === "preco_embalagem" || campo === "preco_unidade") return !!it.confirmar_abertura;
   return true;
 }
@@ -193,6 +194,8 @@ export default function ProdutosPage() {
   const [precoEmbalagem, setPrecoEmbalagem] = useState("");
   const [precoUnidade, setPrecoUnidade] = useState("");
   const [codigoUnidade, setCodigoUnidade] = useState("");
+  const [formatoSimples, setFormatoSimples] = useState<"unidade" | "fechada">("unidade");
+  const [conversaoConferida, setConversaoConferida] = useState(false);
 
   // Form state
   const [nome, setNome] = useState("");
@@ -317,7 +320,7 @@ export default function ProdutosPage() {
         // Nota em caixa que diz quantas unidades vêm dentro (qTrib ÷ qCom):
         // produto novo já nasce vendendo a unidade, com a conta pronta.
         const sugerido = it.fator_sugerido || 0;
-        if (it.acao === "criar" && sugerido > 1) {
+        if (it.acao === "criar" && sugerido > 1 && item.nota_em_embalagem) {
           item.unidade = "UN";
           item.quantidade_por_embalagem = sugerido;
           item.fator_entrada = sugerido;
@@ -350,7 +353,6 @@ export default function ProdutosPage() {
           }
         }
       }
-      if (next.modo_venda === "aberta") next.vende_por_unidade = true;
       if (campo === "confirmar_abertura" || campo === "nota_em_embalagem") {
         Object.assign(next, codigosPadrao(next));
       }
@@ -382,18 +384,15 @@ export default function ProdutosPage() {
           next.unidade_compra = next.embalagem_sugerida || embalagemDoNome(next.nome)
             || (next.unidade_xml && next.unidade_xml !== "UN" ? next.unidade_xml : "CX");
         }
-        if ((next.unidade_xml || "UN") === "UN" && (next.fator_sugerido || 0) <= 1) {
-          next.nota_em_embalagem = false;
-        }
       } else {
         next.confirmar_abertura = false;
         next.vende_por_unidade = false;
-        next.unidade = modo === "unidade" ? "UN" : (next.unidade_xml || "UN");
+        next.unidade = modo === "unidade" ? "UN" : (next.unidade_xml && next.unidade_xml !== "UN" ? next.unidade_xml : next.embalagem_sugerida || "CX");
         next.unidade_compra = modo === "unidade"
           ? (next.unidade_xml && next.unidade_xml !== "UN"
               ? next.unidade_xml
               : (next.embalagem_sugerida || next.unidade_compra))
-          : (next.unidade_xml || next.unidade);
+          : next.unidade;
       }
       // O rádio é a única pergunta agora: redistribui os códigos da caixa e da
       // unidade como o antigo checkbox "vende a embalagem fechada" fazia.
@@ -487,10 +486,10 @@ export default function ProdutosPage() {
         confirmar_abertura: it.confirmar_abertura,
         // Só manda o modo quando o estoque fica em UN; se o operador trocou a
         // unidade na mão (KG, LT…), a escolha dele manda.
-        modo_entrada: it.acao === "criar" && it.unidade === "UN"
-          ? (it.confirmar_abertura ? "embalagem" : it.modo_venda === "unidade" ? "unidade" : undefined)
+        modo_entrada: it.acao === "criar"
+          ? (it.confirmar_abertura ? "embalagem" : it.modo_venda === "fechada" ? "fechada" : it.unidade === "UN" ? "unidade" : undefined)
           : undefined,
-        nota_em_embalagem: it.confirmar_abertura ? !!it.nota_em_embalagem : undefined,
+        nota_em_embalagem: it.unidade === "UN" ? !!it.nota_em_embalagem : undefined,
         codigo_barras_unidade: it.codigo_barras_unidade || "",
         unidade_xml: it.unidade_xml, valor_unitario_xml: it.valor_unitario_xml,
         nome: it.nome,
@@ -589,6 +588,7 @@ export default function ProdutosPage() {
   }, [carregar]);
 
   function resetForm() {
+    setFormatoSimples("unidade"); setConversaoConferida(false);
     setVendePorUnidade(false); setPrecoEmbalagem(""); setPrecoUnidade(""); setCodigoUnidade("");
     setNome("");
     setCategoriaId("");
@@ -607,6 +607,8 @@ export default function ProdutosPage() {
   }
 
   function abrirEdicao(p: Produto) {
+    setFormatoSimples(["UN", "KG", "G", "LT", "ML"].includes(p.unidade) ? "unidade" : "fechada");
+    setConversaoConferida(false);
     setVendePorUnidade(!!p.vende_por_unidade);
     setPrecoEmbalagem(p.vende_por_unidade ? String(p.preco_embalagem) : "");
     setPrecoUnidade(p.vende_por_unidade ? String(p.preco_unidade) : "");
@@ -639,9 +641,56 @@ export default function ProdutosPage() {
     setMsg(null);
   }
 
+  function trocarFormato(modo: "unidade" | "fechada" | "ambos") {
+    setConversaoConferida(false);
+    if (modo === "ambos") {
+      setVendePorUnidade(true);
+      setUnidade("UN");
+      if (!unidadeCompra || unidadeCompra === "UN") setUnidadeCompra("CX");
+      if (!vendePorUnidade) {
+        setPrecoUnidade(unidade === "UN" ? precoVenda : "");
+        setPrecoEmbalagem(unidade !== "UN" ? precoVenda : "");
+        // Um código que já vendia a unidade continua vendendo a unidade.
+        if (editando && unidade === "UN" && codigoBarras && !codigoUnidade) {
+          setCodigoUnidade(codigoBarras); setCodigoBarras("");
+        }
+      }
+    } else {
+      if (vendePorUnidade) {
+        setPrecoVenda(modo === "unidade" ? precoUnidade : precoEmbalagem);
+        if (modo === "unidade") setCodigoBarras(codigoUnidade);
+        setCodigoUnidade("");
+      }
+      setVendePorUnidade(false); setFormatoSimples(modo);
+      const un = modo === "unidade" ? "UN" : (unidadeCompra !== "UN" ? unidadeCompra : "CX");
+      setUnidade(un);
+      if (modo === "fechada") {setUnidadeCompra(un); setQuantidadePorEmbalagem("1");}
+    }
+  }
+
+  const mudouUnidade = !!editando && normUn(unidade) !== normUn(editando.unidade);
+  function converterSaldo() {
+    if (!editando) return;
+    const paraUnidade = unidade === "UN";
+    const fator = paraUnidade ? lerNumeroPtBr(quantidadePorEmbalagem) : editando.quantidade_por_embalagem;
+    if (!fator || fator <= 1 || !Number.isInteger(fator)) {
+      setMsg({tipo: "erro", texto: "Informe quantas unidades vêm em cada embalagem antes de converter."}); return;
+    }
+    const saldo = paraUnidade ? editando.estoque * fator : editando.estoque / fator;
+    if (!paraUnidade && !Number.isInteger(saldo)) {
+      setMsg({tipo: "erro", texto: "Há unidades soltas. Mantenha a venda por unidade ou confira a contagem de embalagens antes de salvar."}); return;
+    }
+    setEstoque(String(Number(saldo.toFixed(4))));
+    setPrecoCusto(String(Number((paraUnidade ? editando.preco_custo / fator : editando.preco_custo * fator).toFixed(4))));
+    setConversaoConferida(true); setMsg(null);
+  }
+
   async function handleSalvar(e: React.FormEvent) {
     e.preventDefault();
     setMsg(null);
+    if (mudouUnidade && !conversaoConferida) {
+      setMsg({tipo: "erro", texto: "Confira o estoque e o custo na nova unidade e marque a confirmação antes de salvar."}); return;
+    }
     if (!nome.trim()) {
       setMsg({ tipo: "erro", texto: "Nome do produto é obrigatório." });
       return;
@@ -658,7 +707,7 @@ export default function ProdutosPage() {
     }
 
     let valVenda = 0;
-    if (precoVenda.trim() !== "") {
+    if (!vendePorUnidade && precoVenda.trim() !== "") {
       const parsed = lerNumeroPtBr(precoVenda);
       if (parsed === null) {
         setMsg({ tipo: "erro", texto: "Preço de venda inválido." });
@@ -737,7 +786,7 @@ export default function ProdutosPage() {
       nome: nome.trim(),
       categoria_id: categoriaId || undefined,
       preco_custo: valCusto,
-      preco_venda: valVenda,
+      preco_venda: vendePorUnidade ? un! : valVenda,
       estoque: valEstoque,
       estoque_minimo: valMinimo,
       codigo_barras: codigoBarras.trim(),
@@ -988,12 +1037,24 @@ export default function ProdutosPage() {
           )}
 
           <form onSubmit={handleSalvar} className="space-y-3">
-            <label className="flex items-center gap-3 rounded-xl border border-brand-500/40 bg-brand-500/10 p-3 text-white">
-              <input type="checkbox" checked={vendePorUnidade} onChange={e => {
-                setVendePorUnidade(e.target.checked);
-                if (e.target.checked && !editando?.vende_por_unidade) {setPrecoEmbalagem(""); setPrecoUnidade("");}
-              }} className="h-5 w-5 accent-brand-500" />Também vende por unidade
-            </label>
+            <div>
+              <label className="text-slate-400 text-xs block mb-0.5">Nome *</label>
+              <input type="text" value={nome} onChange={(e) => setNome(e.target.value)}
+                className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500"
+                placeholder="Ex: Arroz 5kg" autoFocus />
+            </div>
+            <fieldset className="space-y-2 rounded-xl border border-brand-500/40 bg-brand-500/10 p-3 text-white">
+              <legend className="text-sm font-semibold">Como o cliente compra?</legend>
+              {([
+                ["unidade", "Somente unidade", "Ex.: bebida láctea, lata ou palheiro solto. Também serve para KG/LT."],
+                ["ambos", "Caixa e unidade", "Dois preços: a embalagem inteira e cada unidade avulsa."],
+                ["fechada", "Somente embalagem fechada", "Ex.: uma carteira ou caixa inteira, sem vender o conteúdo solto."],
+              ] as const).map(([modo, titulo, ajuda]) => <label key={modo} className="flex cursor-pointer items-start gap-2 text-sm">
+                <input type="radio" aria-label={titulo} name="formato-cadastro" className="mt-1 accent-brand-500" checked={vendePorUnidade ? modo === "ambos" : modo === formatoSimples} onChange={() => trocarFormato(modo)} />
+                <span>{titulo}<small className="block text-xs text-slate-400">{ajuda}</small></span>
+              </label>)}
+              <p className="text-xs text-slate-300">A forma de entrega do fornecedor é separada da forma de venda. Uma caixa entregue pode já estar contada em unidades na nota.</p>
+            </fieldset>
             {vendePorUnidade && <fieldset className="space-y-3 rounded-xl border border-brand-500/30 p-3">
               <legend className="text-brand-300 text-sm">Dois preços independentes</legend>
               <label className="block text-slate-300 text-sm">Preço da embalagem fechada (R$)
@@ -1010,18 +1071,6 @@ export default function ProdutosPage() {
             <label className="block text-slate-300 text-sm">{vendePorUnidade ? "Código da unidade (opcional)" : "Segundo código de barras (opcional)"}
               <input aria-label="Código da unidade" value={codigoUnidade} onChange={e=>setCodigoUnidade(e.target.value)} className="w-full rounded-lg bg-slate-800 p-2 text-white" placeholder={vendePorUnidade ? "o da lata/unidade avulsa" : "outro código do mesmo produto"} />
             </label>
-
-            <div>
-              <label className="text-slate-400 text-xs block mb-0.5">Nome *</label>
-              <input
-                type="text"
-                value={nome}
-                onChange={(e) => setNome(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500"
-                placeholder="Ex: Arroz 5kg"
-                autoFocus
-              />
-            </div>
 
             <div>
               <label className="text-slate-400 text-xs block mb-0.5">Categoria</label>
@@ -1049,7 +1098,7 @@ export default function ProdutosPage() {
                   placeholder="0,00"
                 />
               </div>
-              <div>
+              {!vendePorUnidade && <div>
                 <label className="text-slate-400 text-xs block mb-0.5">Preço Venda</label>
                 <input
                   type="text"
@@ -1059,7 +1108,7 @@ export default function ProdutosPage() {
                   className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500"
                   placeholder="0,00"
                 />
-              </div>
+              </div>}
             </div>
 
             <div className="grid grid-cols-2 gap-2">
@@ -1073,6 +1122,7 @@ export default function ProdutosPage() {
                   className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500"
                   placeholder="0"
                 />
+                <p className="mt-1 text-xs text-slate-500">Contado em {unidade || "UN"}. {vendePorUnidade ? "Some todas as unidades, inclusive as caixas fechadas." : "Informe a quantidade pronta para vender."}</p>
               </div>
               <div>
                 <label className="text-slate-400 text-xs block mb-0.5">Estoque Mínimo</label>
@@ -1089,7 +1139,7 @@ export default function ProdutosPage() {
 
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="text-slate-400 text-xs block mb-0.5">Código Barras</label>
+                <label className="text-slate-400 text-xs block mb-0.5">{vendePorUnidade ? "Código da embalagem (opcional)" : "Código Barras"}</label>
                 <input
                   type="text"
                   value={codigoBarras}
@@ -1113,7 +1163,7 @@ export default function ProdutosPage() {
             {/* ── Dados fiscais (NFC-e) ── */}
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="text-slate-400 text-xs block mb-0.5">Unidade da compra</label>
+                <label className="text-slate-400 text-xs block mb-0.5">{vendePorUnidade ? "Nome da embalagem" : "Unidade da compra"}</label>
                 {vendePorUnidade ? <input aria-label="Nome da embalagem" list="unidades-compra"
                   value={unidadeCompra}
                   onChange={(e) => setUnidadeCompra(e.target.value)}
@@ -1131,10 +1181,17 @@ export default function ProdutosPage() {
                   className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500"
                   placeholder="1"
                 />
+                <p className="mt-1 text-xs text-slate-500">{vendePorUnidade ? "Quantas unidades vêm dentro? Ex.: 12 latas ou 20 palheiros." : "Só converte uma compra em embalagem. Não multiplica uma nota que já conta unidades."}</p>
               </div>
             </div>
 
             {vendePorUnidade && editando && editando.estoque > 0 && lerNumeroPtBr(quantidadePorEmbalagem) !== editando.quantidade_por_embalagem && <p role="status" className="rounded-lg bg-amber-500/10 p-3 text-sm text-amber-300">Alterar a quantidade por embalagem não reconta o estoque: continuam {fmtQtd(editando.estoque)} unidades.</p>}
+            {mudouUnidade && <div className="space-y-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-200">
+              <p>Você está mudando o estoque de {editando!.unidade} para {unidade}. Antes: {fmtQtd(editando!.estoque)} {editando!.unidade}, custo {fmtReais(editando!.preco_custo)} por {editando!.unidade}. Ao salvar: {estoque || "0"} {unidade}, custo {precoCusto || "0"} por {unidade}.</p>
+              <button type="button" onClick={converterSaldo} className="rounded-lg border border-amber-500/50 px-2 py-2 font-semibold">Converter estoque e custo pela embalagem</button>
+              <label className="flex items-start gap-2"><input type="checkbox" checked={conversaoConferida} onChange={e => setConversaoConferida(e.target.checked)} />Conferi o estoque e o custo na nova unidade</label>
+            </div>}
+            {editando && <p className="text-xs text-slate-400">Alterar o preço vale para as próximas vendas. Para trocar só o preço, mantenha o formato e o estoque atuais.</p>}
             <button
               type="button"
               onClick={() => setMostrarFiscal(true)}
@@ -1280,7 +1337,7 @@ export default function ProdutosPage() {
                   const nomeEmbalagem = it.unidade_compra && it.unidade_compra !== "UN" ? it.unidade_compra : (unNota !== "UN" ? unNota : "embalagem");
                   const despesas = Number(it.despesas_unitarias || 0);
                   const margem = margemSobreCusto(Number(it.preco_custo), Number(it.preco_venda));
-                  const mostraFator = !!it.confirmar_abertura
+                  const mostraFator = !!it.confirmar_abertura || (unEstoque === "UN" && !!it.nota_em_embalagem)
                     || (!it.vende_por_unidade && modo !== "fechada" && (unNota !== "UN" || (it.fator_sugerido || 0) > 1));
                   const campo = (nome: CampoNumeroXml, rotulo: string, extra?: React.ReactNode) => (
                     <label className="block text-2xs text-slate-400">{rotulo}
@@ -1325,6 +1382,14 @@ export default function ProdutosPage() {
                             {it.linhas_nota && it.linhas_nota.length > 1 ? ` · veio em ${it.linhas_nota.length} linhas na nota (${it.linhas_nota.map(fmtQtd).join(" + ")}), juntadas aqui` : ""}
                           </p>
 
+                          {unEstoque === "UN" && <fieldset className="space-y-1 rounded-lg border border-sky-500/30 bg-sky-500/5 p-2 text-xs text-slate-200">
+                            <legend className="px-1 font-semibold text-sky-300">1. Como a nota conta esta compra?</legend>
+                            <p className="text-slate-400">Confira o preço da nota: {fmtReais(Number(it.valor_unitario_nota || 0))} é por unidade ou pela embalagem inteira? A entrega em caixas não muda essa resposta.</p>
+                            <label className="flex items-start gap-2"><input type="radio" name={`conta-${i}`} className="mt-0.5 accent-brand-500" checked={!it.nota_em_embalagem} onChange={() => setItem(i, "nota_em_embalagem", false)} />Em unidades soltas: {fmtQtd(it.quantidade_xml || 0)} {it.unidade_xml} = {fmtQtd(it.quantidade_xml || 0)} unidades</label>
+                            <label className="flex items-start gap-2"><input type="radio" name={`conta-${i}`} className="mt-0.5 accent-brand-500" checked={!!it.nota_em_embalagem} onChange={() => setItem(i, "nota_em_embalagem", true)} />Em {it.unidade_compra && it.unidade_compra !== "UN" ? it.unidade_compra : "embalagem"} fechada: {fmtQtd(it.quantidade_xml || 0)} {it.unidade_xml} × {fmtQtd(it.quantidade_por_embalagem)} = {fmtQtd((it.quantidade_xml || 0) * it.quantidade_por_embalagem)} unidades</label>
+                            {!it.nota_em_embalagem && <p className="text-sky-200">Ex.: bebida láctea com 54 UN na nota entra como 54 unidades, mesmo chegando em caixas.</p>}
+                          </fieldset>}
+
                           {novo && !(embalagem || it.mostrar_modo || modo !== "unidade") && (
                             <p className="text-2xs text-slate-400">Vende só por unidade.{" "}
                               <button type="button" onClick={() => setItem(i, "mostrar_modo", true)} className="font-semibold text-brand-300 underline-offset-2 hover:underline">Vende em caixa também? Trocar</button>
@@ -1332,7 +1397,7 @@ export default function ProdutosPage() {
                           )}
                           {novo && (embalagem || it.mostrar_modo || modo !== "unidade") && (
                             <fieldset className="flex flex-wrap items-center gap-1.5">
-                              <legend className="float-left mr-1 py-1 text-xs font-semibold text-slate-200">Como vende?</legend>
+                              <legend className="float-left mr-1 py-1 text-xs font-semibold text-slate-200">2. Como vende?</legend>
                               {([
                                 ["unidade", "Só por unidade"],
                                 ["aberta", "Caixa fechada e unidade"],
@@ -1353,6 +1418,8 @@ export default function ProdutosPage() {
                             </fieldset>
                           )}
 
+                          {!novo && <p className="rounded-lg bg-emerald-500/5 p-2 text-xs text-emerald-200">Formato atual: {it.vende_por_unidade ? `${it.unidade_compra} com ${fmtQtd(it.quantidade_por_embalagem)} unidades e unidade avulsa` : `venda por ${it.unidade}`}. Esta entrada mantém os preços e o formato. Para alterá-los, feche a prévia e use Editar no produto.</p>}
+
                           {embalagem && !!it.sinais_embalagem?.length && modo !== "aberta" && (
                             <p className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-2 py-1.5 text-2xs text-amber-200">
                               📦 Pode ser caixa: {it.sinais_embalagem.join("; ")}. Confira pelo preço da nota. Se você vende a caixa e também a unidade, escolha “Caixa fechada e unidade”.
@@ -1361,7 +1428,9 @@ export default function ProdutosPage() {
 
                           <div className="grid grid-cols-2 gap-x-2 gap-y-1 sm:grid-cols-5">
                             {campo("quantidade_xml", `Na nota (${unNota})`)}
-                            {mostraFator && campo("quantidade_por_embalagem", `Unidades em cada ${nomeEmbalagem}`)}
+                            {mostraFator && (campoAtivo(it, "quantidade_por_embalagem")
+                              ? campo("quantidade_por_embalagem", `Unidades em cada ${nomeEmbalagem}`)
+                              : leitura(`Unidades em cada ${nomeEmbalagem} (cadastro)`, fmtQtd(it.quantidade_por_embalagem), "quantidade_por_embalagem"))}
                             {campoAtivo(it, "quantidade")
                               ? campo("quantidade", `Entra no estoque (${unEstoque})`)
                               : leitura("Entra no estoque", `${fmtQtd(it.quantidade)} ${unEstoque}`, "quantidade")}
@@ -1385,11 +1454,6 @@ export default function ProdutosPage() {
                                 {campo("preco_embalagem", `Preço da ${nomeEmbalagem} fechada (R$)`)}
                                 {campo("preco_unidade", "Preço da unidade avulsa (R$)")}
                               </div>
-                              <fieldset className="space-y-1">
-                                <legend className="text-2xs font-semibold text-slate-300">A nota conta em quê? (R$ {Number(it.valor_unitario_nota ?? it.valor_unitario_xml ?? 0).toFixed(2)} por {unNota} na nota é preço de uma unidade ou de uma {nomeEmbalagem}?)</legend>
-                                <label className="flex items-start gap-2 text-xs text-slate-200"><input type="radio" name={`conta-${i}`} className="mt-0.5 accent-brand-500" checked={!it.nota_em_embalagem} onChange={() => setItem(i, "nota_em_embalagem", false)} />Em unidades soltas: {fmtQtd(it.quantidade_xml || 0)} {it.unidade_xml} = {fmtQtd(it.quantidade_xml || 0)} unidades</label>
-                                <label className="flex items-start gap-2 text-xs text-slate-200"><input type="radio" name={`conta-${i}`} className="mt-0.5 accent-brand-500" checked={!!it.nota_em_embalagem} onChange={() => setItem(i, "nota_em_embalagem", true)} />Em {it.unidade_compra || "embalagem"} fechada: {fmtQtd(it.quantidade_xml || 0)} {it.unidade_xml} × {fmtQtd(it.quantidade_por_embalagem)} = {fmtQtd((it.quantidade_xml || 0) * it.quantidade_por_embalagem)} unidades</label>
-                              </fieldset>
                               <div className="grid grid-cols-2 gap-2">
                                 <label className="block text-2xs text-slate-400">Código de barras da {nomeEmbalagem}<input aria-label={`Código da embalagem do item ${i + 1}`} value={it.codigo_barras} onChange={(e) => setItem(i, "codigo_barras", e.target.value.trim())} className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-2 py-1.5 text-sm text-white" placeholder="opcional" /></label>
                                 <label className="block text-2xs text-slate-400">Código de barras da unidade<input aria-label={`Código da unidade do item ${i + 1}`} value={it.codigo_barras_unidade || ""} onChange={(e) => setItem(i, "codigo_barras_unidade", e.target.value.trim())} className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-2 py-1.5 text-sm text-white" placeholder="opcional — bipe uma unidade" /></label>
@@ -1400,7 +1464,7 @@ export default function ProdutosPage() {
                             </div>
                           )}
                           {novo && modo === "fechada" && (
-                            <p className="text-2xs text-slate-400">No caixa vende só por {it.unidade}; a unidade avulsa não é vendida.</p>
+                            <p className="text-2xs text-slate-400">No caixa vende só por {it.unidade}; a unidade avulsa não é vendida. Confira quantas embalagens entram e o custo de cada embalagem. Se a nota já contou o conteúdo em UN, informe aqui a contagem de embalagens fechadas.</p>
                           )}
                         </div>
                       </div>

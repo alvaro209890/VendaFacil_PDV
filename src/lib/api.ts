@@ -310,8 +310,9 @@ export interface PreviewXml {
 export interface ItemConfirmarXml {
   confirmar_abertura?: boolean;
   /** Produto novo: "unidade" = estoque em UN sem preço de embalagem;
-   * "embalagem" = vende caixa e unidade (exige os dois preços). */
-  modo_entrada?: "unidade" | "embalagem";
+   * "embalagem" = vende caixa e unidade (exige os dois preços);
+   * "fechada" = só embalagem, quantidade/custo conferidos na tela. */
+  modo_entrada?: "unidade" | "embalagem" | "fechada";
   /** true = cada unidade da nota é uma caixa fechada; false = a nota já conta unidades soltas. */
   nota_em_embalagem?: boolean;
   unidade_xml?: string;

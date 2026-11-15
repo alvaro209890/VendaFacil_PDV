@@ -1028,6 +1028,14 @@ class Database:
         sets = ", ".join(f"{k} = ?" for k in fields)
         vals = list(fields.values())
         with self._lock, self._conn:
+            if "unidade" in fields:
+                atual = self.get_produto(produto_id, user_id)
+                if atual and fields["unidade"] != atual["unidade"] and self._conn.execute(
+                    "SELECT 1 FROM itens_venda i JOIN vendas v ON v.id=i.venda_id "
+                    "WHERE i.produto_id=? AND v.user_id=? AND v.status!='cancelada' LIMIT 1",
+                    (produto_id, user_id),
+                ).fetchone():
+                    raise ValueError("Este produto já tem vendas. Mantenha a unidade de estoque para preservar os estornos; com estoque em UN, use Caixa e unidade ou Somente unidade.")
             self._conn.execute(
                 f"UPDATE produtos SET {sets} WHERE id = ? AND user_id = ?",
                 vals + [produto_id, user_id],

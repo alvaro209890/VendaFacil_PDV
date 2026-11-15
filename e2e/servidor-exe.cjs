@@ -3,6 +3,8 @@ const { spawn, spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const versao = /APP_VERSION\s*=\s*"([^"]+)"/.exec(fs.readFileSync(path.join(__dirname,'../backend/version.py'),'utf8'))?.[1];
+if (!versao) throw new Error('Versão esperada não encontrada.');
 const exe = process.env.VF_TEST_EXE;
 if (!exe || !fs.existsSync(exe)) throw new Error('Informe VF_TEST_EXE com o binário Windows baixado.');
 const dados = fs.mkdtempSync(path.join(os.tmpdir(), 'vf-exe-embalagem-'));
@@ -31,10 +33,10 @@ async function conferir() {
       const r=await fetch('http://127.0.0.1:3021/health',{signal:AbortSignal.timeout(500)});
       if(r.ok) {
         const body=await r.json();
-        if(body.version !== '1.0.21') throw new Error('Artefato não é 1.0.21.');
-        console.log('Artefato 1.0.21 pronto na porta 3021, com banco temporário.'); return;
+        if(body.version !== versao) throw new Error(`Artefato não é ${versao}.`);
+        console.log(`Artefato ${versao} pronto na porta 3021, com banco temporário.`); return;
       }
-    } catch(err) { if(err.message === 'Artefato não é 1.0.21.') throw err; }
+    } catch(err) { if(err.message.startsWith('Artefato não é ')) throw err; }
     await new Promise(r=>setTimeout(r,500));
   }
   throw new Error('Executável não respondeu em 60 segundos.');
