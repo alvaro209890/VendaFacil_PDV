@@ -15,5 +15,5 @@ test('U07: historico usa total diario do backend mesmo com pagina de 100 vendas'
     resumo_hoje: { data: '2026-11-12', fuso: 'America/Cuiaba', quantidade: 120, total: 120.27 },
   } }));
   await page.goto('/vendas');
-  await expect(page.getByText('Hoje: R$ 120.27', { exact: true })).toBeVisible();
+  await expect(page.getByText('Hoje: R$ 120,27', { exact: true })).toBeVisible();
 });

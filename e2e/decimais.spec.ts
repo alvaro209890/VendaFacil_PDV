@@ -31,7 +31,7 @@ for (const valor of ['0,50', '0.50', '1,5', '1.5']) {
     await page.keyboard.type(valor);
     await expect(desconto).toHaveValue(valor);
     const numero = Number(valor.replace(',', '.'));
-    await expect(page.getByText(`Falta R$ ${(10 - numero).toFixed(2)}`, { exact: true })).toBeVisible();
+    await expect(page.getByText(`Falta R$ ${(10 - numero).toFixed(2).replace('.', ',')}`, { exact: true })).toBeVisible();
     await page.getByPlaceholder('0,00', { exact: true }).fill('10');
     const checkout = page.waitForResponse(r => r.url().endsWith('/api/vendas/checkout') && r.request().method() === 'POST');
     await page.keyboard.press('Enter');
@@ -79,7 +79,7 @@ for (const valor of ['0,5', '0.5', '0,125', '1,5', '1.5']) {
       await expect(quantidade).toHaveValue(prefixo);
     }
     const numero = Number(valor.replace(',', '.'));
-    await expect(page.getByText(`Falta R$ ${(10 * numero).toFixed(2)}`, { exact: true })).toBeVisible();
+    await expect(page.getByText(`Falta R$ ${(10 * numero).toFixed(2).replace('.', ',')}`, { exact: true })).toBeVisible();
     await page.getByPlaceholder('0,00', { exact: true }).fill(String(10 * numero));
     const checkout = page.waitForResponse(r => r.url().endsWith('/api/vendas/checkout') && r.request().method() === 'POST');
     await page.keyboard.press('Enter');

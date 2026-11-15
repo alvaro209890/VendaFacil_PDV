@@ -5,8 +5,8 @@ import { relatorioVendas, relatorioFiscal, exportarXmlsZip } from "../lib/api";
 import type { RelatorioVendas, RelatorioFiscal } from "../lib/api";
 import CampoData from "../components/CampoData";
 import { dataLocal } from "../../painel/static/calendario.js";
+import { moeda } from "../lib/numeros";
 
-const moeda = (v: number) => `R$ ${(v || 0).toFixed(2)}`;
 const LABEL: Record<string, string> = { dinheiro: "Dinheiro", pix: "PIX", debito: "Débito", credito: "Crédito", fiado: "Fiado" };
 
 function inicioMes() { return dataLocal().slice(0, 8) + "01"; }
@@ -101,8 +101,8 @@ export default function RelatoriosPage() {
             {card(<TrendingUp size={14} />, "Lucro estimado", moeda(dados.lucro_estimado), dados.lucro_estimado >= 0 ? "text-emerald-400" : "text-red-400")}
           </div>
 
-          <div className="grid md:grid-cols-2 gap-3">
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="min-w-0 bg-slate-900 border border-slate-800 rounded-2xl p-4">
               <h3 className="text-slate-300 font-bold text-sm mb-3">Por forma de pagamento</h3>
               {dados.por_forma.length === 0 ? <p className="text-slate-500 text-sm">Sem vendas no período.</p> : (
                 <div className="space-y-2 text-sm">
@@ -117,12 +117,12 @@ export default function RelatoriosPage() {
               {dados.desconto_total > 0 && <p className="text-slate-500 text-xs mt-3">Descontos concedidos: {moeda(dados.desconto_total)}</p>}
             </div>
 
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+            <div className="min-w-0 bg-slate-900 border border-slate-800 rounded-2xl p-4">
               <h3 className="text-slate-300 font-bold text-sm mb-3 flex items-center gap-1"><Trophy size={14} className="text-amber-400" /> Produtos mais vendidos</h3>
               {dados.top_produtos.length === 0 ? <p className="text-slate-500 text-sm">Sem dados no período.</p> : (
                 <div className="space-y-2 text-sm">
                   {dados.top_produtos.map((p, i) => (
-                    <div key={p.produto_id} className="flex justify-between gap-2">
+                    <div key={`${p.produto_id}-${i}`} className="flex justify-between gap-2">
                       <span className="text-slate-400 truncate">{i + 1}. {p.nome_produto} <span className="text-slate-600">({p.qtd})</span></span>
                       <span className="text-white font-semibold shrink-0">{moeda(p.total)}</span>
                     </div>
@@ -175,19 +175,19 @@ export default function RelatoriosPage() {
             {card(<Receipt size={14} />, "Tributada integral", moeda(fiscal.receita_tributada_integral))}
           </div>
 
-          <div className="grid md:grid-cols-2 gap-3 mb-3">
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+            <div className="min-w-0 bg-slate-900 border border-slate-800 rounded-2xl p-4">
               <h3 className="text-slate-300 font-bold text-sm mb-3">ICMS</h3>
               <div className="space-y-2 text-sm">
-                <div className="flex justify-between"><span className="text-slate-400">Já recolhido por ST (CSOSN 500)</span><span className="text-amber-400 font-semibold">{moeda(fiscal.icms.substituicao_tributaria)}</span></div>
-                <div className="flex justify-between"><span className="text-slate-400">Tributado normal no DAS</span><span className="text-white font-semibold">{moeda(fiscal.icms.tributado_normal)}</span></div>
+                <div className="flex justify-between gap-3"><span className="text-slate-400">Já recolhido por ST (CSOSN 500)</span><span className="text-amber-400 font-semibold shrink-0">{moeda(fiscal.icms.substituicao_tributaria)}</span></div>
+                <div className="flex justify-between gap-3"><span className="text-slate-400">Tributado normal no DAS</span><span className="text-white font-semibold shrink-0">{moeda(fiscal.icms.tributado_normal)}</span></div>
               </div>
             </div>
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+            <div className="min-w-0 bg-slate-900 border border-slate-800 rounded-2xl p-4">
               <h3 className="text-slate-300 font-bold text-sm mb-3">PIS / COFINS</h3>
               <div className="space-y-2 text-sm">
-                <div className="flex justify-between"><span className="text-slate-400">Monofásico / ST / alíquota zero (CST 04-06)</span><span className="text-amber-400 font-semibold">{moeda(fiscal.pis_cofins.monofasico_st)}</span></div>
-                <div className="flex justify-between"><span className="text-slate-400">Tributado normal no DAS</span><span className="text-white font-semibold">{moeda(fiscal.pis_cofins.tributado_normal)}</span></div>
+                <div className="flex justify-between gap-3"><span className="text-slate-400">Monofásico / ST / alíquota zero (CST 04-06)</span><span className="text-amber-400 font-semibold shrink-0">{moeda(fiscal.pis_cofins.monofasico_st)}</span></div>
+                <div className="flex justify-between gap-3"><span className="text-slate-400">Tributado normal no DAS</span><span className="text-white font-semibold shrink-0">{moeda(fiscal.pis_cofins.tributado_normal)}</span></div>
               </div>
             </div>
           </div>
@@ -207,8 +207,8 @@ export default function RelatoriosPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {fiscal.itens.map((it) => (
-                      <tr key={it.produto_id} className="border-t border-slate-800/70">
+                    {fiscal.itens.map((it, i) => (
+                      <tr key={`${it.produto_id}-${i}`} className="border-t border-slate-800/70">
                         <td className="py-1.5 pr-2 text-slate-300 max-w-[14rem] truncate">
                           {it.nome_produto}
                           {(it.icms_substituicao || it.pis_cofins_concentrado) && (

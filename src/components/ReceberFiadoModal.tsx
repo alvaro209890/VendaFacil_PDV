@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Banknote, CreditCard, Smartphone, X } from 'lucide-react';
 import { lerNumeroPtBr } from '../lib/numeros';
+import { moeda } from "../lib/numeros";
 import {
   cancelarCobrancaFiado, consultarCobrancaFiado, criarCobrancaFiado, gerarPixFiado,
   getConfigMaquininha, listarContasReceber, pagarContaReceber, FORMAS_RECEBIMENTO,
@@ -157,7 +158,7 @@ export default function ReceberFiadoModal({ conta, pixSalvo, onFechar, onConclui
           <div>
             <h2 id="receber-titulo" className="text-lg font-bold text-white">Receber fiado</h2>
             <p className="text-sm text-slate-400">{conta.cliente_nome || 'Sem cliente'} · Conta #{conta.id}</p>
-            <p className="text-sm text-slate-400">Saldo: R$ {conta.valor_pendente.toFixed(2)}</p>
+            <p className="text-sm text-slate-400">Saldo: {moeda(conta.valor_pendente)}</p>
           </div>
           <button aria-label="Fechar recebimento" disabled={busy} onClick={onFechar} className="p-2 text-slate-400 disabled:opacity-50"><X size={20} /></button>
         </div>
@@ -171,7 +172,7 @@ export default function ReceberFiadoModal({ conta, pixSalvo, onFechar, onConclui
             </button>
           ))}
         </div>
-        </> : <p className="text-xl font-semibold text-brand-300">PIX · R$ {pix.valor.toFixed(2)}</p>}
+        </> : <p className="text-xl font-semibold text-brand-300">PIX · {moeda(pix.valor)}</p>}
         {forma !== 'dinheiro' && !cobranca && !pix && !manual && (
           <label className="block space-y-1 text-sm text-slate-300">Como receber
             <select aria-label="Como receber" className={campo} value={canal} disabled={busy || !configPronta} onChange={e => { setCanal(e.target.value); setConferido(false); }}>

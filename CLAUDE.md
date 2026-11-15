@@ -1,5 +1,15 @@
 # CLAUDE.md — instruções para o agente
 
+## Entrega 1.0.26 — revisão visual do front
+
+Dinheiro em pt-BR por `moeda()` (`src/lib/numeros.ts`), rótulos de pagamento em
+`src/lib/rotulos.ts`, busca e tabela legível em Produtos, `categoria_nome` na API
+de produtos, venda cancelada marcada, preço sugerido da importação acompanha o
+custo. Lista dos 16 defeitos, testes e hashes em `docs/ATUALIZACAO_1.0.26.md`.
+Instalada no James: `/health` 1.0.26, produtos idênticos ao estado anterior.
+Valor exibido usa `moeda()`; não voltar a `toFixed(2)` em texto de tela. Campos
+de digitação seguem aceitando vírgula e ponto (testes de localização).
+
 ## Entrega 1.0.25 — vídeo de importação no PDV
 
 Tutorial narrado/legendado da interface real em `public/tutoriais`, distribuído

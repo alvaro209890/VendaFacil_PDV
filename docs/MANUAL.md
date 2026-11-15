@@ -72,7 +72,7 @@ PDV guarda os dois. Guia completo, com a conta de preço e o caso real:
 [Caixa e unidade](CAIXA_E_UNIDADE.md). O fiscal permanece em **homologação**.
 
 ## 1. Instalar e abrir
-1. Receba o instalador **`VendaFacilPDV-Setup-1.0.25.exe`** e dê dois cliques.
+1. Receba o instalador **`VendaFacilPDV-Setup-1.0.26.exe`** e dê dois cliques.
 2. Avance a instalação (cria atalho no Menu Iniciar e na Área de Trabalho).
 3. Abra pelo atalho **VendaFácil PDV**. O sistema sobe e abre no navegador.
 
@@ -190,6 +190,7 @@ cobrança na maquininha; o rascunho não é comprovante de pagamento.
 
 ## 5. Produtos e estoque
 Tela **Produtos**:
+- **Buscar produto**: digite parte do nome ou bipe o código de barras (da caixa ou da unidade) para achar o item na lista.
 - **+ Novo**: cadastre nome, preços (custo/venda), estoque, código de barras,
   unidade e (opcional) dados fiscais.
 - **Editar / Desativar** cada produto.

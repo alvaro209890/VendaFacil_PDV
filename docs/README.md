@@ -2,8 +2,12 @@
 
 Índice de toda a documentação, por público.
 
-**Entrega atual: 1.0.23 instalada no James e PDV local**, prévia da importação
-de XML em cartões. [Atualização, hashes e testes](ATUALIZACAO_1.0.23.md).
+**Entrega atual: 1.0.26 instalada no James**, revisão visual do front (moeda em
+pt-BR, busca de produtos, lista de produtos legível, venda cancelada marcada).
+[Defeitos corrigidos, hashes e testes](ATUALIZACAO_1.0.26.md).
+Anterior: [vídeo de importação no PDV, 1.0.25](ATUALIZACAO_1.0.25.md).
+Anterior: [contagem da nota x formato de venda, 1.0.24](ATUALIZACAO_1.0.24.md).
+Anterior: [prévia da importação em cartões, 1.0.23](ATUALIZACAO_1.0.23.md).
 Anterior: [caixa x unidade na importação, 1.0.22](ATUALIZACAO_1.0.22.md).
 Anterior: [remoção de item da compra na 1.0.21](ATUALIZACAO_1.0.21.md).
 Inclui o [fiado/PIX da 1.0.19](VALIDACAO_FIADO_1.0.19.md).

@@ -94,7 +94,7 @@ export default function Clientes() {
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <h1 className="text-xl sm:text-2xl font-bold text-white">Clientes</h1>
-          <p className="text-slate-400 text-xs sm:text-sm mt-0.5">{clientes.length} cliente(s) cadastrado(s)</p>
+          <p className="text-slate-400 text-xs sm:text-sm mt-0.5">{clientes.length === 1 ? "1 cliente cadastrado" : `${clientes.length} clientes cadastrados`}</p>
         </div>
         <button
           onClick={() => { resetForm(); setShowModal(true); }}

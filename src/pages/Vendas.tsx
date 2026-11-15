@@ -3,6 +3,8 @@ import { FileText, ExternalLink, RefreshCw, Download } from "lucide-react";
 import { listarVendas, obterVenda, cancelarVenda, getNotaDaVenda, emitirNfce, consultarNfce, cancelarNfce, listarClientes, getNfeDaVenda, emitirNfe, consultarNfe, baixarXmlNota } from "../lib/api";
 import type { Cliente } from "../lib/api";
 import type { Venda, NotaFiscal } from "../lib/api";
+import { moeda } from "../lib/numeros";
+import { rotuloForma } from "../lib/rotulos";
 
 export default function VendasPage() {
   const [vendas, setVendas] = useState<Venda[]>([]);
@@ -160,7 +162,7 @@ export default function VendasPage() {
       <div className="flex-1 min-h-0 flex flex-col">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-white font-bold text-base sm:text-lg">🧾 Histórico de Vendas</h2>
-          <span className="text-slate-400 text-xs sm:text-sm">Hoje: R$ {totalHoje === null ? "—" : totalHoje.toFixed(2)}</span>
+          <span className="text-slate-400 text-xs sm:text-sm">Hoje: {totalHoje === null ? "R$ —" : moeda(totalHoje)}</span>
         </div>
 
         <div className="flex-1 overflow-y-auto rounded-xl bg-slate-900 border border-slate-800">
@@ -177,11 +179,11 @@ export default function VendasPage() {
                         <p className="text-slate-400 text-xs mt-0.5">
                           {new Date(v.criado_em).toLocaleDateString("pt-BR")} às {new Date(v.criado_em).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                         </p>
-                        <span className="inline-flex mt-2 text-slate-300 text-2xs bg-slate-800 px-2 py-1 rounded-full capitalize">
-                          {v.forma_pagamento}
-                        </span>
+                        <span className="inline-flex mt-2 text-slate-300 text-2xs bg-slate-800 px-2 py-1 rounded-full">
+                          {rotuloForma(v.forma_pagamento)}
+                        </span> {v.status === "cancelada" && <span className="ml-1 rounded bg-red-500/10 px-2 py-0.5 text-2xs font-semibold text-red-300">Cancelada</span>}
                       </div>
-                      <p className="text-brand-400 font-bold whitespace-nowrap">R$ {v.total.toFixed(2)}</p>
+                      <p className={`font-bold whitespace-nowrap ${v.status === "cancelada" ? "text-slate-500 line-through" : "text-brand-400"}`}>{moeda(v.total)}</p>
                     </div>
                     <button
                       onClick={() => verDetalhe(v.id)}
@@ -214,9 +216,9 @@ export default function VendasPage() {
                         </span>
                       </td>
                       <td className="p-3">
-                        <span className="text-slate-300 text-xs bg-slate-800 px-2 py-0.5 rounded capitalize">{v.forma_pagamento}</span>
+                        <span className="text-slate-300 text-xs bg-slate-800 px-2 py-0.5 rounded">{rotuloForma(v.forma_pagamento)}</span> {v.status === "cancelada" && <span className="ml-1 rounded bg-red-500/10 px-2 py-0.5 text-2xs font-semibold text-red-300">Cancelada</span>}
                       </td>
-                      <td className="p-3 text-brand-400 font-bold whitespace-nowrap">R$ {v.total.toFixed(2)}</td>
+                      <td className={`p-3 font-bold whitespace-nowrap ${v.status === "cancelada" ? "text-slate-500 line-through" : "text-brand-400"}`}>{moeda(v.total)}</td>
                       <td className="p-3 text-right">
                         <button onClick={() => verDetalhe(v.id)} className="text-slate-400 hover:text-white text-xs px-2 py-1 rounded hover:bg-slate-700 active:scale-95">Detalhes</button>
                       </td>
@@ -248,7 +250,7 @@ export default function VendasPage() {
             </div>
             <div className="flex justify-between">
               <span className="text-slate-400">Pagamento</span>
-              <span className="text-white capitalize">{detalhe.forma_pagamento}</span>
+              <span className="text-white">{rotuloForma(detalhe.forma_pagamento)}</span>
             </div>
             {detalhe.observacao && (
               <div className="flex justify-between">
@@ -266,7 +268,7 @@ export default function VendasPage() {
                   <span className="text-white truncate block">{item.nome_produto}</span>
                   <span className="text-slate-500 ml-1">×{item.quantidade}</span>
                 </div>
-                <span className="text-brand-400 shrink-0 ml-2">R$ {item.subtotal.toFixed(2)}</span>
+                <span className="text-brand-400 shrink-0 ml-2">{moeda(item.subtotal)}</span>
               </div>
             ))}
           </div>
@@ -275,12 +277,12 @@ export default function VendasPage() {
             {detalhe.desconto > 0 && (
               <div className="flex justify-between text-green-400">
                 <span>Desconto</span>
-                <span>− R$ {detalhe.desconto.toFixed(2)}</span>
+                <span>− {moeda(detalhe.desconto)}</span>
               </div>
             )}
             <div className="flex justify-between font-bold text-base sm:text-lg mb-4">
               <span className="text-white">Total</span>
-              <span className="text-brand-400">R$ {detalhe.total.toFixed(2)}</span>
+              <span className="text-brand-400">{moeda(detalhe.total)}</span>
             </div>
 
             {detalhe.status === "cancelada" ? (

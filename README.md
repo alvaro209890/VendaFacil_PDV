@@ -3,7 +3,13 @@
 Sistema de **Ponto de Venda (PDV)** para mercadinhos e pequenos comércios,
 distribuído como **executável único (.exe)** com controle central de licenças.
 
-**1.0.23 instalada no James (14/11/2026):** a prévia da importação de XML virou
+**1.0.26 instalada no James (15/11/2026):** revisão visual do front. Dinheiro
+em pt-BR (`R$ 1.234,56`) em todas as telas, busca na lista de produtos, tabela de
+produtos legível, categoria no card do PDV, venda cancelada marcada e preço
+sugerido que acompanha o custo na importação de XML.
+[Defeitos corrigidos e provas](docs/ATUALIZACAO_1.0.26.md).
+
+**1.0.23 (14/11/2026):** a prévia da importação de XML virou
 uma lista de **cartões** (um por produto, com quantidade, custo, preço de venda e
 lucro %), com margem para todos os novos e linhas repetidas da nota juntadas.
 [O que mudou e provas](docs/ATUALIZACAO_1.0.23.md).

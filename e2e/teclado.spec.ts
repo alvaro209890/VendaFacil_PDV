@@ -39,7 +39,7 @@ test('U02: F3 foca quantidade e Enter confirma sem vender', async ({ page }) => 
   await page.keyboard.type('3');
   await page.keyboard.press('Enter');
   await expect(quantidade).toHaveValue('3');
-  await expect(page.getByText(`Falta R$ ${(3 * 5).toFixed(2)}`, { exact: true })).toBeVisible();
+  await expect(page.getByText(`Falta R$ ${(3 * 5).toFixed(2).replace('.', ',')}`, { exact: true })).toBeVisible();
   await expect(page.getByText(/Venda finalizada!/)).toHaveCount(0);
 });
 
@@ -97,7 +97,7 @@ test('U02: F2 e atalhos nao atravessam PIX ainda carregando', async ({ page }) =
     await page.keyboard.press('F2');
     await page.keyboard.press('F6');
     expect(pedidos).toBe(1);
-    await expect(page.getByPlaceholder('0.00', { exact: true })).not.toBeFocused();
+    await expect(page.getByLabel('Desconto', { exact: true })).not.toBeFocused();
   } finally {
     liberar();
     await page.unrouteAll({ behavior: 'wait' });
@@ -150,13 +150,13 @@ test('U02: tres produtos distintos e venda inteira so com teclado', async ({ pag
   await expect(page.getByPlaceholder('0,00', { exact: true })).toBeFocused();
   await page.keyboard.type(String(3 * 5));
   await page.keyboard.press('F2');
-  await expect(page.getByText(`Venda finalizada! Total: R$ ${(3 * 5).toFixed(2)}`, { exact: true })).toBeVisible();
+  await expect(page.getByText(`Venda finalizada! Total: R$ ${(3 * 5).toFixed(2).replace('.', ',')}`, { exact: true })).toBeVisible();
 });
 
 test('U02: F6 foca desconto e permite ajustar pelo teclado', async ({ page }) => {
   await page.keyboard.press('F6');
-  const desconto = page.getByPlaceholder('0.00', { exact: true });
+  const desconto = page.getByLabel('Desconto', { exact: true });
   await expect(desconto).toBeFocused();
   await page.keyboard.type('1');
-  await expect(page.getByText('Falta R$ 4.00', { exact: true })).toBeVisible();
+  await expect(page.getByText('Falta R$ 4,00', { exact: true })).toBeVisible();
 });

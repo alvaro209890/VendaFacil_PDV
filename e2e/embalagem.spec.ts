@@ -67,7 +67,7 @@ if (process.env.VF_XML_REAL) test('Kaiser real: CX 12 a R$ 40 e lata a R$ 3,80 s
   expect([p.preco_embalagem,p.preco_unidade,p.vende_por_unidade]).toEqual([40,3.8,1]);
   await page.goto('/pdv');
   await expect(page.getByText('CX com 12').first()).toBeVisible();
-  await expect(page.getByText('R$ 3.33 cada').first()).toBeVisible();
+  await expect(page.getByText('R$ 3,33 cada').first()).toBeVisible();
   const busca=page.getByPlaceholder(/Bipe o código/);
   await busca.fill('7896045500116'); await busca.press('Enter');
   await busca.fill('7896045512317'); await busca.press('Enter');

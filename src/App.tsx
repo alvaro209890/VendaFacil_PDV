@@ -122,7 +122,7 @@ function Layout({ children, modoConsulta }: { children: React.ReactNode; modoCon
         </nav>
 
         {/* Mascote Area */}
-        <div className="px-6 py-4 flex justify-center border-t border-slate-800/50 relative z-10">
+        <div className="hidden [@media(min-height:900px)]:flex px-6 pt-12 pb-4 justify-center border-t border-slate-800/50 relative z-10">
           <Mascote estado="normal" frase="Boas vendas!" />
         </div>
 

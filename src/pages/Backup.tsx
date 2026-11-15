@@ -73,7 +73,7 @@ export default function BackupPage() {
 
       <div className="bg-amber-500/10 border border-amber-500/30 text-amber-300 rounded-xl p-3 text-xs mb-6">
         <b>Backups automáticos</b> são feitos todo dia e a cada inicialização — ficam na pasta
-        <code className="mx-1 text-amber-200">{pasta || "dados/backups"}</code> na máquina.
+        <code className="mx-1 text-amber-200 break-all">{pasta || "dados/backups"}</code> na máquina.
         Mesmo assim, <b>baixe um backup de vez em quando</b> e guarde fora do computador
         (pen drive/nuvem): se o PC pifar, a pasta local vai junto.
       </div>
@@ -83,13 +83,13 @@ export default function BackupPage() {
         {backups.length === 0 ? (
           <p className="text-slate-500 text-sm p-4">Nenhum backup ainda.</p>
         ) : (
-          <table className="w-full text-sm">
+          <table className="w-full table-fixed text-sm">
             <tbody>
               {backups.map((b) => (
                 <tr key={b.nome} className="border-b border-slate-800 last:border-0">
-                  <td className="p-3 text-slate-300 font-mono text-xs truncate">{b.nome}</td>
-                  <td className="p-3 text-slate-500 whitespace-nowrap">{fmtData(b.data)}</td>
-                  <td className="p-3 text-slate-500 text-right whitespace-nowrap">{b.tamanho_kb} KB</td>
+                  <td className="p-3 text-slate-300 font-mono text-xs break-all">{b.nome}</td>
+                  <td className="p-3 text-slate-500 text-xs sm:text-sm w-28 sm:w-44">{fmtData(b.data)}</td>
+                  <td className="p-3 text-slate-500 text-right whitespace-nowrap w-20 sm:w-24">{b.tamanho_kb} KB</td>
                 </tr>
               ))}
             </tbody>

@@ -3,9 +3,8 @@ import { motion } from "framer-motion";
 import { Wallet, ArrowDownCircle, ArrowUpCircle, Lock, Unlock, CheckCircle2, AlertCircle } from "lucide-react";
 import { caixaAtual, abrirCaixa, movimentoCaixa, fecharCaixa } from "../lib/api";
 import type { CaixaAtual } from "../lib/api";
-import { lerNumeroPtBr } from "../lib/numeros";
+import { lerNumeroPtBr, moeda } from "../lib/numeros";
 
-const moeda = (v: number) => `R$ ${(v || 0).toFixed(2)}`;
 const LABEL: Record<string, string> = { dinheiro: "Dinheiro", pix: "PIX", debito: "Débito", credito: "Crédito", fiado: "Fiado" };
 
 export default function CaixaPage() {

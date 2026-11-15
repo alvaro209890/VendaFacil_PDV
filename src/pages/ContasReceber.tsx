@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { lerNumeroPtBr } from "../lib/numeros";
+import { lerNumeroPtBr, moeda } from "../lib/numeros";
 import CampoData from "../components/CampoData";
 import ReceberFiadoModal from "../components/ReceberFiadoModal";
 import { FORMAS_RECEBIMENTO } from "../lib/api";
@@ -129,7 +129,7 @@ export default function ContasReceber() {
         <div className="min-w-0">
           <h1 className="text-xl sm:text-2xl font-bold text-white">Contas a Receber</h1>
           <p className="text-slate-400 text-xs sm:text-sm mt-0.5">
-            Pendente: <span className="text-brand-400 font-medium">R$ {totalPendente.toFixed(2)}</span>
+            Pendente: <span className="text-brand-400 font-medium">{moeda(totalPendente)}</span>
           </p>
         </div>
         <button
@@ -180,10 +180,10 @@ export default function ContasReceber() {
                   </div>
                   <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1.5 text-xs sm:text-sm">
                     <span className="text-brand-400 font-semibold">
-                      R$ {c.valor_total.toFixed(2)}
+                      {moeda(c.valor_total)}
                       {c.valor_pendente < c.valor_total && (
                         <span className="text-slate-400 font-normal ml-1">
-                          (R$ {c.valor_pendente.toFixed(2)} pendente)
+                          ({moeda(c.valor_pendente)} pendente)
                         </span>
                       )}
                     </span>
@@ -211,7 +211,7 @@ export default function ContasReceber() {
               {(c.status === 'pendente' || c.status === 'parcial') && !!c.pix_pendentes?.length && (
                 <div className="mt-3 space-y-2 border-t border-slate-800 pt-2">
                   <p className="text-xs text-slate-400">PIX gerado · aguardando conferência · maquininha livre</p>
-                  {c.pix_pendentes.map(p => <button key={p.id} onClick={() => { setPixSalvo(p); setRecebendo(c); }} className="mr-2 rounded-lg bg-brand-900/30 px-3 py-2 text-xs text-brand-300">Ver PIX de R$ {p.valor.toFixed(2)}</button>)}
+                  {c.pix_pendentes.map(p => <button key={p.id} onClick={() => { setPixSalvo(p); setRecebendo(c); }} className="mr-2 rounded-lg bg-brand-900/30 px-3 py-2 text-xs text-brand-300">Ver PIX de {moeda(p.valor)}</button>)}
                 </div>
               )}
               {c.pagamentos && c.pagamentos.length > 0 && (
@@ -219,7 +219,7 @@ export default function ContasReceber() {
                   <p className="text-2xs text-slate-500 mb-1">Histórico</p>
                   {c.pagamentos.map((p) => (
                     <p key={p.id} className="text-xs text-slate-400">
-                      {p.criado_em} · {FORMAS_RECEBIMENTO[p.forma as FormaRecebimento] || p.forma} · R$ {p.valor.toFixed(2)}
+                      {p.criado_em} · {FORMAS_RECEBIMENTO[p.forma as FormaRecebimento] || p.forma} · {moeda(p.valor)}
                       {p.payment_id && <span className="text-slate-500"> · Point #{p.payment_id}</span>}
                     </p>
                   ))}

@@ -16,7 +16,7 @@ import type {
   Produto, ProdutoInput, Categoria, CamposFiscais, PreviewXml, ItemConfirmarXml, Movimentacao,
 } from "../lib/api";
 import { estoqueBalcao, embalagemDoNome, textoComparacao } from "../lib/embalagem";
-import { lerNumeroPtBr } from "../lib/numeros";
+import { lerNumeroPtBr, moeda } from "../lib/numeros";
 
 // Item da importação com flags editáveis na tela.
 type ItemImport = ItemConfirmarXml & {
@@ -137,6 +137,18 @@ function itemDeEmbalagem(it: ItemImport): boolean {
     || (it.fator_sugerido || 0) > 1 || !!it.confirmar_abertura || it.modo_venda === "fechada";
 }
 
+/** Produto novo cujo preço ainda é a sugestão (custo + margem): quando a forma
+ *  de contar a nota muda o custo, o preço sugerido acompanha. Preço digitado
+ *  pelo operador não é tocado. Devolve true quando recalculou. */
+function acompanharCusto(antes: ItemImport, next: ItemImport, margens: number[], digitado: boolean): boolean {
+  if (digitado || next.acao !== "criar" || antes.preco_custo === next.preco_custo) return false;
+  const sugestao = (custo: number, m: number) => Number((Number(custo) * (1 + m / 100)).toFixed(2));
+  const margem = margens.find((m) => Math.abs(Number(antes.preco_venda) - sugestao(antes.preco_custo, m)) < 0.006);
+  if (margem === undefined) return false;
+  next.preco_venda = sugestao(next.preco_custo, margem);
+  return true;
+}
+
 /** Margem sobre o custo, em %, ou null quando não dá para calcular. */
 function margemSobreCusto(custo: number, venda: number): number | null {
   if (!(custo > 0) || !(venda > 0)) return null;
@@ -181,9 +193,12 @@ export default function ProdutosPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const apenasAlerta = searchParams.get("estoque") === "alerta";
   const [produtos, setProdutos] = useState<Produto[]>([]);
-  const produtosExibidos = apenasAlerta
-    ? produtos.filter((p) => p.ativo && p.estoque <= p.estoque_minimo)
-    : produtos;
+  const [busca, setBusca] = useState("");
+  const termoBusca = busca.trim().toLowerCase();
+  const produtosExibidos = produtos.filter((p) =>
+    (!apenasAlerta || (p.ativo && p.estoque <= p.estoque_minimo))
+    && (!termoBusca || p.nome.toLowerCase().includes(termoBusca)
+      || (p.codigo_barras || "").includes(termoBusca) || (p.codigo_barras_unidade || "").includes(termoBusca)));
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [loading, setLoading] = useState(true);
   const [editando, setEditando] = useState<Produto | null>(null);
@@ -337,6 +352,12 @@ export default function ProdutosPage() {
     }
   }
 
+  /** Margens que contam como "preço ainda sugerido": a do campo e os 30% iniciais. */
+  const margensSugestao = () => {
+    const m = lerNumeroPtBr(margemPadrao);
+    return m !== null && m >= 0 && m !== 30 ? [m, 30] : [30];
+  };
+
   const setItem = (i: number, campo: keyof ItemImport, valor: string | number | boolean) =>
     setImportItens((arr) => arr.map((it, idx) => {
       if (idx !== i) return it;
@@ -365,6 +386,7 @@ export default function ProdutosPage() {
         if (next.valor_unitario_xml) {
           next.preco_custo = Number((next.valor_unitario_xml / fator).toFixed(4));
         }
+        acompanharCusto(it, next, margensSugestao(), importTextos[`${i}:preco_venda`] !== undefined);
       }
       if (campo === "unidade" || campo === "unidade_compra") {
         next[campo] = normUn(String(valor));
@@ -404,6 +426,7 @@ export default function ProdutosPage() {
       if (next.valor_unitario_xml) {
         next.preco_custo = Number((next.valor_unitario_xml / fator).toFixed(4));
       }
+      acompanharCusto(it, next, margensSugestao(), importTextos[`${i}:preco_venda`] !== undefined);
       return next;
     }));
   }
@@ -842,7 +865,7 @@ export default function ProdutosPage() {
   return (
     <div className="flex flex-col lg:flex-row gap-3 lg:gap-4 h-full">
       {/* Lista */}
-      <div className="flex-1 min-h-0 flex flex-col">
+      <div className="flex-1 min-w-0 min-h-0 flex flex-col">
         {msg && !novo && !editando && <div role="status" className={`mb-3 rounded-lg border p-3 text-sm ${msg.tipo === 'ok' ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300' : 'border-red-500/30 bg-red-500/10 text-red-300'}`}>{msg.texto}</div>}
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-white font-bold text-base sm:text-lg">📦 Produtos ({produtosExibidos.length})</h2>
@@ -866,6 +889,15 @@ export default function ProdutosPage() {
         </div>
 
         <Link to="/manual#tutorial-xml" className="mb-3 w-fit text-sm font-medium text-brand-300 hover:underline">▶ Como importar XML? Assista ao vídeo</Link>
+
+        <input
+          type="search"
+          aria-label="Buscar produto"
+          value={busca}
+          onChange={(e) => setBusca(e.target.value)}
+          placeholder="Buscar produto pelo nome ou código de barras"
+          className="mb-3 w-full sm:max-w-md rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:border-brand-500 focus:outline-none"
+        />
 
         <label className="mb-3 flex items-center gap-2 text-sm text-slate-300">
           <input
@@ -897,23 +929,23 @@ export default function ProdutosPage() {
           </p>
         )}
 
-        <div className="flex-1 overflow-y-auto rounded-xl bg-slate-900 border border-slate-800">
+        <div className="flex-1 overflow-auto rounded-xl bg-slate-900 border border-slate-800">
           {produtosExibidos.length === 0 ? (
-            <p className="text-slate-500 text-center py-12 text-sm">{apenasAlerta ? "Nenhum produto em alerta de estoque." : "Nenhum produto cadastrado ainda."}</p>
+            <p className="text-slate-500 text-center py-12 text-sm">{termoBusca ? `Nenhum produto encontrado para “${busca.trim()}”.` : apenasAlerta ? "Nenhum produto em alerta de estoque." : "Nenhum produto cadastrado ainda."}</p>
           ) : (
             <>
               {/* Cards mobile: evita tabela espremida em telas pequenas */}
-              <div className="sm:hidden grid gap-2 p-2">
+              <div className="sm:hidden grid grid-cols-1 gap-2 p-2">
                 {produtosExibidos.map((p) => {
                   const baixo = p.estoque <= p.estoque_minimo;
                   return (
                     <article
                       key={p.id}
-                      className={`rounded-xl border border-slate-800 bg-slate-950/50 p-3 ${!p.ativo ? "opacity-50" : ""}`}
+                      className={`min-w-0 rounded-xl border border-slate-800 bg-slate-950/50 p-3 ${!p.ativo ? "opacity-50" : ""}`}
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0 flex-1">
-                          <h3 className="text-white font-medium truncate">{p.nome}</h3>
+                          <h3 className="text-white font-medium break-words">{p.nome}</h3>
                           <p className="text-slate-500 text-xs mt-0.5">
                             estoque <span className={baixo ? "text-amber-400" : "text-slate-300"}>{p.vende_por_unidade ? estoqueBalcao(p) : `${fmtQtd(p.estoque)} ${p.unidade}`}{baixo ? " ⚠️" : ""}</span>
                           </p>
@@ -927,11 +959,11 @@ export default function ProdutosPage() {
                       <div className="grid grid-cols-2 gap-2 my-3 text-sm">
                         <div className="rounded-lg bg-slate-800 p-2">
                           <p className="text-slate-500 text-2xs uppercase">Custo</p>
-                          <p className="text-slate-300">R$ {(p.preco_custo || 0).toFixed(2)}</p>
+                          <p className="text-slate-300">{moeda((p.preco_custo || 0))}</p>
                         </div>
                         <div className="rounded-lg bg-slate-800 p-2">
                           <p className="text-slate-500 text-2xs uppercase">Venda</p>
-                          <p className="text-brand-400 font-semibold">{p.vende_por_unidade ? `${p.unidade_compra}: R$ ${Number(p.preco_embalagem).toFixed(2)} · Unidade: R$ ${Number(p.preco_unidade).toFixed(2)}` : `R$ ${(p.preco_venda || 0).toFixed(2)}`}</p>
+                          <p className="text-brand-400 font-semibold">{p.vende_por_unidade ? `${p.unidade_compra}: ${moeda(Number(p.preco_embalagem))} · Unidade: ${moeda(Number(p.preco_unidade))}` : `${moeda((p.preco_venda || 0))}`}</p>
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
@@ -961,7 +993,7 @@ export default function ProdutosPage() {
               </div>
 
               {/* Tabela tablet/desktop */}
-              <table className="hidden sm:table w-full text-sm">
+              <table className="hidden sm:table w-full min-w-[44rem] text-sm">
                 <thead className="bg-slate-800 sticky top-0">
                   <tr className="text-slate-400 text-left">
                     <th className="p-3 font-medium">Nome</th>
@@ -978,14 +1010,16 @@ export default function ProdutosPage() {
                     return (
                       <tr key={p.id} className={`border-t border-slate-800 hover:bg-slate-800/50 ${!p.ativo ? "opacity-40" : ""}`}>
                         <td className="p-3 text-white">
-                          <div className="font-medium truncate max-w-40">{p.nome}</div>
-                          <div className="text-slate-500 text-xs">
-                            {p.unidade_compra || p.unidade} x {fmtQtd(p.quantidade_por_embalagem || 1)} {p.unidade}
-                          </div>
+                          <div className="font-medium line-clamp-2 min-w-36 max-w-72" title={p.nome}>{p.nome}</div>
+                          {(p.quantidade_por_embalagem || 1) > 1 && (
+                            <div className="text-slate-500 text-xs">
+                              {p.unidade_compra || p.unidade} com {fmtQtd(p.quantidade_por_embalagem)} {p.unidade}
+                            </div>
+                          )}
                         </td>
-                        <td className="p-3 text-slate-300">R$ {(p.preco_custo || 0).toFixed(2)}</td>
-                        <td className="p-3 text-brand-400 font-semibold">{p.vende_por_unidade ? `${p.unidade_compra}: R$ ${Number(p.preco_embalagem).toFixed(2)} · Unidade: R$ ${Number(p.preco_unidade).toFixed(2)}` : `R$ ${(p.preco_venda || 0).toFixed(2)}`}</td>
-                        <td className="p-3 hidden md:table-cell">
+                        <td className="p-3 text-slate-300 whitespace-nowrap">{moeda(p.preco_custo)}</td>
+                        <td className="p-3 text-brand-400 font-semibold whitespace-nowrap">{p.vende_por_unidade ? <>{p.unidade_compra}: {moeda(p.preco_embalagem)}<span className="block">Unidade: {moeda(p.preco_unidade)}</span></> : moeda(p.preco_venda)}</td>
+                        <td className="p-3 hidden md:table-cell min-w-32">
                           <span className={baixo ? "text-amber-400 font-medium" : "text-slate-300"}>{p.vende_por_unidade ? estoqueBalcao(p) : `${fmtQtd(p.estoque)} ${p.unidade}`}{baixo && ` ⚠️`}</span>
                         </td>
                         <td className="p-3 hidden md:table-cell">
@@ -996,7 +1030,7 @@ export default function ProdutosPage() {
                           )}
                         </td>
                         <td className="p-3">
-                          <div className="flex gap-1 justify-end">
+                          <div className="flex gap-1 justify-end whitespace-nowrap">
                             {p.ativo ? <button onClick={() => entradaRapida(p)} className="text-emerald-400 hover:text-emerald-300 text-xs px-2 py-1 rounded hover:bg-slate-700 active:scale-95" title="Dar entrada no estoque">+ Estoque</button> : null}
                             {p.ativo ? <button onClick={() => ajusteRapido(p)} className="text-amber-400 hover:text-amber-300 text-xs px-2 py-1 rounded hover:bg-slate-700 active:scale-95" title="Perda, quebra ou inventário">Ajustar</button> : null}
                             <button onClick={() => abrirHistorico(p)} className="text-sky-400 hover:text-sky-300 text-xs px-2 py-1 rounded hover:bg-slate-700 active:scale-95" title="Histórico de movimentações">Histórico</button>
@@ -1016,7 +1050,7 @@ export default function ProdutosPage() {
 
       {/* Formulário */}
       {(novo || editando) && (
-        <div className="w-full lg:w-96 bg-slate-900 border border-slate-800 rounded-xl p-4">
+        <div className="w-full lg:w-80 lg:shrink-0 bg-slate-900 border border-slate-800 rounded-xl p-4">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-white font-bold">
               {editando ? "✏️ Editar Produto" : "➕ Novo Produto"}

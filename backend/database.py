@@ -967,10 +967,13 @@ class Database:
 
     def list_produtos(self, user_id: int, ativos_only: bool = True) -> list[dict[str, Any]]:
         with self._lock:
-            q = "SELECT * FROM produtos WHERE user_id = ?"
+            # categoria_nome alimenta a etiqueta do card no PDV.
+            q = ("SELECT p.*, c.nome AS categoria_nome FROM produtos p "
+                 "LEFT JOIN categorias c ON c.id = p.categoria_id AND c.user_id = p.user_id "
+                 "WHERE p.user_id = ?")
             if ativos_only:
-                q += " AND ativo = 1"
-            q += " ORDER BY nome"
+                q += " AND p.ativo = 1"
+            q += " ORDER BY p.nome"
             rows = self._conn.execute(q, (user_id,)).fetchall()
         return [dict(r) for r in rows]
 
@@ -1464,7 +1467,7 @@ class Database:
                     "valor_pendente, data_vencimento, status, observacao, criado_em, atualizado_em) "
                     "VALUES (?, ?, ?, ?, ?, NULL, 'pendente', ?, ?, ?)",
                     (user_id, venda_id, cliente_id, moeda(total), moeda(total),
-                     f"Venda #{venda_id} — {len(itens)} item(ns)", agora, agora),
+                     f"Venda #{venda_id} — {len(itens)} {'item' if len(itens) == 1 else 'itens'}", agora, agora),
                 )
             return self.get_venda(venda_id)
 

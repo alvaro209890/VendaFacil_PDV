@@ -99,5 +99,5 @@ test('U01: recarga atualiza o preço do rascunho pelo cadastro atual', async ({ 
   expect(atualizacao.status()).toBe(200);
   await page.reload();
   await expect(page.getByPlaceholder('0,00', { exact: true })).toBeVisible();
-  await expect(page.getByText('Falta R$ 8.00', { exact: true })).toBeVisible();
+  await expect(page.getByText('Falta R$ 8,00', { exact: true })).toBeVisible();
 });

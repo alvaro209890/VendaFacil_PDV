@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 import { getDashboard } from "../lib/api";
 import type { DashboardData } from "../lib/api";
+import { moeda } from "../lib/numeros";
+import { rotuloForma } from "../lib/rotulos";
 
 export default function DashboardPage() {
   const [dash, setDash] = useState<DashboardData | null>(null);
@@ -62,14 +64,14 @@ export default function DashboardPage() {
     {
       titulo: "Vendas Hoje",
       valor: String(dash.vendas_hoje_qtd),
-      subtitulo: `R$ ${(dash.vendas_hoje_total || 0).toFixed(2)}`,
+      subtitulo: `${moeda((dash.vendas_hoje_total || 0))}`,
       cor: "from-emerald-600 to-teal-600",
       icon: <ShoppingBag size={20} />,
       id: "vendas-hoje"
     },
     {
       titulo: "Total em Vendas",
-      valor: `R$ ${(dash.vendas_total || 0).toFixed(2)}`,
+      valor: `${moeda((dash.vendas_total || 0))}`,
       cor: "from-violet-600 to-purple-600",
       icon: <DollarSign size={20} />,
       id: "vendas-total"
@@ -187,7 +189,7 @@ export default function DashboardPage() {
                     <div>
                       <p className="text-white text-sm font-bold">Venda Confirmada</p>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">{v.forma_pagamento}</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">{rotuloForma(v.forma_pagamento)}</span>
                         <span className="w-1 h-1 rounded-full bg-slate-700" />
                         <span className="text-[10px] font-bold text-slate-500">
                           {new Date(v.criado_em).toLocaleTimeString("pt-BR", {
@@ -199,7 +201,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-emerald-400 font-black tracking-tight">R$ {v.total.toFixed(2)}</p>
+                    <p className="text-emerald-400 font-black tracking-tight">{moeda(v.total)}</p>
                     <ArrowUpRight className="text-slate-700 group-hover:text-brand-500 ml-auto transition-colors" size={14} />
                   </div>
                 </div>

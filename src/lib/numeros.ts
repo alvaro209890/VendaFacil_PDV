@@ -7,3 +7,13 @@ export function lerNumeroPtBr(texto: string, casas?: number): number | null {
   const numero = Number(valor);
   return Number.isFinite(numero) ? numero : null;
 }
+
+/** Valor em duas casas no padrão brasileiro: 1.234,56. */
+export function decimal2(v: number | null | undefined): string {
+  return Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+/** Dinheiro para exibição: "R$ 1.234,56" (espaço comum, para busca e testes). */
+export function moeda(v: number | null | undefined): string {
+  return `R$ ${decimal2(v)}`;
+}

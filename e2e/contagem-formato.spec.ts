@@ -85,7 +85,7 @@ test('Produto cadastrado: preço, dois formatos, avulso e embalagem com convers�
   const field=(label:string)=>page.getByText(label,{exact:true}).locator('..').locator('input');
   await field('Preço Venda').fill('4,50');
   await page.getByRole('button',{name:'Salvar Alterações',exact:true}).click();
-  await expect(row).toContainText('4.50');
+  await expect(row).toContainText('R$ 4,50');
   await row.getByRole('button',{name:'Editar',exact:true}).click();
   await page.getByRole('radio',{name:'Caixa e unidade',exact:true}).check();
   await expect(page.getByLabel('Código da unidade',{exact:true})).toHaveValue('LATA24');
@@ -95,7 +95,7 @@ test('Produto cadastrado: preço, dois formatos, avulso e embalagem com convers�
   await expect(page.getByLabel('Preço da unidade',{exact:true})).toHaveValue('4.5');
   await expect(field('Preço Venda')).toHaveCount(0);
   await page.getByRole('button',{name:'Salvar Alterações',exact:true}).click();
-  await expect(row).toContainText('CX: R$ 48.00');
+  await expect(row).toContainText('CX: R$ 48,00');
   const obter=async()=>(await (await request.get(`${api}/api/produtos/${id}`,{headers:headers()})).json()).produto;
   expect((await obter()).estoque).toBe(24);
   await row.getByRole('button',{name:'Editar',exact:true}).click();

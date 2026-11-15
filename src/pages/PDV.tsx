@@ -28,7 +28,7 @@ import { itemCarrinho, linhaCarrinho, limiteCarrinho, unidadeCarrinho, lerCarrin
 import JanelaProdutoModal from "../components/JanelaProduto";
 import type { JanelaProduto } from "../components/JanelaProduto";
 import type { CartItem } from "../lib/carrinho";
-import { lerNumeroPtBr as decimalDigitado } from "../lib/numeros";
+import { lerNumeroPtBr as decimalDigitado, moeda, decimal2 } from "../lib/numeros";
 
 const PAGAMENTOS = [
   { value: "dinheiro", label: "Dinheiro", icon: <Banknote size={18} /> },
@@ -51,7 +51,6 @@ const ERRO_POINT_NAO_PUXOU =
 
 const fmtQtd = (v: number) => Number(v || 0).toLocaleString("pt-BR", { maximumFractionDigits: 3 });
 const passoQtd = (unidade?: string) => ["KG", "G", "LT", "ML"].includes((unidade || "").toUpperCase()) ? 0.1 : 1;
-const moeda = (v: number) => `R$ ${Number(v || 0).toFixed(2)}`;
 const parseMoeda = (v: string) => decimalDigitado(v) ?? 0;
 
 
@@ -612,7 +611,7 @@ export default function PDV() {
       const resultadoFiscal = avisoFiscal
         ? ` Venda registrada; não repita a venda. NFC-e ${statusNota || "não emitida"}: ${motivoFiscal}`
         : statusNota === "autorizada" ? " (Nota emitida)" : "";
-      setMsg({ tipo: avisoFiscal ? "erro" : "ok", texto: `Venda finalizada! Total: R$ ${total.toFixed(2)}${resultadoFiscal}`, recibo });
+      setMsg({ tipo: avisoFiscal ? "erro" : "ok", texto: `Venda finalizada! Total: ${moeda(total)}${resultadoFiscal}`, recibo });
       maqPagamentoRef.current = null;
       setCarrinho([]); setQuantidadesTexto({});
       setDesconto(0);
@@ -688,8 +687,8 @@ export default function PDV() {
                       </div>
                       {!!p.vende_por_unidade && <p className="mt-3 text-sm font-bold text-brand-300">{p.modo_venda === 'embalagem' ? `${p.unidade_compra} com ${fmtQtd(p.quantidade_por_embalagem)}` : 'Unidade'}</p>}
                       <div className="mt-4">
-                        <p className="text-brand-400 font-black text-lg">R$ {preco.toFixed(2)}</p>
-                        {p.vende_por_unidade && p.modo_venda === 'embalagem' && p.quantidade_por_embalagem > 0 && <p className="text-slate-400 text-xs">R$ {(preco / p.quantidade_por_embalagem).toFixed(2)} cada</p>}
+                        <p className="text-brand-400 font-black text-lg">{moeda(preco)}</p>
+                        {!!p.vende_por_unidade && p.modo_venda === 'embalagem' && p.quantidade_por_embalagem > 0 && <p className="text-slate-400 text-xs">{moeda((preco / p.quantidade_por_embalagem))} cada</p>}
                         <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold mt-2 ${baixo ? "bg-amber-500/10 text-amber-500" : "bg-slate-700/30 text-slate-500"}`}>
                           {baixo && <AlertCircle size={10} />}
                           {p.vende_por_unidade && p.modo_venda === 'embalagem' ? `${fmtQtd(Math.floor(p.estoque / (p.quantidade_por_embalagem || 1)))} ${p.unidade_compra} (${fmtQtd(p.estoque)} ${p.unidade})` : `${fmtQtd(p.estoque)} ${p.unidade}`}
@@ -755,9 +754,9 @@ export default function PDV() {
                       className="flex flex-wrap items-center gap-3 bg-slate-800/50 border border-slate-700/30 rounded-2xl p-3 group"
                     >
                       <div className="flex-1 min-w-[8rem]">
-                        <p className="text-white text-sm font-bold truncate">{i.nome}</p>
+                        <p className="text-white text-sm font-bold line-clamp-2 break-words" title={i.nome}>{i.nome}</p>
                         {!!i.vende_por_unidade && <span className="text-brand-300 text-xs font-bold">{i.modo_venda === 'embalagem' ? i.unidade_compra : 'AVULSO'}</span>}
-                        <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mt-0.5">R$ {preco.toFixed(2)} / {unidadeCarrinho(i)}</p>
+                        <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mt-0.5">{moeda(preco)} / {unidadeCarrinho(i)}</p>
                       </div>
                       <div className="flex items-center gap-2 bg-slate-900/50 rounded-xl p-1 border border-slate-700/50">
                         <button
@@ -806,7 +805,7 @@ export default function PDV() {
                         </button>
                       </div>
                       <div className="ml-auto text-right min-w-20">
-                        <p className="text-brand-400 font-black text-sm">R$ {sub.toFixed(2)}</p>
+                        <p className="text-brand-400 font-black text-sm">{moeda(sub)}</p>
                         <button
                           type="button"
                           data-acao-carrinho
@@ -828,7 +827,7 @@ export default function PDV() {
             <div className="bg-slate-800/30 rounded-2xl p-4 border border-slate-700/30 space-y-3 mb-6">
               <div className="flex justify-between text-xs font-bold uppercase tracking-wider">
                 <span className="text-slate-500">Subtotal</span>
-                <span className="text-white text-sm">R$ {subtotal.toFixed(2)}</span>
+                <span className="text-white text-sm">{moeda(subtotal)}</span>
               </div>
               <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider">
                 <span className="text-slate-500">Desconto</span>
@@ -841,7 +840,7 @@ export default function PDV() {
                     aria-label="Desconto"
                     value={descontoTexto}
                     onChange={(e) => setDescontoTexto(e.target.value)}
-                    placeholder="0.00"
+                    placeholder="0"
                     className="w-24 bg-slate-900/50 border border-slate-700/50 rounded-lg pl-7 pr-2 py-1.5 text-brand-400 text-right text-xs font-bold focus:outline-none focus:border-brand-500 transition-all"
                   />
                 </div>
@@ -850,7 +849,7 @@ export default function PDV() {
                 <span className="text-slate-400 text-xs font-black uppercase tracking-widest">Total a Pagar</span>
                 <span className="text-white font-black text-2xl tracking-tighter">
                   <span className="text-brand-400 text-sm mr-1">R$</span>
-                  {total.toFixed(2)}
+                  {decimal2(total)}
                 </span>
               </div>
             </div>
@@ -913,7 +912,7 @@ export default function PDV() {
                   {[total, 50, 100, 200].map((v, idx) => (
                     <button
                       key={`${v}-${idx}`}
-                      onClick={() => setValorRecebido(v.toFixed(2))}
+                      onClick={() => setValorRecebido(v.toFixed(2).replace(".", ","))}
                       className="py-2 rounded-xl bg-slate-900/70 hover:bg-slate-700 text-slate-300 text-xs font-black transition-colors active:scale-95"
                     >
                       {idx === 0 ? "Exato" : moeda(v).replace("R$ ", "")}
@@ -1064,7 +1063,7 @@ export default function PDV() {
               Vendas Hoje
             </div>
             <div className="text-right">
-              <p className="text-white font-bold text-sm">R$ {(dash.vendas_hoje_total || 0).toFixed(2)}</p>
+              <p className="text-white font-bold text-sm">{moeda((dash.vendas_hoje_total || 0))}</p>
               <p className="text-brand-400 text-[10px] font-bold uppercase tracking-tighter">{dash.vendas_hoje_qtd} vendas</p>
             </div>
           </div>
@@ -1119,7 +1118,7 @@ export default function PDV() {
                 <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">Total a Pagar</p>
                 <p className="text-brand-400 font-black text-3xl tracking-tighter">
                   <span className="text-lg mr-1">R$</span>
-                  {total.toFixed(2)}
+                  {decimal2(total)}
                 </p>
               </div>
 
@@ -1193,7 +1192,7 @@ export default function PDV() {
               <div className="mb-6">
                 <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">Total a Cobrar</p>
                 <p className="text-brand-400 font-black text-3xl tracking-tighter">
-                  <span className="text-lg mr-1">R$</span>{total.toFixed(2)}
+                  <span className="text-lg mr-1">R$</span>{decimal2(total)}
                 </p>
               </div>
 
