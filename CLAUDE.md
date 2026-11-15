@@ -1,6 +1,16 @@
 # CLAUDE.md — instruções para o agente
 
-## Entrega atual 1.0.22 — 14/11/2026
+## Entrega atual 1.0.23 — 14/11/2026
+
+Tela de importação de XML em **cartões**: um por produto, com *Na nota · Entra no
+estoque · Custo por unidade · Preço de venda* + lucro %; "Como vende?" uma vez só
+(recolhida nos itens simples, amarela nos de caixa); margem para todos os novos;
+custo total no rodapé; linhas repetidas da mesma NF (mesmo código) juntadas com
+custo médio. Lógica e payload inalterados. Testes e2e localizam os campos por
+`aria-label` "<rótulo> do item N" (não há mais tabela/columnheader).
+Provas: `docs/ATUALIZACAO_1.0.23.md`.
+
+## Entrega 1.0.22 — 14/11/2026
 
 Importação de XML com a decisão explícita de caixa x unidade: *só por unidade*,
 *caixa fechada e unidade* ou *só a embalagem fechada*; aviso de embalagem pelos

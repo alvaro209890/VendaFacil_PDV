@@ -1,5 +1,11 @@
 # ✅ Testes automatizados
 
+**1.0.23, 14/11/2026:** backend **547** aprovados, **101** testes de navegador
+aprovados (suíte inteira, com `VF_XML_REAL` = NF-e 446817 e o novo teste de linhas
+repetidas), `tsc -b` e ESLint limpos, roteiro do `.exe` com 49 requisições e 0
+respostas 5xx. Instalado no James com hash conferido e `/health` 1.0.23.
+[Entrega e provas](ATUALIZACAO_1.0.23.md).
+
 **1.0.22, 14/11/2026:** backend **547 testes** aprovados (9 deselected de
 homologação) + **8 novos** de importação de caixa x unidade, `tsc --noEmit` limpo
 e ESLint sem avisos. Navegador: **14** testes de importação/embalagem/localização

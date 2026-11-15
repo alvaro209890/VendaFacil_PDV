@@ -3,7 +3,12 @@
 Sistema de **Ponto de Venda (PDV)** para mercadinhos e pequenos comércios,
 distribuído como **executável único (.exe)** com controle central de licenças.
 
-**1.0.22 instalada no James (14/11/2026):** a importação de XML agora pergunta
+**1.0.23 instalada no James (14/11/2026):** a prévia da importação de XML virou
+uma lista de **cartões** (um por produto, com quantidade, custo, preço de venda e
+lucro %), com margem para todos os novos e linhas repetidas da nota juntadas.
+[O que mudou e provas](docs/ATUALIZACAO_1.0.23.md).
+
+**1.0.22 (14/11/2026):** a importação de XML agora pergunta
 **como o produto é vendido** (*só por unidade*, *caixa fechada e unidade* ou
 *só a embalagem fechada*), avisa quando a nota tem cara de caixa e normaliza
 `UN1`/`UND`/`PC` para **UN**. Nota em UN continua entrando 1 para 1.

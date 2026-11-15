@@ -3,6 +3,12 @@ import { readFileSync } from 'node:fs';
 const api = process.env.VF_EMBALAGEM_API || 'http://127.0.0.1:3121';
 const fixture = {usuario:'e2e-carrinho',nome:'Teste descartável',senha:'fixture-e2e-carrinho'};
 let token:string;
+// Produto simples deixa a pergunta "Como vende?" recolhida atrás de "Trocar".
+async function escolherCaixaEUnidade(dialog: import('@playwright/test').Locator){
+  const trocar=dialog.getByRole('button',{name:/Vende em caixa também/}).first();
+  if(await trocar.isVisible()) await trocar.click();
+  await dialog.getByRole('radio',{name:'Caixa fechada e unidade'}).first().check();
+}
 test.beforeAll(async ({request})=>{
   let r=await request.post(`${api}/api/auth/login`,{data:fixture});
   if(r.status()===401) r=await request.post(`${api}/api/auth/registro`,{data:fixture});
@@ -14,9 +20,9 @@ if (process.env.VF_XML_REAL) test('T8 real: NF-e 446817 baixada mantém 600 UN',
   await page.goto('/produtos');
   await page.locator('input[type=file]').setInputFiles({name:'nota-baixada.xml',mimeType:'text/xml',buffer:readFileSync(process.env.VF_XML_REAL!)});
   const dialog=page.getByRole('dialog').filter({hasText:'Confirmar importação'});
-  await expect(dialog.getByRole('checkbox',{name:/Vende a embalagem fechada/})).not.toBeChecked();
-  await expect(dialog.getByText(/600 UN viram 600 UN/)).toBeVisible();
-  await expect(dialog.getByText(/Custo da nota R\$ 2\.7400 \+ despesas/)).toBeVisible();
+  await expect(dialog.getByRole('radio',{name:'Caixa fechada e unidade'})).not.toBeChecked();
+  await expect(dialog.getByLabel('Entra no estoque do item 1',{exact:true})).toHaveText('600 UN');
+  await expect(dialog.getByText(/600 UN × R\$\s2,74 \+ frete\/impostos/)).toBeVisible();
   await page.screenshot({path:'output/playwright/xml-real-600.png',fullPage:true,animations:'disabled'});
   await dialog.getByRole('button',{name:'Confirmar importação',exact:true}).click();
   await expect(page.getByText(/Importado!/)).toBeVisible();
@@ -37,20 +43,20 @@ if (process.env.VF_XML_REAL) test('Kaiser real: CX 12 a R$ 40 e lata a R$ 3,80 s
   await page.goto('/produtos');
   await page.locator('input[type=file]').setInputFiles({name:'kaiser.xml',mimeType:'text/xml',buffer:Buffer.from(xml)});
   const dialog=page.getByRole('dialog').filter({hasText:'Confirmar importação'});
-  await dialog.getByRole('checkbox',{name:/Vende a embalagem fechada/}).check();
+  await escolherCaixaEUnidade(dialog);
   await expect(dialog.getByLabel('Embalagem do item 1',{exact:true})).toHaveValue('CX');
   await dialog.getByLabel('Unidades por embalagem do item 1',{exact:true}).fill('12');
   await dialog.getByLabel('Preço da embalagem do item 1',{exact:true}).fill('40');
   await dialog.getByLabel('Preço da unidade do item 1',{exact:true}).fill('3,80');
   await expect(dialog.getByRole('radio',{name:/Em unidades soltas: 600 UN = 600 unidades/})).toBeChecked();
-  await expect(dialog.getByText(/600 UN viram 600 UN/)).toBeVisible();
+  await expect(dialog.getByLabel('Entra no estoque do item 1',{exact:true})).toHaveText('600 UN');
   await expect(dialog.getByLabel('Código da embalagem do item 1',{exact:true})).toHaveValue('7896045500116');
   await expect(dialog.getByLabel('Código da unidade do item 1',{exact:true})).toHaveValue('7896045512317');
   await expect(dialog.getByLabel('Comparação de preços do item 1')).toContainText('CX com 12: R$ 40,00 = R$ 3,33 cada');
   await expect(dialog.getByLabel('Comparação de preços do item 1')).toContainText('economiza R$ 5,60');
   // Marcar "em CX fechada" mostraria 7.200; voltar para soltas.
   await dialog.getByRole('radio',{name:/Em CX fechada/}).check();
-  await expect(dialog.getByText(/600 UN viram 7\.200 UN/)).toBeVisible();
+  await expect(dialog.getByLabel('Entra no estoque do item 1',{exact:true})).toHaveText('7.200 UN');
   await dialog.getByRole('radio',{name:/Em unidades soltas/}).check();
   await page.screenshot({path:'output/playwright/kaiser-importacao-caixa-unidade.png',fullPage:true,animations:'disabled'});
   await dialog.getByRole('button',{name:'Confirmar importação',exact:true}).click();
@@ -83,18 +89,16 @@ test('XML: confirmação explícita exige dois preços e converte compra nova',a
   const xml='<NFe><infNFe><ide><mod>55</mod><nNF>12</nNF></ide><emit><xNome>Fornecedor teste</xNome></emit><det><prod><cEAN>SEM GTIN</cEAN><xProd>Carteira Nova T11</xProd><uCom>UN</uCom><qCom>2</qCom><vUnCom>10</vUnCom></prod></det></infNFe></NFe>';
   await page.locator('input[type=file]').setInputFiles({name:'nova-carteira.xml',mimeType:'text/xml',buffer:Buffer.from(xml)});
   const dialog=page.getByRole('dialog').filter({hasText:'Confirmar importação'});
-  await dialog.getByRole('checkbox',{name:/Vende a embalagem fechada/}).check();
+  await escolherCaixaEUnidade(dialog);
   await dialog.getByLabel('Embalagem do item 1',{exact:true}).fill('CARTEIRA');
   // Cada UN desta nota (R$ 10) é uma carteira inteira: o operador diz isso.
   await dialog.getByRole('radio',{name:/Em CARTEIRA fechada/}).check();
-  const tabela=dialog.getByRole('table');
-  const titulos=(await tabela.getByRole('columnheader').allTextContents()).map(t=>t.trim());
-  await tabela.locator('tbody tr').first().getByRole('cell').nth(titulos.indexOf('Qtd/emb.')).locator('input').fill('20');
+  await dialog.getByLabel('Unidades por embalagem do item 1',{exact:true}).fill('20');
   await dialog.getByRole('button',{name:'Confirmar importação',exact:true}).click();
   await expect(dialog.getByRole('alert')).toContainText('dois preços');
   await dialog.getByLabel('Preço da embalagem do item 1',{exact:true}).fill('20');
   await dialog.getByLabel('Preço da unidade do item 1',{exact:true}).fill('2');
-  await expect(dialog.getByText(/2 UN viram 40 UN/)).toBeVisible();
+  await expect(dialog.getByLabel('Entra no estoque do item 1',{exact:true})).toHaveText('40 UN');
   await dialog.getByRole('button',{name:'Confirmar importação',exact:true}).click();
   await expect(page.getByText(/Importado!/)).toBeVisible();
   const ps=(await (await request.get(`${api}/api/produtos`,{headers:{Authorization:`Bearer ${token}`}})).json()).produtos;

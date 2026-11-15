@@ -90,7 +90,7 @@ try {
   const total = page.getByText('Total a Pagar', { exact: true });
   if (retomar) {
     await expect(total).toBeVisible({ timeout: 12_000 });
-    await expect(page.getByLabel('Quantidade de Açúcar de teste')).toHaveValue('1');
+    await expect(page.getByLabel('Quantidade de Açúcar de teste', { exact: true })).toHaveValue('1');
     console.log('Chromium: o carrinho reapareceu no executável reiniciado.');
   } else {
     const vendas = [];

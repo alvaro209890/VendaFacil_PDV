@@ -65,7 +65,7 @@ PDV guarda os dois. Guia completo, com a conta de preço e o caso real:
 [Caixa e unidade](CAIXA_E_UNIDADE.md). O fiscal permanece em **homologação**.
 
 ## 1. Instalar e abrir
-1. Receba o instalador **`VendaFacilPDV-Setup-1.0.22.exe`** e dê dois cliques.
+1. Receba o instalador **`VendaFacilPDV-Setup-1.0.23.exe`** e dê dois cliques.
 2. Avance a instalação (cria atalho no Menu Iniciar e na Área de Trabalho).
 3. Abra pelo atalho **VendaFácil PDV**. O sistema sobe e abre no navegador.
 
@@ -203,10 +203,20 @@ Detalhes: [`ESTOQUE_E_XML.md`](ESTOQUE_E_XML.md).
 Quando o fornecedor entrega a mercadoria com a **NF-e (.xml)**:
 
 1. Em **Produtos**, clique **📄 Importar XML** e escolha o arquivo.
-2. A **prévia** mostra cada item com a conta pronta:
-   - **Repor estoque** — o produto já existe e a quantidade **soma** ao estoque.
-   - **Criar produto** — não existe; você define o preço de venda.
-3. Para cada produto novo, responda **“Como você vende este produto?”**:
+2. A **prévia** mostra **um cartão por produto**, com a conta pronta:
+   - **JÁ CADASTRADO** — o produto existe e a quantidade **soma** ao estoque.
+   - **NOVO · será cadastrado** — você confere nome e define o preço de venda.
+   - Embaixo do nome: o que a nota traz, já com desconto ou frete
+     (ex.: *Nota: 5 UN × R$ 10,29 − desconto R$ 1,30 = R$ 8,99 por UN*).
+   - Campos: **Na nota**, **Entra no estoque**, **Custo por unidade** e
+     **Preço de venda**, com o **lucro %** ao lado.
+   - **Margem dos novos** (topo): digite, por exemplo, 30 e clique
+     **Aplicar aos novos** para dar o mesmo lucro a todos de uma vez.
+   - Produto repetido na nota (mesmo código em duas linhas) aparece **uma vez
+     só**, com as quantidades somadas e o custo médio.
+3. Produto que vem em **caixa, fardo ou pacote** fica **destacado em amarelo**.
+   Produto simples já vem como *Só por unidade*; se você também vende a caixa,
+   clique **“Vende em caixa também? Trocar”**. A pergunta é **“Como vende?”**:
    - **Só por unidade** *(o mais comum)* — você compra em caixa, mas no caixa
      vende a unidade. Informe **quantas unidades vêm dentro** da caixa: o
      estoque entra em unidades e o custo é dividido automaticamente.
@@ -214,8 +224,8 @@ Quando o fornecedor entrega a mercadoria com a **NF-e (.xml)**:
      com preços diferentes. Informe a embalagem, as unidades dentro e os
      **dois preços**; depois diga como a nota conta a quantidade.
    - **Só a embalagem fechada** — o produto só é vendido em caixa/fardo.
-4. Confira a frase verde de cada item (`o que a nota traz` → `o que entra`) e o
-   custo por unidade. Desmarque o que não quiser importar.
+4. Confira **Entra no estoque** e o **custo por unidade** de cada cartão.
+   Desmarque o que não quiser importar. O rodapé mostra o **custo total**.
 5. Clique **Confirmar importação**. A mesma nota não entra duas vezes.
 
 **Caixa ou unidade? Como conferir pelo preço**

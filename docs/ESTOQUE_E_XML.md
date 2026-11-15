@@ -40,13 +40,36 @@ as unidades da venda original, mesmo se o fator tiver mudado depois.
 
 #### Conferir a prévia da NF-e
 
+**Tela de cartões (1.0.23).** A prévia virou uma lista de cartões, um por
+produto, no lugar da tabela de 9 colunas. Cada cartão traz:
+
+| Parte | O que mostra |
+|---|---|
+| Nome + selo | nome editável; **NOVO · será cadastrado** ou **JÁ CADASTRADO · tem N** |
+| Linha da nota | código, `Nota: 5 UN × R$ 10,29 − desconto R$ 1,30 = R$ 8,99 por UN` |
+| Campos | **Na nota**, *Unidades em cada CX* (só quando a nota vem em embalagem), **Entra no estoque**, **Custo por unidade**, **Preço de venda** + lucro % |
+| Como vende? | só nos itens com cara de embalagem (destacados em amarelo); nos simples fica recolhido em “Vende em caixa também? Trocar” |
+| Caixa + unidade | quadro próprio com nome da embalagem, dois preços, “A nota conta em quê?”, os dois códigos e a comparação de preços |
+
+- **Margem dos novos** no topo: aplica `custo × (1 + margem)` ao preço de venda
+  de todos os produtos novos de preço único (padrão 30%).
+- **Linhas repetidas**: a distribuidora repete o mesmo produto em duas linhas
+  quando o desconto muda (NF 9294 da Bevilacqua: batata palha 1 + 7, café 1 + 4).
+  A prévia junta as linhas de **mesmo código de barras, mesma unidade e mesmo
+  produto** num cartão só, soma as quantidades e usa o **custo médio ponderado**.
+  O backend já somava o estoque; agora a tela não mostra “Criar produto” duas vezes.
+- O custo calculado aparece com 2 casas; o valor exato (4 casas) segue no envio.
+- Rótulos e mensagens de erro usam os nomes da tela (*Quantidade na nota*,
+  *Unidades por embalagem*, *Entra no estoque*, *Custo por unidade*,
+  *Preço de venda*) e cada campo tem o `aria-label` “<rótulo> do item N”.
+
 - Produto configurado e nota na unidade de compra: **2 CARTEIRA viram 40 UN**;
   custo da unidade = custo da carteira ÷ 20. Os dois preços de venda são mantidos.
 - Nota em **UN**: entra unidade a unidade, fator 1.
 - Produto novo: escolha primeiro **“Como você vende este produto?”** — três
-  caminhos, e a tela mostra o efeito de cada um na frase verde:
+  caminhos, e a tela mostra o efeito de cada um em *Entra no estoque* e no custo:
   - **Só por unidade** (padrão): estoque na unidade menor. Nota em `UN` entra
-    1 para 1 (600 UN = 600 latas); nota em `CX`/`FD` multiplica pelo *Qtd/emb.*
+    1 para 1 (600 UN = 600 latas); nota em `CX`/`FD` multiplica por *Unidades em cada CX*
     (2 CX × 6 = 12 UN). Não exige preço de embalagem.
   - **Caixa fechada e unidade**: um produto, dois preços. Exige nome da
     embalagem, unidades dentro e os dois preços maiores que zero; responda
@@ -72,7 +95,7 @@ as unidades da venda original, mesmo se o fator tiver mudado depois.
   como embalagem fechada. Nome de embalagem (`CARTEIRA`, `CAIXA`) **não** é
   abreviado: fica como o lojista escreveu.
 - **Validação da prévia** (1.0.22): só é cobrado o campo que o operador
-  consegue editar. Campo travado pela própria tela (ex.: *Entra* e *Custo R$*
+  consegue editar. Campo travado pela própria tela (ex.: *Entra no estoque* e *Custo por unidade*
   com caixa+unidade ligada) não reprova mais a importação inteira, e a
   mensagem diz qual item e qual valor recusou.
 

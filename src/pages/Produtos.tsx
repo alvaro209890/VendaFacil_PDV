@@ -42,7 +42,50 @@ type ItemImport = ItemConfirmarXml & {
   // entre caixa e unidade quando o operador muda a forma de venda.
   ean_nota?: string;
   ean_trib_nota?: string;
+  // Quantidades de cada linha da nota que foram juntadas neste item (mesmo
+  // código de barras repetido na NF, ex.: 1 + 7 da mesma batata palha).
+  linhas_nota?: number[];
+  // Produto simples (nota em UN): a pergunta "Como vende?" fica recolhida
+  // até o operador pedir para trocar.
+  mostrar_modo?: boolean;
 };
+
+/** Junta linhas da nota com o mesmo código de barras (a distribuidora repete o
+ * produto quando muda o desconto). Na tela vira um item só; o custo fica a
+ * média ponderada pela quantidade. Sem código válido, nada é juntado. */
+function juntarRepetidos(itens: ItemImport[]): ItemImport[] {
+  const saida: ItemImport[] = [];
+  const posicao = new Map<string, number>();
+  for (const it of itens) {
+    const codigo = (it.ean_nota || "").trim();
+    const chave = /^\d{8,14}$/.test(codigo)
+      ? `${codigo}|${it.unidade_xml}|${it.produto_id ?? "novo"}|${it.quantidade_por_embalagem}`
+      : "";
+    const ja = chave ? posicao.get(chave) : undefined;
+    if (ja === undefined) {
+      if (chave) posicao.set(chave, saida.length);
+      saida.push({ ...it });
+      continue;
+    }
+    const a = saida[ja];
+    const qa = Number(a.quantidade_xml || 0);
+    const qb = Number(it.quantidade_xml || 0);
+    const q = qa + qb;
+    const media = (va?: number, vb?: number) =>
+      va === undefined || vb === undefined || !(q > 0) ? va : Number(((va * qa + vb * qb) / q).toFixed(4));
+    a.valor_unitario_xml = media(a.valor_unitario_xml, it.valor_unitario_xml);
+    a.valor_unitario_nota = media(a.valor_unitario_nota, it.valor_unitario_nota);
+    a.preco_custo = media(a.preco_custo, it.preco_custo) ?? a.preco_custo;
+    if (a.valor_unitario_xml !== undefined && a.valor_unitario_nota !== undefined) {
+      a.despesas_unitarias = Number((a.valor_unitario_xml - a.valor_unitario_nota).toFixed(4));
+    }
+    a.linhas_nota = [...(a.linhas_nota || [qa]), qb];
+    a.quantidade_xml = q;
+    a.quantidade = Number((Number(a.quantidade || 0) + Number(it.quantidade || 0)).toFixed(4));
+    if (a.acao === "criar") a.preco_venda = Number((a.preco_custo * 1.3).toFixed(2));
+  }
+  return saida;
+}
 
 /** Caixa + unidade: quem é o código da caixa e quem é o da unidade.
  * Com dois códigos na nota, cEAN = caixa e cEANTrib = unidade (a unidade tributável
@@ -54,9 +97,11 @@ function codigosPadrao(it: ItemImport): { codigo_barras: string; codigo_barras_u
   return it.nota_em_embalagem ? { codigo_barras: ean, codigo_barras_unidade: "" } : { codigo_barras: "", codigo_barras_unidade: ean };
 }
 
+// Rótulos que o operador lê na tela e nas mensagens de erro (e o aria-label
+// "<rótulo> do item N" de cada campo).
 const CAMPOS_NUMEROS_XML = {
-  quantidade_xml: "Qtd XML", quantidade_por_embalagem: "Qtd/emb.",
-  quantidade: "Entra", preco_custo: "Custo R$", preco_venda: "Venda R$",
+  quantidade_xml: "Quantidade na nota", quantidade_por_embalagem: "Unidades por embalagem",
+  quantidade: "Entra no estoque", preco_custo: "Custo por unidade", preco_venda: "Preço de venda",
   preco_embalagem: "Preço da embalagem", preco_unidade: "Preço da unidade",
 } as const;
 type CampoNumeroXml = keyof typeof CAMPOS_NUMEROS_XML;
@@ -84,6 +129,19 @@ const fatorSeguro = (v: number | string | undefined) => {
   return parsed !== null && parsed > 0 ? Math.max(parsed, 0.0001) : 1;
 };
 const fmtQtd = (v: number) => Number(v || 0).toLocaleString("pt-BR", { maximumFractionDigits: 3 });
+const fmtReais = (v: number) => Number(v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+/** O item tem cara de caixa/fardo e merece a pergunta de embalagem aberta. */
+function itemDeEmbalagem(it: ItemImport): boolean {
+  return (it.unidade_xml || "UN") !== "UN" || !!it.sinais_embalagem?.length
+    || (it.fator_sugerido || 0) > 1 || !!it.confirmar_abertura || it.modo_venda === "fechada";
+}
+
+/** Margem sobre o custo, em %, ou null quando não dá para calcular. */
+function margemSobreCusto(custo: number, venda: number): number | null {
+  if (!(custo > 0) || !(venda > 0)) return null;
+  return Math.round(((venda / custo) - 1) * 100);
+}
 
 /** Fator da nota para o estoque, conforme a decisão do operador.
  * "fechada" nunca multiplica; "unidade"/"aberta" multiplicam quando a nota veio
@@ -159,7 +217,10 @@ export default function ProdutosPage() {
   const [importTextos, setImportTextos] = useState<Record<string, string>>({});
   const [importBusy, setImportBusy] = useState(false);
   const [importMsg, setImportMsg] = useState<Mensagem | null>(null);
+  const [margemPadrao, setMargemPadrao] = useState("30");
   const itensSelecionados = importItens.filter((item) => item.incluir);
+  const custoSelecionado = itensSelecionados.reduce((s, it) => s + Number(it.quantidade || 0) * Number(it.preco_custo || 0), 0);
+  const totalAtencao = importItens.filter((it) => it.acao === "criar" && itemDeEmbalagem(it)).length;
   const totalSelecionados = itensSelecionados.length;
   const totalNovos = itensSelecionados.filter((item) => item.acao === "criar").length;
   const todosSelecionados = totalSelecionados > 0 && totalSelecionados === importItens.length;
@@ -212,7 +273,7 @@ export default function ProdutosPage() {
       const prev: PreviewXml = await importarXmlPreview(file);
       setImportTextos({});
       setImportInfo({ emitente: prev.emitente, numero: prev.numero, chave: prev.chave });
-      setImportItens(prev.itens.map((it) => {
+      setImportItens(juntarRepetidos(prev.itens.map((it) => {
         const item: ItemImport = {
           produto_id: it.produto_id,
           vende_por_unidade: !!it.vende_por_unidade,
@@ -265,7 +326,7 @@ export default function ProdutosPage() {
           item.preco_venda = Number((item.preco_custo * 1.3).toFixed(2));
         }
         return item;
-      }));
+      })));
     } catch (err) {
       setImportMsg({ tipo: "erro", texto: (err as Error).message });
     } finally {
@@ -334,6 +395,9 @@ export default function ProdutosPage() {
               : (next.embalagem_sugerida || next.unidade_compra))
           : (next.unidade_xml || next.unidade);
       }
+      // O rádio é a única pergunta agora: redistribui os códigos da caixa e da
+      // unidade como o antigo checkbox "vende a embalagem fechada" fazia.
+      Object.assign(next, codigosPadrao(next));
       const fator = fatorDoModo(next);
       const qtdXml = Number(next.quantidade_xml || 0);
       next.fator_entrada = fator;
@@ -345,6 +409,24 @@ export default function ProdutosPage() {
     }));
   }
 
+  /** Aplica a mesma margem sobre o custo a todos os produtos novos de preço único. */
+  function aplicarMargemNovos() {
+    const m = lerNumeroPtBr(margemPadrao);
+    if (m === null || !Number.isFinite(m) || m < 0) {
+      setImportMsg({ tipo: "erro", texto: `Margem inválida — “${margemPadrao}”. Use um número, por exemplo 30.` });
+      return;
+    }
+    setImportMsg(null);
+    setImportTextos((ant) => {
+      const next = { ...ant };
+      importItens.forEach((it, i) => { if (it.acao === "criar" && !it.confirmar_abertura) delete next[`${i}:preco_venda`]; });
+      return next;
+    });
+    setImportItens((arr) => arr.map((it) => it.acao === "criar" && !it.confirmar_abertura
+      ? { ...it, preco_venda: Number((it.preco_custo * (1 + m / 100)).toFixed(2)) }
+      : it));
+  }
+
   function fecharImportacao() {
     importDialogRef.current?.close();
     setImportInfo(null);
@@ -353,8 +435,14 @@ export default function ProdutosPage() {
     setImportMsg(null);
   }
 
-  const textoImport = (i: number, campo: CampoNumeroXml) =>
-    importTextos[`${i}:${campo}`] ?? String(importItens[i]?.[campo] ?? 0);
+  const textoImport = (i: number, campo: CampoNumeroXml) => {
+    const digitado = importTextos[`${i}:${campo}`];
+    if (digitado !== undefined) return digitado;
+    const valor = Number(importItens[i]?.[campo] ?? 0);
+    // Custo calculado (divisão da caixa, desconto rateado) vem com 4 casas;
+    // na tela basta o centavo. O valor exato continua no item enviado.
+    return campo === "preco_custo" ? String(Number(valor.toFixed(2))) : String(importItens[i]?.[campo] ?? 0);
+  };
 
   function editarNumeroImport(i: number, campo: CampoNumeroXml, texto: string) {
     const numero = lerNumeroPtBr(texto);
@@ -1132,167 +1220,203 @@ export default function ProdutosPage() {
             event.preventDefault();
             if (!importBusy) fecharImportacao();
           }}
-          className="fixed inset-0 m-auto w-[calc(100%-1.5rem)] max-w-6xl max-h-[90dvh] open:flex flex-col overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 text-slate-100 backdrop:bg-black/80 backdrop:backdrop-blur-sm"
+          className="fixed inset-0 m-auto w-[calc(100%-1.5rem)] max-w-5xl max-h-[92dvh] open:flex flex-col overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 text-slate-100 backdrop:bg-black/80 backdrop:backdrop-blur-sm"
         >
-          <div className="flex shrink-0 items-start justify-between gap-3 p-4 border-b border-slate-800">
-            <div>
+          <div className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-800 p-4">
+            <div className="min-w-0">
               <h3 id="importar-xml-titulo" className="text-white font-black text-base sm:text-lg">📄 Importar XML — entrada de estoque</h3>
-              <p className="text-slate-400 text-xs">{importInfo.emitente || "Fornecedor"} · NF {importInfo.numero || "—"}</p>
+              <p className="truncate text-sm text-slate-300">{importInfo.emitente || "Fornecedor"} · NF {importInfo.numero || "—"}</p>
+              <p className="text-xs text-slate-400">
+                {importItens.length} produto(s): {importItens.filter((it) => it.acao === "criar").length} novo(s) para cadastrar · {importItens.filter((it) => it.acao === "atualizar").length} já cadastrado(s), só soma no estoque
+              </p>
             </div>
             <button type="button" aria-label="Fechar prévia do XML" onClick={fecharImportacao} disabled={importBusy} className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white disabled:opacity-60 text-2xl leading-none">×</button>
           </div>
 
+          <div className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2 border-b border-slate-800 bg-slate-950/40 px-4 py-2 text-xs text-slate-300">
+            <p className="flex-1 basis-72">Confira <strong className="text-white">nome</strong>, <strong className="text-white">quantidade</strong> e o <strong className="text-white">preço de venda</strong> de cada produto e clique em <strong className="text-white">Confirmar importação</strong>.</p>
+            <div className="flex items-center gap-2">
+              <label className="flex items-center gap-1.5">Margem dos novos
+                <input aria-label="Margem padrão dos produtos novos" inputMode="decimal" value={margemPadrao} onChange={(e) => setMargemPadrao(e.target.value)} className="w-14 rounded-lg border border-slate-700 bg-slate-950 px-2 py-1 text-right text-white" />%
+              </label>
+              <button type="button" onClick={aplicarMargemNovos} disabled={importBusy} className="rounded-lg bg-slate-800 px-3 py-1.5 font-semibold text-white hover:bg-slate-700 disabled:opacity-60">Aplicar aos novos</button>
+            </div>
+          </div>
+
+          {totalAtencao > 0 && (
+            <p className="mx-4 mt-3 shrink-0 rounded-lg border border-amber-500/40 bg-amber-500/10 p-2 text-xs text-amber-200">
+              📦 {totalAtencao} produto(s) novo(s) parecem vir em caixa, fardo ou pacote. Estão destacados em amarelo: confira quantas unidades vêm dentro e como você vende.
+            </p>
+          )}
           {importMsg?.tipo === "erro" && (
             <p role="alert" className="mx-4 mt-3 shrink-0 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">{importMsg.texto}</p>
           )}
 
-          <div className="min-h-0 flex-1 overflow-auto px-3">
+          <div className="min-h-0 flex-1 overflow-auto px-3 py-3">
             <fieldset disabled={importBusy} className="min-w-0">
               <legend className="sr-only">Itens do XML</legend>
-              <table className="w-full text-sm">
-                <thead className="sticky top-0 z-10 bg-slate-900 text-slate-300 text-xs uppercase text-left">
-                  <tr>
-                    <th scope="col" className="p-2">
-                      <label className="flex w-fit cursor-pointer items-center gap-2 whitespace-nowrap py-2 normal-case">
-                        <input
-                          type="checkbox"
-                          aria-label="Selecionar todos os itens"
-                          checked={todosSelecionados}
-                          disabled={importItens.length === 0}
-                          ref={(input) => { if (input) input.indeterminate = selecaoParcial; }}
-                          onChange={(event) => {
-                            const incluir = event.target.checked;
-                            setImportItens((itens) => itens.map((item) => ({ ...item, incluir })));
-                          }}
-                          className={CHECKBOX_IMPORTACAO}
-                        />
-                        Todos
-                      </label>
-                    </th>
-                    <th className="p-2">Produto</th>
-                    <th className="p-2">Ação</th>
-                    <th className="p-2 w-24">Un. venda</th>
-                    <th className="p-2 w-24" title="Unidade em que a mercadoria é comprada (caixa, fardo…); a da nota aparece na frase verde">Un. compra</th>
-                    <th className="p-2 w-24">Qtd XML</th>
-                    <th className="p-2 w-24">Qtd/emb.</th>
-                    <th className="p-2 w-24">Entra</th>
-                    <th className="p-2 w-24">Custo R$</th>
-                    <th className="p-2 w-24">Venda R$</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {importItens.map((it, i) => (
-                    <tr key={i} className={`border-t border-slate-800 ${it.incluir ? "bg-brand-500/5" : "bg-slate-950/40"}`}>
-                      <td className="p-2">
-                        <label className="flex w-fit cursor-pointer items-center rounded-lg px-2 py-2 hover:bg-slate-800">
+              <label className="mb-2 flex w-fit cursor-pointer items-center gap-2 px-1 text-xs text-slate-300">
+                <input
+                  type="checkbox"
+                  aria-label="Selecionar todos os itens"
+                  checked={todosSelecionados}
+                  disabled={importItens.length === 0}
+                  ref={(input) => { if (input) input.indeterminate = selecaoParcial; }}
+                  onChange={(event) => {
+                    const incluir = event.target.checked;
+                    setImportItens((itens) => itens.map((item) => ({ ...item, incluir })));
+                  }}
+                  className={CHECKBOX_IMPORTACAO}
+                />
+                Marcar todos
+              </label>
+              <ul className="space-y-2">
+                {importItens.map((it, i) => {
+                  const novo = it.acao === "criar";
+                  const embalagem = novo && itemDeEmbalagem(it);
+                  const modo = it.modo_venda || "unidade";
+                  const unEstoque = it.confirmar_abertura ? "UN" : it.unidade;
+                  const unNota = it.unidade_xml || it.unidade_compra || "UN";
+                  const nomeEmbalagem = it.unidade_compra && it.unidade_compra !== "UN" ? it.unidade_compra : (unNota !== "UN" ? unNota : "embalagem");
+                  const despesas = Number(it.despesas_unitarias || 0);
+                  const margem = margemSobreCusto(Number(it.preco_custo), Number(it.preco_venda));
+                  const mostraFator = !!it.confirmar_abertura
+                    || (!it.vende_por_unidade && modo !== "fechada" && (unNota !== "UN" || (it.fator_sugerido || 0) > 1));
+                  const campo = (nome: CampoNumeroXml, rotulo: string, extra?: React.ReactNode) => (
+                    <label className="block text-2xs text-slate-400">{rotulo}
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        aria-label={`${CAMPOS_NUMEROS_XML[nome]} do item ${i + 1}`}
+                        value={textoImport(i, nome)}
+                        onChange={(e) => editarNumeroImport(i, nome, e.target.value)}
+                        className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-2 py-1.5 text-sm text-white"
+                      />
+                      {extra}
+                    </label>
+                  );
+                  const leitura = (rotulo: string, valor: string, campoXml?: CampoNumeroXml) => (
+                    <div className="text-2xs text-slate-400">{rotulo}
+                      <p aria-label={campoXml ? `${CAMPOS_NUMEROS_XML[campoXml]} do item ${i + 1}` : undefined} className="mt-1 rounded-lg border border-transparent px-1 py-1.5 text-sm font-semibold text-white">{valor}</p>
+                    </div>
+                  );
+                  return (
+                     <li
+                      key={i}
+                      data-item-xml
+                      className={`rounded-xl border px-3 py-2.5 ${!it.incluir ? "border-slate-800 bg-slate-950/30 opacity-60" : embalagem ? "border-amber-500/40 bg-amber-500/5" : "border-slate-700 bg-slate-950/40"}`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <label className="mt-1 flex cursor-pointer items-center">
                           <input type="checkbox" checked={it.incluir} onChange={(e) => setItem(i, "incluir", e.target.checked)} className={CHECKBOX_IMPORTACAO} />
                           <span className="sr-only">Incluir {it.nome || `item ${i + 1}`}</span>
                         </label>
-                      </td>
-                      <td className="p-2">
-                        <input value={it.nome} onChange={(e) => setItem(i, "nome", e.target.value)} className="w-full min-w-52 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white" />
-                        <div className="text-slate-500 text-2xs">{it.codigo_barras || "sem código"} · {it.unidade}</div>
-                        <div className="mt-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2">
-                          <p className="text-xs text-emerald-300">{fmtQtd(it.quantidade_xml || it.quantidade)} {it.unidade_xml || it.unidade_compra} viram {fmtQtd(it.quantidade)} {it.confirmar_abertura ? 'UN' : it.unidade}; custo de cada unidade R$ {it.preco_custo.toFixed(4)}.{it.acao === 'atualizar' ? ' Preços de venda mantidos.' : ''}</p>
-                          {it.acao === 'criar' && (
-                            <p className="mt-1 text-2xs text-emerald-200/80">
-                              {it.modo_venda === 'aberta'
-                                ? `No caixa vão aparecer dois botões: ${it.unidade_compra} (${fmtQtd(it.quantidade_por_embalagem)} un.) e 1 unidade avulsa.`
-                                : it.modo_venda === 'fechada'
-                                  ? `No caixa este produto vende por ${it.unidade}; a unidade avulsa não é vendida.`
-                                  : 'No caixa este produto vende por unidade; a caixa serve só para comprar.'}
+                        <div className="min-w-0 flex-1 space-y-1.5">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <input aria-label={`Nome do item ${i + 1}`} value={it.nome} onChange={(e) => setItem(i, "nome", e.target.value)} className="min-w-0 flex-1 basis-64 rounded-lg border border-slate-700 bg-slate-950 px-2 py-1.5 text-sm font-semibold text-white" />
+                            {novo
+                              ? <span className="whitespace-nowrap rounded-full bg-amber-500/15 px-2 py-0.5 text-2xs font-bold text-amber-300">NOVO · será cadastrado</span>
+                              : <span className="whitespace-nowrap rounded-full bg-emerald-500/15 px-2 py-0.5 text-2xs font-bold text-emerald-300">JÁ CADASTRADO · tem {fmtQtd(it.estoque_atual)} {it.unidade}</span>}
+                          </div>
+                          <p className="text-2xs text-slate-400">
+                            {it.codigo_barras || "sem código de barras"} · Nota: {fmtQtd(it.quantidade_xml || 0)} {unNota} × {fmtReais(Number(it.valor_unitario_nota ?? it.valor_unitario_xml ?? 0))}
+                            {despesas < 0 ? ` − desconto ${fmtReais(-despesas)}` : despesas > 0 ? ` + frete/impostos ${fmtReais(despesas)}` : ""}
+                            {despesas !== 0 ? ` = ${fmtReais(Number(it.valor_unitario_xml || 0))} por ${unNota}` : ""}
+                            {it.linhas_nota && it.linhas_nota.length > 1 ? ` · veio em ${it.linhas_nota.length} linhas na nota (${it.linhas_nota.map(fmtQtd).join(" + ")}), juntadas aqui` : ""}
+                          </p>
+
+                          {novo && !(embalagem || it.mostrar_modo || modo !== "unidade") && (
+                            <p className="text-2xs text-slate-400">Vende só por unidade.{" "}
+                              <button type="button" onClick={() => setItem(i, "mostrar_modo", true)} className="font-semibold text-brand-300 underline-offset-2 hover:underline">Vende em caixa também? Trocar</button>
                             </p>
+                          )}
+                          {novo && (embalagem || it.mostrar_modo || modo !== "unidade") && (
+                            <fieldset className="flex flex-wrap items-center gap-1.5">
+                              <legend className="float-left mr-1 py-1 text-xs font-semibold text-slate-200">Como vende?</legend>
+                              {([
+                                ["unidade", "Só por unidade"],
+                                ["aberta", "Caixa fechada e unidade"],
+                                ["fechada", "Só a embalagem fechada"],
+                              ] as const).map(([valor, titulo]) => (
+                                <label key={valor} className={`flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs ${modo === valor ? "border-brand-500 bg-brand-500/15 text-white" : "border-slate-700 text-slate-300 hover:border-slate-500"}`}>
+                                  <input type="radio" name={`modo-${i}`} className="accent-brand-500" checked={modo === valor} onChange={() => setModo(i, valor)} />
+                                  {titulo}
+                                </label>
+                              ))}
+                              {!it.confirmar_abertura && (
+                                <label className="ml-auto flex items-center gap-1.5 text-xs text-slate-400">Estoque em
+                                  <select aria-label={`Unidade de estoque do item ${i + 1}`} value={it.unidade} onChange={(e) => setItem(i, "unidade", e.target.value)} className="rounded-lg border border-slate-700 bg-slate-950 px-2 py-1 text-white">
+                                    {Array.from(new Set([...UNIDADES, it.unidade, it.unidade_compra])).map((u) => <option key={u} value={u}>{u}</option>)}
+                                  </select>
+                                </label>
+                              )}
+                            </fieldset>
+                          )}
+
+                          {embalagem && !!it.sinais_embalagem?.length && modo !== "aberta" && (
+                            <p className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-2 py-1.5 text-2xs text-amber-200">
+                              📦 Pode ser caixa: {it.sinais_embalagem.join("; ")}. Confira pelo preço da nota. Se você vende a caixa e também a unidade, escolha “Caixa fechada e unidade”.
+                            </p>
+                          )}
+
+                          <div className="grid grid-cols-2 gap-x-2 gap-y-1 sm:grid-cols-5">
+                            {campo("quantidade_xml", `Na nota (${unNota})`)}
+                            {mostraFator && campo("quantidade_por_embalagem", `Unidades em cada ${nomeEmbalagem}`)}
+                            {campoAtivo(it, "quantidade")
+                              ? campo("quantidade", `Entra no estoque (${unEstoque})`)
+                              : leitura("Entra no estoque", `${fmtQtd(it.quantidade)} ${unEstoque}`, "quantidade")}
+                            {campoAtivo(it, "preco_custo")
+                              ? campo("preco_custo", `Custo por ${unEstoque} (R$)`)
+                              : leitura("Custo por unidade", fmtReais(Number(it.preco_custo)), "preco_custo")}
+                            {novo && !it.confirmar_abertura
+                              ? campo("preco_venda", `Preço de venda (R$)`, <span className={`mt-0.5 block ${margem !== null && margem < 0 ? "text-red-300" : "text-slate-500"}`}>{margem === null ? "—" : margem < 0 ? `prejuízo ${-margem}%` : `lucro ${margem}%`}</span>)
+                              : novo
+                                ? leitura("Preço de venda", "nos dois preços abaixo")
+                                : leitura("Preço de venda", it.vende_por_unidade ? "mantém os dois preços" : `mantém ${fmtReais(Number(it.preco_venda))}`)}
+                          </div>
+
+                          {it.confirmar_abertura && (
+                            <div className="space-y-2 rounded-lg border border-brand-500/30 bg-brand-500/5 p-3">
+                              <p className="text-xs font-semibold text-white">Caixa fechada e unidade: dois preços no caixa</p>
+                              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                                <label className="block text-2xs text-slate-400">Nome da embalagem (CX, FD, PCT…)
+                                  <input aria-label={`Embalagem do item ${i + 1}`} value={it.unidade_compra} onChange={(e) => setItem(i, "unidade_compra", e.target.value.toUpperCase())} className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-2 py-1.5 text-sm text-white" />
+                                </label>
+                                {campo("preco_embalagem", `Preço da ${nomeEmbalagem} fechada (R$)`)}
+                                {campo("preco_unidade", "Preço da unidade avulsa (R$)")}
+                              </div>
+                              <fieldset className="space-y-1">
+                                <legend className="text-2xs font-semibold text-slate-300">A nota conta em quê? (R$ {Number(it.valor_unitario_nota ?? it.valor_unitario_xml ?? 0).toFixed(2)} por {unNota} na nota é preço de uma unidade ou de uma {nomeEmbalagem}?)</legend>
+                                <label className="flex items-start gap-2 text-xs text-slate-200"><input type="radio" name={`conta-${i}`} className="mt-0.5 accent-brand-500" checked={!it.nota_em_embalagem} onChange={() => setItem(i, "nota_em_embalagem", false)} />Em unidades soltas: {fmtQtd(it.quantidade_xml || 0)} {it.unidade_xml} = {fmtQtd(it.quantidade_xml || 0)} unidades</label>
+                                <label className="flex items-start gap-2 text-xs text-slate-200"><input type="radio" name={`conta-${i}`} className="mt-0.5 accent-brand-500" checked={!!it.nota_em_embalagem} onChange={() => setItem(i, "nota_em_embalagem", true)} />Em {it.unidade_compra || "embalagem"} fechada: {fmtQtd(it.quantidade_xml || 0)} {it.unidade_xml} × {fmtQtd(it.quantidade_por_embalagem)} = {fmtQtd((it.quantidade_xml || 0) * it.quantidade_por_embalagem)} unidades</label>
+                              </fieldset>
+                              <div className="grid grid-cols-2 gap-2">
+                                <label className="block text-2xs text-slate-400">Código de barras da {nomeEmbalagem}<input aria-label={`Código da embalagem do item ${i + 1}`} value={it.codigo_barras} onChange={(e) => setItem(i, "codigo_barras", e.target.value.trim())} className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-2 py-1.5 text-sm text-white" placeholder="opcional" /></label>
+                                <label className="block text-2xs text-slate-400">Código de barras da unidade<input aria-label={`Código da unidade do item ${i + 1}`} value={it.codigo_barras_unidade || ""} onChange={(e) => setItem(i, "codigo_barras_unidade", e.target.value.trim())} className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-2 py-1.5 text-sm text-white" placeholder="opcional — bipe uma unidade" /></label>
+                              </div>
+                              <ul aria-label={`Comparação de preços do item ${i + 1}`} className="space-y-0.5 text-xs text-slate-200">
+                                {textoComparacao({ custo: it.preco_custo, fator: it.quantidade_por_embalagem, precoEmbalagem: Number(it.preco_embalagem) || 0, precoUnidade: Number(it.preco_unidade) || 0, embalagem: it.unidade_compra }).map((t) => <li key={t} className={t.startsWith("⚠️") ? "text-amber-300" : ""}>{t}</li>)}
+                              </ul>
+                            </div>
+                          )}
+                          {novo && modo === "fechada" && (
+                            <p className="text-2xs text-slate-400">No caixa vende só por {it.unidade}; a unidade avulsa não é vendida.</p>
                           )}
                         </div>
-                        {!!it.despesas_unitarias && <p className="text-2xs text-slate-400">Custo da nota R$ {Number(it.valor_unitario_nota ?? 0).toFixed(4)} {it.despesas_unitarias > 0 ? '+ despesas' : '− desconto'} (frete, seguro, outras, IPI, ST) R$ {Math.abs(it.despesas_unitarias).toFixed(4)} por {it.unidade_xml}.</p>}
-                        {!!it.aviso_unidade && <p className="mt-1 text-2xs text-amber-300">{it.aviso_unidade}</p>}
-                        {it.acao === 'criar' && <div className={`mt-3 space-y-2 rounded-lg border p-3 ${it.perguntar_embalagem || it.unidade_xml !== 'UN' || it.confirmar_abertura ? 'border-brand-500/30 bg-brand-500/10' : 'border-slate-800'}`}>
-                          <fieldset className="space-y-1">
-                            <legend className="px-1 text-xs font-semibold text-white">Como você vende este produto?</legend>
-                            {([
-                              ['unidade', 'Só por unidade', 'Comprei em caixa, mas no caixa vendo a unidade'],
-                              ['aberta', 'Caixa fechada e unidade', 'Dois preços: a embalagem inteira e a unidade avulsa'],
-                              ['fechada', 'Só a embalagem fechada', `Vendo ${it.unidade_xml && it.unidade_xml !== 'UN' ? it.unidade_xml : 'a embalagem'}, nunca avulso`],
-                            ] as const).map(([valor, titulo, ajuda]) => (
-                              <label key={valor} className={`flex cursor-pointer items-start gap-2 rounded-lg border p-2 text-xs ${(it.modo_venda || 'unidade') === valor ? 'border-brand-500 bg-brand-500/10 text-white' : 'border-slate-700 text-slate-300'}`}>
-                                <input
-                                  type="radio"
-                                  name={`modo-${i}`}
-                                  className="mt-0.5 accent-brand-500"
-                                  checked={(it.modo_venda || 'unidade') === valor}
-                                  onChange={() => setModo(i, valor)}
-                                />
-                                <span><span className="font-semibold">{titulo}</span><span className="block text-2xs text-slate-400">{ajuda}</span></span>
-                              </label>
-                            ))}
-                          </fieldset>
-                          {!!it.sinais_embalagem?.length && it.modo_venda !== 'aberta' && (
-                            <p className="rounded border border-amber-500/40 bg-amber-500/10 p-2 text-2xs text-amber-200">
-                              ⚠️ Esta nota tem cara de caixa fechada: {it.sinais_embalagem.join('; ')}. Confira pelo preço da nota antes de confirmar.
-                            </p>
-                          )}
-                          <label className={`flex gap-2 text-sm text-white ${(it.modo_venda || 'unidade') === 'aberta' ? '' : 'opacity-60'}`}><input type="checkbox" className={CHECKBOX_IMPORTACAO} checked={!!it.confirmar_abertura} onChange={e=>setItem(i,'confirmar_abertura',e.target.checked)} />Vende a embalagem fechada e também a unidade, com preços diferentes?</label>
-                          {(it.perguntar_embalagem || it.unidade_xml !== 'UN') && !it.confirmar_abertura && <p className="text-xs text-slate-400">O número no nome não altera a quantidade. Sem marcar, {it.unidade_xml} entra como está na nota.</p>}
-                          {it.confirmar_abertura && <>
-                            <div className="grid grid-cols-2 gap-2">
-                              <label className="block text-xs text-slate-300">Nome da embalagem<input aria-label={`Embalagem do item ${i+1}`} value={it.unidade_compra} onChange={e=>setItem(i,'unidade_compra',e.target.value.toUpperCase())} className="mt-1 w-full rounded bg-slate-950 p-2 text-white" /></label>
-                              <label className="block text-xs text-slate-300">Unidades dentro<input aria-label={`Unidades por embalagem do item ${i+1}`} inputMode="numeric" value={textoImport(i,'quantidade_por_embalagem')} onChange={e=>editarNumeroImport(i,'quantidade_por_embalagem',e.target.value)} className="mt-1 w-full rounded bg-slate-950 p-2 text-white" /></label>
-                              {(['preco_embalagem','preco_unidade'] as const).map(campo=><label key={campo} className="block text-xs text-slate-300">{CAMPOS_NUMEROS_XML[campo]} (R$)<input aria-label={`${CAMPOS_NUMEROS_XML[campo]} do item ${i+1}`} inputMode="decimal" value={textoImport(i,campo)} onChange={e=>editarNumeroImport(i,campo,e.target.value)} className="mt-1 w-full rounded bg-slate-950 p-2 text-white" /></label>)}
-                            </div>
-                            <fieldset className="space-y-1 rounded border border-slate-700 p-2">
-                              <legend className="px-1 text-xs font-semibold text-white">Como esta nota conta a quantidade?</legend>
-                              <label className="flex items-start gap-2 text-xs text-slate-200"><input type="radio" name={`conta-${i}`} className="mt-0.5 accent-brand-500" checked={!it.nota_em_embalagem} onChange={()=>setItem(i,'nota_em_embalagem',false)} />Em unidades soltas: {fmtQtd(it.quantidade_xml || 0)} {it.unidade_xml} = {fmtQtd(it.quantidade_xml || 0)} unidades</label>
-                              <label className="flex items-start gap-2 text-xs text-slate-200"><input type="radio" name={`conta-${i}`} className="mt-0.5 accent-brand-500" checked={!!it.nota_em_embalagem} onChange={()=>setItem(i,'nota_em_embalagem',true)} />Em {it.unidade_compra || 'embalagem'} fechada: {fmtQtd(it.quantidade_xml || 0)} {it.unidade_xml} × {fmtQtd(it.quantidade_por_embalagem)} = {fmtQtd((it.quantidade_xml || 0) * it.quantidade_por_embalagem)} unidades</label>
-                              <p className="text-2xs text-slate-400">Confira pelo preço: R$ {Number(it.valor_unitario_nota ?? it.valor_unitario_xml ?? 0).toFixed(2)} por {it.unidade_xml} na nota é preço de uma unidade ou de uma {it.unidade_compra || 'embalagem'}?</p>
-                            </fieldset>
-                            <div className="grid grid-cols-2 gap-2">
-                              <label className="block text-xs text-slate-300">Código da {it.unidade_compra || 'embalagem'}<input aria-label={`Código da embalagem do item ${i+1}`} value={it.codigo_barras} onChange={e=>setItem(i,'codigo_barras',e.target.value.trim())} className="mt-1 w-full rounded bg-slate-950 p-2 text-white" placeholder="opcional" /></label>
-                              <label className="block text-xs text-slate-300">Código da unidade<input aria-label={`Código da unidade do item ${i+1}`} value={it.codigo_barras_unidade || ''} onChange={e=>setItem(i,'codigo_barras_unidade',e.target.value.trim())} className="mt-1 w-full rounded bg-slate-950 p-2 text-white" placeholder="opcional" /></label>
-                            </div>
-                            <p className="text-2xs text-slate-400">No caixa, o código da {it.unidade_compra || 'embalagem'} lança a embalagem inteira e o da unidade lança 1 avulsa. Bipe uma unidade aqui para conferir.</p>
-                            <ul aria-label={`Comparação de preços do item ${i+1}`} className="space-y-0.5 text-xs text-slate-200">
-                              {textoComparacao({custo: it.preco_custo, fator: it.quantidade_por_embalagem, precoEmbalagem: Number(it.preco_embalagem) || 0, precoUnidade: Number(it.preco_unidade) || 0, embalagem: it.unidade_compra}).map(t => <li key={t} className={t.startsWith('⚠️') ? 'text-amber-300' : ''}>{t}</li>)}
-                            </ul>
-                          </>}
-                        </div>}
-                      </td>
-                      <td className="p-2">
-                        {it.acao === "atualizar"
-                          ? <span className="block whitespace-nowrap text-emerald-300 text-xs font-medium">Repor estoque <span className="block font-normal text-slate-400">Atual: {fmtQtd(it.estoque_atual)}</span></span>
-                          : <span className="whitespace-nowrap text-amber-300 text-xs font-medium">Criar produto</span>}
-                      </td>
-                      <td className="p-2">
-                        <select disabled={!!it.confirmar_abertura || !!it.vende_por_unidade} value={it.unidade} onChange={(e) => setItem(i, "unidade", e.target.value)} className="w-20 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white">
-                          {Array.from(new Set([...UNIDADES, it.unidade_compra])).map((u) => <option key={u} value={u}>{u}</option>)}
-                        </select>
-                      </td>
-                      <td className="p-2">
-                        <select disabled={!!it.confirmar_abertura || !!it.vende_por_unidade} value={it.unidade_compra} onChange={(e) => setItem(i, "unidade_compra", e.target.value)} className="w-20 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white">
-                          {Array.from(new Set([...UNIDADES, it.unidade_compra])).map((u) => <option key={u} value={u}>{u}</option>)}
-                        </select>
-                      </td>
-                      <td className="p-2"><input type="text" inputMode="decimal" value={textoImport(i, "quantidade_xml")} onChange={(e) => editarNumeroImport(i, "quantidade_xml", e.target.value)} className="w-20 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white" /></td>
-                      <td className="p-2"><input type="text" inputMode="decimal" disabled={!!it.vende_por_unidade} value={textoImport(i, "quantidade_por_embalagem")} onChange={(e) => editarNumeroImport(i, "quantidade_por_embalagem", e.target.value)} className="w-20 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white" /></td>
-                      <td className="p-2"><input type="text" inputMode="decimal" disabled={!!it.vende_por_unidade || !!it.confirmar_abertura || it.unidade_xml === "UN"} value={textoImport(i, "quantidade")} onChange={(e) => editarNumeroImport(i, "quantidade", e.target.value)} className="w-20 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white" /></td>
-                      <td className="p-2"><input type="text" inputMode="decimal" disabled={!!it.vende_por_unidade || !!it.confirmar_abertura} value={textoImport(i, "preco_custo")} onChange={(e) => editarNumeroImport(i, "preco_custo", e.target.value)} className="w-20 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white" /></td>
-                      <td className="p-2">
-                        {it.acao === "criar"
-                          ? <input type="text" inputMode="decimal" value={textoImport(i, "preco_venda")} onChange={(e) => editarNumeroImport(i, "preco_venda", e.target.value)} className="w-20 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white" />
-                          : <span className="text-slate-600 text-xs">mantém</span>}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
             </fieldset>
           </div>
 
-          <div className="p-3 sm:p-4 border-t border-slate-800 flex shrink-0 flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex shrink-0 flex-col justify-between gap-3 border-t border-slate-800 p-3 sm:flex-row sm:items-center sm:p-4">
             <div role="status" aria-atomic="true" className="space-y-1">
               <p className="text-white text-sm font-semibold">{totalSelecionados} de {importItens.length} itens selecionados</p>
               <p className="text-slate-400 text-xs">
                 {totalSelecionados > 0
-                  ? `${totalNovos} para criar · ${totalSelecionados - totalNovos} para repor`
+                  ? `${totalNovos} para criar · ${totalSelecionados - totalNovos} para repor · custo total ${fmtReais(custoSelecionado)}`
                   : "Selecione pelo menos um item para importar."}
               </p>
             </div>

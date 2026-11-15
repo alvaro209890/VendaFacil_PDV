@@ -18,6 +18,12 @@ test.beforeEach(async ({ page }) => {
   await expect(page.getByRole('button', { name: '+ Novo', exact: true })).toBeVisible();
 });
 
+// Nomes antigos das colunas → rótulo do campo na tela de cartões (aria-label "<rótulo> do item N").
+const ROTULOS: Record<string, string> = {
+  'Qtd XML': 'Quantidade na nota', 'Qtd/emb.': 'Unidades por embalagem', 'Entra': 'Entra no estoque',
+  'Custo R$': 'Custo por unidade', 'Venda R$': 'Preço de venda',
+};
+
 async function abrirXml(page: Page, nome: string | string[]) {
   const nomes = Array.isArray(nome) ? nome : [nome];
   const itens = nomes.map((n, i) => `<det nItem="${i + 1}"><prod><xProd>${n}</xProd><cEAN>SEM GTIN</cEAN><uCom>CX</uCom><qCom>2</qCom><vUnCom>3</vUnCom></prod></det>`).join('');
@@ -25,16 +31,14 @@ async function abrirXml(page: Page, nome: string | string[]) {
   const resposta = page.waitForResponse(r => r.url().endsWith('/api/produtos/importar-xml/preview') && r.request().method() === 'POST');
   await page.locator('input[type="file"]').setInputFiles({ name: 'fixture-locale.xml', mimeType: 'text/xml', buffer: Buffer.from(xml) });
   expect((await resposta).status()).toBe(200);
-  const tabela = page.getByRole('table').filter({ has: page.getByRole('columnheader', { name: 'Qtd XML', exact: true }) });
-  await expect(tabela).toBeVisible();
-  const linhas = tabela.locator('tbody tr');
+  const dialog = page.getByRole('dialog').filter({ hasText: 'Confirmar importação' });
+  const linhas = dialog.locator('li[data-item-xml]');
   await expect(linhas).toHaveCount(nomes.length);
   const linha = linhas.first();
-  const titulos = (await tabela.getByRole('columnheader').allTextContents()).map(t => t.trim());
   return { linha, campo: (rotulo: string) => {
-    const indice = titulos.indexOf(rotulo);
-    expect(indice).toBeGreaterThanOrEqual(0);
-    return linha.getByRole('cell').nth(indice).locator('input');
+    const nome = ROTULOS[rotulo];
+    expect(nome, `rótulo desconhecido: ${rotulo}`).toBeTruthy();
+    return linha.getByLabel(`${nome} do item 1`, { exact: true });
   } };
 }
 
@@ -51,7 +55,7 @@ for (const [rotulo, texto] of [
     await page.getByRole('button', { name: 'Confirmar importação', exact: true }).click();
     await expect.poll(async () => envios > 0 || await page.getByRole('alert').isVisible()).toBe(true);
     expect(envios).toBe(0);
-    await expect(page.getByRole('alert')).toContainText(rotulo);
+    await expect(page.getByRole('alert')).toContainText(ROTULOS[rotulo]);
   });
 }
 
@@ -64,7 +68,7 @@ test('U06 XML cobertura: zero selecionado bloqueia lote, exclusao explicita perm
   await page.getByRole('button', { name: 'Confirmar importação', exact: true }).click();
   await expect.poll(async () => envios > 0 || await page.getByRole('alert').isVisible()).toBe(true);
   expect(envios).toBe(0);
-  await expect(page.getByRole('alert')).toContainText('Entra');
+  await expect(page.getByRole('alert')).toContainText('Entra no estoque');
   await linha.getByRole('checkbox', {name:/^Incluir /}).uncheck();
   const resposta = page.waitForResponse(r => r.url().endsWith('/api/produtos/importar-xml/confirmar') && r.request().method() === 'POST');
   await page.getByRole('button', { name: 'Confirmar importação', exact: true }).click();
@@ -115,7 +119,7 @@ test('U06 XML: texto invalido nao importa o custo anterior escondido', async ({ 
   await page.getByRole('button', { name: 'Confirmar importação', exact: true }).click();
   await expect.poll(async () => envios > 0 || await page.getByRole('alert').isVisible()).toBe(true);
   expect(envios).toBe(0);
-  await expect(page.getByRole('alert')).toContainText('Custo R$');
+  await expect(page.getByRole('alert')).toContainText('Custo por unidade');
   const resposta = await request.get(`${api}/api/produtos`, { headers: { Authorization: `Bearer ${token}` } });
   expect(resposta.status()).toBe(200);
   const salvos = (await resposta.json()).produtos as Array<{ nome: string }>;
@@ -150,3 +154,24 @@ test(`U06 XML: ${separador} nos cinco campos preserva texto, payload e estoque`,
   expect(salvos[0]).toMatchObject({ estoque: 2.5, preco_custo: 3.25, preco_venda: 5.5, quantidade_por_embalagem: 1.5, unidade: 'KG' });
 });
 }
+
+test('XML: mesmo codigo em duas linhas da nota vira um item so com a soma', async ({ page }, info) => {
+  const nome = `XML-repetido-${info.testId}`;
+  const det = (n: number, q: number, v: number) => `<det nItem="${n}"><prod><xProd>${nome}</xProd><cEAN>7896245705526</cEAN><cEANTrib>7896245705526</cEANTrib><uCom>UN1</uCom><qCom>${q}</qCom><vUnCom>${v}</vUnCom></prod></det>`;
+  const xml = `<NFe><infNFe><ide><mod>55</mod><nNF>77</nNF></ide><emit><xNome>Fixture repetida</xNome></emit>${det(1, 1, 10)}${det(2, 3, 14)}</infNFe></NFe>`;
+  const previa = page.waitForResponse(r => r.url().endsWith('/api/produtos/importar-xml/preview'));
+  await page.locator('input[type="file"]').setInputFiles({ name: 'repetido.xml', mimeType: 'text/xml', buffer: Buffer.from(xml) });
+  expect((await previa).status()).toBe(200);
+  const dialog = page.getByRole('dialog').filter({ hasText: 'Confirmar importação' });
+  await expect(dialog.locator('li[data-item-xml]')).toHaveCount(1);
+  await expect(dialog.getByText(/veio em 2 linhas na nota \(1 \+ 3\)/)).toBeVisible();
+  await expect(dialog.getByLabel('Entra no estoque do item 1', { exact: true })).toHaveText('4 UN');
+  const resposta = page.waitForResponse(r => r.url().endsWith('/api/produtos/importar-xml/confirmar') && r.request().method() === 'POST');
+  await dialog.getByRole('button', { name: 'Confirmar importação', exact: true }).click();
+  const r = await resposta;
+  expect(r.status()).toBe(200);
+  const itens = r.request().postDataJSON().itens;
+  expect(itens).toHaveLength(1);
+  // custo médio ponderado: (1×10 + 3×14) / 4 = 13
+  expect(itens[0]).toMatchObject({ quantidade_xml: 4, quantidade: 4, preco_custo: 13 });
+});
