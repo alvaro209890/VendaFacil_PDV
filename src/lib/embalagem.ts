@@ -69,7 +69,8 @@ export function estoqueBalcao(p: {estoque:number; quantidade_por_embalagem:numbe
   const nome = p.unidade_compra.toLowerCase();
   const singular: Record<string,string> = {cx:'caixa',fd:'fardo',pct:'pacote',cart:'carteira',dz:'dúzia',mc:'maço'};
   const plural: Record<string,string> = {cx:'caixas',fd:'fardos',pct:'pacotes',display:'displays',cart:'carteiras',dz:'dúzias',mc:'maços'};
-  const embalagem = fechadas === 1 ? (singular[nome] || nome) : (plural[nome] || `${nome}s`);
+  // Sigla do fornecedor que não conhecemos (CX15, EV15) fica como veio, sem plural inventado.
+  const embalagem = fechadas === 1 ? (singular[nome] || p.unidade_compra.toUpperCase()) : (plural[nome] || (/^[a-zà-ú]+$/.test(nome) && nome.length > 3 ? `${nome}s` : p.unidade_compra.toUpperCase()));
   const fmt = (n:number) => n.toLocaleString('pt-BR', {maximumFractionDigits:4});
   return `${fmt(fechadas)} ${embalagem} e ${fmt(avulsos)} ${avulsos === 1 ? 'avulso' : 'avulsos'} (${fmt(p.estoque)} UN no total)`;
 }

@@ -48,3 +48,8 @@ test('embalagem pelo nome da nota', () => {
   assert.equal(embalagemDoNome('Carteira palheiro'), 'CARTEIRA');
   assert.equal(embalagemDoNome('Refrigerante'), 'CX');
 });
+
+test('sigla desconhecida do fornecedor fica como veio, sem plural inventado', () => {
+  assert.equal(estoqueBalcao({estoque:150,quantidade_por_embalagem:15,unidade_compra:'CX15',nome:'Cerveja'}), '10 CX15 e 0 avulsos (150 UN no total)');
+  assert.equal(estoqueBalcao({estoque:3,quantidade_por_embalagem:20,unidade_compra:'CART',nome:'Palheiro'}), '0 carteiras e 3 avulsos (3 UN no total)');
+});
