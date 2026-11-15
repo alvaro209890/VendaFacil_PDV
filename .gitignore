@@ -31,3 +31,4 @@ Dados_James/
 output/
 logsScratch/
 .scratch-playwright/
+.playwright-cli/

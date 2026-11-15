@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useLayoutEffect, useRef } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   listarProdutos,
   criarProduto,
@@ -864,6 +864,8 @@ export default function ProdutosPage() {
             </button>
           </div>
         </div>
+
+        <Link to="/manual#tutorial-xml" className="mb-3 w-fit text-sm font-medium text-brand-300 hover:underline">▶ Como importar XML? Assista ao vídeo</Link>
 
         <label className="mb-3 flex items-center gap-2 text-sm text-slate-300">
           <input

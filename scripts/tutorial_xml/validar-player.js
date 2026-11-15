@@ -1,0 +1,31 @@
+async (page) => {
+  await page.route(/^https?:\/\/(?!127\.0\.0\.1|localhost)/, route => route.abort());
+  const video=page.getByLabel('Tutorial de importação de XML',{exact:true});
+  const inicial=await video.evaluate(v=>({paused:v.paused,preload:v.preload}));
+  if(!inicial.paused || inicial.preload!=='none') throw new Error('Player deve começar sem autoplay.');
+  await page.getByRole('button',{name:/Produto cadastrado/}).click();
+  await page.waitForTimeout(1500);
+  const a=await video.evaluate(v=>({tempo:v.currentTime,duracao:v.duration,pronto:v.readyState,largura:v.videoWidth,altura:v.videoHeight,muted:v.muted,paused:v.paused,erro:v.error?.message}));
+  if(a.erro || a.paused || a.tempo<31 || a.tempo>38 || a.pronto<2 || a.largura!==1600 || a.muted) throw new Error('Reprodução ou capítulo incorretos: '+JSON.stringify(a));
+  await page.waitForTimeout(800);
+  if(await video.evaluate(v=>v.currentTime)<=a.tempo) throw new Error('Vídeo não avançou.');
+  await video.evaluate(v=>v.pause());
+  const origem=new URL(page.url()).origin;
+  const range=await page.request.get(origem+'/tutoriais/importar-xml.mp4',{headers:{Range:'bytes=0-1023'}});
+  if(range.status()!==206 || !range.headers()['content-type']?.startsWith('video/mp4')) throw new Error('Range/MIME do vídeo incorreto.');
+  const legenda=await page.request.get(origem+'/tutoriais/importar-xml.vtt');
+  if(!legenda.ok() || !(await legenda.text()).startsWith('WEBVTT')) throw new Error('Legenda indisponível.');
+  await page.setViewportSize({width:390,height:844});
+  await page.getByRole('button',{name:/Caixa ou unidade/}).click();
+  await page.waitForTimeout(800);
+  const celular=await video.evaluate(v=>({tempo:v.currentTime,erro:v.error?.message}));
+  if(celular.erro || celular.tempo<71 || celular.tempo>76) throw new Error('Capítulo mobile falhou.');
+  await video.evaluate(v=>v.pause());
+  await page.screenshot({path:'output/playwright/tutorial-xml/player-mobile.png'});
+  await page.setViewportSize({width:1440,height:900});
+  await page.getByRole('button',{name:/Começar/}).click();
+  await page.waitForTimeout(800);
+  await video.evaluate(v=>v.pause());
+  await page.screenshot({path:'output/playwright/tutorial-xml/player-desktop.png'});
+  return {reproducao:a,range:range.status(),legendas:true,mobile:celular,rede:'somente localhost'};
+}

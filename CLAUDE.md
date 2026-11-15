@@ -1,5 +1,16 @@
 # CLAUDE.md — instruções para o agente
 
+## Entrega 1.0.25 — vídeo de importação no PDV
+
+Tutorial narrado/legendado da interface real em `public/tutoriais`, distribuído
+no exe. Acesso em Produtos → Como importar XML? e no topo do Manual; reprodução
+local, download e atalhos por capítulo. Roteiro e produtor em `scripts/tutorial_xml/`;
+guia de entrega em `docs/ATUALIZACAO_1.0.25.md`.
+Instalada no James: `/health` 1.0.25, tarefa Running, licença ativa e produtos
+idênticos ao backup. Vídeo completo conferido por SHA-256, HTTP Range 206 e
+VTT disponíveis. 105 testes de navegador, 3 de versão, build/lint e player
+no exe aprovados. O vídeo é um asset do produto e precisa acompanhar o build.
+
 ## Entrega 1.0.24 — 15/11/2026
 
 Contagem da nota separada da forma de venda, também nas reposições. Nota em

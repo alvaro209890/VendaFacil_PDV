@@ -1,4 +1,6 @@
 import { motion } from "framer-motion";
+import { useEffect } from "react";
+import TutorialXml from "../components/TutorialXml";
 import {
   AlertTriangle,
   Banknote,
@@ -276,6 +278,9 @@ function QuickLink({ href, icon, label }: { href: string; icon: React.ReactNode;
 }
 
 export default function ManualPage() {
+  useEffect(() => {
+    if (window.location.hash === "#tutorial-xml") document.getElementById("tutorial-xml")?.scrollIntoView({ block: "start" });
+  }, []);
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="max-w-6xl mx-auto space-y-6">
       <div className="flex items-center gap-3">
@@ -287,6 +292,8 @@ export default function ManualPage() {
           <p className="text-slate-500 text-xs sm:text-sm">Guia de operação da mercearia, cadastro fiscal e rotina segura de caixa.</p>
         </div>
       </div>
+
+      <TutorialXml />
 
       <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 flex gap-3">
         <AlertTriangle className="text-amber-300 shrink-0 mt-0.5" size={20} />

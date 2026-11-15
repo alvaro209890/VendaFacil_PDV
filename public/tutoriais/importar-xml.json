@@ -1,0 +1,89 @@
+{
+  "duracao": 283.55,
+  "capitulos": [
+    {
+      "id": "01",
+      "titulo": "Importar XML no VendaFácil",
+      "inicio": 0,
+      "duracao": 16.75
+    },
+    {
+      "id": "02",
+      "titulo": "1. Escolha o arquivo XML",
+      "inicio": 16.75,
+      "duracao": 15.2
+    },
+    {
+      "id": "03",
+      "titulo": "2. Confira o produto já cadastrado",
+      "inicio": 31.95,
+      "duracao": 18.45
+    },
+    {
+      "id": "04",
+      "titulo": "3. Nota já contada em unidades",
+      "inicio": 50.4,
+      "duracao": 21.45
+    },
+    {
+      "id": "05",
+      "titulo": "4. Nota que conta carteiras inteiras",
+      "inicio": 71.85,
+      "duracao": 26.05
+    },
+    {
+      "id": "06",
+      "titulo": "5. Defina como vai vender",
+      "inicio": 97.9,
+      "duracao": 19.4
+    },
+    {
+      "id": "07",
+      "titulo": "6. Cerveja por caixa e por unidade",
+      "inicio": 117.3,
+      "duracao": 18.6
+    },
+    {
+      "id": "08",
+      "titulo": "7. Preencha os dois preços",
+      "inicio": 135.9,
+      "duracao": 22.9
+    },
+    {
+      "id": "09",
+      "titulo": "8. Revise a entrada",
+      "inicio": 158.8,
+      "duracao": 21.3
+    },
+    {
+      "id": "10",
+      "titulo": "9. Confirme a importação",
+      "inicio": 180.1,
+      "duracao": 17.85
+    },
+    {
+      "id": "11",
+      "titulo": "10. Confira o estoque final",
+      "inicio": 197.95,
+      "duracao": 20.7
+    },
+    {
+      "id": "12",
+      "titulo": "11. Veja os produtos no caixa",
+      "inicio": 218.65,
+      "duracao": 21.05
+    },
+    {
+      "id": "13",
+      "titulo": "12. Altere preços quando precisar",
+      "inicio": 239.7,
+      "duracao": 23.4
+    },
+    {
+      "id": "14",
+      "titulo": "Pronto: estoque e preços conferidos",
+      "inicio": 263.1,
+      "duracao": 20.45
+    }
+  ]
+}

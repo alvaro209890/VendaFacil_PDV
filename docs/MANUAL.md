@@ -25,6 +25,13 @@ Sumário rápido:
 
 # Parte 1 — Lojista (PDV)
 
+### Vídeo: importar XML e conferir o estoque — 1.0.25
+
+Na tela **Produtos**, clique **Como importar XML? Assista ao vídeo**, ou abra
+**Manual**. O tutorial narrado e legendado tem cerca de 4min44 e funciona sem
+internet. Use os botões abaixo do vídeo para ir direto a um assunto; também
+pode pausar, abrir em tela cheia ou baixar para guardar.
+
 ### Dashboard e leitor USB — 1.0.20
 
 Clique em **Alertas Estoque** para abrir os produtos ativos com estoque menor
@@ -65,7 +72,7 @@ PDV guarda os dois. Guia completo, com a conta de preço e o caso real:
 [Caixa e unidade](CAIXA_E_UNIDADE.md). O fiscal permanece em **homologação**.
 
 ## 1. Instalar e abrir
-1. Receba o instalador **`VendaFacilPDV-Setup-1.0.24.exe`** e dê dois cliques.
+1. Receba o instalador **`VendaFacilPDV-Setup-1.0.25.exe`** e dê dois cliques.
 2. Avance a instalação (cria atalho no Menu Iniciar e na Área de Trabalho).
 3. Abra pelo atalho **VendaFácil PDV**. O sistema sobe e abre no navegador.
 

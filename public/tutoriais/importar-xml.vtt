@@ -1,0 +1,85 @@
+WEBVTT
+
+00:00:00.300 --> 00:00:06.965
+Vamos importar a nota do fornecedor e deixar os produtos prontos para vender.
+
+00:00:07.125 --> 00:00:16.094
+Esta gravação usa produtos de demonstração. No seu sistema, comece pela tela Produtos.
+
+00:00:17.050 --> 00:00:24.515
+Clique em Importar XML e escolha o arquivo da nota enviada pelo fornecedor.
+
+00:00:24.675 --> 00:00:31.319
+É o arquivo XML da nota, e não o PDF ou uma fotografia.
+
+00:00:32.250 --> 00:00:40.174
+O selo verde mostra que este produto já está cadastrado e tem cinquenta e quatro unidades.
+
+00:00:40.334 --> 00:00:49.790
+A compra vai somar ao estoque existente. O preço de venda e o formato cadastrados serão mantidos.
+
+00:00:50.700 --> 00:00:58.253
+A bebida chegou dentro de caixas, mas a nota já contou cinquenta e quatro unidades.
+
+00:00:58.413 --> 00:01:11.201
+Mantenha Em unidades soltas. Entram cinquenta e quatro, sem multiplicar de novo. Depois da entrada, o saldo será cento e oito.
+
+00:01:12.150 --> 00:01:20.965
+No palheiro, cada quantidade da nota representa uma carteira inteira, mesmo que esteja escrito UN.
+
+00:01:21.125 --> 00:01:37.287
+Escolha Em embalagem fechada e informe vinte unidades dentro. Duas carteiras viram quarenta palheiros. Dez reais por carteira viram cinquenta centavos de custo por palheiro.
+
+00:01:38.200 --> 00:01:46.524
+Se vende só o palheiro avulso, escolha Só por unidade e informe o preço de venda da unidade.
+
+00:01:46.684 --> 00:01:56.642
+Neste exemplo, vamos vender cada palheiro por dois reais. Confira o custo e o preço antes de seguir.
+
+00:01:57.600 --> 00:02:07.505
+Na cerveja, a nota conta duas caixas com doze latas cada. Entram vinte e quatro latas no estoque.
+
+00:02:07.665 --> 00:02:15.278
+Para vender a caixa inteira e também a lata avulsa, escolha Caixa fechada e unidade.
+
+00:02:16.200 --> 00:02:21.397
+Preencha o preço da caixa fechada e o da unidade avulsa.
+
+00:02:21.557 --> 00:02:38.168
+Aqui, a caixa custa quarenta e oito reais e a lata, quatro reais e cinquenta centavos. São preços independentes. O sistema mostra a comparação e a economia da caixa.
+
+00:02:39.100 --> 00:02:48.912
+Antes de confirmar, confira o que entra no estoque, o custo de cada unidade e os preços dos produtos novos.
+
+00:02:49.072 --> 00:02:59.463
+Desmarque os itens que não quiser importar. O rodapé mostra quantos estão selecionados e o custo total da entrada.
+
+00:03:00.400 --> 00:03:06.102
+Clique em Confirmar importação e aguarde a mensagem de sucesso.
+
+00:03:06.262 --> 00:03:17.337
+Neste exemplo, um produto foi atualizado e dois foram criados. A nota com chave não pode ser importada duas vezes.
+
+00:03:18.250 --> 00:03:27.137
+Agora a bebida tem cento e oito unidades, o palheiro tem quarenta e a cerveja tem vinte e quatro latas.
+
+00:03:27.297 --> 00:03:38.003
+O estoque já está disponível para vender. Esta operação é uma entrada de mercadoria, não a emissão de uma nota de venda.
+
+00:03:38.950 --> 00:03:46.904
+Na tela PDV, a cerveja tem uma opção para a caixa fechada e outra para a unidade avulsa.
+
+00:03:47.064 --> 00:03:59.060
+Vender uma caixa baixa doze latas. Vender uma unidade baixa apenas uma. Confira o formato antes de adicionar à compra.
+
+00:04:00.000 --> 00:04:07.013
+Para mudar um preço depois, volte a Produtos e clique em Editar no produto.
+
+00:04:07.173 --> 00:04:22.470
+Mantenha o formato e o estoque, altere o preço e clique em Salvar Alterações. Aqui, o palheiro passa para dois reais e vinte centavos, mantendo as quarenta unidades.
+
+00:04:23.400 --> 00:04:31.464
+Pronto. Sempre separe como a nota conta a compra de como o cliente compra na loja.
+
+00:04:31.624 --> 00:04:42.905
+Para assistir novamente, abra o menu Manual. Este tutorial fica disponível no próprio PDV, mesmo sem internet.
