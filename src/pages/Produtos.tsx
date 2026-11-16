@@ -1050,7 +1050,7 @@ export default function ProdutosPage() {
 
       {/* Formulário */}
       {(novo || editando) && (
-        <div className="w-full lg:w-80 lg:shrink-0 bg-slate-900 border border-slate-800 rounded-xl p-4">
+        <div className="w-full lg:w-80 lg:shrink-0 lg:min-h-0 lg:overflow-y-auto custom-scrollbar bg-slate-900 border border-slate-800 rounded-xl p-4">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-white font-bold">
               {editando ? "✏️ Editar Produto" : "➕ Novo Produto"}

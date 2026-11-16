@@ -101,7 +101,7 @@ def _vender(pdv: Pdv, pid: int, forma="dinheiro", **outros) -> dict:
 
 def _smoke(pdv: Pdv) -> None:
     pdv.pedir("GET", "/", json_out=False)
-    assert pdv.pedir("GET", "/health")["version"] == "1.0.27"
+    assert pdv.pedir("GET", "/health")["version"] == "1.0.28"
     pdv.pedir("GET", "/api/produtos", 401)
 
 
