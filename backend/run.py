@@ -63,6 +63,17 @@ def _abrir_navegador() -> None:
     webbrowser.open(f"http://{HOST}:{PORT}/")
 
 
+def _fechar_sem_navegador() -> bool:
+    """Encerrar o servidor quando o navegador para de mandar heartbeat?
+
+    Desligado por padrão: navegador minimizado ou em outra aba reduz o
+    heartbeat a ~1 por minuto e o PDV caía sozinho no meio do expediente
+    (James, 14/11 15:43 e 16/11 19:11). Reabrir o atalho já reaproveita a
+    instância ativa, então deixar o servidor no ar não atrapalha.
+    """
+    return os.environ.get("VENDAFACIL_FECHAR_SEM_NAVEGADOR") == "1"
+
+
 def _vigiar_heartbeat(servidor: uvicorn.Server, parar: threading.Event) -> None:
     while not parar.wait(5):
         if heartbeat_expirou():
@@ -101,7 +112,7 @@ def main() -> int:
         navegador = threading.Timer(1.5, _abrir_navegador)
         if abrir:
             navegador.start()
-        if empacotado and abrir:
+        if empacotado and abrir and _fechar_sem_navegador():
             threading.Thread(target=_vigiar_heartbeat, args=(servidor, parar), daemon=True).start()
         try:
             servidor.run(sockets=[porta])

@@ -80,6 +80,7 @@ export default function PDV() {
   // Com o fiscal habilitado em produção, toda venda sai com NFC-e por padrão;
   // o operador ainda pode desmarcar numa venda específica.
   const notaPadraoRef = useRef(false);
+  const painelDinheiroRef = useRef<HTMLDivElement>(null);
   const [cpfConsumidor, setCpfConsumidor] = useState("");
 
   // PIX QR Code state
@@ -642,8 +643,19 @@ export default function PDV() {
   const carrinhoVazio = itensCarrinho === 0;
   const reciboDaVenda = msg?.recibo;
 
+  // Em tela larga o checkout rola por dentro: ao escolher dinheiro, traz o campo
+  // "Dinheiro recebido" para a vista (o FINALIZAR só libera com ele preenchido).
+  // No celular a página rola inteira e não se mexe sozinha durante a leitura.
+  useEffect(() => {
+    if (pagamento !== "dinheiro" || carrinhoVazio) return;
+    if (!window.matchMedia("(min-width: 1024px)").matches) return;
+    painelDinheiroRef.current?.scrollIntoView({ block: "nearest" });
+  }, [pagamento, carrinhoVazio]);
+
   return (
-    <div className="flex flex-col lg:flex-row gap-6 min-h-full">
+    // Em tela larga a página fica na altura da janela: a grade de produtos rola
+    // sozinha e o FINALIZAR VENDA não desce junto quando há muitos produtos.
+    <div className="flex flex-col lg:flex-row gap-6 min-h-full lg:h-full lg:min-h-0">
       {/* Coluna esquerda: Produtos */}
       <div className="flex-1 flex flex-col min-h-0">
         {/* Busca */}
@@ -665,7 +677,7 @@ export default function PDV() {
         </div>
 
         {/* Grade de produtos */}
-        <div className="flex-1 overflow-y-auto rounded-2xl bg-slate-900/30 backdrop-blur-sm border border-slate-800/50 p-4">
+        <div data-testid="grade-produtos" className="flex-1 overflow-y-auto rounded-2xl bg-slate-900/30 backdrop-blur-sm border border-slate-800/50 p-4 max-h-[50dvh] lg:max-h-none">
           {filtrados.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center p-8">
               <Mascote estado="pensando" frase={busca ? "Não encontrei nada..." : "Cadastre alguns produtos!"} />
@@ -713,7 +725,7 @@ export default function PDV() {
       </div>
 
       {/* Coluna direita: Carrinho + Checkout */}
-      <div className={`w-full lg:w-[400px] flex flex-col bg-slate-900/50 backdrop-blur-xl border border-slate-800/50 rounded-2xl p-5 shadow-2xl shrink-0 relative overflow-hidden ${carrinhoVazio ? "lg:self-start" : ""}`}>
+      <div className={`w-full lg:w-[400px] flex flex-col bg-slate-900/50 backdrop-blur-xl border border-slate-800/50 rounded-2xl p-5 shadow-2xl shrink-0 relative overflow-hidden lg:max-h-full lg:min-h-0 ${carrinhoVazio ? "lg:self-start" : ""}`}>
         {/* Decorative glow */}
         <div className="absolute -bottom-20 -right-20 w-40 h-40 bg-brand-600/10 blur-[80px] rounded-full pointer-events-none" />
 
@@ -746,9 +758,11 @@ export default function PDV() {
             </p>
           </div>
         ) : (
-          <div className="flex-1 flex flex-col relative z-10">
+          <div className="flex-1 min-h-0 flex flex-col relative z-10">
+            {/* Parte rolável: itens, totais, pagamento e opções. O botão fica fixo embaixo. */}
+            <div data-testid="checkout-rolavel" className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-1">
             {/* Itens */}
-            <div className="flex-1 overflow-y-auto space-y-3 mb-6 pr-1 custom-scrollbar max-h-[40dvh] lg:max-h-none">
+            <div className="overflow-y-auto space-y-3 mb-6 pr-1 custom-scrollbar max-h-[40dvh] lg:max-h-[24dvh]">
               <AnimatePresence initial={false}>
                 {carrinho.map((i) => {
                   const preco = i.preco_venda || i.preco_custo;
@@ -833,7 +847,7 @@ export default function PDV() {
             </div>
 
             {/* Totais */}
-            <div className="bg-slate-800/30 rounded-2xl p-4 border border-slate-700/30 space-y-3 mb-6">
+            <div className="bg-slate-800/30 rounded-2xl p-4 border border-slate-700/30 space-y-3 mb-6 lg:mb-4">
               <div className="flex justify-between text-xs font-bold uppercase tracking-wider">
                 <span className="text-slate-500">Subtotal</span>
                 <span className="text-white text-sm">{moeda(subtotal)}</span>
@@ -864,7 +878,7 @@ export default function PDV() {
             </div>
 
             {/* Pagamento */}
-            <div className="mb-6">
+            <div className="mb-6 lg:mb-4">
               <label className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-3 block">Forma de Pagamento</label>
               <div className="grid grid-cols-5 gap-2">
                 {PAGAMENTOS.map((fp) => (
@@ -891,7 +905,8 @@ export default function PDV() {
               <motion.div
                 initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="mb-6 rounded-2xl border border-slate-700/40 bg-slate-800/30 p-4"
+                ref={painelDinheiroRef}
+                className="mb-6 lg:mb-4 rounded-2xl border border-slate-700/40 bg-slate-800/30 p-4"
               >
                 <div className="flex items-center justify-between gap-3 mb-3">
                   <label className="text-slate-500 text-[10px] font-black uppercase tracking-widest">Dinheiro recebido</label>
@@ -1002,7 +1017,11 @@ export default function PDV() {
                   <option value={58}>58mm</option>
                 </select>
               </div>
+            </div>
+            </div>
 
+            {/* Rodapé fixo: sempre visível, por maior que seja a lista de produtos. */}
+            <div className="shrink-0 pt-3 border-t border-slate-800/60">
               {licencaBloqueada && (
                 <p className="mb-3 rounded border border-amber-400/40 bg-amber-400/10 p-2 text-xs text-amber-200">
                   Licença suspensa. Dá para fechar o caixa e exportar, mas não vender.
@@ -1026,6 +1045,7 @@ export default function PDV() {
                   <>
                     <CheckCircle2 size={22} />
                     <span>FINALIZAR VENDA</span>
+                    {carrinho.length > 0 && <span className="text-base font-bold opacity-90">· {moeda(total)}</span>}
                   </>
                 )}
               </motion.button>
@@ -1067,7 +1087,7 @@ export default function PDV() {
 
         {/* Mini resumo */}
         {dash && (
-          <div className="mt-auto pt-6 border-t border-slate-800/50 flex justify-between items-center relative z-10">
+          <div className="mt-auto pt-6 lg:pt-3 border-t border-slate-800/50 flex justify-between items-center relative z-10">
             <div className="text-[10px] font-black uppercase tracking-widest text-slate-500">
               Vendas Hoje
             </div>

@@ -43,6 +43,14 @@ def test_watchdog_pede_saida_do_servidor_sem_forcar_processo(monkeypatch):
     assert servidor.should_exit is True
 
 
+def test_servidor_nao_fecha_sem_navegador_por_padrao(monkeypatch):
+    # Aba minimizada manda heartbeat ~1x/min e o PDV caía sozinho no caixa.
+    monkeypatch.delenv('VENDAFACIL_FECHAR_SEM_NAVEGADOR', raising=False)
+    assert run._fechar_sem_navegador() is False
+    monkeypatch.setenv('VENDAFACIL_FECHAR_SEM_NAVEGADOR', '1')
+    assert run._fechar_sem_navegador() is True
+
+
 def test_r10_encerramento_aguarda_tarefa_em_andamento(monkeypatch):
     import backup
     import fiscal
