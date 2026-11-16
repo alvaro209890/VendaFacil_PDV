@@ -631,6 +631,7 @@ export default function PDV() {
   }
 
   const itensCarrinho = carrinho.length;
+  const carrinhoVazio = itensCarrinho === 0;
   const reciboDaVenda = msg?.recibo;
 
   return (
@@ -704,7 +705,7 @@ export default function PDV() {
       </div>
 
       {/* Coluna direita: Carrinho + Checkout */}
-      <div className="w-full lg:w-[400px] flex flex-col bg-slate-900/50 backdrop-blur-xl border border-slate-800/50 rounded-2xl p-5 shadow-2xl shrink-0 relative overflow-hidden">
+      <div className={`w-full lg:w-[400px] flex flex-col bg-slate-900/50 backdrop-blur-xl border border-slate-800/50 rounded-2xl p-5 shadow-2xl shrink-0 relative overflow-hidden ${carrinhoVazio ? "lg:self-start" : ""}`}>
         {/* Decorative glow */}
         <div className="absolute -bottom-20 -right-20 w-40 h-40 bg-brand-600/10 blur-[80px] rounded-full pointer-events-none" />
 
@@ -729,8 +730,8 @@ export default function PDV() {
           )}
         </div>
 
-        {carrinho.length === 0 ? (
-          <div className="flex-1 flex flex-col items-center justify-center py-12 relative z-10">
+        {carrinhoVazio ? (
+          <div className="flex flex-col items-center justify-center py-8 relative z-10">
             <Mascote estado="normal" frase="Estou esperando!" />
             <p className="text-slate-500 text-sm mt-4 text-center">
               Adicione produtos para<br />começar a vender.
