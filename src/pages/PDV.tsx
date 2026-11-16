@@ -77,6 +77,9 @@ export default function PDV() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [clienteFiado, setClienteFiado] = useState<number | "">("");
   const [emitirNota, setEmitirNota] = useState(false);
+  // Com o fiscal habilitado em produção, toda venda sai com NFC-e por padrão;
+  // o operador ainda pode desmarcar numa venda específica.
+  const notaPadraoRef = useRef(false);
   const [cpfConsumidor, setCpfConsumidor] = useState("");
 
   // PIX QR Code state
@@ -139,6 +142,11 @@ export default function PDV() {
     // Cabeçalho do recibo (usa os dados fiscais da loja, se preenchidos).
     try {
       const { config } = await getConfigFiscal();
+      const padrao = !!config.habilitado && config.ambiente === "producao";
+      if (padrao !== notaPadraoRef.current) {
+        notaPadraoRef.current = padrao;
+        setEmitirNota(padrao);
+      }
       const partes = [config.logradouro, config.numero, config.bairro, config.municipio, config.uf]
         .filter(Boolean).join(", ");
       setLojaInfo({
@@ -171,7 +179,7 @@ export default function PDV() {
     setValorRecebido("");
     setPagamento("dinheiro");
     setClienteFiado("");
-    setEmitirNota(false);
+    setEmitirNota(notaPadraoRef.current);
     setCpfConsumidor("");
     setMsg(null);
     buscaRef.current?.focus();
@@ -343,7 +351,7 @@ export default function PDV() {
       setValorRecebido("");
       setPagamento("dinheiro");
       setClienteFiado("");
-      setEmitirNota(false);
+      setEmitirNota(notaPadraoRef.current);
       setCpfConsumidor("");
     }
     setMsg(null);
@@ -618,7 +626,7 @@ export default function PDV() {
       setPagamento("dinheiro");
       setValorRecebido("");
       setClienteFiado("");
-      setEmitirNota(false);
+      setEmitirNota(notaPadraoRef.current);
       setCpfConsumidor("");
       setPixModal(null);
       carregar();
