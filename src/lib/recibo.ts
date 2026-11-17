@@ -26,7 +26,7 @@ export interface ReciboNota {
 }
 
 export interface ReciboData {
-  loja: { nome: string; cnpj?: string; endereco?: string; ie?: string };
+  loja: { nome: string; razao?: string; cnpj?: string; endereco?: string; ie?: string };
   itens: ReciboItem[];
   subtotal: number;
   desconto: number;
@@ -64,7 +64,10 @@ function montarHtml(d: ReciboData, larguraMm: number): string {
   const no = (nome: string, base: Document | Element | null = xml) => base?.getElementsByTagNameNS("*", nome)[0] || null;
   const texto = (nome: string, base: Document | Element | null = xml): string => no(nome, base)?.textContent?.trim() || "";
   const emit = no("emit"), endereco = no("enderEmit", emit), dest = no("dest"), prot = no("infProt");
-  const nomeLoja = texto("xNome", emit) || d.loja.nome;
+  // Nome fantasia em destaque (ex.: MERCEARIA LOIOLA); a razão social vem logo
+  // abaixo, como o DANFE NFC-e exige identificar o emitente.
+  const razaoLoja = texto("xNome", emit) || d.loja.razao || "";
+  const nomeLoja = texto("xFant", emit) || d.loja.nome || razaoLoja;
   const cnpjLoja = texto("CNPJ", emit) || d.loja.cnpj;
   const ieLoja = texto("IE", emit) || d.loja.ie;
   const enderecoLoja = endereco ? ['xLgr', 'nro', 'xCpl', 'xBairro', 'xMun', 'UF', 'CEP'].map(n => texto(n, endereco)).filter(Boolean).join(', ') : d.loja.endereco;
@@ -83,6 +86,8 @@ function montarHtml(d: ReciboData, larguraMm: number): string {
     return `<div class="item"><div class="nm">${it.codigo ? esc(it.codigo) + " — " : ""}${nome}</div><div class="ln"><span>${calc}</span><span>${moeda(it.subtotal)}</span></div></div>`;
   }).join("");
 
+  const razao = razaoLoja && razaoLoja.trim().toUpperCase() !== (nomeLoja || "").trim().toUpperCase()
+    ? `<div class="c">${esc(razaoLoja)}</div>` : "";
   const cnpj = cnpjLoja ? `<div class="c">CNPJ: ${esc(cnpjLoja)}</div>` : "";
   const ie = ieLoja ? `<div class="c">IE: ${esc(ieLoja)}</div>` : "";
   const end = enderecoLoja ? `<div class="c">${esc(enderecoLoja)}</div>` : "";
@@ -130,7 +135,7 @@ function montarHtml(d: ReciboData, larguraMm: number): string {
   const corpo = (via: string) => `
   ${via ? `<div class="c b" style="font-size:.85em">${via}</div>` : ""}
   <div class="c b big">${esc(nomeLoja || "VendaFácil PDV")}</div>
-  ${cnpj}${ie}${end}
+  ${razao}${cnpj}${ie}${end}
   <hr>
   ${avisoContingencia ? avisoContingencia + '<hr>' : ""}
   ${temNota ? "" : '<div class="c b">CUPOM NÃO FISCAL</div>'}
@@ -180,7 +185,12 @@ function montarHtml(d: ReciboData, larguraMm: number): string {
 }
 
 /** Monta o cupom e dispara a impressão num iframe oculto. */
-export function imprimirRecibo(d: ReciboData, larguraMm: number = getLarguraRecibo()): void {
+/**
+ * Imprime o recibo num iframe oculto. `aoTerminar` roda quando a impressão
+ * acaba (ou falha): o PDV usa para devolver o foco ao campo do leitor, senão
+ * o próximo bip cai no iframe já removido.
+ */
+export function imprimirRecibo(d: ReciboData, larguraMm: number = getLarguraRecibo(), aoTerminar?: () => void): void {
   const html = montarHtml(d, larguraMm);
   const iframe = document.createElement("iframe");
   iframe.style.position = "fixed";
@@ -196,11 +206,21 @@ export function imprimirRecibo(d: ReciboData, larguraMm: number = getLarguraReci
   doc.open();
   doc.write(html);
   doc.close();
-  win.addEventListener("afterprint", () => iframe.remove(), { once: true });
+  let terminou = false;
+  const terminar = () => {
+    if (terminou) return;
+    terminou = true;
+    iframe.remove();
+    aoTerminar?.();
+  };
+  win.addEventListener("afterprint", terminar, { once: true });
   const imagens = Array.from(doc.images, (imagem) => imagem.decode().catch(() => undefined));
   void Promise.all([doc.fonts.ready, ...imagens]).then(() => {
     if (!iframe.isConnected) return;
     win.focus();
     win.print();
-  }).catch(() => iframe.remove());
+    // print() bloqueia até a janela de impressão fechar (ou volta na hora com
+    // impressão direta); em ambos os casos a impressão já foi entregue.
+    terminar();
+  }).catch(terminar);
 }

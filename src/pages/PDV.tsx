@@ -88,8 +88,9 @@ export default function PDV() {
   const [pixLoading, setPixLoading] = useState(false);
 
   // Recibo (impressora térmica)
-  const [lojaInfo, setLojaInfo] = useState<{ nome: string; cnpj?: string; endereco?: string }>({ nome: "VendaFácil PDV" });
-  const [imprimirAuto, setImprimirAuto] = useState(() => localStorage.getItem("recibo_auto") === "1");
+  const [lojaInfo, setLojaInfo] = useState<{ nome: string; razao?: string; cnpj?: string; endereco?: string }>({ nome: "VendaFácil PDV" });
+  // Sempre começa marcado ao abrir o PDV; desmarcar vale só até recarregar a tela.
+  const [imprimirAuto, setImprimirAuto] = useState(true);
   const [largura, setLargura] = useState<58 | 80>(getLarguraRecibo());
 
   // Maquininha (Mercado Pago Point) — cobrança integrada, só quando online.
@@ -152,6 +153,7 @@ export default function PDV() {
         .filter(Boolean).join(", ");
       setLojaInfo({
         nome: config.nome_fantasia || config.razao_social || "VendaFácil PDV",
+        razao: config.razao_social || undefined,
         cnpj: config.cnpj || undefined,
         endereco: partes || undefined,
       });
@@ -610,7 +612,7 @@ export default function PDV() {
           ambiente: resp.nota.ambiente,
         } : null,
       };
-      if (imprimirAuto) imprimirRecibo(recibo, largura);
+      if (imprimirAuto) imprimirRecibo(recibo, largura, () => buscaRef.current?.focus());
 
       // A venda já foi gravada: falha fiscal não deve incentivar repetir a cobrança.
       const statusNota = resp.nota?.status;
@@ -1002,7 +1004,7 @@ export default function PDV() {
                   <input
                     type="checkbox"
                     checked={imprimirAuto}
-                    onChange={(e) => { setImprimirAuto(e.target.checked); localStorage.setItem("recibo_auto", e.target.checked ? "1" : "0"); }}
+                    onChange={(e) => setImprimirAuto(e.target.checked)}
                     className="w-4 h-4 accent-brand-500"
                   />
                   🖨️ Imprimir recibo ao finalizar
@@ -1071,7 +1073,7 @@ export default function PDV() {
                 <p className="text-xs font-bold leading-tight">{msg.texto}</p>
                 {reciboDaVenda && (
                   <button
-                    onClick={() => imprimirRecibo(reciboDaVenda, largura)}
+                    onClick={() => imprimirRecibo(reciboDaVenda, largura, () => buscaRef.current?.focus())}
                     className="mt-2 inline-flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 transition-colors"
                   >
                     🖨️ Imprimir recibo
