@@ -494,6 +494,17 @@ class Database:
         if "pix_integrado" not in mcols:
             # Cobrar PIX pela Point (transação integrada, com endToEndId p/ a NFC-e).
             self._conn.execute("ALTER TABLE config_maquininha ADD COLUMN pix_integrado INTEGER NOT NULL DEFAULT 0")
+        if "mp_user_id" not in mcols:
+            # collector_id do Mercado Pago (dono do token) — evita /users/me a cada PIX.
+            self._conn.execute("ALTER TABLE config_maquininha ADD COLUMN mp_user_id INTEGER DEFAULT 0")
+
+        vcols = {r["name"] for r in self._conn.execute("PRAGMA table_info(vendas)")}
+        if "pagamento_id" not in vcols:
+            # id do pagamento no Mercado Pago (PIX automático) — idempotência do checkout.
+            self._conn.execute("ALTER TABLE vendas ADD COLUMN pagamento_id TEXT DEFAULT ''")
+            self._conn.execute("CREATE INDEX IF NOT EXISTS idx_vendas_pagamento ON vendas(pagamento_id)")
+        if "pagamento_referencia" not in vcols:
+            self._conn.execute("ALTER TABLE vendas ADD COLUMN pagamento_referencia TEXT DEFAULT ''")
 
         ncols = {r["name"] for r in self._conn.execute("PRAGMA table_info(notas_fiscais)")}
         nota_cols = {
@@ -538,6 +549,23 @@ class Database:
             self._conn.execute(
                 f"UPDATE vendas SET sincronizado = 1, sincronizado_em = ? WHERE id IN ({marcas})",
                 [datetime.now(timezone.utc).isoformat(), *ids],
+            )
+
+    def get_venda_por_pagamento(self, payment_id: str) -> dict[str, Any] | None:
+        """Venda já fechada por um pagamento do Mercado Pago (evita PIX faturar 2×)."""
+        if not payment_id:
+            return None
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT * FROM vendas WHERE pagamento_id = ? ORDER BY id DESC LIMIT 1", (str(payment_id),)
+            ).fetchone()
+        return dict(row) if row else None
+
+    def set_venda_pagamento(self, venda_id: int, payment_id: str, referencia: str = "") -> None:
+        with self._lock, self._conn:
+            self._conn.execute(
+                "UPDATE vendas SET pagamento_id = ?, pagamento_referencia = ? WHERE id = ?",
+                (str(payment_id), referencia or "", venda_id),
             )
 
     def contagens_diagnostico(self, user_id: int) -> tuple[int, int, str | None]:
@@ -606,6 +634,7 @@ class Database:
             "habilitado", "provedor", "access_token", "device_id",
             "store_id", "pos_id", "imprimir_comprovante", "adquirente_cnpj",
             "pix_integrado",
+            "mp_user_id",
         }
         dados = {k: v for k, v in campos.items() if k in permitidos and v is not None}
         with self._lock, self._conn:

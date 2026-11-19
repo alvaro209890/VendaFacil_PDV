@@ -18,8 +18,9 @@ import {
   listarProdutos, checkout, getDashboard, gerarPixQrCode, listarClientes,
   getConfigMaquininha, criarCobrancaMaquininha, consultarCobrancaMaquininha,
   cancelarCobrancaMaquininha, getConfigFiscal, getAtivacaoStatus,
+  criarCobrancaPixMp, consultarCobrancaPixMp, confirmarVendaPixMp, getPixMpStatus,
 } from "../lib/api";
-import type { Produto, DashboardData, PixQrCodeResponse, Cliente, PagamentoEletronico } from "../lib/api";
+import type { Produto, DashboardData, PixQrCodeResponse, Cliente, PagamentoEletronico, PixMpCobranca } from "../lib/api";
 import { imprimirRecibo, getLarguraRecibo, setLarguraRecibo } from "../lib/recibo";
 import type { ReciboData } from "../lib/recibo";
 import Mascote from "../components/Mascote";
@@ -97,6 +98,28 @@ export default function PDV() {
   const [maqHabilitada, setMaqHabilitada] = useState(false);
   const [maqDeviceOk, setMaqDeviceOk] = useState(false);
   const [maqPixIntegrado, setMaqPixIntegrado] = useState(false);
+  // PIX automático pelo Mercado Pago: QR dinâmico + confirmação sozinha (sem clique).
+  const [pixMp, setPixMp] = useState<{
+    fase: "aguardando" | "aprovado" | "erro";
+    cobranca: PixMpCobranca;
+    erro?: string;
+  } | null>(null);
+  const [pixMpProcessando, setPixMpProcessando] = useState(false);
+  const pixMpPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pixMpFechandoRef = useRef(false);
+  // Fotografia do carrinho no momento em que o QR foi gerado: é com ela que a venda
+  // fecha quando o pagamento chega, mesmo que o operador mexa na tela.
+  const pixMpSnapshotRef = useRef<{
+    itens: { produto_id: number; quantidade: number; modo_venda?: "embalagem" | "unidade" }[];
+    desconto: number;
+    total: number;
+    subtotal: number;
+    recebido: number;
+    troco: number;
+    clienteFiado: number | "";
+    emitirNota: boolean;
+    cpf: string;
+  } | null>(null);
   const [maqModal, setMaqModal] = useState<{
     fase: "criando" | "aguardando" | "erro";
     intentId?: string;
@@ -109,7 +132,10 @@ export default function PDV() {
   const maqIntentIdRef = useRef<string | null>(null);
   // Vínculo do pagamento eletrônico da última cobrança aprovada (p/ a NFC-e).
   const maqPagamentoRef = useRef<PagamentoEletronico | null>(null);
-  const carrinhoBloqueado = loading || pixLoading || !!maqModal || !!pixModal || !!maqPagamentoRef.current;
+  const carrinhoBloqueado = loading || pixLoading || !!maqModal || !!pixModal || !!maqPagamentoRef.current || !!pixMp;
+
+  // PIX automático disponível? (token do Mercado Pago + chave PIX da loja)
+  const [pixMpPronto, setPixMpPronto] = useState(false);
 
   const carregar = useCallback(async () => {
     try {
@@ -134,6 +160,13 @@ export default function PDV() {
       setMaqPixIntegrado(!!config.pix_integrado);
     } catch {
       setMaqHabilitada(false);
+    }
+    // PIX automático (Mercado Pago) — separado também, para não travar o PDV.
+    try {
+      const pixStatus = await getPixMpStatus();
+      setPixMpPronto(!!pixStatus.configurado);
+    } catch {
+      setPixMpPronto(false);
     }
     try {
       const licenca = await getAtivacaoStatus();
@@ -415,6 +448,158 @@ export default function PDV() {
     }
   }
 
+  // ── PIX automático (Mercado Pago) ──
+
+  function pararPollPixMp() {
+    if (pixMpPollRef.current) {
+      clearInterval(pixMpPollRef.current);
+      pixMpPollRef.current = null;
+    }
+  }
+
+  /** Fecha a venda a partir da fotografia do carrinho — rodado quando o MP aprova. */
+  const fecharVendaPixMp = useCallback(async (cobranca: PixMpCobranca) => {
+    const snap = pixMpSnapshotRef.current;
+    if (!snap || pixMpFechandoRef.current) return;
+    pixMpFechandoRef.current = true;
+    pararPollPixMp();
+    setPixMp({ fase: "aprovado", cobranca });
+    setPixMpProcessando(true);
+    setLoading(true);
+    try {
+      const resp = await confirmarVendaPixMp(cobranca.id, {
+        itens: snap.itens,
+        desconto: snap.desconto,
+        observacao: `PIX Mercado Pago ${cobranca.id}`,
+        cliente_id: snap.clienteFiado === "" ? undefined : Number(snap.clienteFiado),
+        emitir_nota: snap.emitirNota,
+        cpf_consumidor: snap.emitirNota ? snap.cpf : undefined,
+        valor: snap.total,
+      });
+      const recibo: ReciboData = {
+        loja: lojaInfo,
+        itens: (resp.itens || []).map((i) => ({
+          nome: i.nome_produto, qtd: i.quantidade, preco: i.preco_unitario,
+          subtotal: i.subtotal, unidade: i.unidade_venda,
+          codigo: String(i.produto_id),
+        })),
+        subtotal: snap.subtotal,
+        desconto: snap.desconto,
+        total: snap.total,
+        forma: "pix",
+        vendaId: resp.venda?.id,
+        data: resp.venda?.criado_em,
+        nota: resp.nota && (resp.nota.status === "autorizada" || resp.nota.status === "contingencia") ? {
+          numero: resp.nota.numero, serie: resp.nota.serie, chave: resp.nota.chave,
+          protocolo: resp.nota.protocolo, qrcode_base64: resp.nota.qrcode_base64,
+          status: resp.nota.status, cpf: snap.cpf || undefined,
+          xml: resp.nota.xml_autorizado || resp.nota.xml_assinado,
+          ambiente: resp.nota.ambiente,
+        } : null,
+      };
+      if (imprimirAuto) imprimirRecibo(recibo, largura, () => buscaRef.current?.focus());
+      const statusNota = resp.nota?.status;
+      const avisoFiscal = !!resp.erro_nota || (snap.emitirNota && statusNota !== "autorizada");
+      const motivoFiscal = resp.erro_nota || resp.nota?.motivo_rejeicao || resp.nota?.mensagem
+        || "Retorno fiscal não confirmou a autorização.";
+      const resultadoFiscal = avisoFiscal
+        ? ` Venda registrada; não repita a venda. NFC-e ${statusNota || "não emitida"}: ${motivoFiscal}`
+        : statusNota === "autorizada" ? " (Nota emitida)" : "";
+      setMsg({
+        tipo: avisoFiscal ? "erro" : "ok",
+        texto: `PIX confirmado! Venda ${resp.ja_confirmada ? "já registrada" : "finalizada"} — Total: ${moeda(snap.total)}${resultadoFiscal}`,
+        recibo,
+      });
+      pixMpSnapshotRef.current = null;
+      setPixMp(null);
+      setPixModal(null);
+      setCarrinho([]); setQuantidadesTexto({});
+      setDesconto(0);
+      setPagamento("dinheiro");
+      setValorRecebido("");
+      setClienteFiado("");
+      setEmitirNota(notaPadraoRef.current);
+      setCpfConsumidor("");
+      carregar();
+      buscaRef.current?.focus();
+    } catch (err: unknown) {
+      // Pagamento aprovado mas venda não fechou (ex.: estoque acabou no meio):
+      // o QR some e a mensagem diz exatamente o que aconteceu — a cobrança continua
+      // registrada no MP, então repetir a cobrança seria cobrar duas vezes.
+      setPixMp({ fase: "erro", cobranca, erro: (err as Error).message });
+    } finally {
+      setPixMpProcessando(false);
+      setLoading(false);
+      pixMpFechandoRef.current = false;
+    }
+  }, [lojaInfo, imprimirAuto, largura]);
+
+  const iniciarPixMp = useCallback(async () => {
+    if (carrinho.length === 0 || total <= 0) return;
+    setPixLoading(true);
+    setMsg(null);
+    pixMpFechandoRef.current = false;
+    try {
+      const cobranca = await criarCobrancaPixMp(total, `Venda PDV ${moeda(total)}`);
+      pixMpSnapshotRef.current = {
+        itens: carrinho.map((i) => ({ produto_id: i.id, quantidade: i.qtd, modo_venda: i.modo_venda })),
+        desconto,
+        total,
+        subtotal,
+        recebido: recebidoDinheiro,
+        troco: trocoDinheiro,
+        clienteFiado,
+        emitirNota,
+        cpf: cpfConsumidor,
+      };
+      setPixMp({ fase: "aguardando", cobranca });
+    } catch (err: unknown) {
+      setMsg({ tipo: "erro", texto: (err as Error).message });
+    } finally {
+      setPixLoading(false);
+    }
+  }, [carrinho, total, desconto, subtotal, recebidoDinheiro, trocoDinheiro, clienteFiado, emitirNota, cpfConsumidor]);
+
+  // Polling do PIX: a cada 4 s pergunta ao backend (que pergunta ao MP). Quando o
+  // pagamento é aprovado, fecha a venda sozinho — o caixa não toca em nada.
+  useEffect(() => {
+    if (!pixMp || pixMp.fase !== "aguardando") {
+      pararPollPixMp();
+      return;
+    }
+    const id = pixMp.cobranca.id;
+    let vivo = true;
+    const consultar = async () => {
+      if (!vivo || pixMpFechandoRef.current) return;
+      try {
+        const atual = await consultarCobrancaPixMp(id);
+        if (!vivo) return;
+        if (atual.aprovado) {
+          void fecharVendaPixMp(atual);
+          return;
+        }
+        if (atual.encerrado) {
+          pararPollPixMp();
+          setPixMp({ fase: "erro", cobranca: atual, erro: `PIX ${atual.status} ${atual.status_detail || ""}`.trim() });
+          return;
+        }
+        setPixMp((prev) => (prev && prev.fase === "aguardando" ? { ...prev, cobranca: atual } : prev));
+      } catch {
+        // Sem internet momentânea: a próxima rodada tenta de novo.
+      }
+    };
+    pixMpPollRef.current = setInterval(consultar, 4000);
+    void consultar();
+    return () => { vivo = false; pararPollPixMp(); };
+  }, [pixMp?.cobranca.id, pixMp?.fase, fecharVendaPixMp]);
+
+  function cancelarPixMp() {
+    pararPollPixMp();
+    setPixMp(null);
+    pixMpSnapshotRef.current = null;
+    setMsg(null);
+  }
+
   function cancelarPix() {
     setPixModal(null);
   }
@@ -478,7 +663,13 @@ export default function PDV() {
       return;
     }
     if (pagamento === "pix") {
-      await gerarPix();                    // sem maquininha → QR estático no PDV
+      // PIX automático (Mercado Pago) fecha a venda sozinho quando o pagamento cai;
+      // só cai no QR estático (confirmação manual) se o MP não estiver configurado.
+      if (pixMpPronto) {
+        await iniciarPixMp();
+        return;
+      }
+      await gerarPix();
       return;
     }
     await confirmarVenda();
@@ -1190,6 +1381,137 @@ export default function PDV() {
                   {loading ? "..." : "CONFIRMAR ✅"}
                 </button>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Modal PIX automático (Mercado Pago) — fecha a venda sozinho ── */}
+      <AnimatePresence>
+        {pixMp && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-[#020617]/90 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-sm bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl text-center overflow-hidden"
+            >
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brand-500 to-emerald-500" />
+
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-10 h-10 rounded-xl bg-brand-600/10 flex items-center justify-center text-brand-400">
+                  <Smartphone size={20} />
+                </div>
+                <h2 className="text-white font-black text-xl tracking-tight">PAGAMENTO PIX</h2>
+                <button
+                  onClick={cancelarPixMp}
+                  disabled={pixMpProcessando}
+                  className="w-10 h-10 rounded-xl hover:bg-slate-800 flex items-center justify-center text-slate-500 transition-colors disabled:opacity-40"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {pixMp.fase === "aguardando" && (
+                <>
+                  <p className="text-slate-400 text-sm mb-4">
+                    Mostre o QR para o cliente pagar. <span className="text-emerald-400 font-bold">A venda fecha sozinha</span> quando o PIX cair.
+                  </p>
+                  <div className="bg-white rounded-2xl p-4 mb-4 inline-block shadow-inner mx-auto">
+                    {pixMp.cobranca.qr_base64 ? (
+                      <img
+                        src={`data:image/png;base64,${pixMp.cobranca.qr_base64}`}
+                        alt="QR Code PIX"
+                        className="w-48 h-48 mx-auto"
+                      />
+                    ) : (
+                      <div className="w-48 h-48 flex items-center justify-center text-slate-400 text-xs">
+                        Gerando QR...
+                      </div>
+                    )}
+                  </div>
+                  <div className="mb-4">
+                    <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">Total a Pagar</p>
+                    <p className="text-brand-400 font-black text-3xl tracking-tighter">
+                      <span className="text-lg mr-1">R$</span>{decimal2(pixMp.cobranca.valor ?? total)}
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-center gap-2 text-emerald-400 text-sm font-bold mb-4">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+                    Aguardando o pagamento...
+                  </div>
+                  {!!pixMp.cobranca.payload && (
+                    <div className="bg-slate-800/50 rounded-2xl p-4 mb-4 border border-slate-700/50">
+                      <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-2 text-left">Pix Copia e Cola</p>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          readOnly
+                          value={pixMp.cobranca.payload}
+                          className="flex-1 bg-slate-950/50 text-white text-xs font-mono rounded-lg px-3 py-2 border border-slate-800 truncate"
+                          onClick={(e) => (e.target as HTMLInputElement).select()}
+                        />
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(pixMp.cobranca.payload);
+                            setMsg({ tipo: "ok", texto: "Código PIX copiado!" });
+                          }}
+                          className="px-4 bg-brand-600 hover:bg-brand-500 text-white text-xs font-black uppercase rounded-lg transition-all active:scale-95"
+                        >
+                          COPIAR
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  <button
+                    onClick={cancelarPixMp}
+                    className="w-full px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-2xl text-xs font-black uppercase tracking-widest transition-all"
+                  >
+                    Cancelar cobrança
+                  </button>
+                </>
+              )}
+
+              {pixMp.fase === "aprovado" && (
+                <div className="py-8">
+                  <CheckCircle2 size={56} className="mx-auto text-emerald-400 mb-4" />
+                  <p className="text-white font-black text-xl mb-2">PIX CONFIRMADO</p>
+                  <p className="text-slate-400 text-sm">
+                    {pixMpProcessando ? "Fechando a venda..." : "Registrando a venda..."}
+                  </p>
+                </div>
+              )}
+
+              {pixMp.fase === "erro" && (
+                <>
+                  <AlertCircle size={48} className="mx-auto text-amber-400 mb-4" />
+                  <p className="text-white font-black text-lg mb-2">PIX APROVADO, VENDA NÃO FECHOU</p>
+                  <p className="text-slate-400 text-sm mb-4">{pixMp.erro}</p>
+                  <p className="text-amber-300 text-xs mb-4">
+                    O dinheiro entrou no Mercado Pago. Corrija o motivo (estoque, por exemplo) e registre a venda — não cobre o cliente de novo.
+                  </p>
+                  <button
+                    onClick={() => {
+                      void fecharVendaPixMp(pixMp.cobranca);
+                    }}
+                    className="w-full px-4 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl text-xs font-black uppercase tracking-widest mb-2"
+                  >
+                    Tentar fechar de novo
+                  </button>
+                  <button
+                    onClick={cancelarPixMp}
+                    className="w-full px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-2xl text-xs font-black uppercase tracking-widest"
+                  >
+                    Fechar
+                  </button>
+                </>
+              )}
             </motion.div>
           </div>
         )}

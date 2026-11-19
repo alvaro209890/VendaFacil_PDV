@@ -872,6 +872,69 @@ export async function gerarPixQrCode(valor: number): Promise<PixQrCodeResponse> 
   });
 }
 
+// ── PIX automático (Mercado Pago) ──
+
+export interface PixMpCobranca {
+  id: string;
+  status: string;
+  status_detail?: string;
+  valor?: number;
+  aprovado: boolean;
+  encerrado: boolean;
+  payload: string;
+  qr_base64: string;
+  expira_em?: string;
+  referencia?: string;
+}
+
+export interface ItemCheckoutPix {
+  produto_id: number;
+  quantidade: number;
+  modo_venda?: "embalagem" | "unidade";
+}
+
+export function getPixMpStatus(): Promise<{ configurado: boolean; token_mp: boolean; chave_pix: boolean }> {
+  return request("/api/pix/mp/status");
+}
+
+export function criarCobrancaPixMp(valor: number, descricao?: string): Promise<PixMpCobranca> {
+  return request("/api/pix/mp/cobranca", {
+    method: "POST",
+    body: JSON.stringify({ valor, descricao }),
+  });
+}
+
+export function consultarCobrancaPixMp(id: string): Promise<PixMpCobranca> {
+  return request(`/api/pix/mp/cobranca/${encodeURIComponent(id)}`);
+}
+
+export interface ConfirmarPixMpPayload {
+  itens: ItemCheckoutPix[];
+  desconto: number;
+  observacao?: string;
+  cliente_id?: number;
+  cpf_consumidor?: string;
+  emitir_nota?: boolean;
+  valor: number;
+}
+
+export function confirmarVendaPixMp(
+  id: string,
+  dados: ConfirmarPixMpPayload,
+): Promise<{
+  venda: Venda;
+  itens: ItemVendaProcessado[];
+  nota?: NotaFiscal;
+  erro_nota?: string;
+  pix: PixMpCobranca;
+  ja_confirmada: boolean;
+}> {
+  return request(`/api/pix/mp/cobranca/${encodeURIComponent(id)}/confirmar`, {
+    method: "POST",
+    body: JSON.stringify(dados),
+  });
+}
+
 export interface ConfigPix {
   pix_chave: string;
   pix_nome: string;
