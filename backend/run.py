@@ -12,6 +12,7 @@ import json
 import logging
 import os
 import socket
+import subprocess
 import sys
 import threading
 import time
@@ -21,6 +22,7 @@ from http.client import HTTPConnection, HTTPException
 import uvicorn
 
 from main import app, heartbeat_expirou
+from paths import DATA_DIR
 
 HOST = os.environ.get("VENDAFACIL_HOST", "127.0.0.1")
 PORT = int(os.environ.get("VENDAFACIL_PORT", "3020"))
@@ -59,8 +61,54 @@ def _instancia_ativa() -> bool:
     return False
 
 
+def _caminho_edge() -> str | None:
+    """msedge.exe instalado nesta máquina (x64/x86/perfil do usuário)."""
+    pastas = [
+        os.environ.get("ProgramFiles(x86)"),
+        os.environ.get("ProgramFiles"),
+        os.environ.get("LocalAppData"),
+    ]
+    for pasta in pastas:
+        if not pasta:
+            continue
+        caminho = os.path.join(pasta, "Microsoft", "Edge", "Application", "msedge.exe")
+        if os.path.isfile(caminho):
+            return caminho
+    return None
+
+
 def _abrir_navegador() -> None:
-    webbrowser.open(f"http://{HOST}:{PORT}/")
+    """Abre o PDV em janela de app no Edge, imprimindo direto (sem diálogo).
+
+    ``--kiosk-printing`` manda ``window.print()`` direto para a impressora
+    padrão do Windows: o recibo sai sozinho quando a venda fecha (James,
+    19/11/2026: o Edge normal abria a pré-visualização e exigia um clique).
+    O ``--user-data-dir`` separado evita que um Edge já aberto engula a janela
+    e ignore a flag. Sem Edge instalado, cai no navegador padrão (com diálogo).
+    """
+    url = f"http://{HOST}:{PORT}/"
+    if sys.platform == "win32":
+        edge = _caminho_edge()
+        if edge:
+            perfil = DATA_DIR / "edge-caixa"
+            try:
+                perfil.mkdir(parents=True, exist_ok=True)
+                subprocess.Popen(
+                    [
+                        edge,
+                        "--kiosk-printing",
+                        "--no-first-run",
+                        "--no-default-browser-check",
+                        "--noerrdialogs",
+                        f"--user-data-dir={perfil}",
+                        f"--app={url}",
+                    ],
+                    close_fds=True,
+                )
+                return
+            except OSError:
+                logging.getLogger(__name__).exception("Falha ao abrir o Edge; usando navegador padrão.")
+    webbrowser.open(url)
 
 
 def _fechar_sem_navegador() -> bool:
