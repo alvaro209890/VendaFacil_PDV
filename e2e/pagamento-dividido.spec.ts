@@ -103,3 +103,99 @@ test('PIX automático, débito e crédito cobram somente o valor de cada parcela
   ]);
   expect(cobrancas).toEqual([{ forma: 'pix', valor: 4 }, { forma: 'debito', valor: 2.50 }, { forma: 'credito', valor: 3.50 }]);
 });
+
+test('Point retoma o envio e a consulta após falhas de rede e fecha a venda uma vez', async ({ page, request }) => {
+  const headers = { Authorization: `Bearer ${token}` };
+  const produto = await request.post(`${api}/api/produtos`, {
+    headers, data: { nome: 'Produto recuperação Point', preco_venda: 19, estoque: 6 },
+  });
+  expect(produto.status()).toBe(201);
+  const referencias: string[] = [];
+  const pagamentos: { referencia_checkout: string; pagamento: { payment_id: string } }[] = [];
+  let consultas = 0;
+  await page.route('**/api/maquininha/config', route => route.fulfill({
+    json: { config: { habilitado: true, device_id: 'fixture' } },
+  }));
+  await page.route('**/api/maquininha/cobranca', route => {
+    referencias.push(route.request().postDataJSON().venda_uuid);
+    if (referencias.length === 1) {
+      return route.fulfill({
+        status: 503, json: { detail: { codigo: 'point_antes_do_envio', mensagem: 'Sem conexão' } },
+      });
+    }
+    if (referencias.length === 2) return route.abort('connectionreset');
+    return route.fulfill({ status: 201, json: { payment_intent_id: 'ORD-RECUPERACAO', state: 'OPEN' } });
+  });
+  await page.route('**/api/maquininha/cobranca/ORD-RECUPERACAO', route => {
+    expect(route.request().method()).toBe('GET');
+    consultas++;
+    if (consultas === 1) return route.fulfill({ status: 503, json: { detail: 'Sem conexão' } });
+    return route.fulfill({ json: { pago: true, state: 'FINISHED', payment_status: 'approved', payment_id: 'PAY-RECUPERACAO' } });
+  });
+  await page.route('**/api/vendas/checkout', route => {
+    pagamentos.push(route.request().postDataJSON());
+    if (pagamentos.length === 1) return route.abort('connectionreset');
+    return route.fulfill({ status: 201, json: { venda: { id: 1, forma_pagamento: 'debito' }, itens: [] } });
+  });
+  await page.goto('/login');
+  await page.evaluate(t => localStorage.setItem('vf_token', t), token);
+  const pronta = page.waitForResponse(r => r.url().endsWith('/api/maquininha/config'));
+  await page.goto('/pdv');
+  await pronta;
+  await page.getByRole('button', { name: 'Produto recuperação Point', exact: false }).click();
+  await page.getByRole('button', { name: 'Débito', exact: true }).click();
+  const finalizar = page.getByRole('button', { name: /finalizar venda/i });
+  await finalizar.click();
+  await expect(page.getByText('Reconectando com o Mercado Pago')).toBeVisible();
+  await expect(page.getByRole('button', { name: /registrar cartão manual/i })).toHaveCount(0);
+  await expect(page.getByText(/retome para registrar a mesma venda/i)).toBeVisible({ timeout: 20_000 });
+  await finalizar.click();
+  await expect(page.getByText(/venda finalizada/i)).toBeVisible();
+  expect(referencias).toHaveLength(3);
+  expect(new Set(referencias).size).toBe(1);
+  expect(consultas).toBe(2);
+  expect(pagamentos.map(p => p.referencia_checkout)).toEqual([referencias[0], referencias[0]]);
+  expect(pagamentos.map(p => p.pagamento.payment_id)).toEqual(['PAY-RECUPERACAO', 'PAY-RECUPERACAO']);
+});
+
+test('Point só libera outra tentativa depois de confirmar o cancelamento', async ({ page, request }) => {
+  const headers = { Authorization: `Bearer ${token}` };
+  const produto = await request.post(`${api}/api/produtos`, {
+    headers, data: { nome: 'Produto cancelamento Point', preco_venda: 8, estoque: 6 },
+  });
+  expect(produto.status()).toBe(201);
+  let cancelamentos = 0;
+  let consultasDepoisDeCancelar = 0;
+  await page.route('**/api/maquininha/config', route => route.fulfill({
+    json: { config: { habilitado: true, device_id: 'fixture' } },
+  }));
+  await page.route('**/api/maquininha/cobranca', route => route.fulfill({
+    json: { payment_intent_id: 'ORD-CANCELAMENTO', state: 'ON_TERMINAL' },
+  }));
+  await page.route('**/api/maquininha/cobranca/ORD-CANCELAMENTO', route => {
+    if (route.request().method() === 'DELETE') {
+      cancelamentos++;
+      return route.fulfill({ json: { cancelado: false } });
+    }
+    if (cancelamentos) consultasDepoisDeCancelar++;
+    return route.fulfill({ json: { pago: false, state: consultasDepoisDeCancelar >= 2 ? 'CANCELED' : 'ON_TERMINAL' } });
+  });
+  await page.goto('/login');
+  await page.evaluate(t => localStorage.setItem('vf_token', t), token);
+  const pronta = page.waitForResponse(r => r.url().endsWith('/api/maquininha/config'));
+  await page.goto('/pdv');
+  await pronta;
+  await page.getByRole('button', { name: 'Produto cancelamento Point', exact: false }).click();
+  await page.getByRole('button', { name: 'Débito', exact: true }).click();
+  const finalizar = page.getByRole('button', { name: /finalizar venda/i });
+  await finalizar.click();
+  const cancelamento = page.waitForResponse(r => r.request().method() === 'DELETE' && r.url().endsWith('/ORD-CANCELAMENTO'));
+  await page.getByRole('button', { name: 'CANCELAR', exact: true }).click();
+  await cancelamento;
+  await expect(page.getByText('Aguardando confirmação do cancelamento')).toBeVisible();
+  await expect(finalizar).toBeDisabled();
+  await expect(page.getByRole('button', { name: /registrar cartão manual/i })).toHaveCount(0);
+  await expect(finalizar).toBeEnabled({ timeout: 10_000 });
+  expect(cancelamentos).toBe(1);
+  expect(consultasDepoisDeCancelar).toBe(2);
+});

@@ -17,6 +17,17 @@ export function clearToken() {
   localStorage.removeItem("vf_token");
 }
 
+export class ApiError extends Error {
+  readonly status: number;
+  readonly codigo?: string;
+
+  constructor(message: string, status: number, codigo?: string) {
+    super(message);
+    this.status = status;
+    this.codigo = codigo;
+  }
+}
+
 async function request(path: string, options: RequestInit = {}) {
   const token = getToken();
   const headers: Record<string, string> = {
@@ -29,7 +40,7 @@ async function request(path: string, options: RequestInit = {}) {
   const data = await readJson(res);
 
   if (!res.ok) {
-    throw new Error(errorMessageFromResponse(data, res.status));
+    throw new ApiError(errorMessageFromResponse(data, res.status), res.status, data?.detail?.codigo);
   }
   return data;
 }

@@ -1,4 +1,6 @@
+import socket
 import sys
+from urllib.error import URLError
 from pathlib import Path
 from decimal import Decimal
 
@@ -49,6 +51,38 @@ def test_cancelamento_no_terminal_envia_header_exigido():
             assert path == '/v1/orders/ORD123/cancel'
             return 202, {'status': 'at_terminal'}
     assert Point().cancelar_cobranca('ORD123', at_terminal=True)['status'] == 'at_terminal'
+
+
+def test_rota_identifica_dns_como_falha_antes_do_envio(client, auth, monkeypatch):
+    db.salvar_config_maquininha(
+        {"habilitado": 1, "device_id": "NEWLAND_TEST", "access_token": "TEST"}, "agora",
+    )
+    metodos = []
+
+    def responder(req, timeout):
+        metodos.append(req.method)
+        raise URLError(socket.gaierror(11001, "getaddrinfo failed"))
+
+    monkeypatch.setattr("mercadopago.urllib.request.urlopen", responder)
+    resp = client.post("/api/maquininha/cobranca", headers=auth, json={"valor": 4.93, "forma": "debito"})
+    assert resp.status_code == 503
+    assert resp.json()["detail"]["codigo"] == "point_antes_do_envio"
+    assert metodos == ["PATCH"]
+
+
+def test_rota_cancelamento_distingue_solicitado_de_confirmado(client, auth, monkeypatch):
+    situacoes = iter([{"status": "at_terminal"}, {"status": "canceled"}])
+
+    class Point:
+        def cancelar_cobranca(self, order_id, *, at_terminal=False):
+            assert order_id == "ORD123"
+            assert at_terminal
+            return next(situacoes)
+
+    monkeypatch.setattr("mercadopago._cliente", Point)
+    url = "/api/maquininha/cobranca/ORD123"
+    assert client.delete(url, headers=auth).json() == {"cancelado": False}
+    assert client.delete(url, headers=auth).json() == {"cancelado": True}
 
 
 def test_rota_maquininha_recusa_pix_quando_desligado(client, auth):

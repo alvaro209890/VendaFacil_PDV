@@ -8,6 +8,7 @@ from __future__ import annotations
 import json
 import logging
 import re
+import socket
 import uuid
 import urllib.error
 import urllib.parse
@@ -77,7 +78,13 @@ class MercadoPagoPoint:
             except Exception:
                 return e.code, {"message": str(e)}
         except urllib.error.URLError as e:
+            if isinstance(e.reason, socket.gaierror):
+                logger.warning("mercadopago_dns_error method=%s errno=%s", method, e.reason.errno)
+                raise PointError(503, "Sem conexão com o Mercado Pago. Confira a internet do caixa.",
+                                 {"codigo": "point_dns"}) from e
             raise PointError(503, f"Sem conexao com o Mercado Pago: {e.reason}")
+        except TimeoutError as e:
+            raise PointError(503, "O Mercado Pago demorou a responder.") from e
 
     def listar_dispositivos(self) -> list[dict[str, Any]]:
         """Lista as terminais Point da conta usando a API atual de terminals."""
@@ -278,12 +285,12 @@ def _state(order: dict[str, Any]) -> str:
 
     if status in {"processed", "paid"} or payment_status in {"approved", "processed", "accredited"}:
         return "FINISHED"
-    if status in {"at_terminal", "on_terminal"} or status_detail in {"at_terminal", "on_terminal"}:
-        return "ON_TERMINAL"
     if status in {"expired", "canceled", "cancelled"}:
         return "CANCELED"
     if status in {"failed", "error"}:
         return "ERROR"
+    if status in {"at_terminal", "on_terminal"} or status_detail in {"at_terminal", "on_terminal"}:
+        return "ON_TERMINAL"
     if status in {"processing", "action_required"}:
         return "PROCESSING"
     return "OPEN"
@@ -461,7 +468,7 @@ async def diagnostico(request: Request) -> dict:
 
 
 @router.post("/cobranca")
-async def criar_cobranca(data: CobrancaInput, request: Request) -> dict:
+def criar_cobranca(data: CobrancaInput, request: Request) -> dict:
     user_id = _auth(request)
     if db.cobranca_aprovada_sem_venda(user_id, data.pagamentos_anteriores):
         raise HTTPException(
@@ -486,8 +493,10 @@ async def criar_cobranca(data: CobrancaInput, request: Request) -> dict:
     device_id = cfg.get("device_id") or ""
     if not device_id:
         raise HTTPException(status_code=400, detail="Device ID da maquininha nao configurado.")
+    enviando = False
     try:
         cli.configurar_modo_pdv(device_id)
+        enviando = True
         resp = cli.criar_cobranca(
             device_id,
             _valor_decimal(data.valor),
@@ -497,7 +506,12 @@ async def criar_cobranca(data: CobrancaInput, request: Request) -> dict:
             idempotency_key=data.venda_uuid,
         )
     except PointError as e:
-        raise HTTPException(status_code=e.status, detail=e.mensagem)
+        antes_do_envio = e.detalhe.get("codigo") == "point_dns" or not enviando
+        detail = (
+            {"codigo": "point_antes_do_envio", "mensagem": e.mensagem}
+            if antes_do_envio else e.mensagem
+        )
+        raise HTTPException(status_code=e.status, detail=detail) from e
 
     return {
         "payment_intent_id": resp.get("id"),  # compatibilidade com o frontend
@@ -507,7 +521,7 @@ async def criar_cobranca(data: CobrancaInput, request: Request) -> dict:
 
 
 @router.get("/cobranca/{payment_intent_id}")
-async def consultar_cobranca(payment_intent_id: str, request: Request) -> dict:
+def consultar_cobranca(payment_intent_id: str, request: Request) -> dict:
     _auth(request)
     cli = _cliente()
     try:
@@ -537,11 +551,11 @@ async def consultar_cobranca(payment_intent_id: str, request: Request) -> dict:
 
 
 @router.delete("/cobranca/{payment_intent_id}")
-async def cancelar_cobranca(payment_intent_id: str, request: Request) -> dict:
+def cancelar_cobranca(payment_intent_id: str, request: Request) -> dict:
     _auth(request)
     cli = _cliente()
     try:
-        cli.cancelar_cobranca(payment_intent_id)
+        resp = cli.cancelar_cobranca(payment_intent_id, at_terminal=True)
     except PointError as e:
         raise HTTPException(status_code=e.status, detail=e.mensagem)
-    return {"cancelado": True}
+    return {"cancelado": _state(resp) == "CANCELED"}

@@ -15,7 +15,7 @@ import {
   AlertCircle
 } from "lucide-react";
 import {
-  listarProdutos, checkout, getDashboard, gerarPixQrCode, listarClientes,
+  ApiError, listarProdutos, checkout, getDashboard, gerarPixQrCode, listarClientes,
   getConfigMaquininha, criarCobrancaMaquininha, consultarCobrancaMaquininha,
   cancelarCobrancaMaquininha, getConfigFiscal, getAtivacaoStatus,
   criarCobrancaPixMp, consultarCobrancaPixMp, confirmarVendaPixMp, getPixMpStatus,
@@ -56,9 +56,16 @@ const ESTADO_MAQ: Record<string, string> = {
   PROCESSING: "Processando o pagamento...",
   FINISHED: "Pagamento aprovado!",
 };
-const TIMEOUT_POINT_MS = 45_000;
-const ERRO_POINT_NAO_PUXOU =
-  "A cobrança foi criada no Mercado Pago, mas a Point não puxou para a tela. Reinicie a maquininha, pressione Atualizar/botão verde nela e tente novamente.";
+const AVISAR_POINT_MS = 45_000;
+const LIMITE_REENVIO_POINT_MS = 15 * 60_000;
+const ATRASOS_REENVIO_POINT = [2_000, 4_000, 8_000, 8_000];
+const CHECAR_POINT_MS = 2_500;
+const RECONECTAR_POINT_MS = 5_000;
+
+type TentativaPoint = {
+  cancelar: boolean;
+  cancelamentoEnviado: boolean;
+};
 
 const fmtQtd = (v: number) => Number(v || 0).toLocaleString("pt-BR", { maximumFractionDigits: 3 });
 const passoQtd = (unidade?: string) => ["KG", "G", "LT", "ML"].includes((unidade || "").toUpperCase()) ? 0.1 : 1;
@@ -136,19 +143,18 @@ export default function PDV() {
     cpf: string;
   } | null>(null);
   const [maqModal, setMaqModal] = useState<{
-    fase: "criando" | "aguardando" | "erro";
-    intentId?: string;
+    fase: "criando" | "reconectando" | "aguardando" | "cancelando" | "erro";
     estado?: string;
     erro?: string;
     forma?: string;
     valor?: number;
+    permiteManual?: boolean;
   } | null>(null);
-  const maqPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const maqTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Guarda o intentId ativo para cancelar no MP se o componente for desmontado.
-  const maqIntentIdRef = useRef<string | null>(null);
+  const maqPollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const maqTentativaRef = useRef<TentativaPoint | null>(null);
   // Vínculo do pagamento eletrônico da última cobrança aprovada (p/ a NFC-e).
   const maqPagamentoRef = useRef<PagamentoEletronico | null>(null);
+  const maqCheckoutRef = useRef<string | null>(null);
   const carrinhoBloqueado = loading || pixLoading || !!maqModal || !!pixModal ||
     !!maqPagamentoRef.current || !!pixMp || !!planoDivididoRef.current;
 
@@ -665,38 +671,25 @@ export default function PDV() {
     if (plano && !plano.meios.slice(0, plano.proxima).some(Boolean)) planoDivididoRef.current = null;
   }
 
-  // Para o polling da maquininha (se estiver rodando).
-  const pararPollMaquininha = useCallback(() => {
-    if (maqPollRef.current) {
-      clearInterval(maqPollRef.current);
-      maqPollRef.current = null;
+  useEffect(() => {
+    function avisarPagamentoEmCurso(event: BeforeUnloadEvent) {
+      if (!maqTentativaRef.current && !maqPagamentoRef.current) return;
+      event.preventDefault();
+      event.returnValue = "";
     }
+    window.addEventListener("beforeunload", avisarPagamentoEmCurso);
+    return () => {
+      window.removeEventListener("beforeunload", avisarPagamentoEmCurso);
+      if (maqPollRef.current !== null) clearTimeout(maqPollRef.current);
+      maqTentativaRef.current = null;
+    };
   }, []);
-
-  const pararTimeoutMaquininha = useCallback(() => {
-    if (maqTimeoutRef.current) {
-      clearTimeout(maqTimeoutRef.current);
-      maqTimeoutRef.current = null;
-    }
-  }, []);
-
-  // Ao desmontar (navegar para outra tela): para o poll E cancela na maquininha
-  // se houver cobrança pendente — evita que o pedido fique aberto no MP.
-  useEffect(() => () => {
-    pararPollMaquininha();
-    pararTimeoutMaquininha();
-    const id = maqIntentIdRef.current;
-    if (id) {
-      cancelarCobrancaMaquininha(id).catch(() => undefined);
-      maqIntentIdRef.current = null;
-    }
-  }, [pararPollMaquininha, pararTimeoutMaquininha]);
 
   // Cobranca pela maquininha: cartao (credito/debito) sempre que a Point estiver
   // ligada; PIX só quando "PIX integrado" estiver habilitado na config (senão o
   // PIX cai no QR estático do PDV, sem vínculo fiscal).
   const podeCobrarMaquininha = (forma: string) =>
-    maqHabilitada && maqDeviceOk && navigator.onLine && (
+    maqHabilitada && maqDeviceOk && (
       forma === "debito" || forma === "credito" || (forma === "pix" && maqPixIntegrado)
     );
 
@@ -725,7 +718,7 @@ export default function PDV() {
   }
 
   async function finalizarVenda() {
-    if (checkoutEmCursoRef.current || loading || pixLoading || maqModal || pixModal || pixMp) return;
+    if (checkoutEmCursoRef.current || maqTentativaRef.current || loading || pixLoading || maqModal || pixModal || pixMp) return;
     if (licencaBloqueada) {
       setMsg({ tipo: "erro", texto: "Licença suspensa. Dá para fechar o caixa e exportar, mas não vender." });
       return;
@@ -790,100 +783,126 @@ export default function PDV() {
 
   async function iniciarCobrancaMaquininha(forma = pagamento, valor = total,
     plano?: PlanoDividido, referencia: string = crypto.randomUUID()) {
-    setMsg(null);
-    setMaqModal({ fase: "criando", forma, valor });
-    let intentId: string;
-    try {
-      const anteriores = plano?.parcelas.flatMap(p => p.pagamento?.payment_id ? [p.pagamento.payment_id] : []);
-      const r = await criarCobrancaMaquininha(valor, referencia, forma, anteriores);
-      intentId = r.payment_intent_id;
-    } catch (err) {
-      // Falhou ao acionar a máquina (ex.: caiu a internet) → oferece manual.
-      setMaqModal({ fase: "erro", forma, valor, erro: (err as Error).message });
-      return;
-    }
-    maqIntentIdRef.current = intentId;
-    setMaqModal({ fase: "aguardando", intentId, estado: "OPEN", forma, valor });
+    if (maqTentativaRef.current) return;
+    const tentativa: TentativaPoint = { cancelar: false, cancelamentoEnviado: false };
+    maqTentativaRef.current = tentativa;
+    const cartao = forma === "debito" || forma === "credito";
+    const inicio = Date.now();
+    let falhasEnvio = 0;
+    let envioIncerto = false;
+    const anteriores = plano?.parcelas.flatMap(p => p.pagamento?.payment_id ? [p.pagamento.payment_id] : []);
 
-    // Poll do status até concluir/cancelar/dar erro.
-    pararPollMaquininha();
-    pararTimeoutMaquininha();
-    if (!plano) maqTimeoutRef.current = setTimeout(() => {
-      pararPollMaquininha();
-      maqIntentIdRef.current = null;
-      void cancelarCobrancaMaquininha(intentId).catch(() => undefined);
-      setMaqModal({ fase: "erro", intentId, forma, valor, erro: ERRO_POINT_NAO_PUXOU });
-    }, TIMEOUT_POINT_MS);
-    maqPollRef.current = setInterval(async () => {
+    const ativa = () => maqTentativaRef.current === tentativa;
+    const agendar = (fn: () => Promise<void>, atraso: number) => {
+      maqPollRef.current = setTimeout(() => {
+        maqPollRef.current = null;
+        if (ativa()) void fn();
+      }, atraso);
+    };
+    const encerrar = (erro?: string, permiteManual = cartao && !plano) => {
+      maqTentativaRef.current = null;
+      setMaqModal(erro ? { fase: "erro", forma, valor, erro, permiteManual } : null);
+    };
+
+    async function consultar(intentId: string, enviadoEm: number) {
+      let atraso = CHECAR_POINT_MS;
       try {
         const st = await consultarCobrancaMaquininha(intentId);
-        if (maqIntentIdRef.current !== intentId) return;
-        setMaqModal((m) => (m ? { ...m, estado: st.state, erro: undefined } : m));
-        if (st.state && st.state !== "OPEN") {
-          pararTimeoutMaquininha();
-        }
-        if (st.pago && st.payment_status === "approved") {
-          pararPollMaquininha();
-          pararTimeoutMaquininha();
-          maqIntentIdRef.current = null;
-          setMaqModal(null);
+        if (!ativa()) return;
+        if (st.pago && st.payment_status === "approved" && st.payment_id) {
+          const dados = { ...st.pagamento_fiscal, payment_id: String(st.payment_id) };
+          encerrar();
           if (plano) {
-            if (!st.payment_id) {
-              setMaqModal({ fase: "erro", forma, valor, erro: "A Point aprovou a cobrança sem identificador. Confira na maquininha." });
-              return;
-            }
-            concluirParcela(plano, { pagamento: { ...st.pagamento_fiscal, payment_id: String(st.payment_id) } });
+            concluirParcela(plano, { pagamento: dados });
           } else {
-            maqPagamentoRef.current = st.pagamento_fiscal ?? null;
-            await confirmarVenda(st.payment_id ? `MP Point: ${st.payment_id}` : undefined);
+            maqCheckoutRef.current = referencia;
+            maqPagamentoRef.current = dados;
+            await confirmarVenda(`MP Point: ${dados.payment_id}`);
           }
-        } else if (["CANCELED", "ERROR", "ABANDONED"].includes(st.state || "")) {
-          pararPollMaquininha();
-          pararTimeoutMaquininha();
-          maqIntentIdRef.current = null;
+          return;
+        }
+        if (["CANCELED", "ERROR", "ABANDONED"].includes(st.state)) {
           if (plano) plano.tentativa++;
-          setMaqModal({ fase: "erro", forma, valor, erro: `Cobrança ${st.state?.toLowerCase()} na maquininha.` });
+          if (tentativa.cancelar) encerrar();
+          else encerrar(st.state === "CANCELED" ? "A cobrança foi encerrada na Point." : "O pagamento não foi aprovado na Point.");
+          return;
+        }
+        const aviso = st.pago
+          ? "Pagamento aprovado na Point. Aguardando o identificador para concluir a venda."
+          : st.state === "OPEN" && Date.now() - enviadoEm >= AVISAR_POINT_MS
+            ? "A Point ainda não recebeu o pedido. Toque em Atualizar na maquininha."
+            : undefined;
+        setMaqModal({ fase: tentativa.cancelar ? "cancelando" : "aguardando", forma, valor, estado: st.state, erro: aviso });
+        if (tentativa.cancelar && !tentativa.cancelamentoEnviado && ["OPEN", "ON_TERMINAL"].includes(st.state)) {
+          await cancelarCobrancaMaquininha(intentId);
+          tentativa.cancelamentoEnviado = true;
         }
       } catch {
-        // Erro de rede no poll: para e oferece manual (não trava a venda).
-        if (maqIntentIdRef.current !== intentId) return;
-        if (plano) {
-          setMaqModal(m => m && { ...m, erro: "Sem conexão. Aguardando para consultar a mesma cobrança." });
-        } else {
-          pararPollMaquininha();
-          setMaqModal({ fase: "erro", intentId, forma, valor, erro: "Sem conexão com a maquininha. Use o cartão manual." });
-        }
+        if (!ativa()) return;
+        atraso = RECONECTAR_POINT_MS;
+        setMaqModal({
+          fase: tentativa.cancelar ? "cancelando" : "reconectando", forma, valor,
+          erro: "Aguardando o Mercado Pago confirmar a mesma cobrança. Se o cartão já foi passado, aguarde.",
+        });
       }
-    }, 2500);
-  }
+      if (ativa()) agendar(() => consultar(intentId, enviadoEm), atraso);
+    }
 
-  async function cancelarCobrancaMaq() {
-    const plano = planoDivididoRef.current;
-    const ativa = maqIntentIdRef.current;
-    if (plano && ativa) {
-      try {
-        const resp = await cancelarCobrancaMaquininha(ativa);
-        if (!resp.cancelado || maqIntentIdRef.current !== ativa) return;
-        plano.tentativa++;
-      } catch (err: unknown) {
-        setMaqModal(m => m && { ...m, erro: (err as Error).message });
+    async function enviar() {
+      if (tentativa.cancelar && !envioIncerto) {
+        if (plano) plano.tentativa++;
+        encerrar();
         return;
       }
+      try {
+        const r = await criarCobrancaMaquininha(valor, referencia, forma, anteriores);
+        if (!ativa()) return;
+        if (!r.payment_intent_id) throw new Error("O Mercado Pago ainda não retornou o identificador da cobrança.");
+        setMaqModal({ fase: tentativa.cancelar ? "cancelando" : "aguardando", forma, valor, estado: r.state });
+        const enviadoEm = Date.now();
+        agendar(() => consultar(r.payment_intent_id, enviadoEm), CHECAR_POINT_MS);
+      } catch (err) {
+        if (!ativa()) return;
+        const status = err instanceof ApiError ? err.status : undefined;
+        const transitorio = status === undefined || status >= 500 || status === 408 || status === 429;
+        const antesDoEnvio = err instanceof ApiError && err.codigo === "point_antes_do_envio";
+        envioIncerto ||= transitorio && !antesDoEnvio;
+        const atraso = ATRASOS_REENVIO_POINT[falhasEnvio++];
+        const mensagem = (err as Error).message;
+        if (!envioIncerto && (!transitorio || atraso === undefined || tentativa.cancelar)) {
+          encerrar(tentativa.cancelar ? undefined : mensagem, cartao && !plano && status !== 409);
+          return;
+        }
+        const podeReenviar = Date.now() - inicio < LIMITE_REENVIO_POINT_MS;
+        setMaqModal({
+          fase: tentativa.cancelar ? "cancelando" : "reconectando", forma, valor,
+          erro: podeReenviar
+            ? "Conexão instável com o Mercado Pago. Verificando o envio da mesma cobrança."
+            : "O envio da cobrança não foi confirmado. Confira o pagamento no Mercado Pago antes de cobrar novamente.",
+        });
+        if (podeReenviar) agendar(enviar, atraso ?? RECONECTAR_POINT_MS);
+      }
     }
-    pararPollMaquininha();
-    pararTimeoutMaquininha();
-    const id = maqModal?.intentId ?? maqIntentIdRef.current;
-    maqIntentIdRef.current = null;
-    setMaqModal(null);
-    if (id && !plano) {
-      try { await cancelarCobrancaMaquininha(id); } catch { /* já pode ter encerrado */ }
+
+    setMsg(null);
+    setMaqModal({ fase: "criando", forma, valor });
+    await enviar();
+  }
+
+  function cancelarCobrancaMaq() {
+    const tentativa = maqTentativaRef.current;
+    if (!tentativa) {
+      setMaqModal(null);
+      return;
     }
+    if (tentativa.cancelar) return;
+    tentativa.cancelar = true;
+    setMaqModal(m => m && { ...m, fase: "cancelando" });
   }
 
   // Fallback: registra a venda como cartão manual (caixa passou no aparelho).
   async function registrarCartaoManual() {
-    pararPollMaquininha();
-    pararTimeoutMaquininha();
+    if (maqTentativaRef.current || !maqModal?.permiteManual) return;
     setMaqModal(null);
     await confirmarVenda("Cartão manual (sem cobrança integrada)");
   }
@@ -915,7 +934,7 @@ export default function PDV() {
         desconto,
         forma_pagamento: plano ? undefined : pagamento,
         pagamentos: plano?.parcelas,
-        referencia_checkout: plano?.referencia,
+        referencia_checkout: plano?.referencia ?? maqCheckoutRef.current ?? undefined,
         dinheiro_recebido: usaDinheiro ? recebidoDinheiro : undefined,
         observacao,
         cliente_id: usaFiado ? Number(clienteFiado) : undefined,
@@ -962,6 +981,7 @@ export default function PDV() {
         : statusNota === "autorizada" ? " (Nota emitida)" : "";
       setMsg({ tipo: avisoFiscal ? "erro" : "ok", texto: `Venda finalizada! Total: ${moeda(total)}${resultadoFiscal}`, recibo });
       maqPagamentoRef.current = null;
+      maqCheckoutRef.current = null;
       planoDivididoRef.current = null;
       setDivisao(null);
       setCarrinho([]); setQuantidadesTexto({});
@@ -975,7 +995,7 @@ export default function PDV() {
       carregar();
       buscaRef.current?.focus();
     } catch (err: unknown) {
-      const sufixo = plano ? " Retome para registrar a mesma venda." : "";
+      const sufixo = plano || maqPagamentoRef.current ? " Retome para registrar a mesma venda." : "";
       setMsg({ tipo: "erro", texto: (err as Error).message + sufixo });
     } finally {
       checkoutEmCursoRef.current = false;
@@ -1777,6 +1797,8 @@ export default function PDV() {
                   <p className="text-white text-sm font-bold mb-1">
                     {maqModal.fase === "criando"
                       ? "Acionando a maquininha..."
+                      : maqModal.fase === "cancelando" ? "Aguardando confirmação do cancelamento"
+                      : maqModal.fase === "reconectando" ? "Reconectando com o Mercado Pago"
                       : maqModal.forma === "pix" ? "Peça o PIX na maquininha"
                       : maqModal.forma === "debito"
                         ? "Peça o cartão no débito"
@@ -1787,8 +1809,8 @@ export default function PDV() {
                   </p>
                   <button
                     onClick={cancelarCobrancaMaq}
-                    disabled={maqModal.fase === "criando"}
-                    className="w-full px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-2xl text-sm font-black uppercase tracking-widest transition-all"
+                    disabled={maqModal.fase === "criando" || maqModal.fase === "cancelando"}
+                    className="w-full px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-2xl text-sm font-black uppercase tracking-widest transition-all disabled:opacity-50"
                   >
                     CANCELAR
                   </button>
@@ -1800,7 +1822,7 @@ export default function PDV() {
                   </div>
                   <p className="text-red-400 text-sm font-bold mb-6">{maqModal.erro}</p>
                   <div className="flex flex-col gap-3">
-                    {!planoDivididoRef.current && <button
+                    {maqModal.permiteManual && <button
                       onClick={registrarCartaoManual}
                       disabled={loading}
                       className="w-full px-4 py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl text-sm font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-900/20"
@@ -1814,7 +1836,7 @@ export default function PDV() {
                       FECHAR
                     </button>
                   </div>
-                  {!planoDivididoRef.current && <p className="text-slate-500 text-[11px] mt-4 leading-snug">
+                  {maqModal.permiteManual && <p className="text-slate-500 text-[11px] mt-4 leading-snug">
                     "Cartão manual" = você passou o cartão direto no aparelho; o sistema só registra a venda.
                   </p>}
                 </>
