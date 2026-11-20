@@ -32,6 +32,7 @@ for (const [w, h] of [[1440, 780], [1366, 650], [1280, 600]]) {
     await page.goto('/login');
     await page.evaluate(t => localStorage.setItem('vf_token', t), token);
     await page.goto('/pdv');
+    await expect(page.getByRole('button', { name: new RegExp(`${prefixo} 001`) })).toBeVisible();
     const busca = page.getByPlaceholder(/Bipe o código/);
     for (const i of [1, 2, 3, 4, 5, 6]) {
       await busca.fill(`${prefixo}-${i}`);
@@ -69,6 +70,7 @@ test('janela estreita: pagamento logo abaixo da grade, sem rolar 240 produtos', 
   await page.goto('/login');
   await page.evaluate(t => localStorage.setItem('vf_token', t), token);
   await page.goto('/pdv');
+  await expect(page.getByRole('button', { name: new RegExp(`${prefixo} 001`) })).toBeVisible();
   const busca = page.getByPlaceholder(/Bipe o código/);
   await busca.fill(`${prefixo}-1`);
   await busca.press('Enter');

@@ -20,7 +20,7 @@ import {
   cancelarCobrancaMaquininha, getConfigFiscal, getAtivacaoStatus,
   criarCobrancaPixMp, consultarCobrancaPixMp, confirmarVendaPixMp, getPixMpStatus,
 } from "../lib/api";
-import type { Produto, DashboardData, PixQrCodeResponse, Cliente, PagamentoEletronico, PixMpCobranca } from "../lib/api";
+import type { Produto, DashboardData, PixQrCodeResponse, Cliente, PagamentoEletronico, PixMpCobranca, ParcelaVenda } from "../lib/api";
 import { imprimirRecibo, getLarguraRecibo, setLarguraRecibo } from "../lib/recibo";
 import type { ReciboData } from "../lib/recibo";
 import Mascote from "../components/Mascote";
@@ -37,7 +37,17 @@ const PAGAMENTOS = [
   { value: "debito", label: "Débito", icon: <CreditCard size={18} /> },
   { value: "credito", label: "Crédito", icon: <CreditCard size={18} /> },
   { value: "fiado", label: "Fiado", icon: <FileText size={18} /> },
-];
+] as const;
+
+type FormaDividida = ParcelaVenda["forma"];
+type LinhaPagamento = { forma: FormaDividida; valor: string };
+type PlanoDividido = {
+  parcelas: ParcelaVenda[];
+  meios: ("point" | "pix_mp" | "pix_manual" | null)[];
+  proxima: number;
+  referencia: string;
+  tentativa: number;
+};
 
 // Estados da cobrança Point → texto amigável exibido no modal.
 const ESTADO_MAQ: Record<string, string> = {
@@ -70,6 +80,9 @@ export default function PDV() {
   const desconto = decimalDigitado(descontoTexto, 2) ?? 0;
   function setDesconto(valor: number) { setDescontoTexto(valor ? String(valor) : ""); }
   const [pagamento, setPagamento] = useState("dinheiro");
+  const [divisao, setDivisao] = useState<LinhaPagamento[] | null>(null);
+  const planoDivididoRef = useRef<PlanoDividido | null>(null);
+  const checkoutEmCursoRef = useRef(false);
   const [valorRecebido, setValorRecebido] = useState("");
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<{ tipo: "ok" | "erro"; texto: string; recibo?: ReciboData } | null>(null);
@@ -86,6 +99,7 @@ export default function PDV() {
 
   // PIX QR Code state
   const [pixModal, setPixModal] = useState<PixQrCodeResponse | null>(null);
+  const pixManualConfirmadoRef = useRef(false);
   const [pixLoading, setPixLoading] = useState(false);
 
   // Recibo (impressora térmica)
@@ -107,6 +121,7 @@ export default function PDV() {
   const [pixMpProcessando, setPixMpProcessando] = useState(false);
   const pixMpPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pixMpFechandoRef = useRef(false);
+  const pixDivididoRef = useRef<((id: string) => void) | null>(null);
   // Fotografia do carrinho no momento em que o QR foi gerado: é com ela que a venda
   // fecha quando o pagamento chega, mesmo que o operador mexa na tela.
   const pixMpSnapshotRef = useRef<{
@@ -125,6 +140,8 @@ export default function PDV() {
     intentId?: string;
     estado?: string;
     erro?: string;
+    forma?: string;
+    valor?: number;
   } | null>(null);
   const maqPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const maqTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -132,7 +149,8 @@ export default function PDV() {
   const maqIntentIdRef = useRef<string | null>(null);
   // Vínculo do pagamento eletrônico da última cobrança aprovada (p/ a NFC-e).
   const maqPagamentoRef = useRef<PagamentoEletronico | null>(null);
-  const carrinhoBloqueado = loading || pixLoading || !!maqModal || !!pixModal || !!maqPagamentoRef.current || !!pixMp;
+  const carrinhoBloqueado = loading || pixLoading || !!maqModal || !!pixModal ||
+    !!maqPagamentoRef.current || !!pixMp || !!planoDivididoRef.current;
 
   // PIX automático disponível? (token do Mercado Pago + chave PIX da loja)
   const [pixMpPronto, setPixMpPronto] = useState(false);
@@ -205,7 +223,7 @@ export default function PDV() {
 
   function cancelarVenda() {
     if (loading || maqModal || pixModal) return;
-    if (maqPagamentoRef.current) {
+    if (maqPagamentoRef.current || planoDivididoRef.current || pixMp) {
       setMsg({ tipo: "erro", texto: "Há pagamento aprovado. Conclua a venda antes de cancelar o carrinho." });
       return;
     }
@@ -214,6 +232,7 @@ export default function PDV() {
     setDesconto(0);
     setValorRecebido("");
     setPagamento("dinheiro");
+    setDivisao(null);
     setClienteFiado("");
     setEmitirNota(notaPadraoRef.current);
     setCpfConsumidor("");
@@ -291,7 +310,7 @@ export default function PDV() {
 
   // Leitor de código de barras / Enter: bipa → adiciona → limpa → mantém o foco.
   function onBuscaKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (loading || pixLoading || maqModal || pixModal || janela) return;
+    if (carrinhoBloqueado || janela) return;
     if (e.key === "Escape") {
       setBusca("");
       return;
@@ -386,6 +405,7 @@ export default function PDV() {
       setDesconto(0);
       setValorRecebido("");
       setPagamento("dinheiro");
+      setDivisao(null);
       setClienteFiado("");
       setEmitirNota(notaPadraoRef.current);
       setCpfConsumidor("");
@@ -427,22 +447,38 @@ export default function PDV() {
     );
   }
 
-  const subtotal = carrinho.reduce((s, i) => s + i.qtd * (i.preco_venda || i.preco_custo), 0);
-  const total = Math.max(0, subtotal - desconto);
+  const centavos = (valor: number) => Math.round((valor + Number.EPSILON) * 100);
+  const subtotalCentavos = carrinho.reduce((s, i) => s + centavos(i.qtd * (i.preco_venda || i.preco_custo)), 0);
+  const subtotal = subtotalCentavos / 100;
+  const totalCentavos = Math.max(0, subtotalCentavos - centavos(desconto));
+  const total = totalCentavos / 100;
+  const parcelas = divisao?.map(p => ({ forma: p.forma, valor: decimalDigitado(p.valor, 2) ?? 0 }));
+  const faltaParcelas = totalCentavos - (parcelas?.reduce((s, p) => s + centavos(p.valor), 0) ?? totalCentavos);
+  const divisaoOk = !parcelas || (parcelas.length >= 2 && faltaParcelas === 0 && parcelas.every(p => p.valor > 0));
+  const usaDinheiro = parcelas ? parcelas.some(p => p.forma === "dinheiro") : pagamento === "dinheiro";
+  const usaFiado = parcelas ? parcelas.some(p => p.forma === "fiado") : pagamento === "fiado";
+  const parteDinheiro = parcelas
+    ? parcelas.reduce((s, p) => s + (p.forma === "dinheiro" ? centavos(p.valor) : 0), 0) / 100
+    : total;
   const recebidoDinheiro = parseMoeda(valorRecebido);
-  const trocoDinheiro = Math.max(0, recebidoDinheiro - total);
-  const faltaDinheiro = Math.max(0, total - recebidoDinheiro);
-  const dinheiroOk = pagamento !== "dinheiro" || (total > 0 && recebidoDinheiro >= total);
+  const trocoDinheiro = Math.max(0, centavos(recebidoDinheiro) - centavos(parteDinheiro)) / 100;
+  const faltaDinheiro = Math.max(0, centavos(parteDinheiro) - centavos(recebidoDinheiro)) / 100;
+  const dinheiroOk = !usaDinheiro || (parteDinheiro > 0 && faltaDinheiro === 0);
 
-  async function gerarPix() {
-    if (carrinho.length === 0 || total <= 0) return;
+  async function gerarPix(valor = total) {
+    if (carrinho.length === 0 || valor <= 0) return;
     setPixLoading(true);
     setMsg(null);
+    pixManualConfirmadoRef.current = false;
     try {
-      const pix = await gerarPixQrCode(total);
+      const pix = await gerarPixQrCode(valor);
       setPixModal(pix);
     } catch (err: unknown) {
-      setMsg({ tipo: "erro", texto: (err as Error).message });
+      if (planoDivididoRef.current) {
+        setPixModal({ payload: "", qr_base64: "" });
+      } else {
+        setMsg({ tipo: "erro", texto: (err as Error).message });
+      }
     } finally {
       setPixLoading(false);
     }
@@ -459,6 +495,14 @@ export default function PDV() {
 
   /** Fecha a venda a partir da fotografia do carrinho — rodado quando o MP aprova. */
   const fecharVendaPixMp = useCallback(async (cobranca: PixMpCobranca) => {
+    const concluirParcela = pixDivididoRef.current;
+    if (concluirParcela) {
+      pixDivididoRef.current = null;
+      pararPollPixMp();
+      setPixMp(null);
+      concluirParcela(cobranca.id);
+      return;
+    }
     const snap = pixMpSnapshotRef.current;
     if (!snap || pixMpFechandoRef.current) return;
     pixMpFechandoRef.current = true;
@@ -516,6 +560,7 @@ export default function PDV() {
       setCarrinho([]); setQuantidadesTexto({});
       setDesconto(0);
       setPagamento("dinheiro");
+      setDivisao(null);
       setValorRecebido("");
       setClienteFiado("");
       setEmitirNota(notaPadraoRef.current);
@@ -534,13 +579,14 @@ export default function PDV() {
     }
   }, [lojaInfo, imprimirAuto, largura]);
 
-  const iniciarPixMp = useCallback(async () => {
-    if (carrinho.length === 0 || total <= 0) return;
+  async function iniciarPixMp(valor = total, referencia?: string, concluirParcela?: (id: string) => void) {
+    if (carrinho.length === 0 || valor <= 0) return;
     setPixLoading(true);
     setMsg(null);
     pixMpFechandoRef.current = false;
     try {
-      const cobranca = await criarCobrancaPixMp(total, `Venda PDV ${moeda(total)}`);
+      const cobranca = await criarCobrancaPixMp(valor, `Venda PDV ${moeda(valor)}`, referencia);
+      pixDivididoRef.current = concluirParcela ?? null;
       pixMpSnapshotRef.current = {
         itens: carrinho.map((i) => ({ produto_id: i.id, quantidade: i.qtd, modo_venda: i.modo_venda })),
         desconto,
@@ -558,7 +604,7 @@ export default function PDV() {
     } finally {
       setPixLoading(false);
     }
-  }, [carrinho, total, desconto, subtotal, recebidoDinheiro, trocoDinheiro, clienteFiado, emitirNota, cpfConsumidor]);
+  }
 
   // Polling do PIX: a cada 4 s pergunta ao backend (que pergunta ao MP). Quando o
   // pagamento é aprovado, fecha a venda sozinho — o caixa não toca em nada.
@@ -569,23 +615,36 @@ export default function PDV() {
     }
     const id = pixMp.cobranca.id;
     let vivo = true;
+    let consultando = false;
     const consultar = async () => {
-      if (!vivo || pixMpFechandoRef.current) return;
+      if (!vivo || consultando || pixMpFechandoRef.current) return;
+      consultando = true;
       try {
         const atual = await consultarCobrancaPixMp(id);
         if (!vivo) return;
         if (atual.aprovado) {
+          vivo = false;
           void fecharVendaPixMp(atual);
           return;
         }
         if (atual.encerrado) {
+          vivo = false;
           pararPollPixMp();
+          if (pixDivididoRef.current && planoDivididoRef.current) {
+            pixDivididoRef.current = null;
+            planoDivididoRef.current.tentativa++;
+            setPixMp(null);
+            setMsg({ tipo: "erro", texto: `PIX ${atual.status}. Retome a venda para cobrar essa parcela.` });
+            return;
+          }
           setPixMp({ fase: "erro", cobranca: atual, erro: `PIX ${atual.status} ${atual.status_detail || ""}`.trim() });
           return;
         }
         setPixMp((prev) => (prev && prev.fase === "aguardando" ? { ...prev, cobranca: atual } : prev));
       } catch {
         // Sem internet momentânea: a próxima rodada tenta de novo.
+      } finally {
+        consultando = false;
       }
     };
     pixMpPollRef.current = setInterval(consultar, 4000);
@@ -602,6 +661,8 @@ export default function PDV() {
 
   function cancelarPix() {
     setPixModal(null);
+    const plano = planoDivididoRef.current;
+    if (plano && !plano.meios.slice(0, plano.proxima).some(Boolean)) planoDivididoRef.current = null;
   }
 
   // Para o polling da maquininha (se estiver rodando).
@@ -634,13 +695,37 @@ export default function PDV() {
   // Cobranca pela maquininha: cartao (credito/debito) sempre que a Point estiver
   // ligada; PIX só quando "PIX integrado" estiver habilitado na config (senão o
   // PIX cai no QR estático do PDV, sem vínculo fiscal).
-  const podeCobrarMaquininha =
+  const podeCobrarMaquininha = (forma: string) =>
     maqHabilitada && maqDeviceOk && navigator.onLine && (
-      pagamento === "debito" || pagamento === "credito" ||
-      (pagamento === "pix" && maqPixIntegrado)
+      forma === "debito" || forma === "credito" || (forma === "pix" && maqPixIntegrado)
     );
 
+  async function avancarPagamentoDividido(plano: PlanoDividido) {
+    while (plano.proxima < plano.parcelas.length && !plano.meios[plano.proxima]) plano.proxima++;
+    const indice = plano.proxima;
+    const parte = plano.parcelas[indice];
+    if (!parte) {
+      await confirmarVenda();
+      return;
+    }
+    const referencia = `${plano.referencia}-${indice}-${plano.tentativa}`;
+    if (plano.meios[indice] === "point") {
+      await iniciarCobrancaMaquininha(parte.forma, parte.valor, plano, referencia);
+    } else if (plano.meios[indice] === "pix_mp") {
+      await iniciarPixMp(parte.valor, referencia, id => concluirParcela(plano, { pix_mp_id: id }));
+    } else {
+      await gerarPix(parte.valor);
+    }
+  }
+
+  function concluirParcela(plano: PlanoDividido, dados: Partial<ParcelaVenda> = {}) {
+    Object.assign(plano.parcelas[plano.proxima], dados);
+    plano.proxima++;
+    void avancarPagamentoDividido(plano);
+  }
+
   async function finalizarVenda() {
+    if (checkoutEmCursoRef.current || loading || pixLoading || maqModal || pixModal || pixMp) return;
     if (licencaBloqueada) {
       setMsg({ tipo: "erro", texto: "Licença suspensa. Dá para fechar o caixa e exportar, mas não vender." });
       return;
@@ -654,11 +739,39 @@ export default function PDV() {
       setMsg({ tipo: "erro", texto: "Corrija a quantidade: maior que zero, até o estoque e com até 3 casas decimais." });
       return;
     }
+    if (!divisaoOk) {
+      setMsg({ tipo: "erro", texto: "Preencha as parcelas com valores positivos que somem o total da venda." });
+      return;
+    }
+    if (usaFiado && !clienteFiado) {
+      setMsg({ tipo: "erro", texto: "Selecione um cliente para lançar o fiado." });
+      return;
+    }
     if (!dinheiroOk) {
       setMsg({ tipo: "erro", texto: `Informe o dinheiro recebido. Ainda faltam ${moeda(faltaDinheiro)}.` });
       return;
     }
-    if (podeCobrarMaquininha) {
+    if (parcelas) {
+      const plano = planoDivididoRef.current ?? {
+        parcelas,
+        meios: parcelas.map(({ forma }) => {
+          if (forma === "pix" && pixMpPronto && navigator.onLine) return "pix_mp";
+          if (podeCobrarMaquininha(forma)) return "point";
+          return forma === "pix" ? "pix_manual" : null;
+        }),
+        proxima: 0,
+        referencia: crypto.randomUUID(),
+        tentativa: 0,
+      } satisfies PlanoDividido;
+      planoDivididoRef.current = plano;
+      await avancarPagamentoDividido(plano);
+      return;
+    }
+    if (maqPagamentoRef.current) {
+      await confirmarVenda();
+      return;
+    }
+    if (podeCobrarMaquininha(pagamento)) {
       await iniciarCobrancaMaquininha();   // cartao integrado na Point
       return;
     }
@@ -675,35 +788,37 @@ export default function PDV() {
     await confirmarVenda();
   }
 
-  async function iniciarCobrancaMaquininha() {
+  async function iniciarCobrancaMaquininha(forma = pagamento, valor = total,
+    plano?: PlanoDividido, referencia: string = crypto.randomUUID()) {
     setMsg(null);
-    setMaqModal({ fase: "criando" });
-    const uuid = crypto.randomUUID();
+    setMaqModal({ fase: "criando", forma, valor });
     let intentId: string;
     try {
-      const r = await criarCobrancaMaquininha(total, uuid, pagamento);
+      const anteriores = plano?.parcelas.flatMap(p => p.pagamento?.payment_id ? [p.pagamento.payment_id] : []);
+      const r = await criarCobrancaMaquininha(valor, referencia, forma, anteriores);
       intentId = r.payment_intent_id;
     } catch (err) {
       // Falhou ao acionar a máquina (ex.: caiu a internet) → oferece manual.
-      setMaqModal({ fase: "erro", erro: (err as Error).message });
+      setMaqModal({ fase: "erro", forma, valor, erro: (err as Error).message });
       return;
     }
     maqIntentIdRef.current = intentId;
-    setMaqModal({ fase: "aguardando", intentId, estado: "OPEN" });
+    setMaqModal({ fase: "aguardando", intentId, estado: "OPEN", forma, valor });
 
     // Poll do status até concluir/cancelar/dar erro.
     pararPollMaquininha();
     pararTimeoutMaquininha();
-    maqTimeoutRef.current = setTimeout(() => {
+    if (!plano) maqTimeoutRef.current = setTimeout(() => {
       pararPollMaquininha();
       maqIntentIdRef.current = null;
       void cancelarCobrancaMaquininha(intentId).catch(() => undefined);
-      setMaqModal({ fase: "erro", intentId, erro: ERRO_POINT_NAO_PUXOU });
+      setMaqModal({ fase: "erro", intentId, forma, valor, erro: ERRO_POINT_NAO_PUXOU });
     }, TIMEOUT_POINT_MS);
     maqPollRef.current = setInterval(async () => {
       try {
         const st = await consultarCobrancaMaquininha(intentId);
-        setMaqModal((m) => (m ? { ...m, estado: st.state } : m));
+        if (maqIntentIdRef.current !== intentId) return;
+        setMaqModal((m) => (m ? { ...m, estado: st.state, erro: undefined } : m));
         if (st.state && st.state !== "OPEN") {
           pararTimeoutMaquininha();
         }
@@ -711,31 +826,56 @@ export default function PDV() {
           pararPollMaquininha();
           pararTimeoutMaquininha();
           maqIntentIdRef.current = null;
-          maqPagamentoRef.current = st.pagamento_fiscal ?? null;
-          const obs = st.payment_id ? `MP Point: ${st.payment_id}` : undefined;
           setMaqModal(null);
-          await confirmarVenda(obs);
+          if (plano) {
+            if (!st.payment_id) {
+              setMaqModal({ fase: "erro", forma, valor, erro: "A Point aprovou a cobrança sem identificador. Confira na maquininha." });
+              return;
+            }
+            concluirParcela(plano, { pagamento: { ...st.pagamento_fiscal, payment_id: String(st.payment_id) } });
+          } else {
+            maqPagamentoRef.current = st.pagamento_fiscal ?? null;
+            await confirmarVenda(st.payment_id ? `MP Point: ${st.payment_id}` : undefined);
+          }
         } else if (["CANCELED", "ERROR", "ABANDONED"].includes(st.state || "")) {
           pararPollMaquininha();
           pararTimeoutMaquininha();
           maqIntentIdRef.current = null;
-          setMaqModal({ fase: "erro", intentId, erro: `Cobrança ${st.state?.toLowerCase()} na maquininha.` });
+          if (plano) plano.tentativa++;
+          setMaqModal({ fase: "erro", forma, valor, erro: `Cobrança ${st.state?.toLowerCase()} na maquininha.` });
         }
       } catch {
         // Erro de rede no poll: para e oferece manual (não trava a venda).
-        pararPollMaquininha();
-        setMaqModal({ fase: "erro", intentId, erro: "Sem conexão com a maquininha. Use o cartão manual." });
+        if (maqIntentIdRef.current !== intentId) return;
+        if (plano) {
+          setMaqModal(m => m && { ...m, erro: "Sem conexão. Aguardando para consultar a mesma cobrança." });
+        } else {
+          pararPollMaquininha();
+          setMaqModal({ fase: "erro", intentId, forma, valor, erro: "Sem conexão com a maquininha. Use o cartão manual." });
+        }
       }
     }, 2500);
   }
 
   async function cancelarCobrancaMaq() {
+    const plano = planoDivididoRef.current;
+    const ativa = maqIntentIdRef.current;
+    if (plano && ativa) {
+      try {
+        const resp = await cancelarCobrancaMaquininha(ativa);
+        if (!resp.cancelado || maqIntentIdRef.current !== ativa) return;
+        plano.tentativa++;
+      } catch (err: unknown) {
+        setMaqModal(m => m && { ...m, erro: (err as Error).message });
+        return;
+      }
+    }
     pararPollMaquininha();
     pararTimeoutMaquininha();
     const id = maqModal?.intentId ?? maqIntentIdRef.current;
     maqIntentIdRef.current = null;
     setMaqModal(null);
-    if (id) {
+    if (id && !plano) {
       try { await cancelarCobrancaMaquininha(id); } catch { /* já pode ter encerrado */ }
     }
   }
@@ -749,9 +889,11 @@ export default function PDV() {
   }
 
   async function confirmarVenda(obsExtra?: string) {
+    if (checkoutEmCursoRef.current) return;
+    const plano = planoDivididoRef.current;
     setLoading(true);
     setMsg(null);
-    if (pagamento === "fiado" && !clienteFiado) {
+    if (usaFiado && !clienteFiado) {
       setMsg({ tipo: "erro", texto: "Selecione um cliente para venda fiada." });
       setLoading(false);
       return;
@@ -761,18 +903,22 @@ export default function PDV() {
       setLoading(false);
       return;
     }
-    const obsPagamento = pagamento === "dinheiro"
+    const obsPagamento = usaDinheiro
       ? `Dinheiro recebido: ${moeda(recebidoDinheiro)} | Troco: ${moeda(trocoDinheiro)}`
       : "";
     const observacao = [obsExtra, obsPagamento].filter(Boolean).join(" | ");
+    checkoutEmCursoRef.current = true;
     try {
       const pagamentoFiscal = maqPagamentoRef.current ?? undefined;
       const resp = await checkout({
         itens: carrinho.map((i) => ({ produto_id: i.id, quantidade: i.qtd, modo_venda: i.modo_venda })),
         desconto,
-        forma_pagamento: pagamento,
+        forma_pagamento: plano ? undefined : pagamento,
+        pagamentos: plano?.parcelas,
+        referencia_checkout: plano?.referencia,
+        dinheiro_recebido: usaDinheiro ? recebidoDinheiro : undefined,
         observacao,
-        cliente_id: pagamento === "fiado" ? Number(clienteFiado) : undefined,
+        cliente_id: usaFiado ? Number(clienteFiado) : undefined,
         emitir_nota: emitirNota,
         cpf_consumidor: emitirNota ? cpfConsumidor : undefined,
         pagamento: pagamentoFiscal,
@@ -790,9 +936,10 @@ export default function PDV() {
         subtotal,
         desconto,
         total,
-        forma: pagamento,
-        recebido: pagamento === "dinheiro" ? recebidoDinheiro : undefined,
-        troco: pagamento === "dinheiro" ? trocoDinheiro : undefined,
+        forma: resp.venda.forma_pagamento,
+        pagamentos: resp.venda.pagamentos,
+        recebido: usaDinheiro ? recebidoDinheiro : undefined,
+        troco: usaDinheiro ? trocoDinheiro : undefined,
         vendaId: resp.venda?.id,
         data: resp.venda?.criado_em,
         nota: resp.nota && (resp.nota.status === "autorizada" || resp.nota.status === "contingencia") ? {
@@ -815,6 +962,8 @@ export default function PDV() {
         : statusNota === "autorizada" ? " (Nota emitida)" : "";
       setMsg({ tipo: avisoFiscal ? "erro" : "ok", texto: `Venda finalizada! Total: ${moeda(total)}${resultadoFiscal}`, recibo });
       maqPagamentoRef.current = null;
+      planoDivididoRef.current = null;
+      setDivisao(null);
       setCarrinho([]); setQuantidadesTexto({});
       setDesconto(0);
       setPagamento("dinheiro");
@@ -826,8 +975,10 @@ export default function PDV() {
       carregar();
       buscaRef.current?.focus();
     } catch (err: unknown) {
-      setMsg({ tipo: "erro", texto: (err as Error).message });
+      const sufixo = plano ? " Retome para registrar a mesma venda." : "";
+      setMsg({ tipo: "erro", texto: (err as Error).message + sufixo });
     } finally {
+      checkoutEmCursoRef.current = false;
       setLoading(false);
     }
   }
@@ -835,15 +986,30 @@ export default function PDV() {
   const itensCarrinho = carrinho.length;
   const carrinhoVazio = itensCarrinho === 0;
   const reciboDaVenda = msg?.recibo;
+  const finalizarDesabilitado = loading || pixLoading || !!maqModal || !!pixModal || !!pixMp ||
+    carrinhoVazio || !divisaoOk || !dinheiroOk;
+
+  function alternarDivisao() {
+    if (divisao) {
+      setDivisao(null);
+      return;
+    }
+    const forma = pagamento as FormaDividida;
+    setValorRecebido("");
+    setDivisao([
+      { forma, valor: total.toFixed(2).replace(".", ",") },
+      { forma: forma === "pix" ? "dinheiro" : "pix", valor: "" },
+    ]);
+  }
 
   // Em tela larga o checkout rola por dentro: ao escolher dinheiro, traz o campo
   // "Dinheiro recebido" para a vista (o FINALIZAR só libera com ele preenchido).
   // No celular a página rola inteira e não se mexe sozinha durante a leitura.
   useEffect(() => {
-    if (pagamento !== "dinheiro" || carrinhoVazio) return;
+    if (!usaDinheiro || carrinhoVazio || divisao) return;
     if (!window.matchMedia("(min-width: 1024px)").matches) return;
     painelDinheiroRef.current?.scrollIntoView({ block: "nearest" });
-  }, [pagamento, carrinhoVazio]);
+  }, [usaDinheiro, carrinhoVazio, divisao]);
 
   return (
     // Em tela larga a página fica na altura da janela: a grade de produtos rola
@@ -1054,6 +1220,7 @@ export default function PDV() {
                     inputMode="decimal"
                     ref={descontoRef}
                     aria-label="Desconto"
+                    disabled={carrinhoBloqueado}
                     value={descontoTexto}
                     onChange={(e) => setDescontoTexto(e.target.value)}
                     placeholder="0"
@@ -1072,14 +1239,53 @@ export default function PDV() {
 
             {/* Pagamento */}
             <div className="mb-6 lg:mb-4">
-              <label className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-3 block">Forma de Pagamento</label>
-              <div className="grid grid-cols-5 gap-2">
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <span className="text-slate-500 text-[10px] font-black uppercase tracking-widest">Forma de Pagamento</span>
+                <button type="button" onClick={alternarDivisao} disabled={carrinhoBloqueado || carrinhoVazio || total <= 0}
+                  ref={divisao ? pagamentoRef : undefined} aria-pressed={!!divisao}
+                  className="rounded-lg border border-slate-700 px-3 py-1.5 text-xs font-bold text-brand-300 hover:bg-slate-800 disabled:opacity-50">
+                  {divisao ? "Pagamento único" : "Dividir"}
+                </button>
+              </div>
+              {divisao ? (
+                <div className="space-y-2">
+                  {divisao.map((parte, i) => (
+                    <div key={i} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] gap-2">
+                      <select aria-label={`Forma da parcela ${i + 1}`} disabled={carrinhoBloqueado} value={parte.forma}
+                        onChange={e => setDivisao(divisao.map((p, j) => i === j ? { ...p, forma: e.target.value as FormaDividida } : p))}
+                        className="min-w-0 rounded-lg border border-slate-700 bg-slate-900 px-2 py-2 text-sm text-white">
+                        {PAGAMENTOS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                      </select>
+                      <div className="relative min-w-0">
+                        <span className="absolute left-2 top-2 text-xs text-slate-400">R$</span>
+                        <input aria-label={`Valor da parcela ${i + 1}`} inputMode="decimal" value={parte.valor}
+                          placeholder="0,00" disabled={carrinhoBloqueado}
+                          onChange={e => setDivisao(divisao.map((p, j) => i === j ? { ...p, valor: e.target.value } : p))}
+                          className="w-full rounded-lg border border-slate-700 bg-slate-900 py-2 pl-7 pr-2 text-right text-sm text-white" />
+                      </div>
+                      <button type="button" aria-label={`Remover parcela ${i + 1}`} disabled={carrinhoBloqueado || divisao.length <= 2}
+                        onClick={() => setDivisao(divisao.filter((_, j) => i !== j))}
+                        className="rounded-lg px-2 text-slate-400 hover:bg-slate-800 disabled:opacity-30"><X size={16} /></button>
+                    </div>
+                  ))}
+                  <div className="flex items-center justify-between gap-2">
+                    <button type="button" disabled={carrinhoBloqueado || divisao.length >= 100}
+                      onClick={() => setDivisao([...divisao, { forma: "pix", valor: "" }])}
+                      className="px-1 py-1.5 text-xs font-bold text-brand-300 hover:underline disabled:opacity-50">Adicionar parcela</button>
+                    <span aria-live="polite" className={`text-xs font-bold ${divisaoOk ? "text-emerald-400" : "text-amber-400"}`}>
+                      {faltaParcelas !== 0 ? `${faltaParcelas > 0 ? "Falta" : "Sobra"} ${moeda(Math.abs(faltaParcelas) / 100)}`
+                        : divisaoOk ? "Total conferido" : "Preencha todos os valores"}
+                    </span>
+                  </div>
+                </div>
+              ) : <div className="grid grid-cols-5 gap-2">
                 {PAGAMENTOS.map((fp) => (
                   <motion.button
                     whileHover={{ y: -2 }}
                     whileTap={{ scale: 0.95 }}
                     key={fp.value}
                     ref={pagamento === fp.value ? pagamentoRef : undefined}
+                    disabled={carrinhoBloqueado}
                     onClick={() => { setPagamento(fp.value); if (fp.value !== "fiado") setClienteFiado(""); }}
                     className={`flex flex-col items-center justify-center py-3 rounded-xl transition-all border ${
                       pagamento === fp.value
@@ -1091,10 +1297,10 @@ export default function PDV() {
                     <span className="text-[9px] font-black uppercase tracking-tighter leading-none">{fp.label}</span>
                   </motion.button>
                 ))}
-              </div>
+              </div>}
             </div>
 
-            {pagamento === "dinheiro" && (
+            {usaDinheiro && (
               <motion.div
                 initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -1113,6 +1319,7 @@ export default function PDV() {
                     type="text"
                     inputMode="decimal"
                     aria-label="Dinheiro recebido"
+                    disabled={carrinhoBloqueado}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && !loading && !pixLoading && !maqModal && !pixModal) {
                         e.preventDefault();
@@ -1126,9 +1333,10 @@ export default function PDV() {
                   />
                 </div>
                 <div className="grid grid-cols-4 gap-2 mt-3">
-                  {[total, 50, 100, 200].map((v, idx) => (
+                  {[parteDinheiro, 50, 100, 200].map((v, idx) => (
                     <button
                       key={`${v}-${idx}`}
+                      disabled={carrinhoBloqueado}
                       onClick={() => setValorRecebido(v.toFixed(2).replace(".", ","))}
                       className="py-2 rounded-xl bg-slate-900/70 hover:bg-slate-700 text-slate-300 text-xs font-black transition-colors active:scale-95"
                     >
@@ -1140,7 +1348,7 @@ export default function PDV() {
             )}
 
             {/* Select de cliente para venda fiada */}
-            {pagamento === "fiado" && (
+            {usaFiado && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -1148,6 +1356,8 @@ export default function PDV() {
               >
                 <label className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-2 block">Selecionar Cliente</label>
                 <select
+                  aria-label="Cliente do fiado"
+                  disabled={carrinhoBloqueado}
                   value={clienteFiado}
                   onChange={(e) => setClienteFiado(e.target.value ? Number(e.target.value) : "")}
                   className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl text-white text-sm font-bold focus:outline-none focus:border-brand-500 appearance-none shadow-inner"
@@ -1171,6 +1381,7 @@ export default function PDV() {
                 <input 
                   type="checkbox" 
                   checked={emitirNota} 
+                  disabled={carrinhoBloqueado}
                   onChange={(e) => setEmitirNota(e.target.checked)}
                   className="w-4 h-4 rounded accent-brand-500 bg-slate-800 border-slate-700" 
                 />
@@ -1182,6 +1393,7 @@ export default function PDV() {
                   <input
                     type="text"
                     value={cpfConsumidor}
+                    disabled={carrinhoBloqueado}
                     onChange={(e) => setCpfConsumidor(e.target.value)}
                     placeholder="CPF/CNPJ do Consumidor (opcional)"
                     className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-xs focus:outline-none focus:border-brand-500"
@@ -1225,9 +1437,9 @@ export default function PDV() {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={finalizarVenda}
-                disabled={loading || pixLoading || !!maqModal || carrinho.length === 0 || !dinheiroOk || licencaBloqueada}
+                disabled={finalizarDesabilitado || licencaBloqueada}
                 className={`w-full py-4 rounded-2xl text-white font-black text-lg tracking-tight shadow-xl transition-all flex items-center justify-center gap-3 ${
-                  loading || pixLoading || !!maqModal || carrinho.length === 0 || !dinheiroOk || licencaBloqueada
+                  finalizarDesabilitado || licencaBloqueada
                     ? "bg-slate-800 text-slate-500 cursor-not-allowed"
                     : "bg-gradient-to-r from-emerald-600 to-teal-600 shadow-emerald-900/20"
                 }`}
@@ -1237,7 +1449,7 @@ export default function PDV() {
                 ) : (
                   <>
                     <CheckCircle2 size={22} />
-                    <span>FINALIZAR VENDA</span>
+                    <span>{planoDivididoRef.current ? "RETOMAR VENDA" : "FINALIZAR VENDA"}</span>
                     {carrinho.length > 0 && <span className="text-base font-bold opacity-90">· {moeda(total)}</span>}
                   </>
                 )}
@@ -1325,26 +1537,26 @@ export default function PDV() {
               </div>
 
               <p className="text-slate-400 text-sm mb-6">
-                Escaneie o QR Code abaixo para pagar
+                {pixModal.qr_base64 ? "Escaneie o QR Code abaixo para pagar" : "Receba o PIX e confirme após verificar o pagamento."}
               </p>
 
-              <div className="bg-white rounded-2xl p-4 mb-6 inline-block shadow-inner mx-auto">
+              {pixModal.qr_base64 && <div className="bg-white rounded-2xl p-4 mb-6 inline-block shadow-inner mx-auto">
                 <img
                   src={`data:image/png;base64,${pixModal.qr_base64}`}
                   alt="QR Code PIX"
                   className="w-48 h-48 mx-auto"
                 />
-              </div>
+              </div>}
 
               <div className="mb-6">
                 <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">Total a Pagar</p>
                 <p className="text-brand-400 font-black text-3xl tracking-tighter">
                   <span className="text-lg mr-1">R$</span>
-                  {decimal2(total)}
+                  {decimal2(planoDivididoRef.current?.parcelas[planoDivididoRef.current.proxima]?.valor ?? total)}
                 </p>
               </div>
 
-              <div className="bg-slate-800/50 rounded-2xl p-4 mb-8 border border-slate-700/50">
+              {pixModal.payload && <div className="bg-slate-800/50 rounded-2xl p-4 mb-8 border border-slate-700/50">
                 <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-3 text-left">Código Pix Copia e Cola</p>
                 <div className="flex gap-2">
                   <input
@@ -1364,7 +1576,7 @@ export default function PDV() {
                     COPIAR
                   </button>
                 </div>
-              </div>
+              </div>}
 
               <div className="flex gap-3">
                 <button
@@ -1374,7 +1586,17 @@ export default function PDV() {
                   VOLTAR
                 </button>
                 <button
-                  onClick={() => confirmarVenda()}
+                  onClick={() => {
+                    const plano = planoDivididoRef.current;
+                    if (plano) {
+                      if (pixManualConfirmadoRef.current) return;
+                      pixManualConfirmadoRef.current = true;
+                      setPixModal(null);
+                      concluirParcela(plano);
+                    } else {
+                      void confirmarVenda();
+                    }
+                  }}
                   disabled={loading}
                   className="flex-1 px-4 py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl text-sm font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-900/20"
                 >
@@ -1421,7 +1643,7 @@ export default function PDV() {
               {pixMp.fase === "aguardando" && (
                 <>
                   <p className="text-slate-400 text-sm mb-4">
-                    Mostre o QR para o cliente pagar. <span className="text-emerald-400 font-bold">A venda fecha sozinha</span> quando o PIX cair.
+                    Mostre o QR para o cliente pagar. <span className="text-emerald-400 font-bold">{planoDivididoRef.current ? "A parcela é confirmada automaticamente" : "A venda fecha sozinha"}</span> quando o PIX cair.
                   </p>
                   <div className="bg-white rounded-2xl p-4 mb-4 inline-block shadow-inner mx-auto">
                     {pixMp.cobranca.qr_base64 ? (
@@ -1469,12 +1691,12 @@ export default function PDV() {
                       </div>
                     </div>
                   )}
-                  <button
+                  {!planoDivididoRef.current && <button
                     onClick={cancelarPixMp}
                     className="w-full px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-2xl text-xs font-black uppercase tracking-widest transition-all"
                   >
                     Cancelar cobrança
-                  </button>
+                  </button>}
                 </>
               )}
 
@@ -1545,7 +1767,7 @@ export default function PDV() {
               <div className="mb-6">
                 <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">Total a Cobrar</p>
                 <p className="text-brand-400 font-black text-3xl tracking-tighter">
-                  <span className="text-lg mr-1">R$</span>{decimal2(total)}
+                  <span className="text-lg mr-1">R$</span>{decimal2(maqModal.valor ?? total)}
                 </p>
               </div>
 
@@ -1555,15 +1777,17 @@ export default function PDV() {
                   <p className="text-white text-sm font-bold mb-1">
                     {maqModal.fase === "criando"
                       ? "Acionando a maquininha..."
-                      : pagamento === "debito"
+                      : maqModal.forma === "pix" ? "Peça o PIX na maquininha"
+                      : maqModal.forma === "debito"
                         ? "Peça o cartão no débito"
                         : "Peça o cartão no crédito"}
                   </p>
                   <p className="text-slate-500 text-xs mb-8">
-                    {ESTADO_MAQ[maqModal.estado || ""] || "Aguardando a maquininha..."}
+                    {maqModal.erro || ESTADO_MAQ[maqModal.estado || ""] || "Aguardando a maquininha..."}
                   </p>
                   <button
                     onClick={cancelarCobrancaMaq}
+                    disabled={maqModal.fase === "criando"}
                     className="w-full px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-2xl text-sm font-black uppercase tracking-widest transition-all"
                   >
                     CANCELAR
@@ -1576,13 +1800,13 @@ export default function PDV() {
                   </div>
                   <p className="text-red-400 text-sm font-bold mb-6">{maqModal.erro}</p>
                   <div className="flex flex-col gap-3">
-                    <button
+                    {!planoDivididoRef.current && <button
                       onClick={registrarCartaoManual}
                       disabled={loading}
                       className="w-full px-4 py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl text-sm font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-900/20"
                     >
                       {loading ? "..." : "REGISTRAR CARTÃO MANUAL"}
-                    </button>
+                    </button>}
                     <button
                       onClick={cancelarCobrancaMaq}
                       className="w-full px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-2xl text-sm font-black uppercase tracking-widest transition-all"
@@ -1590,9 +1814,9 @@ export default function PDV() {
                       FECHAR
                     </button>
                   </div>
-                  <p className="text-slate-500 text-[11px] mt-4 leading-snug">
+                  {!planoDivididoRef.current && <p className="text-slate-500 text-[11px] mt-4 leading-snug">
                     "Cartão manual" = você passou o cartão direto no aparelho; o sistema só registra a venda.
-                  </p>
+                  </p>}
                 </>
               )}
             </motion.div>

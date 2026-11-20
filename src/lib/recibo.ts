@@ -4,6 +4,8 @@
 // chama print() num iframe oculto. O driver da impressora térmica instalado no
 // Windows recebe pelo diálogo de impressão normal — funciona no .exe (navegador).
 
+import { rotuloForma } from "./rotulos";
+
 export interface ReciboItem {
   nome: string;
   qtd: number;
@@ -32,16 +34,13 @@ export interface ReciboData {
   desconto: number;
   total: number;
   forma: string;
+  pagamentos?: { forma: string; valor: number }[];
   recebido?: number;
   troco?: number;
   vendaId?: number | string;
   data?: string; // ISO; usa agora se ausente
   nota?: ReciboNota | null;  // NFC-e autorizada → imprime bloco fiscal + QR
 }
-
-const FORMA_LABEL: Record<string, string> = {
-  dinheiro: "Dinheiro", pix: "PIX", debito: "Débito", credito: "Crédito", fiado: "Fiado",
-};
 
 const moeda = (v: number) => (v || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -92,7 +91,11 @@ function montarHtml(d: ReciboData, larguraMm: number): string {
   const ie = ieLoja ? `<div class="c">IE: ${esc(ieLoja)}</div>` : "";
   const end = enderecoLoja ? `<div class="c">${esc(enderecoLoja)}</div>` : "";
   const desc = d.desconto > 0 ? `<div class="ln"><span>Desconto</span><span>-${moeda(d.desconto)}</span></div>` : "";
-  const dinheiro = d.forma === "dinheiro" && d.recebido !== undefined
+  const pagamento = d.pagamentos && d.pagamentos.length > 1
+    ? d.pagamentos.map(({ forma, valor }) =>
+      `<div class="ln"><span>${esc(rotuloForma(forma))}</span><span>${moeda(valor)}</span></div>`).join("")
+    : `<div class="ln"><span>Pagamento</span><span>${esc(rotuloForma(d.forma))}</span></div>`;
+  const dinheiro = d.recebido !== undefined
     ? `<div class="ln"><span>Recebido</span><span>${moeda(d.recebido)}</span></div>
        <div class="ln"><span>Troco</span><span>${moeda(d.troco || 0)}</span></div>`
     : "";
@@ -147,7 +150,7 @@ function montarHtml(d: ReciboData, larguraMm: number): string {
   ${desc}
   <div class="ln"><span>Quantidade de itens</span><span>${d.itens.length}</span></div>
   <div class="ln tot"><span>TOTAL</span><span>R$ ${moeda(d.total)}</span></div>
-  <div class="ln"><span>Pagamento</span><span>${esc(String(FORMA_LABEL[d.forma] || d.forma))}</span></div>
+  ${pagamento}
   ${temNota ? `<div class="ln"><span>Valor pago</span><span>R$ ${moeda(texto("vPag") !== "" && Number.isFinite(Number(texto("vPag"))) ? Number(texto("vPag")) : d.total)}</span></div>` : ""}
   ${dinheiro}
   ${fiscal}

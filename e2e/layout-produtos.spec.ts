@@ -2,7 +2,8 @@ import { test, expect } from '@playwright/test';
 // Layout: o formulario de produto (coluna direita) tem de ficar dentro do cartao.
 // Antes o conteudo vazava para fora da borda e empurrava a pagina (pedido 16/11).
 const api = 'http://127.0.0.1:3121';
-const fixture = { usuario: 'e2e-layout-produtos', nome: 'Teste descartavel', senha: 'fixture-e2e-layout-produtos' };
+const fixture = { usuario: 'e2e-carrinho', nome: 'Teste descartável', senha: 'fixture-e2e-carrinho' };
+const nomeProduto = 'PRODUTO DE LAYOUT COM NOME COMPRIDO PARA QUEBRAR LINHA';
 let token = '';
 let produtoId = 0;
 let categoriaId = 0;
@@ -16,7 +17,7 @@ test.beforeAll(async ({ request }) => {
   const c = await request.post(`${api}/api/categorias`, { headers: h, data: { nome: 'Cat layout', cor: '#2563eb' } });
   categoriaId = (await c.json()).categoria.id;
   const p = await request.post(`${api}/api/produtos`, { headers: h, data: {
-    nome: 'PRODUTO DE LAYOUT COM NOME COMPRIDO PARA QUEBRAR LINHA', categoria_id: categoriaId,
+    nome: nomeProduto, categoria_id: categoriaId,
     preco_custo: 2, preco_venda: 3.8, estoque: 31, unidade: 'UN', unidade_compra: 'CART',
     quantidade_por_embalagem: 10, vende_por_unidade: true, preco_embalagem: 30, preco_unidade: 3.8 } });
   expect([200, 201]).toContain(p.status());
@@ -34,7 +35,7 @@ for (const altura of [768, 640]) {
     await page.addInitScript(t => localStorage.setItem('vf_token', t), token);
     await page.setViewportSize({ width: 1366, height: altura });
     await page.goto('/produtos');
-    await page.locator('table tbody tr').first().getByRole('button', { name: 'Editar' }).click();
+    await page.getByRole('row', { name: new RegExp(nomeProduto) }).getByRole('button', { name: 'Editar' }).click();
     await page.waitForTimeout(400);
 
     const med = await page.evaluate(() => {

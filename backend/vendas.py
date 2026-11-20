@@ -2,6 +2,7 @@
 
 import json
 from typing import Literal
+from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
@@ -9,7 +10,7 @@ from pydantic import BaseModel, Field
 
 from auth import _agora
 from database import db, EstoqueConcorrente
-from dinheiro import decimal, moeda, multiplicar, somar
+from dinheiro import CENTAVO, decimal, moeda, multiplicar, somar
 from produtos import _get_user_id
 import conta as conta_mod
 
@@ -36,6 +37,13 @@ class PagamentoEletronico(BaseModel):
     terminal: str | None = Field(default=None, max_length=60)
 
 
+class ParcelaVenda(BaseModel):
+    forma: str = Field(max_length=30)
+    valor: float = Field(allow_inf_nan=False)
+    pagamento: PagamentoEletronico | None = None
+    pix_mp_id: str | None = Field(default=None, min_length=1, max_length=40)
+
+
 class CheckoutRequest(BaseModel):
     itens: list[ItemVenda]
     desconto: float = Field(default=0, ge=0, allow_inf_nan=False)
@@ -45,30 +53,56 @@ class CheckoutRequest(BaseModel):
     cpf_consumidor: str | None = Field(default=None, max_length=14)
     emitir_nota: bool = False
     pagamento: PagamentoEletronico | None = None
+    pagamentos: list[ParcelaVenda] | None = Field(default=None, max_length=100)
+    dinheiro_recebido: float | None = Field(default=None, allow_inf_nan=False)
+    referencia_checkout: UUID | None = None
 
 
 # ── Rotas ──
 
 @router.post("/checkout", status_code=201)
-async def checkout(data: CheckoutRequest, request: Request):
+async def rota_checkout(data: CheckoutRequest, request: Request):
+    resultado = await checkout(data, request)
+    if resultado.get("reusada"):
+        return JSONResponse(status_code=200, content=resultado)
+    return resultado
+
+
+async def checkout(data: CheckoutRequest, request: Request, *, pix_mp: dict | None = None):
     """Finaliza uma venda: baixa estoque e registra no banco."""
     user_id = _get_user_id(request)
     licenca = conta_mod.status(online=False)
     if licenca.get("bloqueado"):
         raise HTTPException(status_code=403, detail=licenca.get("motivo") or "Licença suspensa.")
-    payment_id = data.pagamento.payment_id if data.pagamento and data.pagamento.payment_id else None
-    if payment_id:
-        venda_id = db.venda_da_cobranca(user_id, payment_id)
-        if venda_id:
-            venda = db.get_venda_completa(venda_id, user_id)
-            return JSONResponse(status_code=200, content={
-                "venda": venda, "itens": venda.get("itens") if venda else [], "reusada": True,
-            })
+    formas_divisiveis = {"dinheiro", "pix", "debito", "credito", "fiado"}
+    partes = data.pagamentos
+    forma = data.forma_pagamento
+    if partes is not None:
+        if not partes or any(p.forma not in formas_divisiveis for p in partes):
+            raise HTTPException(status_code=400, detail="Use dinheiro, PIX, débito, crédito ou fiado nas parcelas.")
+        if data.pagamento:
+            raise HTTPException(status_code=400, detail="Informe o pagamento eletrônico na própria parcela.")
+        forma = partes[0].forma if len(partes) == 1 else "misto"
+    elif forma not in formas_divisiveis | {"fiado", "outros"}:
+        raise HTTPException(status_code=400, detail="Forma de pagamento inválida.")
+
+    ids = ([p.pix_mp_id or (p.pagamento and p.pagamento.payment_id) for p in partes]
+           if partes is not None else [data.pagamento and data.pagamento.payment_id])
+    ids = [pid for pid in ids if pid]
+    if len(set(ids)) != len(ids):
+        raise HTTPException(status_code=400, detail="A mesma cobrança não pode pagar duas parcelas.")
+    referencia = str(data.referencia_checkout) if data.referencia_checkout else None
+    try:
+        venda = db.venda_checkout_existente(user_id, ids, referencia)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if venda:
+        return {"venda": venda, "itens": venda["itens"], "reusada": True}
 
     if not data.itens:
         raise HTTPException(status_code=400, detail="Adicione pelo menos um item à venda.")
 
-    if data.forma_pagamento == "fiado":
+    if forma == "fiado" or (partes and any(p.forma == "fiado" for p in partes)):
         if not data.cliente_id:
             raise HTTPException(status_code=400, detail="Selecione um cliente para venda fiada.")
         if not db.get_cliente(data.cliente_id, user_id):
@@ -143,35 +177,29 @@ async def checkout(data: CheckoutRequest, request: Request):
     if total < 0:
         total = 0
 
-    agora = _agora()
-
-
-    pagamento_detalhe = None
-    if data.pagamento is not None:
-        pagamento_detalhe = json.dumps(
-            data.pagamento.model_dump(exclude_none=True), ensure_ascii=False
-        )
-
     try:
+        pagamentos, cobrancas = preparar_pagamentos(data, total, pix_mp)
         venda = db.checkout_atomico(
             user_id=user_id,
             cliente_id=data.cliente_id,
             total=total,
             desconto=desconto,
-            forma_pagamento=data.forma_pagamento,
+            forma_pagamento=forma,
             observacao=data.observacao,
             itens=itens_processados,
-            agora=agora,
-            pagamento_detalhe=pagamento_detalhe,
+            agora=_agora(),
+            pagamento_detalhe=pagamentos[0]["detalhe"] if len(pagamentos) == 1 else None,
+            pagamentos=pagamentos,
+            cobrancas=cobrancas,
+            referencia=referencia,
         )
     except EstoqueConcorrente as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    if payment_id and venda:
-        db.vincular_cobranca_venda(user_id, payment_id, venda["id"])
-
+    if venda.pop("reusada", False):
+        return {"venda": venda, "itens": venda["itens"], "reusada": True}
 
     # Emissão de nota fiscal se solicitado
     nota = None
@@ -185,6 +213,52 @@ async def checkout(data: CheckoutRequest, request: Request):
             return {"venda": venda, "itens": itens_processados, "erro_nota": str(e)}
 
     return {"venda": venda, "itens": itens_processados, "nota": nota}
+
+
+def preparar_pagamentos(data: CheckoutRequest, total: float, pix_mp: dict | None) -> tuple[list[dict], list[dict]]:
+    partes = data.pagamentos
+    if partes is None:
+        partes = [ParcelaVenda(forma=data.forma_pagamento, valor=total, pagamento=data.pagamento)]
+    elif any(decimal(p.valor) <= 0 or moeda(p.valor) != p.valor for p in partes):
+        raise ValueError("Cada parcela deve ser maior que zero e ter até duas casas decimais.")
+    if abs(somar(p.valor for p in partes) - decimal(total)) > CENTAVO:
+        raise ValueError("A soma dos pagamentos deve ser igual ao total da venda.")
+
+    troco = decimal(0)
+    if data.dinheiro_recebido is not None:
+        dinheiro = somar(p.valor for p in partes if p.forma == "dinheiro")
+        recebido = decimal(moeda(data.dinheiro_recebido))
+        if not any(p.forma == "dinheiro" for p in partes) or recebido < dinheiro:
+            raise ValueError("O dinheiro recebido deve cobrir a parte em dinheiro.")
+        troco = recebido - dinheiro
+
+    pagamentos = []
+    cobrancas = []
+    for parte in partes:
+        detalhe = parte.pagamento.model_dump(exclude_none=True) if parte.pagamento else {}
+        pix = pix_mp
+        if parte.pix_mp_id:
+            if parte.forma != "pix" or parte.pagamento:
+                raise ValueError("Vincule o PIX do Mercado Pago somente a uma parcela PIX.")
+            from pix import verificar_pagamento_mp
+            pix, _ = verificar_pagamento_mp(parte.pix_mp_id)
+        if pix:
+            tolerancia = CENTAVO if data.pagamentos is None else decimal(0)
+            if abs(decimal(pix["valor"]) - decimal(parte.valor)) > tolerancia:
+                raise HTTPException(status_code=409, detail="O PIX aprovado tem valor diferente da parcela PIX.")
+            detalhe = pix["detalhe"]
+            cobrancas.append({**pix, "pix_mp": True})
+        elif detalhe.get("payment_id"):
+            if data.pagamentos is not None and parte.forma not in {"debito", "credito", "pix"}:
+                raise ValueError("Vincule a cobrança da Point a uma parcela eletrônica.")
+            cobrancas.append({"id": detalhe["payment_id"], "valor": parte.valor, "forma": parte.forma,
+                              "obrigatoria": data.pagamentos is not None})
+        if parte.forma == "dinheiro" and troco:
+            detalhe["troco"] = moeda(troco)
+            troco = decimal(0)
+        pagamentos.append({"forma": parte.forma, "valor": parte.valor,
+                           "detalhe": json.dumps(detalhe, ensure_ascii=False) if detalhe else None})
+    return pagamentos, cobrancas
 
 
 @router.get("")

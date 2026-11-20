@@ -582,8 +582,8 @@ def test_pag_fiado_usa_credito_da_loja_a_prazo(client, auth):
     v["forma_pagamento"] = "fiado"
     doc = fiscal_direto.montar_documento(v, _cfg(), "65", serie=1, numero=1)
     assert "<indPag>1</indPag>" in doc.xml            # a prazo
-    assert "<tPag>05</tPag>" in doc.xml
-    assert "<xPag>" not in doc.xml
+    assert "<tPag>99</tPag>" in doc.xml
+    assert "<xPag>Fiado</xPag>" in doc.xml
 
 
 def test_pag_pix_estatico_usa_tpag_20(client, auth):

@@ -631,6 +631,7 @@ export interface Venda {
   observacao: string;
   criado_em: string;
   itens?: ItemVendaProcessado[];
+  pagamentos?: ParcelaVenda[];
 }
 
 export interface PagamentoEletronico {
@@ -642,6 +643,13 @@ export interface PagamentoEletronico {
   terminal?: string;
 }
 
+export interface ParcelaVenda {
+  forma: "dinheiro" | "pix" | "debito" | "credito" | "fiado";
+  valor: number;
+  pagamento?: PagamentoEletronico;
+  pix_mp_id?: string;
+}
+
 export interface CheckoutInput {
   itens: ItemVenda[];
   desconto?: number;
@@ -651,6 +659,9 @@ export interface CheckoutInput {
   cpf_consumidor?: string | null;
   emitir_nota?: boolean;
   pagamento?: PagamentoEletronico;
+  pagamentos?: ParcelaVenda[];
+  dinheiro_recebido?: number;
+  referencia_checkout?: string;
 }
 
 export function checkout(data: CheckoutInput): Promise<{ 
@@ -897,10 +908,10 @@ export function getPixMpStatus(): Promise<{ configurado: boolean; token_mp: bool
   return request("/api/pix/mp/status");
 }
 
-export function criarCobrancaPixMp(valor: number, descricao?: string): Promise<PixMpCobranca> {
+export function criarCobrancaPixMp(valor: number, descricao?: string, venda_uuid?: string): Promise<PixMpCobranca> {
   return request("/api/pix/mp/cobranca", {
     method: "POST",
-    body: JSON.stringify({ valor, descricao }),
+    body: JSON.stringify({ valor, descricao, venda_uuid }),
   });
 }
 
@@ -1173,10 +1184,11 @@ export interface CobrancaStatus {
   pagamento_fiscal?: PagamentoEletronico;  // vínculo p/ a NFC-e (Portaria 262/2023-MT)
 }
 
-export function criarCobrancaMaquininha(valor: number, venda_uuid?: string, forma?: string): Promise<CobrancaMaquininha> {
+export function criarCobrancaMaquininha(valor: number, venda_uuid?: string, forma?: string,
+  pagamentos_anteriores?: string[]): Promise<CobrancaMaquininha> {
   return request("/api/maquininha/cobranca", {
     method: "POST",
-    body: JSON.stringify({ valor, venda_uuid, forma }),
+    body: JSON.stringify({ valor, venda_uuid, forma, pagamentos_anteriores }),
   });
 }
 

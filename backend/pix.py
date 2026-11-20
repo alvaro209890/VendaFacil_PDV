@@ -11,7 +11,7 @@ Dois caminhos:
    polling em ``GET /mp/cobranca/{id}``; quando o MP marca ``approved`` ele chama
    ``POST /mp/cobranca/{id}/confirmar`` e o backend **reconfere no MP e fecha a venda
    sozinho** (baixa estoque, registra no caixa) — sem clique. Valor pago é conferido
-   contra o total e cada pagamento só fecha uma venda (idempotente).
+   contra o total ou a parcela PIX, e cada pagamento só pode vincular uma venda.
 """
 
 import io
@@ -183,13 +183,14 @@ class _MPErro(Exception):
         super().__init__(mensagem)
 
 
-def _mp_req(token: str, method: str, path: str, body: dict[str, Any] | None = None) -> dict[str, Any]:
+def _mp_req(token: str, method: str, path: str, body: dict[str, Any] | None = None,
+            *, idempotencia: str | None = None) -> dict[str, Any]:
     url = f"{_MP_BASE}{path}"
     data = json.dumps(body).encode() if body is not None else None
     headers = {
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json",
-        "X-Idempotency-Key": secrets.token_hex(16),
+        "X-Idempotency-Key": idempotencia or secrets.token_hex(16),
     }
     req = urllib.request.Request(url, data=data, method=method, headers=headers)
     try:
@@ -449,7 +450,7 @@ async def criar_cobranca_mp(data: PixMpCobrancaInput, request: Request) -> dict:
     if payer_email:
         body["payer"] = {"email": payer_email}
     try:
-        pagamento = _mp_req(token, "POST", "/v1/payments", body)
+        pagamento = _mp_req(token, "POST", "/v1/payments", body, idempotencia=data.venda_uuid)
     except _MPErro as e:
         raise HTTPException(status_code=e.status, detail=e.mensagem)
     logger.info("pix_mp_cobranca_created payment_id=%s ref=%s valor=%s",
@@ -471,15 +472,8 @@ async def consultar_cobranca_mp(payment_id: str, request: Request) -> dict:
     return _cobranca_publica(pagamento)
 
 
-@router.post("/mp/cobranca/{payment_id}/confirmar")
-async def confirmar_venda_mp(payment_id: str, data: PixMpConfirmarInput, request: Request) -> dict:
-    """Fecha a venda quando o Mercado Pago confirma o PIX.
-
-    O backend **reconfere o pagamento no MP** (nunca confia no front), exige
-    ``approved`` e valor igual ao total da venda. Se esse pagamento já fechou uma
-    venda (duplo clique / polling repetido), devolve a mesma venda sem duplicar.
-    """
-    user_id = _get_user_id(request)
+def verificar_pagamento_mp(payment_id: str) -> tuple[dict, dict]:
+    """Confirma no Mercado Pago a forma, aprovação e valor a conciliar."""
     token, _mp_user = _mp_config()
     safe_id = urllib.parse.quote(payment_id, safe="")
     try:
@@ -494,44 +488,31 @@ async def confirmar_venda_mp(payment_id: str, data: PixMpConfirmarInput, request
             detail=f"PIX ainda nao aprovado (status: {info['status'] or 'desconhecido'}).",
         )
 
-    existente = db.get_venda_por_pagamento(str(pagamento.get("id")))
-    if existente:
-        return {"venda": existente, "itens": [], "pix": info, "ja_confirmada": True}
+    if pagamento.get("payment_method_id") != "pix" or str(pagamento.get("id")) != payment_id:
+        raise HTTPException(status_code=409, detail="Pagamento PIX não confirmado.")
+    cfg = db.get_config_maquininha()
+    dados_transacao = (pagamento.get("point_of_interaction") or {}).get("transaction_data") or {}
+    return {
+        "id": payment_id,
+        "valor": float(pagamento.get("transaction_amount") or 0),
+        "referencia": pagamento.get("external_reference") or payment_id,
+        "detalhe": {
+            "tipo_integracao": "1",
+            "adquirente_cnpj": cfg.get("adquirente_cnpj") or "",
+            "bandeira": "pix",
+            "autorizacao": dados_transacao.get("end_to_end_id") or dados_transacao.get("e2e_id") or payment_id,
+            "payment_id": payment_id,
+        },
+    }, info
 
-    if not data.itens:
-        raise HTTPException(status_code=400, detail="Itens da venda nao informados.")
 
-    # Confere o valor ANTES de fechar a venda: o checkout baixa estoque e grava a
-    # venda, então uma divergência descoberta depois deixaria venda órfã no caixa.
-    total_previsto = 0.0
-    for item in data.itens:
-        try:
-            produto = db.get_produto(int(item.get("produto_id")), user_id)
-        except (TypeError, ValueError):
-            produto = None
-        if not produto:
-            raise HTTPException(status_code=400, detail=f"Produto {item.get('produto_id')} nao encontrado.")
-        preco = produto["preco_venda"] if produto["preco_venda"] > 0 else produto["preco_custo"]
-        total_previsto += float(item.get("quantidade") or 0) * float(preco or 0)
-    total_previsto = round(total_previsto - float(data.desconto or 0), 2)
-    pago = float(pagamento.get("transaction_amount") or 0)
-    if abs(pago - total_previsto) > 0.01:
-        logger.error("pix_mp_valor_divergente payment_id=%s pago=%s venda=%s", payment_id, pago, total_previsto)
-        raise HTTPException(
-            status_code=409,
-            detail=(f"Valor divergente: PIX de R$ {pago:.2f} e venda de R$ {total_previsto:.2f}. "
-                    f"PIX nao foi usado nesta venda — confira o carrinho."),
-        )
-
+@router.post("/mp/cobranca/{payment_id}/confirmar")
+async def confirmar_venda_mp(payment_id: str, data: PixMpConfirmarInput, request: Request) -> dict:
+    """Fecha a venda de PIX único pelo mesmo checkout usado nas vendas divididas."""
+    _get_user_id(request)
     from vendas import CheckoutRequest, ItemVenda, PagamentoEletronico, checkout
 
-    pagamento_fiscal = PagamentoEletronico(
-        tipo_integracao="1",
-        bandeira="pix",
-        autorizacao=str(pagamento.get("id") or ""),
-        payment_id=str(pagamento.get("id") or ""),
-        terminal="mercadopago-pix",
-    )
+    pagamento, info = verificar_pagamento_mp(payment_id)
     req = CheckoutRequest(
         itens=[ItemVenda(**i) for i in data.itens],
         desconto=data.desconto,
@@ -540,24 +521,7 @@ async def confirmar_venda_mp(payment_id: str, data: PixMpConfirmarInput, request
         cliente_id=data.cliente_id,
         cpf_consumidor=data.cpf_consumidor,
         emitir_nota=data.emitir_nota,
-        pagamento=pagamento_fiscal,
+        pagamento=PagamentoEletronico(**pagamento["detalhe"]),
     )
-    resp = await checkout(req, request)
-    venda = resp.get("venda") or {}
-    total = float(venda.get("total") or 0)
-    if abs(pago - total) > 0.01:
-        # Nunca deve acontecer (o valor foi conferido antes); se acontecer, registra
-        # para investigar sem deixar a venda passando como paga.
-        logger.error("pix_mp_valor_pos_checkout payment_id=%s pago=%s venda=%s venda_id=%s",
-                     payment_id, pago, total, venda.get("id"))
-        raise HTTPException(
-            status_code=409,
-            detail=(f"Divergencia apos o checkout: PIX de R$ {pago:.2f} e venda #{venda.get('id')} "
-                    f"de R$ {total:.2f}. Confira no caixa antes de entregar."),
-        )
-    if venda.get("id"):
-        db.set_venda_pagamento(venda["id"], str(pagamento.get("id")),
-                               pagamento.get("external_reference") or "")
-        logger.info("pix_mp_venda_fechada payment_id=%s venda_id=%s valor=%s",
-                    payment_id, venda["id"], pago)
-    return {**resp, "pix": info, "ja_confirmada": False}
+    resp = await checkout(req, request, pix_mp=pagamento)
+    return {**resp, "pix": info, "ja_confirmada": bool(resp.get("reusada"))}

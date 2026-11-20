@@ -63,6 +63,9 @@ class Database:
             self._conn.row_factory = sqlite3.Row
             self._conn.create_aggregate("SOMA_DINHEIRO", 1, _SomaDinheiro)
             self._conn.execute("PRAGMA query_only = ON")
+            self._tem_pagamentos_venda = bool(self._conn.execute(
+                "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'pagamentos_venda'"
+            ).fetchone())
             return
         self._caminho.parent.mkdir(parents=True, exist_ok=True)
         self.reconectar()
@@ -162,6 +165,15 @@ class Database:
                 CREATE INDEX IF NOT EXISTS idx_vendas_data ON vendas(criado_em);
                 CREATE INDEX IF NOT EXISTS idx_vendas_cliente ON vendas(cliente_id);
 
+                CREATE TABLE IF NOT EXISTS pagamentos_venda (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    venda_id INTEGER NOT NULL REFERENCES vendas(id),
+                    forma TEXT NOT NULL,
+                    valor REAL NOT NULL,
+                    detalhe TEXT
+                );
+                CREATE INDEX IF NOT EXISTS idx_pagamentos_venda ON pagamentos_venda(venda_id);
+
                 CREATE TABLE IF NOT EXISTS itens_venda (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     venda_id INTEGER NOT NULL,
@@ -195,6 +207,7 @@ class Database:
                 CREATE INDEX IF NOT EXISTS idx_contas_receber_status ON contas_receber(status);
             """)
             self._migrar()
+            self._tem_pagamentos_venda = True
 
     def _migrar(self) -> None:
         """Migrações leves e idempotentes (adicionar colunas novas)."""
@@ -208,6 +221,7 @@ class Database:
             )
         if "uuid" not in cols:
             self._conn.execute("ALTER TABLE vendas ADD COLUMN uuid TEXT")
+        self._conn.execute("CREATE INDEX IF NOT EXISTS idx_vendas_user_uuid ON vendas(user_id, uuid)")
         if "pagamento_detalhe" not in cols:
             # JSON com o vínculo do pagamento eletrônico (cartão/PIX integrado):
             # tipo_integracao, adquirente_cnpj, bandeira, autorizacao (cAut), etc.
@@ -1229,13 +1243,15 @@ class Database:
                 self._conn.rollback()
                 raise
 
-    def cobranca_aprovada_sem_venda(self, user_id: int) -> dict[str, Any] | None:
+    def cobranca_aprovada_sem_venda(self, user_id: int,
+                                   anteriores: list[str] | None = None) -> dict[str, Any] | None:
         with self._lock:
-            row = self._conn.execute(
-                "SELECT * FROM cobrancas_maquininha WHERE user_id = ? AND status = 'approved' "
-                "AND venda_id IS NULL ORDER BY id DESC LIMIT 1",
-                (user_id,),
-            ).fetchone()
+            sql = ("SELECT * FROM cobrancas_maquininha WHERE user_id = ? AND status = 'approved' "
+                   "AND venda_id IS NULL")
+            anteriores = anteriores or []
+            if anteriores:
+                sql += " AND payment_id NOT IN (" + ",".join("?" for _ in anteriores) + ")"
+            row = self._conn.execute(sql + " ORDER BY id DESC LIMIT 1", (user_id, *anteriores)).fetchone()
         return dict(row) if row else None
 
     def salvar_cobranca_aprovada(self, user_id: int, order_id: str, payment_id: str,
@@ -1258,6 +1274,11 @@ class Database:
                 "WHERE user_id = ? AND payment_id = ? AND venda_id IS NOT NULL",
                 (user_id, payment_id),
             ).fetchone()
+            if not row:
+                row = self._conn.execute(
+                    "SELECT id AS venda_id FROM vendas WHERE user_id = ? AND pagamento_id = ? "
+                    "ORDER BY id DESC LIMIT 1", (user_id, payment_id),
+                ).fetchone()
         return int(row["venda_id"]) if row else None
 
     def vincular_cobranca_venda(self, user_id: int, payment_id: str, venda_id: int) -> None:
@@ -1267,6 +1288,20 @@ class Database:
                 "WHERE user_id = ? AND payment_id = ? AND venda_id IS NULL",
                 (venda_id, user_id, payment_id),
             )
+
+    def venda_checkout_existente(self, user_id: int, ids: list[str], referencia: str | None) -> dict | None:
+        with self._lock:
+            vinculadas = {self.venda_da_cobranca(user_id, pid) for pid in ids}
+            if referencia:
+                row = self._conn.execute("SELECT id FROM vendas WHERE user_id = ? AND uuid = ?",
+                                         (user_id, referencia)).fetchone()
+                if row:
+                    vinculadas.add(row["id"])
+            if vinculadas - {None}:
+                if len(vinculadas) != 1:
+                    raise ValueError("Uma cobrança informada já pertence a outra venda.")
+                return self.get_venda_completa(vinculadas.pop(), user_id)
+        return None
 
     def list_movimentacoes(self, user_id: int, produto_id: int | None = None,
                           limit: int = 100) -> list[dict[str, Any]]:
@@ -1316,23 +1351,26 @@ class Database:
         user_id = sessao["user_id"]
         ini = sessao["aberto_em"]
         fim = sessao.get("fechado_em")
+        filtro = ("user_id = ? AND status = 'concluida' AND "
+                  "(sessao_id = ? OR (sessao_id IS NULL AND criado_em >= ?" +
+                  (" AND criado_em <= ?))" if fim else "))"))
+        params = (user_id, sessao["id"], ini, fim) if fim else (user_id, sessao["id"], ini)
         with self._lock:
-            if fim:
-                vrows = self._conn.execute(
-                    "SELECT forma_pagamento, COUNT(*) qtd, COALESCE(SOMA_DINHEIRO(total),0) total "
-                    "FROM vendas WHERE user_id = ? AND status = 'concluida' AND ("
-                    "sessao_id = ? OR (sessao_id IS NULL AND criado_em >= ? AND criado_em <= ?)) "
-                    "GROUP BY forma_pagamento",
-                    (user_id, sessao["id"], ini, fim),
-                ).fetchall()
-            else:
-                vrows = self._conn.execute(
-                    "SELECT forma_pagamento, COUNT(*) qtd, COALESCE(SOMA_DINHEIRO(total),0) total "
-                    "FROM vendas WHERE user_id = ? AND status = 'concluida' AND ("
-                    "sessao_id = ? OR (sessao_id IS NULL AND criado_em >= ?)) "
-                    "GROUP BY forma_pagamento",
-                    (user_id, sessao["id"], ini),
-                ).fetchall()
+            vrows = self._conn.execute(
+                "SELECT forma_pagamento, COUNT(*) qtd, COALESCE(SOMA_DINHEIRO(total),0) total "
+                f"FROM vendas WHERE {filtro} GROUP BY forma_pagamento", params,
+            ).fetchall()
+            valor_dinheiro = "CASE WHEN forma_pagamento = 'dinheiro' THEN total ELSE 0 END"
+            if self._tem_pagamentos_venda:
+                valor_dinheiro = (
+                    "CASE WHEN EXISTS (SELECT 1 FROM pagamentos_venda p WHERE p.venda_id = vendas.id) "
+                    "THEN (SELECT SOMA_DINHEIRO(p.valor) FROM pagamentos_venda p "
+                    "WHERE p.venda_id = vendas.id AND p.forma = 'dinheiro') ELSE " + valor_dinheiro + " END"
+                )
+            dinheiro = self._conn.execute(
+                f"SELECT COALESCE(SOMA_DINHEIRO({valor_dinheiro}),0) total FROM vendas WHERE {filtro}",
+                params,
+            ).fetchone()["total"]
             mrows = self._conn.execute(
                 "SELECT tipo, COALESCE(SOMA_DINHEIRO(valor),0) total, COUNT(*) qtd "
                 "FROM caixa_movimentos WHERE sessao_id = ? GROUP BY tipo",
@@ -1347,7 +1385,6 @@ class Database:
         por_forma = {r["forma_pagamento"]: {"qtd": r["qtd"], "total": r["total"]} for r in vrows}
         vendas_total = somar(v["total"] for v in por_forma.values())
         vendas_qtd = sum(v["qtd"] for v in por_forma.values())
-        dinheiro = por_forma.get("dinheiro", {}).get("total", 0.0)
         mov = {r["tipo"]: r["total"] for r in mrows}
         suprimentos = mov.get("suprimento", 0.0)
         sangrias = mov.get("sangria", 0.0)
@@ -1422,8 +1459,11 @@ class Database:
     def checkout_atomico(self, user_id: int, cliente_id: int | None,
                          total: float, desconto: float, forma_pagamento: str,
                          observacao: str, itens: list[dict], agora: str,
-                         pagamento_detalhe: str | None = None) -> dict[str, Any]:
-        """Estoque, venda, histórico e fiado pertencem ao mesmo COMMIT.
+                         pagamento_detalhe: str | None = None,
+                         pagamentos: list[dict] | None = None,
+                         cobrancas: list[dict] | None = None,
+                         referencia: str | None = None) -> dict[str, Any]:
+        """Estoque, venda, pagamentos, histórico e fiado pertencem ao mesmo COMMIT.
 
         Não chamar métodos que abrem ``with self._conn`` aqui: esses contextos
         aninhados poderiam antecipar o commit. BEGIN IMMEDIATE também serializa
@@ -1432,9 +1472,17 @@ class Database:
         """
         with self._lock, self._conn:
             self._conn.execute("BEGIN IMMEDIATE")
+            cobrancas = cobrancas or []
+            existente = self.venda_checkout_existente(user_id, [c["id"] for c in cobrancas], referencia)
+            if existente:
+                return {**existente, "reusada": True}
             if not itens:
                 raise ValueError("Adicione pelo menos um item à venda.")
-            if forma_pagamento == "fiado" and not cliente_id:
+            if pagamentos is None:
+                pagamentos = [{"forma": forma_pagamento, "valor": moeda(total), "detalhe": pagamento_detalhe}]
+            forma_pagamento = pagamentos[0]["forma"] if len(pagamentos) == 1 else "misto"
+            parcelas_fiado = [p["valor"] for p in pagamentos if p["forma"] == "fiado"]
+            if parcelas_fiado and not cliente_id:
                 raise ValueError("Selecione um cliente para venda fiada.")
             if cliente_id is not None:
                 cliente = self.get_cliente(cliente_id, user_id)
@@ -1469,12 +1517,38 @@ class Database:
             ).fetchone()
             cur = self._conn.execute(
                 "INSERT INTO vendas (user_id, cliente_id, total, desconto, forma_pagamento, "
-                "status, observacao, criado_em, pagamento_detalhe, sessao_id) "
-                "VALUES (?, ?, ?, ?, ?, 'concluida', ?, ?, ?, ?)",
+                "status, observacao, criado_em, pagamento_detalhe, sessao_id, uuid) "
+                "VALUES (?, ?, ?, ?, ?, 'concluida', ?, ?, ?, ?, ?)",
                 (user_id, cliente_id, moeda(total), moeda(desconto), forma_pagamento,
-                 observacao, agora, pagamento_detalhe, aberta["id"] if aberta else None),
+                 observacao, agora, pagamento_detalhe, aberta["id"] if aberta else None, referencia),
             )
             venda_id = cur.lastrowid
+            self._conn.executemany(
+                "INSERT INTO pagamentos_venda (venda_id, forma, valor, detalhe) VALUES (?, ?, ?, ?)",
+                [(venda_id, p["forma"], p["valor"], p.get("detalhe")) for p in pagamentos],
+            )
+            for c in cobrancas:
+                if c.get("pix_mp"):
+                    self._conn.execute(
+                        "INSERT INTO cobrancas_maquininha (user_id, order_id, payment_id, valor, forma, "
+                        "status, venda_id, criado_em) VALUES (?, ?, ?, ?, 'pix', 'approved', ?, ?)",
+                        (user_id, c["referencia"], c["id"], c["valor"], venda_id, agora),
+                    )
+                    if len(pagamentos) == 1:
+                        self._conn.execute(
+                            "UPDATE vendas SET pagamento_id = ?, pagamento_referencia = ? WHERE id = ?",
+                            (c["id"], c["referencia"], venda_id),
+                        )
+                else:
+                    tipo_point = {"debito": "debit_card", "credito": "credit_card", "pix": "qr"}.get(c["forma"], "")
+                    atualizada = self._conn.execute(
+                        "UPDATE cobrancas_maquininha SET venda_id = ? WHERE user_id = ? "
+                        "AND payment_id = ? AND status = 'approved' AND venda_id IS NULL "
+                        "AND (? OR (valor = ? AND forma IN (?, ?)))",
+                        (venda_id, user_id, c["id"], not c.get("obrigatoria"), c["valor"], c["forma"], tipo_point),
+                    )
+                    if c.get("obrigatoria") and atualizada.rowcount != 1:
+                        raise ValueError("Cobrança na Point não confirmada pelo valor da parcela.")
             for item in itens:
                 self._conn.execute(
                     "INSERT INTO itens_venda (venda_id, produto_id, nome_produto, quantidade, "
@@ -1490,15 +1564,16 @@ class Database:
                     (user_id, item["produto_id"], item.get("quantidade_estoque", item["quantidade"]), str(venda_id),
                      item["nome_produto"], agora),
                 )
-            if forma_pagamento == "fiado":
+            if parcelas_fiado:
+                valor_fiado = moeda(somar(parcelas_fiado))
                 self._conn.execute(
                     "INSERT INTO contas_receber (user_id, venda_id, cliente_id, valor_total, "
                     "valor_pendente, data_vencimento, status, observacao, criado_em, atualizado_em) "
                     "VALUES (?, ?, ?, ?, ?, NULL, 'pendente', ?, ?, ?)",
-                    (user_id, venda_id, cliente_id, moeda(total), moeda(total),
+                    (user_id, venda_id, cliente_id, valor_fiado, valor_fiado,
                      f"Venda #{venda_id} — {len(itens)} {'item' if len(itens) == 1 else 'itens'}", agora, agora),
                 )
-            return self.get_venda(venda_id)
+            return {**self.get_venda(venda_id), "pagamentos": self.get_pagamentos_venda(venda_id)}
 
     def cancelar_venda(self, venda_id: int, user_id: int, motivo: str,
                        agora: str) -> dict[str, Any] | None:
@@ -1609,7 +1684,18 @@ class Database:
         if not venda:
             return None
         venda["itens"] = self.get_itens_venda(venda_id)
+        venda["pagamentos"] = self.get_pagamentos_venda(venda_id)
         return venda
+
+    def get_pagamentos_venda(self, venda_id: int) -> list[dict[str, Any]]:
+        if not self._tem_pagamentos_venda:
+            return []
+        with self._lock:
+            rows = self._conn.execute(
+                "SELECT forma, valor, detalhe FROM pagamentos_venda WHERE venda_id = ? ORDER BY id",
+                (venda_id,),
+            ).fetchall()
+        return [dict(r) for r in rows]
 
     # ── Métricas / Dashboard ──
 

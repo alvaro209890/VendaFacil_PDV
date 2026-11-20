@@ -78,7 +78,7 @@ def checkout_local(loja, monkeypatch):
     api.close()
 
 
-@pytest.mark.parametrize('tabela', ['vendas', 'movimentacoes_estoque', 'contas_receber'])
+@pytest.mark.parametrize('tabela', ['vendas', 'pagamentos_venda', 'movimentacoes_estoque', 'contas_receber'])
 def test_v01_v03_checkout_rollback_em_qualquer_etapa(checkout_local, tabela):
     api, local, user, produto, cliente, headers = checkout_local
     with local._conn:

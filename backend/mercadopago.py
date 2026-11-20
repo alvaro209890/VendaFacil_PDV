@@ -184,6 +184,7 @@ class CobrancaInput(BaseModel):
     valor: float = Field(gt=0, le=999999.99)
     venda_uuid: str | None = Field(default=None, max_length=64)
     forma: str | None = Field(default=None, max_length=12)  # credito | debito | pix
+    pagamentos_anteriores: list[str] | None = Field(default=None, max_length=100)
 
 
 def _auth(request: Request) -> int:
@@ -462,7 +463,7 @@ async def diagnostico(request: Request) -> dict:
 @router.post("/cobranca")
 async def criar_cobranca(data: CobrancaInput, request: Request) -> dict:
     user_id = _auth(request)
-    if db.cobranca_aprovada_sem_venda(user_id):
+    if db.cobranca_aprovada_sem_venda(user_id, data.pagamentos_anteriores):
         raise HTTPException(
             status_code=409,
             detail="Há uma cobrança aprovada sem venda. Conclua essa venda antes de cobrar de novo.",
@@ -493,6 +494,7 @@ async def criar_cobranca(data: CobrancaInput, request: Request) -> dict:
             referencia,
             bool(cfg.get("imprimir_comprovante", 1)),
             forma,
+            idempotency_key=data.venda_uuid,
         )
     except PointError as e:
         raise HTTPException(status_code=e.status, detail=e.mensagem)

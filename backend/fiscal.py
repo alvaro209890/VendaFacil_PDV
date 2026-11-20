@@ -12,6 +12,7 @@ import urllib.request
 from datetime import datetime, timedelta, timezone
 
 from database import db
+from dinheiro import moeda, somar
 import fiscal_direto
 
 INTERVALO_SEG = 45
@@ -198,8 +199,8 @@ def montar_payload(venda: dict, config: dict, cpf: str | None = None) -> dict:
             "cofins_situacao_tributaria": prod.get("cst_cofins") or "07",
         })
 
-    forma = _FORMA_PAGTO.get(venda.get("forma_pagamento", "dinheiro"), "99")
     total = round(venda.get("total", 0), 2)
+    parcelas = fiscal_direto.parcelas_fiscais(venda, total)
 
     payload = {
         "cnpj_emitente": _so_digitos(config.get("cnpj", "")),
@@ -213,11 +214,15 @@ def montar_payload(venda: dict, config: dict, cpf: str | None = None) -> dict:
         "consumidor_final": 1,
         "items": itens,
         "formas_pagamento": [
-            {"forma_pagamento": forma, "valor_pagamento": total},
+            {"forma_pagamento": _FORMA_PAGTO.get(forma, "99"), "valor_pagamento": moeda(valor)}
+            for forma, valor, _, _ in parcelas
         ],
         "valor_desconto": round(venda.get("desconto", 0), 2) or None,
         "informacoes_adicionais_contribuinte": "Lei 12.741/2012: Valor aproximado dos tributos conforme tabela IBPT.",
     }
+    troco = somar(troco for _, _, _, troco in parcelas)
+    if troco:
+        payload["valor_troco"] = moeda(troco)
     if cpf:
         cpf_limpo = _so_digitos(cpf)
         if len(cpf_limpo) == 11:

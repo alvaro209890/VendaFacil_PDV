@@ -267,9 +267,9 @@ def _c14n_nfe(elemento) -> bytes:
 # Mapa tPag (forma interna → código NFC-e/NF-e, Tabela de Meios de Pagamento
 # atualizada pelo IT 2024.002, em produção desde 01/07/2024). PIX é tratado à
 # parte: 17 = PIX dinâmico (Point integrada, com cAut) e 20 = PIX estático
-# (QR fixo da loja, fluxo do pix.py). Fiado/outros caem em 99 + xPag, que é
+# (QR fixo da loja, fluxo unitário do pix.py). Fiado/outros caem em 99 + xPag, que é
 # obrigatório quando tPag=99.
-_TPAG = {"dinheiro": "01", "credito": "03", "debito": "04", "fiado": "05"}
+_TPAG = {"dinheiro": "01", "credito": "03", "debito": "04", "fiado": "99"}
 
 # Bandeira → tBand (tabela YA06). Aceita o id de bandeira do Mercado Pago
 # (master, visa, elo...) ou o próprio código numérico já pronto.
@@ -293,36 +293,49 @@ def _tband(bandeira) -> str | None:
     return _TBAND.get(b, "99")
 
 
-def _pagamento_detalhe(venda: dict) -> dict:
-    """Lê os dados do pagamento eletrônico gravados na venda (JSON ou dict)."""
-    raw = venda.get("pagamento_detalhe")
+def _pagamento_detalhe(raw) -> dict:
+    """Lê os dados da parcela (JSON ou dict)."""
     if isinstance(raw, dict):
         return raw
     if isinstance(raw, str) and raw.strip():
         try:
-            return json.loads(raw)
+            dados = json.loads(raw)
+            return dados if isinstance(dados, dict) else {}
         except (ValueError, TypeError):
             return {}
     return {}
 
 
-def _grupo_pagamento(inf, venda: dict, valor: float, config: dict | None = None) -> None:
-    """Monta <pag>/<detPag> e, p/ cartão/PIX integrado, o grupo <card>.
+def parcelas_fiscais(venda: dict, total) -> list[tuple[str, Decimal, dict, Decimal]]:
+    partes = venda.get("pagamentos") or [{
+        "forma": venda.get("forma_pagamento") or "dinheiro", "valor": total,
+        "detalhe": venda.get("pagamento_detalhe"),
+    }]
+    parcelas = []
+    for parte in partes:
+        forma = parte["forma"].lower()
+        detalhe = _pagamento_detalhe(parte.get("detalhe"))
+        troco = decimal(detalhe.get("troco", 0) if forma == "dinheiro" else 0)
+        valor = decimal(parte["valor"]) if len(partes) > 1 else decimal(total)
+        parcelas.append((forma, valor + troco, detalhe, troco))
+    return parcelas
 
-    Vínculo do pagamento eletrônico — obrigatório em MT (Decreto 599/2023 e
-    Portaria SEFAZ 262/2023) para CNAEs de varejo (inclui mercearia 4712-1).
-    Com a transação integrada (tpIntegra=1) o layout exige CNPJ da credenciadora
-    e cAut (código de autorização) — sem eles a SEFAZ rejeita (392). Quando os
-    dados não vêm completos, declara-se não integrado (tpIntegra=2).
-    """
+
+def _grupo_pagamento(inf, venda: dict, valor: float, config: dict | None = None) -> None:
     pag = _tag(inf, "pag")
+    parcelas = parcelas_fiscais(venda, valor)
+    for forma, valor_pago, detalhe, _ in parcelas:
+        _detalhe_pagamento(pag, forma, valor_pago, detalhe, len(parcelas) > 1, config)
+    troco = somar(troco for _, _, _, troco in parcelas)
+    if troco:
+        _tag(pag, "vTroco", f"{troco:.2f}")
+
+
+def _detalhe_pagamento(pag, forma: str, valor: Decimal, pd: dict, misto: bool, config: dict | None) -> None:
+    """Inclui o vínculo eletrônico quando há dados suficientes da credenciadora."""
     detp = _tag(pag, "detPag")
-    forma = (venda.get("forma_pagamento") or "").lower()
-    pd = _pagamento_detalhe(venda)
     if forma == "pix":
-        # IT 2024.002: 17 = PIX dinâmico (QR por transação, com cAut/endToEndId);
-        # 20 = PIX estático (QR fixo da chave da loja, sem transação integrada).
-        tpag = "17" if pd.get("tipo_integracao") else "20"
+        tpag = "17" if misto or pd.get("tipo_integracao") else "20"
     else:
         tpag = _TPAG.get(forma, "99")
     # indPag: 0 = à vista, 1 = a prazo (fiado/crediário da mercearia).
@@ -331,12 +344,10 @@ def _grupo_pagamento(inf, venda: dict, valor: float, config: dict | None = None)
     if tpag == "99":
         # xPag é obrigatório quando tPag=99 (rejeição por regra YA02); descreve
         # o meio de pagamento real.
-        _tag(detp, "xPag", "Outros")
+        _tag(detp, "xPag", "Fiado" if forma == "fiado" else "Outros")
     _tag(detp, "vPag", f"{valor:.2f}")
 
-    eletronico = forma in {"credito", "debito"} or (
-        forma == "pix" and pd.get("tipo_integracao")
-    )
+    eletronico = tpag in {"03", "04", "17"}
     if not eletronico:
         return
 
