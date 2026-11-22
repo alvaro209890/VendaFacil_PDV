@@ -3,6 +3,10 @@
 Sistema de **Ponto de Venda (PDV)** para mercadinhos e pequenos comércios,
 distribuído como **executável único (.exe)** com controle central de licenças.
 
+**1.0.38 instalada no James (22/11/2026):** o rodapé do carrinho deixou de mostrar o bloco
+**VENDAS HOJE** (total e quantidade do dia). A página Dashboard continua com o indicador.
+[Atualização, hashes e validação](docs/ATUALIZACAO_1.0.38.md).
+
 **1.0.26 instalada no James (15/11/2026):** revisão visual do front. Dinheiro
 em pt-BR (`R$ 1.234,56`) em todas as telas, busca na lista de produtos, tabela de
 produtos legível, categoria no card do PDV, venda cancelada marcada e preço

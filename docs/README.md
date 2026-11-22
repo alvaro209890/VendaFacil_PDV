@@ -2,9 +2,11 @@
 
 Índice de toda a documentação, por público.
 
-**Entrega atual: 1.0.26 instalada no James**, revisão visual do front (moeda em
-pt-BR, busca de produtos, lista de produtos legível, venda cancelada marcada).
-[Defeitos corrigidos, hashes e testes](ATUALIZACAO_1.0.26.md).
+**Entrega atual: 1.0.38 instalada no James**, rodapé do carrinho sem o bloco
+"Vendas Hoje" (a página Dashboard continua com o indicador).
+[O que mudou, hashes e validação](ATUALIZACAO_1.0.38.md).
+Anterior: [recibo imprime direto, 1.0.35](ATUALIZACAO_1.0.35.md).
+Anterior: [revisão visual do front, 1.0.26](ATUALIZACAO_1.0.26.md).
 Anterior: [vídeo de importação no PDV, 1.0.25](ATUALIZACAO_1.0.25.md).
 Anterior: [contagem da nota x formato de venda, 1.0.24](ATUALIZACAO_1.0.24.md).
 Anterior: [prévia da importação em cartões, 1.0.23](ATUALIZACAO_1.0.23.md).
