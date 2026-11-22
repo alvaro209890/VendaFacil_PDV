@@ -15,12 +15,12 @@ import {
   AlertCircle
 } from "lucide-react";
 import {
-  ApiError, listarProdutos, checkout, getDashboard, gerarPixQrCode, listarClientes,
+  ApiError, listarProdutos, checkout, gerarPixQrCode, listarClientes,
   getConfigMaquininha, criarCobrancaMaquininha, consultarCobrancaMaquininha,
   cancelarCobrancaMaquininha, getConfigFiscal, getAtivacaoStatus,
   criarCobrancaPixMp, consultarCobrancaPixMp, confirmarVendaPixMp, getPixMpStatus,
 } from "../lib/api";
-import type { Produto, DashboardData, PixQrCodeResponse, Cliente, PagamentoEletronico, PixMpCobranca, ParcelaVenda } from "../lib/api";
+import type { Produto, PixQrCodeResponse, Cliente, PagamentoEletronico, PixMpCobranca, ParcelaVenda } from "../lib/api";
 import { imprimirRecibo, getLarguraRecibo, setLarguraRecibo } from "../lib/recibo";
 import type { ReciboData } from "../lib/recibo";
 import Mascote from "../components/Mascote";
@@ -93,7 +93,6 @@ export default function PDV() {
   const [valorRecebido, setValorRecebido] = useState("");
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<{ tipo: "ok" | "erro"; texto: string; recibo?: ReciboData } | null>(null);
-  const [dash, setDash] = useState<DashboardData | null>(null);
   const [licencaBloqueada, setLicencaBloqueada] = useState(false);
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [clienteFiado, setClienteFiado] = useState<number | "">("");
@@ -163,7 +162,7 @@ export default function PDV() {
 
   const carregar = useCallback(async () => {
     try {
-      const [p, d, c] = await Promise.all([listarProdutos(true), getDashboard(), listarClientes()]);
+      const [p, c] = await Promise.all([listarProdutos(true), listarClientes()]);
       setTodosProdutos(p.produtos);
       setProdutos(p.produtos.filter((x) => x.estoque > 0));
       // Reabre o rascunho com preço/estoque atuais; o backend segue validando o checkout.
@@ -171,7 +170,6 @@ export default function PDV() {
         const atual = p.produtos.find((produto) => produto.id === item.id);
         return atual ? itemCarrinho(atual, item.modo_venda, item.qtd) : item;
       }));
-      setDash(d);
       setClientes(c.clientes);
     } catch {
       // silent
@@ -1510,18 +1508,6 @@ export default function PDV() {
           )}
         </AnimatePresence>
 
-        {/* Mini resumo */}
-        {dash && (
-          <div className="mt-auto pt-6 lg:pt-3 border-t border-slate-800/50 flex justify-between items-center relative z-10">
-            <div className="text-[10px] font-black uppercase tracking-widest text-slate-500">
-              Vendas Hoje
-            </div>
-            <div className="text-right">
-              <p className="text-white font-bold text-sm">{moeda((dash.vendas_hoje_total || 0))}</p>
-              <p className="text-brand-400 text-[10px] font-bold uppercase tracking-tighter">{dash.vendas_hoje_qtd} vendas</p>
-            </div>
-          </div>
-        )}
       </div>
 
       {janela && <JanelaProdutoModal janela={janela} onFechar={fecharJanela} onPronto={produtoPronto} onSalvando={setJanelaSalvando} />}
