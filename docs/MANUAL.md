@@ -356,6 +356,18 @@ disponível apenas como legado.
 5. *(Avançado, opcional)* **Responsável Técnico** — **Mato Grosso não exige**;
    deixe desligado. Veja [`RESPONSAVEL_TECNICO.md`](RESPONSAVEL_TECNICO.md).
 
+### Produto com cadastro incompleto (por que a nota não sai)
+A SEFAZ valida **cada item** e rejeita a nota inteira quando um item está com o cadastro fiscal
+errado — inclusive os itens bons daquela venda. Para isso não acontecer:
+
+- o **CFOP da NFC-e é derivado do CSOSN** na emissão (CSOSN 500 → 5405; os demais → 5102). Um
+  catálogo importado com 5401/5403, ou com 5405 num produto de CSOSN 102, não derruba mais a nota;
+- o que **não** se deriva é o **NCM**: sem ele a SEFAZ rejeita (rejeição 778) e não existe
+  substituto legal. A tela **Fiscal** mostra a seção **Cadastro fiscal pendente**, com os produtos
+  que impedem a emissão (os mais vendidos primeiro) e a sugestão de NCM de um produto parecido;
+- **Aplicar sugestões** grava as sugestões de uma vez; o que não tiver sugestão recebe o NCM no
+  campo ao lado. A sugestão é um atalho, não uma imposição: confirme com o contador.
+
 ### Emitir e acompanhar
 - No **PDV**, marque **"Emitir NFC-e (Cupom Fiscal)"** ao finalizar (pode informar o CPF do
   consumidor). A NFC-e autorizada já imprime no recibo térmico, com QR de consulta.

@@ -16,6 +16,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from xml.etree import ElementTree as ET
 
+import fiscal_cadastro
 from database import db
 from dinheiro import arredondar, decimal, moeda, multiplicar, somar
 
@@ -424,12 +425,13 @@ def validar_itens(venda: dict) -> None:
         if prod.get("ncm") and len(ncm) != 8:
             erros.append(f"{item['nome_produto']}: NCM deve ter 8 dígitos (Rejeição 778)")
         csosn = str(prod.get("cst_csosn") or "").strip()
-        cfop = str(prod.get("cfop") or "").strip()
+        cfop = fiscal_cadastro.cfop_nfce(prod)
         cest = so_digitos(prod.get("cest"))
-        # Produto com ICMS-ST (CSOSN 500 / CFOP 5405) exige CEST — Convênio
-        # ICMS 92/15; sem ele a SEFAZ rejeita (806). Vale para bebidas frias,
-        # cigarros etc. da mercearia.
-        if (csosn == "500" or cfop == "5405") and not cest:
+        # Produto com ICMS-ST (CSOSN 500 → CFOP 5405) exige CEST — Convênio
+        # ICMS 92/15; sem ele a SEFAZ rejeita (806). O CFOP aqui é o **efetivo**
+        # da NFC-e (derivado do CSOSN): um cadastro com 5405 num produto CSOSN
+        # 102 emite como 5102 e não precisa de CEST.
+        if cfop == fiscal_cadastro.CFOP_ST and not cest:
             erros.append(f"{item['nome_produto']}: produto com ICMS-ST (CSOSN 500/CFOP 5405) "
                          "exige o código CEST (Rejeição 806)")
         if cest and len(cest) != 7:
@@ -770,7 +772,7 @@ def montar_documento(venda: dict, config: dict, modelo: str = "65",
         _tag(p, "NCM", so_digitos(prod.get("ncm")))
         if prod.get("cest"):
             _tag(p, "CEST", so_digitos(prod.get("cest")))
-        _tag(p, "CFOP", prod.get("cfop"))
+        _tag(p, "CFOP", fiscal_cadastro.cfop_nfce(prod))
         unidade_com = (item.get("unidade_venda") or prod.get("unidade") or "UN").upper()
         # uCom tem até 6 caracteres no leiaute; a descrição mantém o nome completo.
         unidade_com = {"CARTEIRA": "CART", "DISPLAY": "DISP", "PACOTE": "PCT"}.get(unidade_com, unidade_com[:6])

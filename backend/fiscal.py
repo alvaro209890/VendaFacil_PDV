@@ -14,6 +14,7 @@ from datetime import datetime, timedelta, timezone
 from database import db
 from dinheiro import moeda, somar
 import fiscal_direto
+import fiscal_cadastro
 
 INTERVALO_SEG = 45
 _TIMEOUT = 25
@@ -184,7 +185,7 @@ def montar_payload(venda: dict, config: dict, cpf: str | None = None) -> dict:
             "descricao": it["nome_produto"],
             "codigo_ncm": prod.get("ncm") or "00000000",
             "cest": prod.get("cest") or None,
-            "cfop": prod.get("cfop") or "5102",
+            "cfop": fiscal_cadastro.cfop_nfce(prod),
             "unidade_comercial": unidade,
             "quantidade_comercial": it["quantidade"],
             "valor_unitario_comercial": round(it["preco_unitario"], 4),

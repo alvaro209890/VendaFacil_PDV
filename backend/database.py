@@ -542,6 +542,47 @@ class Database:
             criado_em TEXT NOT NULL, atualizado_em TEXT NOT NULL,
             FOREIGN KEY(user_id) REFERENCES users(id))""")
 
+        # CFOP da NFC-e é derivado do CSOSN (NT 2023.003, rejeição 725): um
+        # catálogo importado com 5401/5403/5405 em produto CSOSN 102 travava a
+        # nota. Corrige o cadastro uma vez, com CSV de auditoria em dados/logs.
+        self._corrigir_cfop_nfce()
+
+    def _corrigir_cfop_nfce(self) -> list[tuple]:
+        """Alinha o CFOP do cadastro ao CSOSN do produto (idempotente)."""
+        import csv
+
+        import fiscal_cadastro
+
+        with self._lock:
+            rows = [dict(r) for r in self._conn.execute(
+                "SELECT id, nome, cfop, cst_csosn FROM produtos")]
+            mudancas = []
+            for r in rows:
+                novo = fiscal_cadastro.cfop_nfce(r)
+                if (r["cfop"] or "") != novo:
+                    mudancas.append((r["id"], r["nome"], r["cfop"] or "", novo))
+            if not mudancas:
+                return []
+            with self._conn:
+                self._conn.executemany(
+                    "UPDATE produtos SET cfop = ?, atualizado_em = ? WHERE id = ?",
+                    [(novo, datetime.now(timezone.utc).isoformat(), pid)
+                     for pid, _, _, novo in mudancas],
+                )
+        try:
+            pasta = DATA_DIR / "logs"
+            pasta.mkdir(parents=True, exist_ok=True)
+            arquivo = pasta / f"correcao-cfop-{datetime.now():%Y%m%d}.csv"
+            novo_arquivo = not arquivo.exists()
+            with arquivo.open("a", encoding="utf-8", newline="") as f:
+                w = csv.writer(f, delimiter=";")
+                if novo_arquivo:
+                    w.writerow(["id", "produto", "cfop_antigo", "cfop_novo"])
+                w.writerows(mudancas)
+        except OSError:
+            pass  # o cadastro já foi corrigido; o CSV é só auditoria
+        return mudancas
+
     # ── Sincronização ──
     def vendas_pendentes_sync(self, limite: int = 100) -> list[dict[str, Any]]:
         with self._lock:
@@ -1029,6 +1070,43 @@ class Database:
                 params = (produto_id, user_id)
             row = self._conn.execute(q, params).fetchone()
         return dict(row) if row else None
+
+    def listar_produtos(self, user_id: int, apenas_ativos: bool = True) -> list[dict[str, Any]]:
+        q = "SELECT * FROM produtos WHERE user_id = ?"
+        if apenas_ativos:
+            q += " AND ativo = 1"
+        q += " ORDER BY nome COLLATE NOCASE"
+        with self._lock:
+            return [dict(r) for r in self._conn.execute(q, (user_id,))]
+
+    def vendas_por_produto(self, user_id: int, dias: int = 30) -> dict[int, int]:
+        """Quantas vendas concluídas passaram por cada produto no período."""
+        corte = (datetime.now(timezone.utc) - timedelta(days=dias)).isoformat()
+        with self._lock:
+            rows = self._conn.execute(
+                """SELECT i.produto_id, COUNT(DISTINCT v.id) n
+                   FROM itens_venda i JOIN vendas v ON v.id = i.venda_id
+                   WHERE v.user_id = ? AND v.status = 'concluida' AND v.criado_em >= ?
+                   GROUP BY i.produto_id""",
+                (user_id, corte),
+            ).fetchall()
+        return {int(r["produto_id"]): int(r["n"]) for r in rows if r["produto_id"] is not None}
+
+    def atualizar_fiscal_produto(self, user_id: int, produto_id: int,
+                                 campos: dict[str, Any]) -> dict[str, Any] | None:
+        permitidos = {"ncm", "cest", "cfop", "cst_csosn", "origem", "unidade_tributavel"}
+        dados = {k: v for k, v in (campos or {}).items() if k in permitidos and v is not None}
+        if not dados:
+            return self.get_produto(produto_id, user_id)
+        sets = ", ".join(f"{k} = ?" for k in dados)
+        with self._lock, self._conn:
+            cur = self._conn.execute(
+                f"UPDATE produtos SET {sets}, atualizado_em = ? WHERE id = ? AND user_id = ?",
+                (*dados.values(), datetime.now(timezone.utc).isoformat(), produto_id, user_id),
+            )
+            if cur.rowcount == 0:
+                return None
+        return self.get_produto(produto_id, user_id)
 
     def create_produto(self, user_id: int, nome: str, preco_custo: float,
                        preco_venda: float, estoque: float, estoque_minimo: float,

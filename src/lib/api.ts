@@ -1115,6 +1115,44 @@ export function salvarConfigFiscal(data: ConfigFiscal): Promise<{ config: Config
   return request("/api/fiscal/config", { method: "PUT", body: JSON.stringify(data) });
 }
 
+// ── Pendências de cadastro fiscal (NFC-e) ──
+export interface PendenciaFiscal {
+  id: number;
+  nome: string;
+  ncm: string;
+  cest: string;
+  cfop: string;
+  cst_csosn: string;
+  cfop_nfce: string;
+  faltando: string[];
+  sugestao_ncm: string;
+  vendas_30d: number;
+}
+
+export interface PendenciasFiscais {
+  total: number;
+  com_sugestao: number;
+  itens: PendenciaFiscal[];
+}
+
+export function listarPendenciasFiscais(): Promise<PendenciasFiscais> {
+  return request("/api/fiscal/cadastro/pendencias");
+}
+
+export function corrigirPendenciasFiscais(): Promise<{ corrigidos: number; restantes: number; itens: PendenciaFiscal[] }> {
+  return request("/api/fiscal/cadastro/pendencias/corrigir", {
+    method: "POST",
+    body: JSON.stringify({ aplicar_sugestoes: true }),
+  });
+}
+
+export function salvarFiscalProduto(
+  id: number,
+  campos: Partial<Pick<PendenciaFiscal, "ncm" | "cest" | "cst_csosn" | "cfop">>,
+): Promise<{ produto: unknown }> {
+  return request(`/api/fiscal/cadastro/produtos/${id}`, { method: "PATCH", body: JSON.stringify(campos) });
+}
+
 export function getNotaDaVenda(vendaId: number): Promise<{ nota: NotaFiscal | null }> {
   return request(`/api/fiscal/nfce/venda/${vendaId}`);
 }

@@ -3,6 +3,10 @@
 Sistema de **Ponto de Venda (PDV)** para mercadinhos e pequenos comércios,
 distribuído como **executável único (.exe)** com controle central de licenças.
 
+**1.0.40 instalada no James (25/11/2026):** venda com item bom e item ruim não perde mais a
+NFC-e — o CFOP é derivado do CSOSN na emissão e as pendências de NCM aparecem na tela
+Fiscal. [Atualização, hashes e validação](docs/ATUALIZACAO_1.0.40.md).
+
 **1.0.39 instalada no James (25/11/2026):** extrato de compras por cliente — o que
 comprou, que dia e quanto — na tela, com filtro de período e exportação em **PDF** e
 **CSV**. [Atualização, hashes e validação](docs/ATUALIZACAO_1.0.39.md).

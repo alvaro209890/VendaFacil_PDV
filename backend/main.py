@@ -26,6 +26,7 @@ from backup import router as backup_router
 from fiscal_config import router as fiscal_config_router
 from fiscal_router import router as fiscal_router, nfe_router
 from fiscal_servicos_router import router as fiscal_servicos_router
+from fiscal_cadastro_router import router as fiscal_cadastro_router
 from database import db
 from errors import configure_error_logging, register_error_handlers
 from diagnostico import resumo as resumo_diagnostico
@@ -131,6 +132,7 @@ app.include_router(categorias_router, prefix="/api/categorias", tags=["categoria
 app.include_router(produtos_router, prefix="/api/produtos", tags=["produtos"])
 app.include_router(vendas_router, prefix="/api/vendas", tags=["vendas"])
 app.include_router(fiscal_servicos_router, prefix="/api/fiscal/servicos", tags=["fiscal"])
+app.include_router(fiscal_cadastro_router, prefix="/api/fiscal/cadastro", tags=["fiscal"])
 app.include_router(clientes_router, prefix="/api/clientes", tags=["clientes"])
 app.include_router(contas_receber_router, prefix="/api/contas-receber", tags=["contas-receber"])
 app.include_router(pix_router, prefix="/api/pix", tags=["pix"])

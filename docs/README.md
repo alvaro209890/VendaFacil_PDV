@@ -2,9 +2,10 @@
 
 Índice de toda a documentação, por público.
 
-**Entrega atual: 1.0.39 instalada no James**, extrato de compras por cliente
-(o que comprou, que dia) na tela e em PDF/CSV.
-[O que mudou, hashes e validação](ATUALIZACAO_1.0.39.md).
+**Entrega atual: 1.0.40 instalada no James**, venda com item bom e item ruim não perde mais a
+NFC-e: o CFOP é derivado do CSOSN e as pendências de NCM aparecem na tela Fiscal.
+[O que mudou, hashes e validação](ATUALIZACAO_1.0.40.md).
+Anterior: [extrato de compras por cliente, 1.0.39](ATUALIZACAO_1.0.39.md).
 Anterior: [recibo imprime direto, 1.0.35](ATUALIZACAO_1.0.35.md).
 Anterior: [revisão visual do front, 1.0.26](ATUALIZACAO_1.0.26.md).
 Anterior: [vídeo de importação no PDV, 1.0.25](ATUALIZACAO_1.0.25.md).

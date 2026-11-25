@@ -1,8 +1,38 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { FileText, Save, CheckCircle2, AlertCircle } from "lucide-react";
-import { getConfigFiscal, salvarConfigFiscal, consultarStatusFiscal, listarInutilizacoes, inutilizarNumeracao } from "../lib/api";
-import type { ConfigFiscal, PedidoInutilizacao, InutilizacaoFiscal } from "../lib/api";
+import { getConfigFiscal, salvarConfigFiscal, consultarStatusFiscal, listarInutilizacoes, inutilizarNumeracao, listarPendenciasFiscais, corrigirPendenciasFiscais, salvarFiscalProduto } from "../lib/api";
+import type { ConfigFiscal, PedidoInutilizacao, InutilizacaoFiscal, PendenciasFiscais } from "../lib/api";
+
+function NcmManual({ id, atual, salvando, onSalvar }: {
+  id: number;
+  atual: string;
+  salvando: boolean;
+  onSalvar: (id: number, ncm: string) => void;
+}) {
+  const [valor, setValor] = useState((atual || "").replace(/\D/g, ""));
+  return (
+    <span className="flex items-center gap-1">
+      <input
+        aria-label={`NCM do produto ${id}`}
+        inputMode="numeric"
+        maxLength={8}
+        value={valor}
+        onChange={(e) => setValor(e.target.value.replace(/\D/g, ""))}
+        placeholder="NCM"
+        className="w-24 px-2 py-1 rounded bg-slate-800 border border-slate-700 text-white"
+      />
+      <button
+        type="button"
+        disabled={salvando || valor.length !== 8}
+        onClick={() => onSalvar(id, valor)}
+        className="px-2 py-1 rounded bg-slate-800 text-emerald-400 disabled:opacity-40"
+      >
+        {salvando ? "salvando…" : "salvar"}
+      </button>
+    </span>
+  );
+}
 
 export default function FiscalPage() {
   const [cfg, setCfg] = useState<ConfigFiscal>({ ambiente: "homologacao", provedor_fiscal: "sefaz_mt_direto", uf: "MT" });
@@ -13,6 +43,9 @@ export default function FiscalPage() {
   const [historico, setHistorico] = useState<InutilizacaoFiscal[]>([]);
   const [pedido, setPedido] = useState<PedidoInutilizacao>({ modelo: "65", ano: new Date().getFullYear(), serie: 1, inicio: 1, fim: 1, justificativa: "" });
   const [msg, setMsg] = useState<{ tipo: "ok" | "erro"; texto: string } | null>(null);
+  const [pendencias, setPendencias] = useState<PendenciasFiscais | null>(null);
+  const [corrigindo, setCorrigindo] = useState(false);
+  const [salvandoProduto, setSalvandoProduto] = useState<number | null>(null);
 
   const carregar = useCallback(async () => {
     try {
@@ -25,6 +58,10 @@ export default function FiscalPage() {
     } finally {
       setLoading(false);
     }
+    // A lista de pendências não pode derrubar a configuração se falhar.
+    try {
+      setPendencias(await listarPendenciasFiscais());
+    } catch { /* a tela Fiscal segue funcionando sem a lista */ }
   }, []);
 
   useEffect(() => { void carregar(); }, [carregar]);
@@ -51,6 +88,35 @@ export default function FiscalPage() {
       setMsg({ tipo: "erro", texto: (err as Error).message });
     } finally {
       setSalvando(false);
+    }
+  }
+
+  async function aplicarSugestoes() {
+    if (corrigindo) return;
+    setCorrigindo(true);
+    setMsg(null);
+    try {
+      const r = await corrigirPendenciasFiscais();
+      setPendencias({ total: r.restantes, com_sugestao: r.itens.filter((i) => i.sugestao_ncm).length, itens: r.itens });
+      setMsg({ tipo: r.restantes === 0 ? "ok" : "erro", texto: `${r.corrigidos} produto(s) corrigido(s) — ${r.restantes} ainda sem cadastro completo.` });
+    } catch (erro) {
+      setMsg({ tipo: "erro", texto: (erro as Error).message });
+    } finally {
+      setCorrigindo(false);
+    }
+  }
+
+  async function usarSugestao(id: number, ncm: string) {
+    setSalvandoProduto(id);
+    setMsg(null);
+    try {
+      await salvarFiscalProduto(id, { ncm });
+      setPendencias(await listarPendenciasFiscais());
+      setMsg({ tipo: "ok", texto: `NCM ${ncm} gravado.` });
+    } catch (erro) {
+      setMsg({ tipo: "erro", texto: (erro as Error).message });
+    } finally {
+      setSalvandoProduto(null);
     }
   }
 
@@ -100,6 +166,44 @@ export default function FiscalPage() {
         <div className={`mb-4 px-4 py-2 rounded-lg text-sm flex items-center gap-2 ${msg.tipo === "ok" ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"}`}>
           {msg.tipo === "ok" ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />} {msg.texto}
         </div>
+      )}
+
+      {pendencias && pendencias.total > 0 && (
+        <details className="mb-5 bg-slate-900 border border-amber-700/60 rounded-xl p-4" open={pendencias.total > 0}>
+          <summary className="cursor-pointer font-bold text-sm text-amber-300">
+            Cadastro fiscal pendente — {pendencias.total} produto(s) sem NFC-e
+          </summary>
+          <p className="text-xs text-slate-400 mt-3 leading-snug">
+            Estes produtos impedem a emissão da NFC-e: falta NCM (a SEFAZ rejeita), CSOSN ou CEST.
+            O CFOP já é ajustado sozinho na emissão. A sugestão abaixo vem de um produto parecido do
+            próprio catálogo — confirme com o contador antes de usar em lote.
+          </p>
+          {pendencias.com_sugestao > 0 && (
+            <button type="button" disabled={corrigindo} onClick={aplicarSugestoes}
+              className="mt-3 px-4 py-2 rounded-lg bg-amber-700 text-white text-sm disabled:opacity-50">
+              {corrigindo ? "Aplicando…" : `Aplicar ${pendencias.com_sugestao} sugestão(ões) de NCM`}
+            </button>
+          )}
+          <div className="mt-3 max-h-80 overflow-auto divide-y divide-slate-800 text-xs">
+            {pendencias.itens.map((item) => (
+              <div key={item.id} className="py-2 flex flex-wrap items-center gap-2">
+                <span className="text-slate-200 flex-1 min-w-[180px]">{item.nome}</span>
+                <span className="text-amber-400/90">falta {item.faltando.join(", ")}</span>
+                <span className="text-slate-500">{item.vendas_30d} venda(s)/30d</span>
+                {item.sugestao_ncm ? (
+                  <button type="button" disabled={salvandoProduto === item.id}
+                    onClick={() => usarSugestao(item.id, item.sugestao_ncm)}
+                    className="px-2 py-1 rounded bg-slate-800 text-emerald-400 disabled:opacity-50">
+                    {salvandoProduto === item.id ? "salvando…" : `usar NCM ${item.sugestao_ncm}`}
+                  </button>
+                ) : (
+                  <NcmManual id={item.id} atual={item.ncm} salvando={salvandoProduto === item.id}
+                    onSalvar={usarSugestao} />
+                )}
+              </div>
+            ))}
+          </div>
+        </details>
       )}
 
       <details className="mb-5 bg-slate-900 border border-slate-800 rounded-xl p-4 text-slate-300">
