@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import ExtratoClienteModal from "../components/ExtratoCliente";
 import {
   listarClientes,
   criarCliente,
@@ -16,6 +17,7 @@ export default function Clientes() {
   const vazio: ClienteInput = { nome: "", telefone: "", email: "", endereco: "", observacao: "", documento: "", inscricao_estadual: "", indicador_ie: "9", logradouro: "", numero: "", bairro: "", municipio: "", codigo_municipio: "", uf: "MT", cep: "" };
   const [form, setForm] = useState<ClienteInput>({ ...vazio });
   const [msg, setMsg] = useState<{ tipo: "ok" | "erro"; texto: string } | null>(null);
+  const [extratoDe, setExtratoDe] = useState<Cliente | null>(null);
 
   const carregar = useCallback(async () => {
     try {
@@ -128,7 +130,10 @@ export default function Clientes() {
                 </div>
                 {c.observacao && <p className="text-xs text-slate-500 mt-0.5 truncate">{c.observacao}</p>}
               </div>
-              <div className="grid grid-cols-2 gap-2 w-full min-[420px]:w-auto shrink-0">
+              <div className="grid grid-cols-3 gap-2 w-full min-[420px]:w-auto shrink-0">
+                <button onClick={() => setExtratoDe(c)} className="px-2 sm:px-3 py-1 sm:py-1.5 text-xs bg-brand-900/30 hover:bg-brand-900/50 text-brand-300 rounded-lg transition-colors active:scale-95">
+                  Extrato
+                </button>
                 <button onClick={() => abrirEdicao(c)} className="px-2 sm:px-3 py-1 sm:py-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-colors active:scale-95">
                   Editar
                 </button>
@@ -139,6 +144,10 @@ export default function Clientes() {
             </div>
           ))}
         </div>
+      )}
+
+      {extratoDe && (
+        <ExtratoClienteModal clienteId={extratoDe.id} clienteNome={extratoDe.nome} onFechar={() => setExtratoDe(null)} />
       )}
 
       {/* Modal */}

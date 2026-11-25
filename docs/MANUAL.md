@@ -274,6 +274,8 @@ Detalhes: [`ESTOQUE_E_XML.md`](ESTOQUE_E_XML.md).
 - **Categorias**: organize os produtos (com cores).
 - **Clientes**: cadastro para venda fiada e histórico. Cliente com fiado aberto
   não pode ser ocultado pela exclusão (409); primeiro confira a dívida.
+- **Extrato**: cada cliente tem o botão **Extrato**, com o histórico de compras
+  (o que comprou, que dia e quanto) e exportação em PDF/CSV — ver a seção 8.
 
 ## 8. Fiado (contas a receber)
 - Venda no **fiado** gera uma conta a receber para o cliente.
@@ -289,6 +291,14 @@ Detalhes: [`ESTOQUE_E_XML.md`](ESTOQUE_E_XML.md).
   não ocupa a Point nem exige deixar a janela aberta. Quando o pagamento chegar,
   confira o crédito na conta da loja e confirme o recebimento no PIX salvo.
   Gerar ou enviar o código não quita a dívida. **PIX na Point** é uma opção separada.
+- **Extrato do cliente (1.0.39):** em **Contas a Receber**, o botão **Extrato** (ao lado
+  do nome) e o atalho **Ver o que foi comprado** abrem o histórico completo do cliente:
+  cada compra com data/hora, forma de pagamento, itens, quantidade, preço e situação do
+  fiado. Filtre por **Hoje**, **7 dias**, **30 dias**, **Tudo** ou por duas datas, e baixe
+  em **PDF** (A4, com o cabeçalho da loja) ou **CSV** (abre no Excel/LibreOffice, uma
+  linha por item). O mesmo extrato sai pelo botão **Extrato** na tela **Clientes**.
+  O PDF é gerado no próprio navegador: não depende de internet, impressora nem
+  programa externo; o arquivo vai para a pasta **Downloads** do PC.
 
 ## 9. Caixa (abrir/fechar)
 Tela **Caixa**:

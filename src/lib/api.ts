@@ -535,6 +535,9 @@ export interface ContaReceber {
   pagamentos?: PagamentoFiado[];
   cobranca_pendente?: CobrancaFiado | null;
   pix_pendentes?: PixFiado[];
+  /** Preenchidos no detalhe da conta: a venda de origem e os itens que o cliente levou. */
+  itens?: ItemVendaProcessado[];
+  venda?: Venda | null;
 }
 
 export interface ContaReceberInput {
@@ -611,6 +614,63 @@ export function cancelarContaReceber(id: number): Promise<{ ok: boolean }> {
   return request(`/api/contas-receber/${id}/cancelar`, {
     method: "POST",
   });
+}
+
+// ── Extrato do cliente (histórico de compras) ──
+
+export interface ContaDaCompra {
+  id: number;
+  valor_total: number;
+  valor_pendente: number;
+  status: string;
+  data_vencimento?: string | null;
+  criado_em: string;
+}
+
+export interface NotaDaCompra {
+  numero: number | null;
+  serie: number | null;
+  status: string | null;
+  chave: string | null;
+}
+
+export interface CompraExtrato {
+  id: number;
+  criado_em: string;
+  total: number;
+  desconto: number;
+  forma_pagamento: string;
+  status: string;
+  observacao?: string;
+  itens: ItemVendaProcessado[];
+  conta?: ContaDaCompra | null;
+  nota?: NotaDaCompra | null;
+}
+
+export interface ExtratoClienteResumo {
+  compras: number;
+  total: number;
+  fiado_total: number;
+  fiado_pendente: number;
+  primeira: string | null;
+  ultima: string | null;
+}
+
+export interface ExtratoCliente {
+  cliente: Cliente;
+  inicio: string | null;
+  fim: string | null;
+  resumo: ExtratoClienteResumo;
+  compras: CompraExtrato[];
+}
+
+/** Histórico de compras do cliente; datas AAAA-MM-DD no fuso da loja. */
+export function obterExtratoCliente(id: number, inicio?: string, fim?: string): Promise<ExtratoCliente> {
+  const parametros = new URLSearchParams();
+  if (inicio) parametros.set("inicio", inicio);
+  if (fim) parametros.set("fim", fim);
+  const query = parametros.toString();
+  return request(`/api/clientes/${id}/extrato${query ? `?${query}` : ""}`);
 }
 
 // ── Vendas ──

@@ -2,9 +2,9 @@
 
 Índice de toda a documentação, por público.
 
-**Entrega atual: 1.0.38 instalada no James**, rodapé do carrinho sem o bloco
-"Vendas Hoje" (a página Dashboard continua com o indicador).
-[O que mudou, hashes e validação](ATUALIZACAO_1.0.38.md).
+**Entrega atual: 1.0.39 instalada no James**, extrato de compras por cliente
+(o que comprou, que dia) na tela e em PDF/CSV.
+[O que mudou, hashes e validação](ATUALIZACAO_1.0.39.md).
 Anterior: [recibo imprime direto, 1.0.35](ATUALIZACAO_1.0.35.md).
 Anterior: [revisão visual do front, 1.0.26](ATUALIZACAO_1.0.26.md).
 Anterior: [vídeo de importação no PDV, 1.0.25](ATUALIZACAO_1.0.25.md).

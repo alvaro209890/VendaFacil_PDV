@@ -1,5 +1,7 @@
 """Clientes — VendaFácil PDV"""
 
+from datetime import date
+
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field, field_validator
 
@@ -89,6 +91,29 @@ async def obter(cliente_id: int, request: Request):
     if not c:
         raise HTTPException(status_code=404, detail="Cliente não encontrado.")
     return {"cliente": c}
+
+
+def _data_do_filtro(valor: str | None, campo: str) -> str | None:
+    if not valor:
+        return None
+    try:
+        return date.fromisoformat(valor).isoformat()
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"{campo} deve estar no formato AAAA-MM-DD.")
+
+
+@router.get("/{cliente_id}/extrato")
+async def extrato(cliente_id: int, request: Request, inicio: str | None = None, fim: str | None = None):
+    """Historico de compras do cliente (o que comprou, quando e quanto), para consulta e impressao."""
+    user_id = _get_user_id(request)
+    inicio = _data_do_filtro(inicio, "inicio")
+    fim = _data_do_filtro(fim, "fim")
+    if inicio and fim and inicio > fim:
+        raise HTTPException(status_code=400, detail="inicio nao pode ser depois de fim.")
+    dados = db.extrato_cliente(user_id, cliente_id, inicio, fim)
+    if not dados:
+        raise HTTPException(status_code=404, detail="Cliente nao encontrado.")
+    return dados
 
 
 @router.post("", status_code=201)

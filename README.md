@@ -3,6 +3,10 @@
 Sistema de **Ponto de Venda (PDV)** para mercadinhos e pequenos comércios,
 distribuído como **executável único (.exe)** com controle central de licenças.
 
+**1.0.39 instalada no James (25/11/2026):** extrato de compras por cliente — o que
+comprou, que dia e quanto — na tela, com filtro de período e exportação em **PDF** e
+**CSV**. [Atualização, hashes e validação](docs/ATUALIZACAO_1.0.39.md).
+
 **1.0.38 instalada no James (22/11/2026):** o rodapé do carrinho deixou de mostrar o bloco
 **VENDAS HOJE** (total e quantidade do dia). A página Dashboard continua com o indicador.
 [Atualização, hashes e validação](docs/ATUALIZACAO_1.0.38.md).

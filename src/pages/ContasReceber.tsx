@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { lerNumeroPtBr, moeda } from "../lib/numeros";
 import CampoData from "../components/CampoData";
 import ReceberFiadoModal from "../components/ReceberFiadoModal";
+import ExtratoClienteModal from "../components/ExtratoCliente";
 import { FORMAS_RECEBIMENTO } from "../lib/api";
 import type { FormaRecebimento, PixFiado } from "../lib/api";
 import type { CalendarioData } from "../../painel/static/calendario.js";
@@ -9,6 +10,7 @@ import {
   listarContasReceber,
   criarContaReceber,
   cancelarContaReceber,
+  obterContaReceber,
   listarClientes,
   type ContaReceber,
   type Cliente,
@@ -36,6 +38,8 @@ export default function ContasReceber() {
   const [showModal, setShowModal] = useState(false);
   const [recebendo, setRecebendo] = useState<ContaReceber | null>(null);
   const [pixSalvo, setPixSalvo] = useState<PixFiado | undefined>();
+  const [detalheCompra, setDetalheCompra] = useState<ContaReceber | null>(null);
+  const [extratoDe, setExtratoDe] = useState<{ id: number; nome: string } | null>(null);
   const [formClienteId, setFormClienteId] = useState<number | "">("");
   const [formValor, setFormValor] = useState("");
   const [formVencimento, setFormVencimento] = useState("");
@@ -61,6 +65,15 @@ export default function ContasReceber() {
   useEffect(() => {
     void carregar();
   }, [carregar]);
+
+  async function verCompra(id: number) {
+    try {
+      const { conta } = await obterContaReceber(id);
+      setDetalheCompra(conta);
+    } catch (err) {
+      setMsg({ tipo: "erro", texto: (err as Error).message });
+    }
+  }
 
   function resetForm() {
     setFormClienteId("");
@@ -174,6 +187,14 @@ export default function ContasReceber() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="text-white font-medium text-sm sm:text-base truncate">{c.cliente_nome || "Sem cliente"}</h3>
+                    {c.cliente_id && (
+                      <button
+                        onClick={() => setExtratoDe({ id: c.cliente_id as number, nome: c.cliente_nome || "Cliente" })}
+                        className="text-2xs text-brand-400 hover:text-brand-300 underline shrink-0"
+                      >
+                        Extrato
+                      </button>
+                    )}
                     <span className={`px-2 py-0.5 rounded-full text-2xs sm:text-xs border shrink-0 ${STATUS_COLORS[c.status] || ""}`}>
                       {STATUS_LABELS[c.status] || c.status}
                     </span>
@@ -214,6 +235,14 @@ export default function ContasReceber() {
                   {c.pix_pendentes.map(p => <button key={p.id} onClick={() => { setPixSalvo(p); setRecebendo(c); }} className="mr-2 rounded-lg bg-brand-900/30 px-3 py-2 text-xs text-brand-300">Ver PIX de {moeda(p.valor)}</button>)}
                 </div>
               )}
+              {c.venda_id && (
+                <button
+                  onClick={() => void verCompra(c.id)}
+                  className="mt-2 text-2xs text-slate-400 hover:text-white underline"
+                >
+                  Ver o que foi comprado
+                </button>
+              )}
               {c.pagamentos && c.pagamentos.length > 0 && (
                 <div className="mt-3 border-t border-slate-800 pt-2">
                   <p className="text-2xs text-slate-500 mb-1">Histórico</p>
@@ -228,6 +257,61 @@ export default function ContasReceber() {
             </div>
           ))}
         </div>
+      )}
+
+      {detalheCompra && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60] p-3" onClick={() => setDetalheCompra(null)}>
+          <div className="bg-slate-900 rounded-2xl w-full max-w-lg border border-slate-800 shadow-2xl max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-start justify-between gap-3 p-4 border-b border-slate-800">
+              <div className="min-w-0">
+                <h2 className="text-white font-bold text-sm sm:text-base">Compra #{detalheCompra.venda_id}</h2>
+                <p className="text-xs text-slate-400 truncate">
+                  {detalheCompra.cliente_nome || "Sem cliente"}
+                  {detalheCompra.criado_em ? ` · ${new Date(detalheCompra.criado_em).toLocaleString("pt-BR", { timeZone: "America/Cuiaba" })}` : ""}
+                </p>
+              </div>
+              <button onClick={() => setDetalheCompra(null)} className="text-slate-400 hover:text-white text-xl leading-none px-1">✕</button>
+            </div>
+            <div className="p-4 overflow-y-auto space-y-1">
+              {(detalheCompra.itens || []).map((item, indice) => (
+                <div key={`${item.produto_id}-${indice}`} className="flex justify-between gap-2 text-xs sm:text-sm">
+                  <span className="text-slate-300 min-w-0 truncate">
+                    <span className="text-slate-500">{Number(item.quantidade || 0)}×</span> {item.nome_produto}
+                    {item.unidade_venda ? <span className="text-slate-500"> {item.unidade_venda}</span> : null}
+                  </span>
+                  <span className="text-slate-400 shrink-0">{moeda(item.subtotal)}</span>
+                </div>
+              ))}
+              {!(detalheCompra.itens || []).length && <p className="text-xs text-slate-500">Venda sem itens registrados.</p>}
+              <div className="flex justify-between border-t border-slate-800 pt-2 mt-2 text-sm">
+                <span className="text-slate-400">Total da venda</span>
+                <span className="text-brand-400 font-semibold">{moeda(detalheCompra.valor_total)}</span>
+              </div>
+            </div>
+            <div className="p-3 border-t border-slate-800 flex gap-2">
+              {detalheCompra.cliente_id && (
+                <button
+                  onClick={() => {
+                    const id = detalheCompra.cliente_id as number;
+                    const nome = detalheCompra.cliente_nome || "Cliente";
+                    setDetalheCompra(null);
+                    setExtratoDe({ id, nome });
+                  }}
+                  className="flex-1 px-3 py-2 rounded-lg text-xs font-medium bg-brand-600 hover:bg-brand-500 text-white active:scale-95"
+                >
+                  Extrato completo
+                </button>
+              )}
+              <button onClick={() => setDetalheCompra(null)} className="flex-1 px-3 py-2 rounded-lg text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 active:scale-95">
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {extratoDe && (
+        <ExtratoClienteModal clienteId={extratoDe.id} clienteNome={extratoDe.nome} onFechar={() => setExtratoDe(null)} />
       )}
 
       {recebendo && <ReceberFiadoModal conta={recebendo} pixSalvo={pixSalvo} onFechar={() => { setRecebendo(null); void carregar(); }} onConcluido={pagamentoConcluido} />}

@@ -132,6 +132,9 @@ async def obter(conta_id: int, request: Request):
     conta = db.get_conta_receber(conta_id, user_id)
     if not conta:
         raise HTTPException(status_code=404, detail="Conta não encontrada.")
+    venda = db.get_venda_completa(conta["venda_id"], user_id) if conta.get("venda_id") else None
+    conta["venda"] = venda
+    conta["itens"] = (venda or {}).get("itens", [])
     return {"conta": conta}
 
 

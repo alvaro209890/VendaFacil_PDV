@@ -1882,6 +1882,55 @@ class Database:
             )
             return self.get_conta_receber(cursor.lastrowid)
 
+    def extrato_cliente(self, user_id: int, cliente_id: int,
+                        inicio: str | None = None, fim: str | None = None) -> dict[str, Any] | None:
+        """Compras do cliente com itens, para consulta e relatorio (dia comercial de MT)."""
+        cliente = self.get_cliente(cliente_id, user_id)
+        if not cliente:
+            return None
+        filtros = ["v.user_id = ?", "v.cliente_id = ?"]
+        params: list[Any] = [user_id, cliente_id]
+        if inicio:
+            filtros.append("date(v.criado_em, '-4 hours') >= ?")
+            params.append(inicio)
+        if fim:
+            filtros.append("date(v.criado_em, '-4 hours') <= ?")
+            params.append(fim)
+        with self._lock:
+            vendas = [dict(r) for r in self._conn.execute(
+                "SELECT v.* FROM vendas v WHERE " + " AND ".join(filtros) +
+                " ORDER BY v.criado_em DESC", params)]
+            for venda in vendas:
+                venda["itens"] = self.get_itens_venda(venda["id"])
+                conta = self._conn.execute(
+                    "SELECT * FROM contas_receber WHERE venda_id = ? AND user_id = ? "
+                    "ORDER BY id DESC LIMIT 1", (venda["id"], user_id)).fetchone()
+                venda["conta"] = dict(conta) if conta else None
+                try:
+                    nota = self._conn.execute(
+                        "SELECT numero, serie, status, chave FROM notas_fiscais "
+                        "WHERE venda_id = ? AND user_id = ? ORDER BY id DESC LIMIT 1",
+                        (venda["id"], user_id)).fetchone()
+                except sqlite3.OperationalError:
+                    nota = None
+                venda["nota"] = dict(nota) if nota else None
+        concluidas = [v for v in vendas if v.get("status") == "concluida"]
+        contas = [v["conta"] for v in concluidas if v.get("conta")]
+        return {
+            "cliente": cliente,
+            "inicio": inicio,
+            "fim": fim,
+            "resumo": {
+                "compras": len(concluidas),
+                "total": moeda(sum(float(v.get("total") or 0) for v in concluidas)),
+                "fiado_total": moeda(sum(float(c.get("valor_total") or 0) for c in contas)),
+                "fiado_pendente": moeda(sum(float(c.get("valor_pendente") or 0) for c in contas)),
+                "primeira": concluidas[-1]["criado_em"] if concluidas else None,
+                "ultima": concluidas[0]["criado_em"] if concluidas else None,
+            },
+            "compras": vendas,
+        }
+
     def list_pix_fiado(self, conta_id: int, user_id: int) -> list[dict[str, Any]]:
         with self._lock:
             return [dict(r) for r in self._conn.execute(
