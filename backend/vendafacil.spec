@@ -21,6 +21,7 @@ hiddenimports += collect_submodules("signxml")
 hiddenimports += collect_submodules("requests_pkcs12")
 hiddenimports += collect_submodules("cryptography")
 hiddenimports += collect_submodules("lxml")
+hiddenimports += collect_submodules("qrcode")
 
 a = Analysis(
     ["run.py"],
